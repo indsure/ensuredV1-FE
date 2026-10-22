@@ -100,6 +100,7 @@ export const T = {
       "*Life, claims and tools*",
       "• Surrender values · SURRENDER VALUE Ramesh",
       "• CLAIMS · Where is Sunita's claim?",
+      "• Open a claim for Sunita · Sunita's claim submitted · Insurer wants the final bill for Sunita's claim",
       "• CALCULATOR · COMPARE Care Supreme vs Niva ReAssure 2.0",
       "",
       "*Your business*",

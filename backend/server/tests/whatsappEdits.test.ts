@@ -4,7 +4,7 @@ import {
   cleanCustomerSet, cleanInterests, cleanLeadSet, freshEmptyCustomerDelete, freshUntouchedLeadDelete,
   guardedUpdate, money, norm, registerWaEdits,
 } from "../whatsapp/edits";
-import { strictAmount, cleanFixValue, fixFieldsFor } from "../whatsapp/editRules";
+import { strictAmount, cleanFixValue, fixFieldsFor, cleanClaimSet } from "../whatsapp/editRules";
 
 const AGENT = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
@@ -376,4 +376,87 @@ test("a policyholder name fixed on a non-health policy is kept in the saved deta
   const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
   assert.match(upd.sql, /jsonb_set\(jsonb_set\(extracted_data, '\{policyholder_name\}', to_jsonb\(\$3::text\)\), '\{_rev\}'/);
   assert.match(upd.sql, /<> 'health'/, "a health check's stored report is left alone");
+});
+
+/* ── Stage 2c: claims ── */
+
+const CLM = "88888888-8888-4888-8888-888888888888";
+const claimRowOpen = { id: CLM, status: "submitted", claim_type: "reimbursement", insurer: "Some Health", tpa: null, policy_number: null, hospital: "City Hospital", ailment: null, claimed_amount: "150000.00", settled_amount: null, admitted_on: "2026-10-01", discharged_on: null, customer_id: CUST, customer_name: "Sunita Rao" };
+
+test("claim rules: no settled amount, nothing cleared, strict amounts and dates", () => {
+  assert.equal(cleanClaimSet({ settled_amount: 1 }).errors.settled_amount, "cannot be changed from WhatsApp");
+  assert.equal(cleanClaimSet({ hospital: "" }).errors.hospital, "a value is needed");
+  assert.equal(cleanClaimSet({ claimed_amount: "2 lakh 50 hazar" }).errors.claimed_amount, "not an amount");
+  assert.deepEqual(cleanClaimSet({ claimed_amount: "₹1,85,000", claim_type: "Cashless", admitted_on: "2026-10-01" }).set, { claimed_amount: 185000, claim_type: "cashless", admitted_on: "2026-10-01" });
+  assert.equal(cleanClaimSet({ admitted_on: "01/10/2026" }).errors.admitted_on, "not a date");
+});
+
+test("claim edit: compare-before includes the stage, closed claims refused, settled pair checked", async () => {
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [claimRowOpen], rowCount: 1 } : { rows: [{ ...claimRowOpen, hospital: "Apollo" }] }));
+  const r = await h.call("POST /api/internal/wa/claims/:id/edit", { id: CLM }, { set: { hospital: "Apollo" }, expect: { hospital: "City Hospital" } });
+  assert.equal(r.status, 200);
+  const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
+  assert.match(upd.sql, /status::text IS NOT DISTINCT FROM/);
+  assert.match(upd.sql, /updated_at = now\(\)/);
+  const ev = h.calls.find((c) => c.sql.includes("INSERT INTO claim_events"))!;
+  assert.equal(ev.params[2], "details_edited");
+  assert.match(String(ev.params[3]), /Hospital: City Hospital → Apollo \(WhatsApp\)/);
+  const cl = harness(() => ({ rows: [{ ...claimRowOpen, status: "settled" }] }));
+  assert.equal((await cl.call("POST /api/internal/wa/claims/:id/edit", { id: CLM }, { set: { hospital: "X" }, expect: { hospital: "City Hospital" } })).json.error, "CLOSED");
+  const st = harness(() => ({ rows: [{ ...claimRowOpen, settled_amount: "100000.00" }] }));
+  assert.match((await st.call("POST /api/internal/wa/claims/:id/edit", { id: CLM }, { set: { claimed_amount: 90000 }, expect: { claimed_amount: "150000.00" } })).json.fields.claimed_amount, /below the amount already settled/);
+  const dt = harness(() => ({ rows: [claimRowOpen] }));
+  assert.match((await dt.call("POST /api/internal/wa/claims/:id/edit", { id: CLM }, { set: { discharged_on: "2026-09-01" }, expect: { discharged_on: null } })).json.fields.discharged_on, /before the admission/);
+});
+
+test("claim stage: open stages only, never into or out of closed; query_raised only by undo with the token", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ id: CLM }], rowCount: 1 } : { rows: [] }));
+  assert.equal((await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "settled", from: "submitted" })).status, 400);
+  assert.equal((await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "submitted", from: "rejected" })).status, 400);
+  assert.equal((await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "query_raised", from: "under_process" })).status, 400);
+  const ok = await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "under_process", from: "query_raised" });
+  assert.equal(ok.status, 200);
+  const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
+  assert.match(upd.sql, /status = \$4 AND status NOT IN \('settled', 'rejected'\)/);
+  const back = await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "query_raised", from: "under_process", restore: true, token: ok.json.undoToken });
+  assert.equal(back.status, 200);
+  const forged = await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "query_raised", from: "submitted", restore: true, token: ok.json.undoToken });
+  assert.equal(forged.status, 400);
+});
+
+test("query logged: in one transaction with the claim locked, refused if the stage moved", async () => {
+  const h = harness((sql) => (sql.includes("FOR UPDATE") ? { rows: [{ status: "submitted" }] } : sql.includes("MAX(seq)") ? { rows: [{ next: 2 }] } : { rows: [], rowCount: 1 }));
+  const r = await h.call("POST /api/internal/wa/claims/:id/queries", { id: CLM }, { question: "Discharge summary needed", from: "submitted" });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.seq, 2);
+  assert.deepEqual(h.calls.map((c) => c.sql.split(/\s/)[0]).filter((w) => ["BEGIN", "COMMIT"].includes(w)), ["BEGIN", "COMMIT"]);
+  const moved = harness((sql) => (sql.includes("FOR UPDATE") ? { rows: [{ status: "under_process" }] } : { rows: [], rowCount: 1 }));
+  assert.equal((await moved.call("POST /api/internal/wa/claims/:id/queries", { id: CLM }, { question: "Bills", from: "submitted" })).status, 409);
+  assert.ok(!moved.calls.some((c) => c.sql.startsWith("INSERT INTO claim_queries")));
+});
+
+test("query answered moves the claim on only from query_raised, and its undo needs the token", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const h = harness((sql) => (sql.includes("FOR UPDATE") ? { rows: [{ status: "query_raised" }] } : sql.startsWith("UPDATE claim_queries") ? { rows: [{ resolved_on: "2026-10-22" }], rowCount: 1 } : sql.includes("count(*)") ? { rows: [{ n: 0 }] } : { rows: [], rowCount: 1 }));
+  const r = await h.call("POST /api/internal/wa/claims/:id/queries/:seq/answered", { id: CLM, seq: "1" });
+  assert.equal(r.json.moved, true);
+  assert.ok(h.calls.some((c) => c.sql.includes("status = 'under_process'")));
+  const u = harness(() => ({ rows: [{ id: CLM }], rowCount: 1 }));
+  assert.equal((await u.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: true, token: r.json.undoToken })).status, 200);
+  assert.equal((await u.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: false, token: r.json.undoToken })).status, 400);
+});
+
+test("claim open needs an existing customer; undo-create compares every created value and nothing added", async () => {
+  const h = harness((sql) => (sql.includes("FROM customers WHERE") ? { rows: [{ id: CUST }] } : sql.startsWith("INSERT INTO claims") ? { rows: [{ id: CLM }] } : { rows: [{ ...claimRowOpen, status: "opened" }] }));
+  assert.equal((await h.call("POST /api/internal/wa/claims", {}, { set: {} })).status, 400);
+  const r = await h.call("POST /api/internal/wa/claims", {}, { customerId: CUST, set: { claim_type: "cashless", hospital: "Apollo" } });
+  assert.equal(r.status, 200);
+  assert.equal(Object.keys(r.json.created).length, 10);
+  const d = harness(() => ({ rows: [], rowCount: 0 }));
+  assert.equal((await d.call("POST /api/internal/wa/claims/:id/undo-create", { id: CLM }, { expect: { hospital: "Apollo" } })).status, 400);
+  const ok = harness(() => ({ rows: [{ id: CLM }], rowCount: 1 }));
+  await ok.call("POST /api/internal/wa/claims/:id/undo-create", { id: CLM }, { expect: r.json.created });
+  const del = ok.calls.find((c) => c.sql.startsWith("DELETE"))!;
+  for (const re of [/interval '15 minutes'/, /status = 'opened'/, /claim_queries/, /claim_documents/, /x.status <> 'opened'/, /hospital::text IS NOT DISTINCT FROM/]) assert.match(del.sql, re);
 });

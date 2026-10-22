@@ -363,6 +363,102 @@ export class FakeEngine implements Engine {
     this.writes.push({ kind: "setSharing", id, body: { enabled } });
     return { ok: true as const, enabled };
   }
+  /* Stage 2c: claims, with the backend's rules (whatsapp/edits.ts) through the shared editRules. */
+  claimStore = new Map<string, any>();
+  queryStore: { claim_id: string; seq: number; question: string; resolved_on: string | null }[] = [];
+  canExtend = new Set<string>();
+  private claimOut(id: string) {
+    const c = this.claimStore.get(id);
+    return c ? { ...c, customer_name: this.customers.find((x) => x.id === c.customer_id)?.name ?? null } : null;
+  }
+  async claimRow(_a: string, id: string) {
+    const claim = this.claimOut(id);
+    if (!claim) return null;
+    return { claim, openQueries: this.queryStore.filter((q) => q.claim_id === id && !q.resolved_on).map((q) => ({ seq: q.seq, question: q.question, raised_on: "2026-10-20" })) };
+  }
+  async claimOpen(_a: string, customerId: string, set: Record<string, unknown>) {
+    if (!this.customers.some((x) => x.id === customerId)) return { ok: false as const, reason: "Customer not found" };
+    const cl = ED.cleanClaimSet(set);
+    if (Object.keys(cl.errors).length) return { ok: false as const, reason: "INVALID", fields: cl.errors };
+    const id = crypto.randomUUID();
+    const row: any = { id, status: "opened", claim_type: "reimbursement", insurer: null, tpa: null, policy_number: null, hospital: null, ailment: null, claimed_amount: null, settled_amount: null, admitted_on: null, discharged_on: null, customer_id: customerId, fresh: true };
+    for (const [k, v] of Object.entries(cl.set)) row[k] = k === "claimed_amount" ? Number(v).toFixed(2) : v;
+    this.claimStore.set(id, row);
+    this.writes.push({ kind: "claimOpen", id, body: set });
+    const claim = this.claimOut(id)!;
+    return { ok: true as const, claim, created: Object.fromEntries(["customer_id", ...ED.CLAIM_FIELDS].map((k) => [k, claim[k] ?? null])) };
+  }
+  async claimUndoCreate(_a: string, id: string, created: Record<string, unknown>) {
+    const c = this.claimStore.get(id);
+    if (!c || !c.fresh || c.status !== "opened" || this.queryStore.some((q) => q.claim_id === id)) return false;
+    if (Object.entries(created).some(([k, v]) => ED.norm(c[k]) !== ED.norm(v))) return false;
+    this.claimStore.delete(id);
+    this.writes.push({ kind: "claimUndoCreate", id, body: {} });
+    return true;
+  }
+  async claimEdit(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    const c = this.claimStore.get(id);
+    if (!c) return { ok: false as const, reason: "Not found" };
+    if (ED.CLAIM_TERMINAL.includes(c.status)) return { ok: false as const, reason: "CLOSED" };
+    if (ED.missingExpect(set, expect).length) return { ok: false as const, reason: "INVALID", fields: { expect: "required" } };
+    const cl = restore ? ED.restoreSet(set, ED.CLAIM_FIELDS) : ED.cleanClaimSet(set);
+    if (Object.keys(cl.errors).length) return { ok: false as const, reason: "INVALID", fields: cl.errors };
+    if (restore && token !== "fake-token") return { ok: false as const, reason: "INVALID", fields: { token: "undo is only for a change saved here" } };
+    if (Object.keys(expect).some((k) => ED.norm(c[k]) !== ED.norm(expect[k]))) return { ok: false as const, reason: "CHANGED" };
+    for (const [k, v] of Object.entries(cl.set)) c[k] = k === "claimed_amount" && v !== null ? Number(v).toFixed(2) : v;
+    c.fresh = false;
+    this.writes.push({ kind: "claimEdit", id, body: cl.set });
+    return { ok: true as const, after: Object.fromEntries(Object.keys(cl.set).map((k) => [k, c[k]])), undoToken: "fake-token" };
+  }
+  async claimStage(_a: string, id: string, to: string, from: string, restore = false, token?: string) {
+    const c = this.claimStore.get(id);
+    if (!c) return { ok: false as const, reason: "Not found" };
+    const allowed = restore ? [...ED.CLAIM_OPEN_STAGES, "query_raised"] : ED.CLAIM_OPEN_STAGES;
+    if (!allowed.includes(to) || (restore && token !== "fake-token")) return { ok: false as const, reason: "INVALID" };
+    if (c.status !== from || ED.CLAIM_TERMINAL.includes(c.status)) return { ok: false as const, reason: "CHANGED" };
+    c.status = to;
+    c.fresh = false;
+    this.writes.push({ kind: "claimStage", id, body: { to } });
+    return { ok: true as const, status: to, undoToken: "fake-token" };
+  }
+  async claimQuery(_a: string, id: string, question: string, from: string) {
+    const c = this.claimStore.get(id);
+    if (!c) return { ok: false as const, reason: "Not found" };
+    if (ED.CLAIM_TERMINAL.includes(c.status)) return { ok: false as const, reason: "CLOSED" };
+    if (c.status !== from) return { ok: false as const, reason: "CHANGED" };
+    const seq = Math.max(0, ...this.queryStore.filter((q) => q.claim_id === id).map((q) => q.seq)) + 1;
+    this.queryStore.push({ claim_id: id, seq, question, resolved_on: null });
+    c.status = "query_raised";
+    this.writes.push({ kind: "claimQuery", id, body: { question } });
+    return { ok: true as const, seq };
+  }
+  async claimAnswered(_a: string, id: string, seq: number) {
+    const c = this.claimStore.get(id);
+    const q = this.queryStore.find((x) => x.claim_id === id && x.seq === seq && !x.resolved_on);
+    if (!c) return { ok: false as const, reason: "Not found" };
+    if (!q) return { ok: false as const, reason: "CHANGED" };
+    q.resolved_on = "2026-10-22";
+    const openLeft = this.queryStore.filter((x) => x.claim_id === id && !x.resolved_on).length;
+    const moved = openLeft === 0 && c.status === "query_raised";
+    if (moved) c.status = "under_process";
+    this.writes.push({ kind: "claimAnswered", id, body: { seq } });
+    return { ok: true as const, resolvedOn: q.resolved_on, moved, openLeft, undoToken: "fake-token" };
+  }
+  async claimReopenQuery(_a: string, id: string, seq: number, resolvedOn: string, moved: boolean, token?: string) {
+    const c = this.claimStore.get(id);
+    const q = this.queryStore.find((x) => x.claim_id === id && x.seq === seq && x.resolved_on === resolvedOn);
+    if (token !== "fake-token") return { ok: false as const, reason: "INVALID" };
+    if (!c || !q || (moved && c.status !== "under_process")) return { ok: false as const, reason: "CHANGED" };
+    q.resolved_on = null;
+    if (moved) c.status = "query_raised";
+    return { ok: true as const };
+  }
+  async claimExtend(_a: string, id: string) {
+    if (!this.canExtend.has(id)) return { ok: false as const, reason: "CANNOT_EXTEND" };
+    this.canExtend.delete(id);
+    this.writes.push({ kind: "claimExtend", id, body: {} });
+    return { ok: true as const, purgeOn: "2026-12-01" };
+  }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {
     // Same as the backend: only if it still holds exactly what was created.
@@ -397,7 +493,11 @@ export class FakeEngine implements Engine {
     return { policies: [...this.clients.values()].filter((c) => (c.policyholderName || "").toLowerCase().includes(q.toLowerCase())), leads: await this.leadSearch(_a, q) };
   }
   async views() { return this.viewRows; }
-  async claims(_a: string, q: string | null) { this.claimQueries.push(q); return this.claimRows; }
+  async claims(_a: string, q: string | null) {
+    this.claimQueries.push(q);
+    if (!this.claimStore.size) return this.claimRows;
+    return [...this.claimStore.keys()].map((id) => ({ ...this.claimOut(id)!, openQueries: [] as any[] })) as any[];
+  }
   policyType: (string | null)[] = [];
   async policies(_a: string, type: string | null) {
     this.policyType.push(type);
@@ -437,6 +537,7 @@ export class FakeEngine implements Engine {
   }
   async policyValueRows() { return this.valueRows; }
   async claim(_a: string, id: string) {
+    if (this.claimStore.has(id)) return { canExtend: this.canExtend.has(id) } as any;
     const d = this.claimDetails.get(id);
     if (!d) return null;
     this.claimViews.push(id);

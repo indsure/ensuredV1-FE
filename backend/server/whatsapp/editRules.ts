@@ -262,3 +262,45 @@ export function cleanClientSet(raw: Record<string, unknown>): Clean {
   }
   return { set, errors };
 }
+
+/* ── Stage 2c: claims ───────────────────────────────────────────────────── */
+
+/** A claim's typed details WhatsApp may change (the portal's PATCH /api/agent/claims/:id list),
+ *  never the settled amount: that belongs to closing, which needs the insurer's letter. */
+export const CLAIM_FIELDS = ["insurer", "tpa", "policy_number", "hospital", "ailment", "claimed_amount", "admitted_on", "discharged_on", "claim_type"];
+/** The portal's timeline labels (routes.ts PATCH claims LABELS), so a WhatsApp edit reads the same. */
+export const CLAIM_LABELS: Record<string, string> = {
+  insurer: "Insurer", tpa: "TPA", policy_number: "Policy number", hospital: "Hospital", ailment: "What happened",
+  claimed_amount: "Amount claimed", admitted_on: "Admitted on", discharged_on: "Discharged on", claim_type: "Type of claim",
+};
+/** The stages WhatsApp may move a claim between. Closing (settled, rejected) and reopening stay in
+ *  the portal; query_raised is set only by logging a query (and by undo, with the server's token). */
+export const CLAIM_OPEN_STAGES = ["opened", "docs_received", "submitted", "under_process"];
+export const CLAIM_TERMINAL = ["settled", "rejected"];
+const CLAIM_AMOUNT_MAX = 9999999999.99; // numeric(12,2)
+
+/** A claim change, checked the portal's way but stricter: nothing is cleared from WhatsApp. */
+export function cleanClaimSet(raw: Record<string, unknown>): Clean {
+  const set: Record<string, unknown> = {};
+  const errors: FieldErrors = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (!CLAIM_FIELDS.includes(k)) { errors[k] = "cannot be changed from WhatsApp"; continue; }
+    if (v === null || v === undefined || String(v).trim() === "") { errors[k] = "a value is needed"; continue; }
+    if (k === "claimed_amount") {
+      const n = strictAmount(v);
+      if (n === null) errors[k] = "not an amount";
+      else if (n > CLAIM_AMOUNT_MAX) errors[k] = "too large";
+      else set[k] = n;
+    } else if (k === "admitted_on" || k === "discharged_on") {
+      const d = cleanFixValue("date", v);
+      if (!d.ok) errors[k] = d.error; else set[k] = d.value;
+    } else if (k === "claim_type") {
+      const t = String(v).trim().toLowerCase();
+      if (t !== "cashless" && t !== "reimbursement") errors[k] = "cashless or reimbursement"; else set[k] = t;
+    } else {
+      const t = String(v).trim();
+      if (t.length > 200) errors[k] = "too long"; else set[k] = t;
+    }
+  }
+  return { set, errors };
+}

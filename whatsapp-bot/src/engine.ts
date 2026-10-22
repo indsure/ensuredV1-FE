@@ -154,6 +154,16 @@ export interface Engine {
   policyFieldSave(agentId: string, clientId: string, set: Record<string, unknown>, expectRev: number, undo?: { expect: Record<string, unknown>; token?: string }): Promise<WriteResult<{ before: Record<string, unknown>; after: Record<string, unknown>; rev: number; undoToken?: string }>>;
   clientDetailSave(agentId: string, clientId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
   setSharing(agentId: string, clientId: string, enabled: boolean, expectEnabled: boolean): Promise<WriteResult<{ enabled: boolean }>>;
+  /* Stage 2c: claims. Never closed or reopened from here; amounts and dates come back as text. */
+  claimRow(agentId: string, id: string): Promise<ClaimEditRow | null>;
+  claimOpen(agentId: string, customerId: string, set: Record<string, unknown>): Promise<WriteResult<{ claim: ClaimEditRow["claim"]; created: Record<string, unknown> }>>;
+  claimUndoCreate(agentId: string, id: string, created: Record<string, unknown>): Promise<boolean>;
+  claimEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
+  claimStage(agentId: string, id: string, to: string, from: string, restore?: boolean, token?: string): Promise<WriteResult<{ status: string; undoToken?: string }>>;
+  claimQuery(agentId: string, id: string, question: string, from: string): Promise<WriteResult<{ seq: number }>>;
+  claimAnswered(agentId: string, id: string, seq: number): Promise<WriteResult<{ resolvedOn: string; moved: boolean; openLeft: number; undoToken?: string }>>;
+  claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, token?: string): Promise<WriteResult<{}>>;
+  claimExtend(agentId: string, id: string): Promise<WriteResult<{ purgeOn: string }>>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
@@ -318,6 +328,21 @@ export class HttpEngine implements Engine {
   setSharing(agentId: string, clientId: string, enabled: boolean, expectEnabled: boolean) {
     return this.write<{ enabled: boolean }>(`/api/internal/wa/clients/${clientId}/sharing`, agentId, { enabled, expectEnabled });
   }
+  async claimRow(agentId: string, id: string) {
+    try { return await this.call(`/api/internal/wa/claims/${id}/row`, { agentId }) as ClaimEditRow; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  claimOpen(agentId: string, customerId: string, set: Record<string, unknown>) { return this.write<{ claim: ClaimEditRow["claim"]; created: Record<string, unknown> }>("/api/internal/wa/claims", agentId, { customerId, set }); }
+  async claimUndoCreate(agentId: string, id: string, created: Record<string, unknown>) { return (await this.write(`/api/internal/wa/claims/${id}/undo-create`, agentId, { expect: created })).ok; }
+  claimEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    return this.write<{ after: Record<string, unknown>; undoToken?: string }>(`/api/internal/wa/claims/${id}/edit`, agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
+  }
+  claimStage(agentId: string, id: string, to: string, from: string, restore = false, token?: string) {
+    return this.write<{ status: string; undoToken?: string }>(`/api/internal/wa/claims/${id}/stage`, agentId, { to, from, ...(restore ? { restore: true, token } : {}) });
+  }
+  claimQuery(agentId: string, id: string, question: string, from: string) { return this.write<{ seq: number }>(`/api/internal/wa/claims/${id}/queries`, agentId, { question, from }); }
+  claimAnswered(agentId: string, id: string, seq: number) { return this.write<{ resolvedOn: string; moved: boolean; openLeft: number; undoToken?: string }>(`/api/internal/wa/claims/${id}/queries/${seq}/answered`, agentId, {}); }
+  claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, token?: string) { return this.write<{}>(`/api/internal/wa/claims/${id}/queries/${seq}/reopen`, agentId, { resolvedOn, moved, token }); }
+  claimExtend(agentId: string, id: string) { return this.write<{ purgeOn: string }>(`/api/internal/wa/claims/${id}/extend`, agentId, {}); }
   async leadUndoCreate(agentId: string, id: string, created?: Record<string, unknown>) {
     try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: { expect: created } }); return true; }
     catch { return false; }
@@ -375,6 +400,15 @@ export type PolicyFields = {
   id: string; type: string; status: string; shareEnabled: boolean; rev: number;
   client: { policyholder_name: string | null; policy_identifier: string | null; client_email: string | null; client_phone: string | null };
   fields: { key: string; label: string; kind: "money" | "percent" | "date" | "text"; value: unknown }[];
+};
+/** One claim as the edit routes see it (GET /api/internal/wa/claims/:id/row). */
+export type ClaimEditRow = {
+  claim: {
+    id: string; status: string; claim_type: string; insurer: string | null; tpa: string | null; policy_number: string | null;
+    hospital: string | null; ailment: string | null; claimed_amount: string | null; settled_amount: string | null;
+    admitted_on: string | null; discharged_on: string | null; customer_id: string | null; customer_name: string | null;
+  };
+  openQueries: { seq: number; question: string; raised_on: string }[];
 };
 export type FullCustomer = { id: string; name: string; phone: string | null; email: string | null; city: string | null; dob: string | null; created_at?: string };
 /** A write the server refused is a plain result: CHANGED (edited meanwhile), INVALID (with

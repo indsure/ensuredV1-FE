@@ -42,7 +42,7 @@ function tokenOk(given: unknown, want: string): boolean {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet } from "./editRules";
+import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet } from "./editRules";
 import { saveExtractedData } from "../services/policyValueStore";
 import { deriveSharedColumns, EXTRACTION_FIELDS } from "../services/extractionFields";
 import { scoreFromExtractedData } from "../../../shared/motorScore";
@@ -426,6 +426,272 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       void audit(agentId, req.params.id, enabled ? "wa_share_on" : "wa_share_off", "/api/internal/wa/clients/:id/sharing");
       res.json({ ok: true, enabled });
     } catch (err) { fail(res, "policy sharing", err); }
+  });
+
+  /* ── Stage 2c: claims (plan 3, 2c). Same rules as routes.ts /api/agent/claims, minus closing,
+   *  reopening and the settled amount, plus compare-before on every write. ── */
+
+  const CLAIM_EXTENSION_DAYS = 30;     // routes.ts CLAIM_EXTENSION_DAYS
+  const CLAIM_EXTEND_UNLOCK_DAYS = 5;  // routes.ts CLAIM_EXTEND_UNLOCK_DAYS
+  // Amounts and dates as text: compare-before and the undo token see exactly what the row holds.
+  const CLAIM_OUT = `c.id, c.status, c.claim_type, c.insurer, c.tpa, c.policy_number, c.hospital, c.ailment,
+    c.claimed_amount::text AS claimed_amount, c.settled_amount::text AS settled_amount,
+    c.admitted_on::text AS admitted_on, c.discharged_on::text AS discharged_on, c.customer_id, cu.name AS customer_name`;
+  const claimEvent = (claimId: string, agentId: string, status: string, note: string | null) =>
+    pool.query("INSERT INTO claim_events (claim_id, agent_id, status, note) VALUES ($1, $2, $3, $4)", [claimId, agentId, status, note])
+      .catch((e: any) => log.warn("wa claim event failed", { error: e?.message })); // the timeline never fails the write
+  const claimRow = async (id: string, agentId: string) =>
+    (await pool.query(`SELECT ${CLAIM_OUT} FROM claims c LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id WHERE c.id = $1 AND c.agent_id = $2`, [id, agentId])).rows[0] ?? null;
+  const closed = (res: any) => res.status(400).json({ error: "CLOSED", message: "This claim is closed. Change it in the portal." });
+
+  /** One claim with every detail the bot may show or change, and its open insurer queries. */
+  app.get("/api/internal/wa/claims/:id/row", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const c = await claimRow(req.params.id, agentId);
+      if (!c) return res.status(404).json({ error: "Not found" });
+      const q = await pool.query("SELECT seq, question, raised_on::text AS raised_on FROM claim_queries WHERE claim_id = $1 AND agent_id = $2 AND resolved_on IS NULL ORDER BY seq", [req.params.id, agentId]);
+      res.json({ claim: c, openQueries: q.rows });
+    } catch (err) { fail(res, "claim read", err); }
+  });
+
+  /** Open a claim for an existing customer (a new person is added as a customer first, so it
+   *  shows and can be undone). Body: { customerId, set: { claim_type, hospital, ... } }. */
+  app.post("/api/internal/wa/claims", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const customerId = String(req.body?.customerId || "");
+      if (!UUID.test(customerId)) return bad(res, { customerId: "an existing customer is required" });
+      const own = await pool.query("SELECT id FROM customers WHERE id = $1 AND agent_id = $2", [customerId, agentId]);
+      if (!own.rows.length) return res.status(404).json({ error: "Customer not found" });
+      const { set, errors } = cleanClaimSet(req.body?.set || {});
+      if (Object.keys(errors).length) return bad(res, errors);
+      if (set.admitted_on && set.discharged_on && String(set.discharged_on) < String(set.admitted_on)) return bad(res, { discharged_on: "before the admission date" });
+      const cols = Object.keys(set);
+      const ins = await pool.query(
+        `INSERT INTO claims (agent_id, customer_id${cols.map((k) => `, ${k}`).join("")})
+         VALUES ($1, $2${cols.map((_, i) => `, $${i + 3}`).join("")}) RETURNING id`,
+        [agentId, customerId, ...cols.map((k) => set[k])]
+      );
+      const id = ins.rows[0].id;
+      await claimEvent(id, agentId, "opened", "Claim opened");
+      void audit(agentId, id, "claim_open", "/api/internal/wa/claims");
+      const c = await claimRow(id, agentId);
+      res.json({ claim: c, created: Object.fromEntries(["customer_id", ...CLAIM_FIELDS].map((k) => [k, c?.[k] ?? null])) });
+    } catch (err) { fail(res, "claim open", err); }
+  });
+
+  /** Undo of a claim this chat just opened: only within 15 minutes, still "opened", with no
+   *  query, document, event or field change since, and every value as created (plan 8). */
+  app.post("/api/internal/wa/claims/:id/undo-create", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : null;
+      const keys = ["customer_id", ...CLAIM_FIELDS];
+      if (!expect || keys.some((k) => !(k in expect))) return bad(res, { expect: "the values it was created with are required" });
+      const params: unknown[] = [req.params.id, agentId];
+      const same = keys.map((k) => { params.push(norm(expect[k])); return `c.${k}::text IS NOT DISTINCT FROM $${params.length}::text`; });
+      const r = await pool.query(
+        `DELETE FROM claims c
+          WHERE c.id = $1 AND c.agent_id = $2
+            AND c.created_at > now() - interval '15 minutes'
+            AND c.status = 'opened' AND c.updated_at <= c.created_at + interval '2 seconds'
+            AND NOT EXISTS (SELECT 1 FROM claim_queries x WHERE x.claim_id = c.id)
+            AND NOT EXISTS (SELECT 1 FROM claim_documents x WHERE x.claim_id = c.id)
+            AND NOT EXISTS (SELECT 1 FROM claim_events x WHERE x.claim_id = c.id AND x.status <> 'opened')
+            AND ${same.join(" AND ")}
+          RETURNING c.id`,
+        params
+      );
+      if (!r.rowCount) return changed(res);
+      void audit(agentId, req.params.id, "wa_claim_undo_create", "/api/internal/wa/claims/:id/undo-create");
+      res.json({ ok: true });
+    } catch (err) { fail(res, "claim undo create", err); }
+  });
+
+  /** Change a claim's details. Body: { set, expect, restore?, token? }. Never on a closed claim,
+   *  never the settled amount; the claim's stage is compared too, so a close in between is CHANGED. */
+  app.post("/api/internal/wa/claims/:id/edit", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const restore = req.body?.restore === true;
+      const { set, errors } = restore ? restoreSet(req.body?.set || {}, CLAIM_FIELDS) : cleanClaimSet(req.body?.set || {});
+      if (Object.keys(errors).length) return bad(res, errors);
+      if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
+      const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
+      const known = Object.fromEntries(Object.entries(expect).filter(([k]) => CLAIM_FIELDS.includes(k)));
+      const missing = missingExpect(set, known);
+      if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
+      if (restore && !tokenOk(req.body?.token, undoToken("claims", req.params.id, set, known))) return bad(res, { token: "undo is only for a change saved here" });
+      const c = await claimRow(req.params.id, agentId);
+      if (!c) return res.status(404).json({ error: "Not found" });
+      if (CLAIM_TERMINAL.includes(c.status)) return closed(res);
+      if (!restore) {
+        // The portal's pair rule: a claimed amount below the settled one is a typo.
+        if ("claimed_amount" in set && c.settled_amount != null && Number(set.claimed_amount) < Number(c.settled_amount)) return bad(res, { claimed_amount: "below the amount already settled" });
+        const adm = String("admitted_on" in set ? set.admitted_on : c.admitted_on ?? "");
+        const dis = String("discharged_on" in set ? set.discharged_on : c.discharged_on ?? "");
+        if (adm && dis && dis < adm) return bad(res, { discharged_on: "before the admission date" });
+      }
+      const q = guardedUpdate("claims", [...CLAIM_FIELDS, "status"], set, { ...known, status: c.status }, "updated_at = now()");
+      const r = await pool.query(q.sql, [req.params.id, agentId, ...q.params]);
+      if (!r.rowCount) return changed(res);
+      const now = await claimRow(req.params.id, agentId);
+      const keys = Object.keys(set);
+      const after = Object.fromEntries(keys.map((k) => [k, now?.[k] ?? null]));
+      const show = (v: unknown) => (v === null || v === undefined || v === "" ? "(empty)" : String(v));
+      await claimEvent(req.params.id, agentId, "details_edited", keys.map((k) => `${CLAIM_LABELS[k]}: ${show(known[k])} → ${show(after[k])}`).join(" · ") + " (WhatsApp)");
+      void audit(agentId, req.params.id, "wa_claim_edit", "/api/internal/wa/claims/:id/edit");
+      res.json({ ok: true, claim: now, after, undoToken: undoToken("claims", req.params.id, known, after) });
+    } catch (err) { fail(res, "claim edit", err); }
+  });
+
+  /** Move a claim between open stages. Body: { to, from, restore?, token? }. Never into or out of
+   *  settled/rejected; query_raised only as the undo of a move made here (token). */
+  app.post("/api/internal/wa/claims/:id/stage", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const to = String(req.body?.to || ""), from = String(req.body?.from || "");
+      const restore = req.body?.restore === true;
+      const okFrom = [...CLAIM_OPEN_STAGES, "query_raised"];
+      if (!okFrom.includes(from) || to === from) return bad(res, { from: "the stage seen before is required" });
+      if (!(restore ? okFrom : CLAIM_OPEN_STAGES).includes(to)) return bad(res, { to: "close or reopen a claim in the portal" });
+      if (restore && !tokenOk(req.body?.token, undoToken("claims.status", req.params.id, { status: to }, { status: from }))) return bad(res, { token: "undo is only for a change saved here" });
+      const r = await pool.query(
+        `UPDATE claims SET status = $3, updated_at = now()
+          WHERE id = $1 AND agent_id = $2 AND status = $4 AND status NOT IN ('settled', 'rejected') RETURNING id`,
+        [req.params.id, agentId, to, from]
+      );
+      if (!r.rowCount) return changed(res);
+      await claimEvent(req.params.id, agentId, to, restore ? "Undone from WhatsApp" : "From WhatsApp");
+      void audit(agentId, req.params.id, `claim_status_${to}`, "/api/internal/wa/claims/:id/stage");
+      res.json({ ok: true, status: to, undoToken: undoToken("claims.status", req.params.id, { status: from }, { status: to }) });
+    } catch (err) { fail(res, "claim stage", err); }
+  });
+
+  /** Log an insurer query round (routes.ts POST claims/:id/queries). Body: { question, from }.
+   *  No undo: removing it is for the portal. */
+  app.post("/api/internal/wa/claims/:id/queries", async (req, res) => {
+    const agentId = await scopedAgent(req, res);
+    if (!agentId) return;
+    if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+    const question = String(req.body?.question || "").trim();
+    if (question.length < 3 || question.length > 500) return bad(res, { question: "write what the insurer asked" });
+    const from = String(req.body?.from || "");
+    const db = await pool.connect();
+    try {
+      await db.query("BEGIN");
+      // Locks the claim, so two rounds logged at once still get different numbers.
+      const c = await db.query("SELECT status FROM claims WHERE id = $1 AND agent_id = $2 FOR UPDATE", [req.params.id, agentId]);
+      if (!c.rows.length) { await db.query("ROLLBACK"); return res.status(404).json({ error: "Not found" }); }
+      if (CLAIM_TERMINAL.includes(c.rows[0].status)) { await db.query("ROLLBACK"); return closed(res); }
+      if (c.rows[0].status !== from) { await db.query("ROLLBACK"); return changed(res); }
+      const seq = (await db.query("SELECT COALESCE(MAX(seq), 0) + 1 AS next FROM claim_queries WHERE claim_id = $1", [req.params.id])).rows[0].next;
+      await db.query("INSERT INTO claim_queries (claim_id, agent_id, seq, question) VALUES ($1, $2, $3, $4)", [req.params.id, agentId, seq, question]);
+      await db.query("UPDATE claims SET status = 'query_raised', updated_at = now() WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      await db.query("INSERT INTO claim_events (claim_id, agent_id, status, note) VALUES ($1, $2, 'query_raised', $3)", [req.params.id, agentId, `Round ${seq}: ${question}`]);
+      await db.query("COMMIT");
+      void audit(agentId, req.params.id, "wa_claim_query", "/api/internal/wa/claims/:id/queries");
+      res.json({ ok: true, seq });
+    } catch (err) {
+      await db.query("ROLLBACK").catch(() => {});
+      fail(res, "claim query", err);
+    } finally { db.release(); }
+  });
+
+  /** Mark a query round answered. When it was the last open one and the claim is at query_raised,
+   *  the claim moves to under_process, as in the portal. Returns what undo needs. */
+  app.post("/api/internal/wa/claims/:id/queries/:seq/answered", async (req, res) => {
+    const agentId = await scopedAgent(req, res);
+    if (!agentId) return;
+    const seq = Number(req.params.seq);
+    if (!UUID.test(req.params.id) || !Number.isInteger(seq) || seq < 1) return res.status(404).json({ error: "Not found" });
+    const db = await pool.connect();
+    try {
+      await db.query("BEGIN");
+      const c = await db.query("SELECT status FROM claims WHERE id = $1 AND agent_id = $2 FOR UPDATE", [req.params.id, agentId]);
+      if (!c.rows.length) { await db.query("ROLLBACK"); return res.status(404).json({ error: "Not found" }); }
+      if (CLAIM_TERMINAL.includes(c.rows[0].status)) { await db.query("ROLLBACK"); return closed(res); }
+      const q = await db.query(
+        `UPDATE claim_queries SET resolved_on = GREATEST(CURRENT_DATE, raised_on)
+          WHERE claim_id = $1 AND agent_id = $2 AND seq = $3 AND resolved_on IS NULL RETURNING resolved_on::text AS resolved_on`,
+        [req.params.id, agentId, seq]
+      );
+      if (!q.rowCount) { await db.query("ROLLBACK"); return changed(res); }
+      const open = (await db.query("SELECT count(*)::int AS n FROM claim_queries WHERE claim_id = $1 AND resolved_on IS NULL", [req.params.id])).rows[0].n;
+      const moved = open === 0 && c.rows[0].status === "query_raised";
+      if (moved) await db.query("UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1", [req.params.id]);
+      await db.query("INSERT INTO claim_events (claim_id, agent_id, status, note) VALUES ($1, $2, 'query_resolved', $3)", [req.params.id, agentId, `Round ${seq} resolved`]);
+      await db.query("COMMIT");
+      void audit(agentId, req.params.id, "wa_claim_query_answered", "/api/internal/wa/claims/:id/queries/:seq/answered");
+      const resolvedOn = q.rows[0].resolved_on;
+      res.json({ ok: true, resolvedOn, moved, openLeft: open, undoToken: undoToken("claim_queries", `${req.params.id}:${seq}`, { resolved_on: null, moved: false }, { resolved_on: resolvedOn, moved }) });
+    } catch (err) {
+      await db.query("ROLLBACK").catch(() => {});
+      fail(res, "claim query answered", err);
+    } finally { db.release(); }
+  });
+
+  /** Undo of "answered": the round is open again and, if answering moved the claim, it is back at
+   *  query_raised. Both only if nothing changed since. Body: { resolvedOn, moved, token }. */
+  app.post("/api/internal/wa/claims/:id/queries/:seq/reopen", async (req, res) => {
+    const agentId = await scopedAgent(req, res);
+    if (!agentId) return;
+    const seq = Number(req.params.seq);
+    if (!UUID.test(req.params.id) || !Number.isInteger(seq) || seq < 1) return res.status(404).json({ error: "Not found" });
+    const resolvedOn = String(req.body?.resolvedOn || ""), moved = req.body?.moved === true;
+    if (!tokenOk(req.body?.token, undoToken("claim_queries", `${req.params.id}:${seq}`, { resolved_on: null, moved: false }, { resolved_on: resolvedOn, moved }))) return bad(res, { token: "undo is only for a change saved here" });
+    const db = await pool.connect();
+    try {
+      await db.query("BEGIN");
+      const q = await db.query(
+        "UPDATE claim_queries SET resolved_on = NULL WHERE claim_id = $1 AND agent_id = $2 AND seq = $3 AND resolved_on::text = $4 RETURNING id",
+        [req.params.id, agentId, seq, resolvedOn]
+      );
+      const c = moved
+        ? await db.query("UPDATE claims SET status = 'query_raised', updated_at = now() WHERE id = $1 AND agent_id = $2 AND status = 'under_process' RETURNING id", [req.params.id, agentId])
+        : await db.query("SELECT id FROM claims WHERE id = $1 AND agent_id = $2 AND status NOT IN ('settled', 'rejected')", [req.params.id, agentId]);
+      if (!q.rowCount || !c.rowCount) { await db.query("ROLLBACK"); return changed(res); }
+      await db.query("INSERT INTO claim_events (claim_id, agent_id, status, note) VALUES ($1, $2, 'query_raised', $3)", [req.params.id, agentId, `Round ${seq} open again (undone from WhatsApp)`]);
+      await db.query("COMMIT");
+      void audit(agentId, req.params.id, "wa_claim_query_reopen", "/api/internal/wa/claims/:id/queries/:seq/reopen");
+      res.json({ ok: true });
+    } catch (err) {
+      await db.query("ROLLBACK").catch(() => {});
+      fail(res, "claim query reopen", err);
+    } finally { db.release(); }
+  });
+
+  /** Keep a claim's documents 30 more days: the portal's own triple guard, in the UPDATE. No undo. */
+  app.post("/api/internal/wa/claims/:id/extend", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const r = await pool.query(
+        `UPDATE claims
+            SET purge_at = purge_at + make_interval(days => $3), extension_used = true, extension_granted_at = now(), updated_at = now()
+          WHERE id = $1 AND agent_id = $2
+            AND purge_at IS NOT NULL AND extension_used = false AND documents_purged_at IS NULL
+            AND status NOT IN ('settled', 'rejected')
+            AND now() >= purge_at - make_interval(days => $4)
+          RETURNING purge_at::date::text AS purge_on`,
+        [req.params.id, agentId, CLAIM_EXTENSION_DAYS, CLAIM_EXTEND_UNLOCK_DAYS]
+      );
+      if (!r.rowCount) return res.status(409).json({ error: "CANNOT_EXTEND" });
+      await claimEvent(req.params.id, agentId, "retention_extended", "Kept 30 more days");
+      void audit(agentId, req.params.id, "wa_claim_extend", "/api/internal/wa/claims/:id/extend");
+      res.json({ ok: true, purgeOn: r.rows[0].purge_on });
+    } catch (err) { fail(res, "claim extend", err); }
   });
 }
 

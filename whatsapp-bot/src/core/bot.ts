@@ -14,14 +14,15 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { Engine, ClientSummary, PolicyFields, RenewalRow } from "../engine.js";
+import type { Engine, ClaimEditRow, ClientSummary, PolicyFields, RenewalRow } from "../engine.js";
 import type { InboundMessage, Transport } from "../transport/types.js";
 import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Inspection, type PolicyType } from "./pdfInspect.js";
 import {
   bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
-import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
-import { cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
+import { parseClaimAsk, claimKeyOf, type ClaimAsk } from "./claimParse.js";
+import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, amountWords, anyDate, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
+import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, cleanClaimSet, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -127,7 +128,14 @@ type Op =
   | { kind: "file"; clientId: string; policy: string; fromId: string | null; fromName: string | null; toId: string | null; toName: string | null; newCustomer?: { name: string; phone: string | null } }
   /* Stage 2b */
   | { kind: "policyEdit"; clientId: string; policy: string; group: PField["group"]; key: string; label: string; vkind: PField["kind"]; from: unknown; to: unknown; rev: number }
-  | { kind: "sharing"; clientId: string; policy: string; enabled: boolean };
+  | { kind: "sharing"; clientId: string; policy: string; enabled: boolean }
+  /* Stage 2c */
+  | { kind: "claimOpen"; customerId: string; name: string; claimType: "cashless" | "reimbursement" }
+  | { kind: "claimEdit"; claimId: string; name: string; key: string; from: unknown; to: unknown }
+  | { kind: "claimStage"; claimId: string; name: string; from: string; to: string }
+  | { kind: "claimQuery"; claimId: string; name: string; question: string; from: string }
+  | { kind: "claimAnswered"; claimId: string; name: string; seq: number; question: string }
+  | { kind: "claimExtend"; claimId: string; name: string };
 
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
@@ -142,7 +150,12 @@ type LastChange =
   | { kind: "file"; clientId: string; name: string; fromId: string | null; toId: string | null; at: number }
   /* Stage 2b: from/to are the server's own values, so the undo token matches */
   | { kind: "policyEdit"; clientId: string; name: string; group: PField["group"]; key: string; label: string; vkind: PField["kind"]; from: unknown; to: unknown; token?: string; rev?: number; at: number }
-  | { kind: "sharing"; clientId: string; name: string; enabled: boolean; at: number };
+  | { kind: "sharing"; clientId: string; name: string; enabled: boolean; at: number }
+  /* Stage 2c. A logged query and an extension have no undo (plan 5). */
+  | { kind: "claimCreate"; claimId: string; name: string; created: Record<string, unknown>; at: number }
+  | { kind: "claimEdit"; claimId: string; name: string; key: string; from: unknown; to: unknown; token?: string; at: number }
+  | { kind: "claimStage"; claimId: string; name: string; from: string; to: string; token?: string; at: number }
+  | { kind: "claimAnswered"; claimId: string; name: string; seq: number; resolvedOn: string; moved: boolean; token?: string; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -151,7 +164,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
 
 /** Read-only views whose rules match a whole question, at any length. The model's form has
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
-const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare"]);
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit"]);
 
 const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
@@ -1018,6 +1031,7 @@ export class Bot {
         const reply = claimsReply(this.d.links, rows, q);
         // One claim named: also its stage, the documents still missing and the document clock.
         if (q && rows.length === 1) {
+          this.lastClaim.set(agentId, rows[0].id);
           const d = await this.d.engine.claim(agentId, rows[0].id).catch(() => null);
           if (d) {
             const lines = reply.split("\n");
@@ -1062,6 +1076,9 @@ export class Bot {
         return this.policyFixStart(agentId, conv, to, text);
       case "unshare":
         return this.unshareStart(agentId, conv, to, text);
+      /* Stage 2c: claims */
+      case "claimedit":
+        return this.claimStart(agentId, conv, to, text);
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
@@ -2014,10 +2031,20 @@ export class Bot {
       if (c.kind === "file") return `Undo: put ${c.name} back where it was filed`;
       if (c.kind === "policyEdit") return `Undo: ${c.label} of ${c.name} back to ${showPolicyValue(c.vkind, c.from)}`;
       if (c.kind === "sharing") return `Undo: share ${c.name} again (same link)`;
+      if (c.kind === "claimCreate") return `Undo: remove the claim you just opened for ${b(c.name)}`;
+      if (c.kind === "claimEdit") return `Undo: ${CLAIM_LABELS[c.key]} of ${c.name} back to ${showClaimValue(c.key, c.from)}`;
+      if (c.kind === "claimStage") return `Undo: ${c.name} back to "${CLAIM_STAGE[c.from]}"`;
+      if (c.kind === "claimAnswered") return `Undo: query round ${c.seq} on ${c.name} open again`;
       return `Undo: put ${b(c.name)} back as it was`;
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
+    if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}`;
+    if (op.kind === "claimEdit") return `${op.name}: ${CLAIM_LABELS[op.key]} ${showClaimValue(op.key, op.from)} → ${showClaimValue(op.key, op.to)}`;
+    if (op.kind === "claimStage") return `${op.name}: "${CLAIM_STAGE[op.from]}" → "${CLAIM_STAGE[op.to]}"`;
+    if (op.kind === "claimQuery") return `${op.name}: log the insurer's query "${op.question}". The claim moves to "Insurer query open". There is no undo for this; remove it in the portal if needed`;
+    if (op.kind === "claimAnswered") return `${op.name}: query round ${op.seq} ("${op.question}") answered`;
+    if (op.kind === "claimExtend") return `${op.name}: keep the documents 30 more days. This is the one extension and can't be undone`;
     if (op.kind === "sharing") return `Stop sharing ${op.policy}. The customer's link stops opening until you share it again`;
     if (op.kind === "convert") return `Make ${b(op.name)} a customer. Their phone, email, city and notes are copied, and the lead is marked won`;
     if (op.kind === "addCustomer") return `Add customer ${b(op.name)}${[op.phone ? ph(op.phone) : null, op.city, op.email].filter(Boolean).map((x) => `, ${x}`).join("")}`;
@@ -2072,6 +2099,7 @@ export class Bot {
           : c.kind === "bulk" ? `Undone: ${c.items.length} ${allLeads(c) ? "leads" : "changes"} are back as they were.`
           : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
           : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
+          : c.kind === "claimCreate" ? `Undone: removed the claim for ${b(c.name)}.`
           : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.${this.takeUndoNote(agentId)}`
           : `Undone: ${b(c.name)} is back as it was.`);
       } else {
@@ -2083,7 +2111,7 @@ export class Bot {
     if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
     else if (changes.length > 1) this.lastChange.set(agentId, { kind: "bulk", items: changes, name: `${changes.length} leads`, at: this.now() });
     await this.saveConv(agentId, { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: { to }, updatedAt: null });
-    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => o.kind !== "undo") ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
+    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => !["undo", "claimQuery", "claimExtend"].includes(o.kind)) ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
   }
 
   /** The follow-up list, remembered so "sabke reminders 1st November" means these leads. */
@@ -2144,6 +2172,10 @@ export class Bot {
           ? (await e.policyFieldSave(agentId, x.clientId, { [x.key]: x.from }, x.rev ?? -1, { expect: { [x.key]: x.to }, token: x.token })).ok
           : (await e.clientDetailSave(agentId, x.clientId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
       case "sharing": return (await e.setSharing(agentId, x.clientId, !x.enabled, x.enabled)).ok;
+      case "claimCreate": return e.claimUndoCreate(agentId, x.claimId, x.created);
+      case "claimEdit": return (await e.claimEdit(agentId, x.claimId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
+      case "claimStage": return (await e.claimStage(agentId, x.claimId, x.from, x.to, true, x.token)).ok;
+      case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.token)).ok;
     }
   }
 
@@ -2233,6 +2265,7 @@ ${link}` : refused(op.policy, r) });
         change: { kind: "policyEdit", clientId: op.clientId, name: op.policy, group: op.group, key: op.key, label: op.label, vkind: op.vkind, from: before, to: after, token, rev, at },
       };
     }
+    if (op.kind.startsWith("claim")) return this.applyClaim(agentId, op, refused, at);
     if (op.kind === "sharing") {
       const r = await e.setSharing(agentId, op.clientId, op.enabled, !op.enabled);
       if (!r.ok) return { text: refused(op.policy, r) };
@@ -2396,6 +2429,7 @@ ${link}` : refused(op.policy, r) });
   private async onEditAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
     const p = conv.pending || {};
     if (p.mode === "policy" || p.mode === "unshare") return this.onPolicyAwaiting(agentId, conv, to, text);
+    if (["claim", "claimcust", "claimtype", "claimquery"].includes(p.mode)) return this.onClaimAwaiting(agentId, conv, to, text);
     if (conv.state === "AWAITING_EDIT_PICK") {
       const targets: EditTarget[] = p.targets || [];
       const n = pickNumber(text, targets.length);
@@ -2571,6 +2605,214 @@ ${link}` : refused(op.policy, r) });
     return false;
   }
 
+  /* ══ Stage 2c: claims ═════════════════════════════════════════════════ */
+
+  /** The claim last worked on, so "query answered" right after means that claim. */
+  private readonly lastClaim = new Map<string, string>();
+
+  /** "open a claim for Sunita", "Sunita's claim submitted", "insurer wants X for Sunita's claim". */
+  private async claimStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parseClaimAsk(text);
+    if (!ask) return this.say(to, agentId, "Type it like: open a claim for Sunita, or: Sunita's claim submitted", "claimedit");
+    if (ask.kind === "open") return this.claimOpenStart(agentId, conv, to, ask.who, ask.claimType);
+    if (ask.kind === "close") {
+      return this.say(to, agentId, `Settling or rejecting a claim is done in the portal, where you attach the insurer's letter.\n${this.d.links.origin}/agent/claims`, "claimedit");
+    }
+    if (ask.who) {
+      const rows = (await this.d.engine.claims(agentId, ask.who)).filter((r) => r.customer_name && nameMatches(ask.who!, r.customer_name));
+      const open = rows.filter((r) => !CLAIM_TERMINAL.includes(r.status));
+      if (!rows.length) return this.say(to, agentId, `I couldn't find a claim for "${ask.who}".`, "claimedit");
+      if (!open.length) return this.say(to, agentId, `${rows[0].customer_name}'s claim is closed. Change it in the portal.\n${this.d.links.origin}/agent/claims/${rows[0].id}`, "claimedit");
+      if (open.length > 1) {
+        const opts = open.slice(0, 6);
+        await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "claim", ask, options: opts.map((r) => r.id) });
+        return this.say(to, agentId,
+          `Which claim?\n${opts.map((r, i) => `${i + 1}) ${r.customer_name}${r.hospital ? ` · ${r.hospital}` : ""} · ${CLAIM_STAGE[r.status] ?? r.status}`).join("\n")}\nReply with the number.`,
+          "claim_pick");
+      }
+      return this.claimWith(agentId, conv, to, open[0].id, ask);
+    }
+    const last = this.lastClaim.get(agentId);
+    if (!last) return this.say(to, agentId, "Which claim? For example: Sunita's claim submitted", "claimedit");
+    return this.claimWith(agentId, conv, to, last, ask);
+  }
+
+  private async claimWith(agentId: string, conv: Conv, to: string, id: string, ask: ClaimAsk) {
+    const row = await this.d.engine.claimRow(agentId, id);
+    if (!row) return this.say(to, agentId, "I couldn't find that claim any more.", "claimedit");
+    this.lastClaim.set(agentId, id);
+    const c = row.claim;
+    const name = claimName(c);
+    if (CLAIM_TERMINAL.includes(c.status)) return this.say(to, agentId, `${name} is closed. Change it in the portal.\n${this.d.links.origin}/agent/claims/${id}`, "claimedit");
+    if (ask.kind === "stage") {
+      if (c.status === ask.to) return this.say(to, agentId, `${name} is already at "${CLAIM_STAGE[ask.to]}". Nothing to change.`, "claimedit");
+      return this.confirm(agentId, conv, to, [{ kind: "claimStage", claimId: id, name, from: c.status, to: ask.to }]);
+    }
+    if (ask.kind === "query") return this.confirm(agentId, conv, to, [{ kind: "claimQuery", claimId: id, name, question: ask.question, from: c.status }]);
+    if (ask.kind === "answered") {
+      const open = row.openQueries;
+      if (!open.length) return this.say(to, agentId, `${name} has no open insurer query.`, "claimedit");
+      if (open.length > 1) {
+        await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "claimquery", claimId: id, name, options: open.map((q) => ({ seq: q.seq, question: q.question })) });
+        return this.say(to, agentId, `Which query was answered?\n${open.map((q, i) => `${i + 1}) Round ${q.seq}: ${q.question}`).join("\n")}\nReply with the number.`, "claim_pick");
+      }
+      return this.confirm(agentId, conv, to, [{ kind: "claimAnswered", claimId: id, name, seq: open[0].seq, question: open[0].question }]);
+    }
+    if (ask.kind === "extend") {
+      const d = await this.d.engine.claim(agentId, id).catch(() => null);
+      if (!d?.canExtend) return this.say(to, agentId, "Documents can be kept 30 more days only once, in the last 5 days before they are deleted, while the claim is open.", "claimedit");
+      return this.confirm(agentId, conv, to, [{ kind: "claimExtend", claimId: id, name }]);
+    }
+    if (ask.kind === "edit") {
+      if (!ask.word) {
+        await this.setState(agentId, to, "AWAITING_EDIT_FIELD", conv.currentClientId, { mode: "claim", ctarget: { id, name } });
+        return this.say(to, agentId,
+          `What should I change on ${name}?\n${CLAIM_FIELDS.map((k, i) => `${i + 1}) ${CLAIM_LABELS[k]}: ${showClaimValue(k, (c as Record<string, unknown>)[k])}`).join("\n")}\nReply with the number.`,
+          "claim_field");
+      }
+      const key = claimKeyOf(ask.word);
+      if (!key) return this.say(to, agentId, `${capital(ask.word)} can't be changed from WhatsApp.`, "claimedit");
+      return this.claimFieldChosen(agentId, conv, to, { id, name }, row, key, ask.value);
+    }
+    return this.say(to, agentId, "Type it like: Sunita's claim submitted", "claimedit");
+  }
+
+  private async claimFieldChosen(agentId: string, conv: Conv, to: string, t: { id: string; name: string }, row: ClaimEditRow, key: string, value: string | null) {
+    const from = (row.claim as Record<string, unknown>)[key] ?? null;
+    if (value === null) {
+      await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "claim", ctarget: t, ckey: key });
+      return this.say(to, agentId, `Type the new ${CLAIM_LABELS[key]} for ${t.name}. Now: ${showClaimValue(key, from)}\n(CANCEL to stop.)`, "claim_value");
+    }
+    const c = cleanClaimSet({ [key]: claimValueFor(key, value) });
+    if (c.errors[key]) {
+      await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "claim", ctarget: t, ckey: key });
+      return this.say(to, agentId, `That ${CLAIM_LABELS[key]} doesn't look right (${c.errors[key]}). Type it again, or CANCEL.`, "claim_value");
+    }
+    const next = c.set[key];
+    const same = key === "claimed_amount" ? from !== null && Number(from) === Number(next) : normValue(from) === normValue(next);
+    if (same) {
+      await this.rest(agentId, to, conv.currentClientId);
+      return this.say(to, agentId, `${t.name}: ${CLAIM_LABELS[key]} is already ${showClaimValue(key, next)}. Nothing to change.`, "claimedit");
+    }
+    return this.confirm(agentId, conv, to, [{ kind: "claimEdit", claimId: t.id, name: t.name, key, from, to: next }]);
+  }
+
+  /** A claim needs an existing customer: a new person is added first ("add customer X"), so it shows and can be undone. */
+  private async claimOpenStart(agentId: string, conv: Conv, to: string, who: string, claimType: "cashless" | "reimbursement" | null) {
+    const custs = (await this.d.engine.searchCustomers(agentId, who)).filter((c) => nameMatches(who, c.name));
+    if (!custs.length) return this.say(to, agentId, `No customer called "${who}" yet. Add them first: add customer ${who}`, "claimedit");
+    if (custs.length > 1) {
+      const opts = custs.slice(0, 6);
+      await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "claimcust", claimType, options: opts.map((c) => ({ id: c.id, name: c.name })) });
+      return this.say(to, agentId, `Which customer?\n${opts.map((c, i) => `${i + 1}) ${c.name}${c.phone ? ` · ${c.phone}` : ""}`).join("\n")}\nReply with the number.`, "claim_pick");
+    }
+    return this.claimOpenFor(agentId, conv, to, custs[0].id, custs[0].name, claimType);
+  }
+
+  private async claimOpenFor(agentId: string, conv: Conv, to: string, customerId: string, name: string, claimType: "cashless" | "reimbursement" | null) {
+    if (!claimType) {
+      await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "claimtype", customerId, name, options: ["cashless", "reimbursement"] });
+      return this.say(to, agentId, `Is ${name}'s claim cashless or reimbursement?\n1) Cashless\n2) Reimbursement\nReply with the number.`, "claim_type");
+    }
+    return this.confirm(agentId, conv, to, [{ kind: "claimOpen", customerId, name, claimType }]);
+  }
+
+  /** The stage 2c questions: which claim, customer, type or query; which field; the new value. */
+  private async onClaimAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    if (conv.state === "AWAITING_EDIT_PICK") {
+      if (p.mode === "claimtype") {
+        const w = text.trim().toLowerCase();
+        const n = pickNumber(text, 2) ?? (/^cash/.test(w) ? 1 : /^reimb|^refund/.test(w) ? 2 : null);
+        if (!n) return false;
+        await this.claimOpenFor(agentId, conv, to, p.customerId, p.name, n === 1 ? "cashless" : "reimbursement");
+        return true;
+      }
+      const options: any[] = p.options || [];
+      const n = pickNumber(text, options.length);
+      if (!n) return false;
+      if (p.mode === "claimcust") await this.claimOpenFor(agentId, conv, to, options[n - 1].id, options[n - 1].name, p.claimType ?? null);
+      else if (p.mode === "claimquery") await this.confirm(agentId, conv, to, [{ kind: "claimAnswered", claimId: p.claimId, name: p.name, seq: options[n - 1].seq, question: options[n - 1].question }]);
+      else await this.claimWith(agentId, conv, to, options[n - 1], p.ask);
+      return true;
+    }
+    const t: { id: string; name: string } = p.ctarget;
+    const row = await this.d.engine.claimRow(agentId, t.id);
+    if (!row) { await this.rest(agentId, to, conv.currentClientId); await this.say(to, agentId, "I couldn't find that claim any more.", "claimedit"); return true; }
+    if (conv.state === "AWAITING_EDIT_FIELD") {
+      const n = pickNumber(text, CLAIM_FIELDS.length);
+      const key = n ? CLAIM_FIELDS[n - 1] : claimKeyOf(text);
+      if (!key) { await this.say(to, agentId, `Reply with a number from 1 to ${CLAIM_FIELDS.length}, or CANCEL.`, "claim_field"); return true; }
+      await this.claimFieldChosen(agentId, conv, to, t, row, key, null);
+      return true;
+    }
+    if (conv.state === "AWAITING_EDIT_VALUE") {
+      await this.claimFieldChosen(agentId, conv, to, t, row, p.ckey, text);
+      return true;
+    }
+    return false;
+  }
+
+  /** Save one confirmed claim change. A refusal is said plainly; never "saved" unless it was. */
+  private async applyClaim(agentId: string, op: Op, refused: (name: string, r: { reason: string; fields?: Record<string, string> }) => string, at: number): Promise<{ text: string; change?: LastChange }> {
+    const e = this.d.engine;
+    const o = this.d.links.origin;
+    const no = (name: string, r: { reason: string; fields?: Record<string, string> }, link: string) =>
+      r.reason === "CLOSED" ? `Not saved: ${name} is closed. Change it in the portal.\n${link}`
+      : r.reason === "CANNOT_EXTEND" ? `Not saved: ${name}'s documents can't be kept longer now. It has had its one extension, or it is not yet in the last 5 days.\n${link}`
+      : refused(name, r);
+    if (op.kind === "claimOpen") {
+      const r = await e.claimOpen(agentId, op.customerId, { claim_type: op.claimType });
+      if (!r.ok) return { text: refused(op.name, r) };
+      this.lastClaim.set(agentId, r.claim.id);
+      this.lastPerson.set(agentId, op.name);
+      return {
+        text: `✅ Claim opened for ${b(op.name)} (${op.claimType}).\nAdd its details like: ${op.name}'s claim hospital is Apollo\n${o}/agent/claims/${r.claim.id}`,
+        change: { kind: "claimCreate", claimId: r.claim.id, name: op.name, created: r.created, at },
+      };
+    }
+    if (!("claimId" in op)) return { text: "" };
+    const link = `${o}/agent/claims/${op.claimId}`;
+    this.lastClaim.set(agentId, op.claimId);
+    if (op.kind === "claimEdit") {
+      const r = await e.claimEdit(agentId, op.claimId, { [op.key]: op.to }, { [op.key]: op.from });
+      if (!r.ok) return { text: no(op.name, r, link) };
+      const after = r.after[op.key] ?? op.to;
+      return {
+        text: `✅ Saved. ${op.name}: ${CLAIM_LABELS[op.key]} is now ${showClaimValue(op.key, after)}.\n${link}`,
+        change: { kind: "claimEdit", claimId: op.claimId, name: op.name, key: op.key, from: op.from, to: after, token: r.undoToken, at },
+      };
+    }
+    if (op.kind === "claimStage") {
+      const r = await e.claimStage(agentId, op.claimId, op.to, op.from);
+      if (!r.ok) return { text: no(op.name, r, link) };
+      return {
+        text: `✅ ${op.name} is now at "${CLAIM_STAGE[op.to]}".\n${link}`,
+        change: { kind: "claimStage", claimId: op.claimId, name: op.name, from: op.from, to: op.to, token: r.undoToken, at },
+      };
+    }
+    if (op.kind === "claimQuery") {
+      const r = await e.claimQuery(agentId, op.claimId, op.question, op.from);
+      if (!r.ok) return { text: no(op.name, r, link) };
+      return { text: `✅ Query round ${r.seq} logged on ${op.name}. When you have replied to the insurer, type: ${op.name} query answered\n${link}` };
+    }
+    if (op.kind === "claimAnswered") {
+      const r = await e.claimAnswered(agentId, op.claimId, op.seq);
+      if (!r.ok) return { text: no(op.name, r, link) };
+      const after = r.moved ? ` It is back at "${CLAIM_STAGE.under_process}".` : r.openLeft ? ` ${r.openLeft} more query still open.` : "";
+      return {
+        text: `✅ Query round ${op.seq} on ${op.name} is answered.${after}\n${link}`,
+        change: { kind: "claimAnswered", claimId: op.claimId, name: op.name, seq: op.seq, resolvedOn: r.resolvedOn, moved: r.moved, token: r.undoToken, at },
+      };
+    }
+    if (op.kind === "claimExtend") {
+      const r = await e.claimExtend(agentId, op.claimId);
+      if (!r.ok) return { text: no(op.name, r, link) };
+      return { text: `✅ ${op.name}: documents kept 30 more days, until ${prettyDate(r.purgeOn)}. That was its one extension.\n${link}` };
+    }
+    return { text: "" };
+  }
+
   private async proposeUndo(agentId: string, conv: Conv, to: string) {
     const c = this.lastChange.get(agentId);
     if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
@@ -2655,3 +2897,32 @@ function showPolicyValue(kind: PField["kind"], v: unknown): string {
 }
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/* ── Stage 2c helpers ── */
+
+/** Claim stages as the portal's spine names them (lib/claims.ts CLAIM_SPINE). */
+const CLAIM_STAGE: Record<string, string> = {
+  opened: "Claim opened", docs_received: "Documents received", submitted: "Submitted to insurer",
+  under_process: "Claim under process", query_raised: "Insurer query open", settled: "Settled", rejected: "Rejected",
+};
+
+function claimName(c: { customer_name: string | null }): string {
+  return c.customer_name ? `${c.customer_name}'s claim` : "This claim";
+}
+
+function showClaimValue(key: string, v: unknown): string {
+  if (v === null || v === undefined || v === "") return "(empty)";
+  if (key === "claimed_amount") { const n = Number(v); return Number.isFinite(n) ? `₹${n.toLocaleString("en-IN")}` : String(v); }
+  if (key === "admitted_on" || key === "discharged_on") { const s = normValue(v); return s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? prettyDate(s) : String(v); }
+  if (key === "claim_type") return String(v) === "cashless" ? "Cashless" : String(v) === "reimbursement" ? "Reimbursement" : String(v);
+  return String(v);
+}
+
+/** A claim value as typed -> as the server stores it (it checks again). */
+function claimValueFor(key: string, raw: string): unknown {
+  const v = raw.trim();
+  if (key === "claimed_amount") return amountWords(v) ?? v;
+  if (key === "admitted_on" || key === "discharged_on") return anyDate(v) ?? v;
+  if (key === "claim_type") return /^cash/i.test(v) ? "cashless" : /^reimb|^refund/i.test(v) ? "reimbursement" : v;
+  return v;
+}

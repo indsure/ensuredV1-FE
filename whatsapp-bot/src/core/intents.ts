@@ -4,6 +4,7 @@
  */
 
 import { devanagariToLatin } from "./i18n.js";
+import { parseClaimAsk } from "./claimParse.js";
 import { parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare } from "./editParse.js";
 
 export type Intent =
@@ -18,7 +19,9 @@ export type Intent =
   // Stage 2a: edits (editParse.ts reads the details; bot.ts asks YES first)
   | "edit" | "convert" | "addcustomer" | "file"
   // Stage 2b: policies (fix a saved detail or client detail; stop sharing a report)
-  | "policyfix" | "unshare";
+  | "policyfix" | "unshare"
+  // Stage 2c: claims (open, details, stage, insurer query, extend)
+  | "claimedit";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -62,6 +65,7 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^(how (do|can) i check (a )?polic(y|ies)|how to check (a )?polic(y|ies)|check a policy|policy kaise check (karu|karein|kare))[?.!]*$/.test(t)) return "howcheck";
   if (/^(find|search)( (a|someone|somebody|customer|lead|a customer|a lead|client))?[?.!]*$/.test(t)) return "howfind";
   // Edits before the read-only views: "add customer Sunita" must not become a portfolio question.
+  if (parseClaimAsk(t)) return "claimedit"; // before lead/customer edits: "edit Sunita's claim" is a claim
   if (parseUnshare(t)) return "unshare";
   if (parsePolicyFix(t)) return "policyfix"; // before lead/customer edits: "edit this policy" is not a person
   if (parseConvert(t)) return "convert";
