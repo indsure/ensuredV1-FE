@@ -161,8 +161,8 @@ export interface Engine {
   claimEdit(agentId: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
   claimStage(agentId: string, id: string, to: string, from: string, restore?: boolean, token?: string): Promise<WriteResult<{ status: string; undoToken?: string }>>;
   claimQuery(agentId: string, id: string, question: string, from: string): Promise<WriteResult<{ seq: number }>>;
-  claimAnswered(agentId: string, id: string, seq: number): Promise<WriteResult<{ resolvedOn: string; moved: boolean; openLeft: number; undoToken?: string }>>;
-  claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, token?: string): Promise<WriteResult<{}>>;
+  claimAnswered(agentId: string, id: string, seq: number): Promise<WriteResult<{ resolvedOn: string; moved: boolean; status: string; openLeft: number; undoToken?: string }>>;
+  claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, status: string, token?: string): Promise<WriteResult<{}>>;
   claimExtend(agentId: string, id: string): Promise<WriteResult<{ purgeOn: string }>>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
@@ -340,8 +340,8 @@ export class HttpEngine implements Engine {
     return this.write<{ status: string; undoToken?: string }>(`/api/internal/wa/claims/${id}/stage`, agentId, { to, from, ...(restore ? { restore: true, token } : {}) });
   }
   claimQuery(agentId: string, id: string, question: string, from: string) { return this.write<{ seq: number }>(`/api/internal/wa/claims/${id}/queries`, agentId, { question, from }); }
-  claimAnswered(agentId: string, id: string, seq: number) { return this.write<{ resolvedOn: string; moved: boolean; openLeft: number; undoToken?: string }>(`/api/internal/wa/claims/${id}/queries/${seq}/answered`, agentId, {}); }
-  claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, token?: string) { return this.write<{}>(`/api/internal/wa/claims/${id}/queries/${seq}/reopen`, agentId, { resolvedOn, moved, token }); }
+  claimAnswered(agentId: string, id: string, seq: number) { return this.write<{ resolvedOn: string; moved: boolean; status: string; openLeft: number; undoToken?: string }>(`/api/internal/wa/claims/${id}/queries/${seq}/answered`, agentId, {}); }
+  claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, status: string, token?: string) { return this.write<{}>(`/api/internal/wa/claims/${id}/queries/${seq}/reopen`, agentId, { resolvedOn, moved, status, token }); }
   claimExtend(agentId: string, id: string) { return this.write<{ purgeOn: string }>(`/api/internal/wa/claims/${id}/extend`, agentId, {}); }
   async leadUndoCreate(agentId: string, id: string, created?: Record<string, unknown>) {
     try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: { expect: created } }); return true; }

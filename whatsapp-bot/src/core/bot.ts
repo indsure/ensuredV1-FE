@@ -130,7 +130,7 @@ type Op =
   | { kind: "policyEdit"; clientId: string; policy: string; group: PField["group"]; key: string; label: string; vkind: PField["kind"]; from: unknown; to: unknown; rev: number }
   | { kind: "sharing"; clientId: string; policy: string; enabled: boolean }
   /* Stage 2c */
-  | { kind: "claimOpen"; customerId: string; name: string; claimType: "cashless" | "reimbursement" }
+  | { kind: "claimOpen"; customerId: string; name: string; claimType: "cashless" | "reimbursement"; alreadyOpen?: string | null }
   | { kind: "claimEdit"; claimId: string; name: string; key: string; from: unknown; to: unknown }
   | { kind: "claimStage"; claimId: string; name: string; from: string; to: string }
   | { kind: "claimQuery"; claimId: string; name: string; question: string; from: string }
@@ -155,7 +155,7 @@ type LastChange =
   | { kind: "claimCreate"; claimId: string; name: string; created: Record<string, unknown>; at: number }
   | { kind: "claimEdit"; claimId: string; name: string; key: string; from: unknown; to: unknown; token?: string; at: number }
   | { kind: "claimStage"; claimId: string; name: string; from: string; to: string; token?: string; at: number }
-  | { kind: "claimAnswered"; claimId: string; name: string; seq: number; resolvedOn: string; moved: boolean; token?: string; at: number };
+  | { kind: "claimAnswered"; claimId: string; name: string; seq: number; resolvedOn: string; moved: boolean; status: string; token?: string; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -2039,7 +2039,7 @@ export class Bot {
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
-    if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}`;
+    if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}${op.alreadyOpen ? `. Note: ${op.name} already has an open claim (${op.alreadyOpen})` : ""}`;
     if (op.kind === "claimEdit") return `${op.name}: ${CLAIM_LABELS[op.key]} ${showClaimValue(op.key, op.from)} → ${showClaimValue(op.key, op.to)}`;
     if (op.kind === "claimStage") return `${op.name}: "${CLAIM_STAGE[op.from]}" → "${CLAIM_STAGE[op.to]}"`;
     if (op.kind === "claimQuery") return `${op.name}: log the insurer's query "${op.question}". The claim moves to "Insurer query open". There is no undo for this; remove it in the portal if needed`;
@@ -2108,6 +2108,8 @@ export class Bot {
         if (r.change) changes.push(r.change);
       }
     }
+    // A change with no undo (a logged query, an extension) is now the latest: UNDO must not reach past it.
+    if (ops.some((o) => o.kind === "claimQuery" || o.kind === "claimExtend")) this.lastChange.delete(agentId);
     if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
     else if (changes.length > 1) this.lastChange.set(agentId, { kind: "bulk", items: changes, name: `${changes.length} leads`, at: this.now() });
     await this.saveConv(agentId, { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: { to }, updatedAt: null });
@@ -2175,7 +2177,7 @@ export class Bot {
       case "claimCreate": return e.claimUndoCreate(agentId, x.claimId, x.created);
       case "claimEdit": return (await e.claimEdit(agentId, x.claimId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
       case "claimStage": return (await e.claimStage(agentId, x.claimId, x.from, x.to, true, x.token)).ok;
-      case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.token)).ok;
+      case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.status, x.token)).ok;
     }
   }
 
@@ -2607,8 +2609,13 @@ ${link}` : refused(op.policy, r) });
 
   /* ══ Stage 2c: claims ═════════════════════════════════════════════════ */
 
-  /** The claim last worked on, so "query answered" right after means that claim. */
-  private readonly lastClaim = new Map<string, string>();
+  /** The claim last worked on, so "query answered" right after means that claim. Forgotten after
+   *  15 minutes, like UNDO, so "the claim is submitted" days later never lands on an old one. */
+  private readonly lastClaimAt = new Map<string, { id: string; at: number }>();
+  private readonly lastClaim = {
+    set: (agentId: string, id: string) => { this.lastClaimAt.set(agentId, { id, at: this.now() }); },
+    get: (agentId: string) => { const x = this.lastClaimAt.get(agentId); return x && this.now() - x.at <= UNDO_WINDOW_MS ? x.id : undefined; },
+  };
 
   /** "open a claim for Sunita", "Sunita's claim submitted", "insurer wants X for Sunita's claim". */
   private async claimStart(agentId: string, conv: Conv, to: string, text: string) {
@@ -2646,6 +2653,8 @@ ${link}` : refused(op.policy, r) });
     if (CLAIM_TERMINAL.includes(c.status)) return this.say(to, agentId, `${name} is closed. Change it in the portal.\n${this.d.links.origin}/agent/claims/${id}`, "claimedit");
     if (ask.kind === "stage") {
       if (c.status === ask.to) return this.say(to, agentId, `${name} is already at "${CLAIM_STAGE[ask.to]}". Nothing to change.`, "claimedit");
+      // A claim stays at "Insurer query open" while a round is open (the server refuses too).
+      if (row.openQueries.length) return this.say(to, agentId, `${name} has an insurer query still open. When it is answered, type: ${name} query answered`, "claimedit");
       return this.confirm(agentId, conv, to, [{ kind: "claimStage", claimId: id, name, from: c.status, to: ask.to }]);
     }
     if (ask.kind === "query") return this.confirm(agentId, conv, to, [{ kind: "claimQuery", claimId: id, name, question: ask.question, from: c.status }]);
@@ -2714,7 +2723,9 @@ ${link}` : refused(op.policy, r) });
       await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "claimtype", customerId, name, options: ["cashless", "reimbursement"] });
       return this.say(to, agentId, `Is ${name}'s claim cashless or reimbursement?\n1) Cashless\n2) Reimbursement\nReply with the number.`, "claim_type");
     }
-    return this.confirm(agentId, conv, to, [{ kind: "claimOpen", customerId, name, claimType }]);
+    // A second open claim for the same person is usually a resend: say so in the confirm.
+    const existing = (await this.d.engine.claims(agentId, name)).find((r) => r.customer_name === name && !CLAIM_TERMINAL.includes(r.status));
+    return this.confirm(agentId, conv, to, [{ kind: "claimOpen", customerId, name, claimType, alreadyOpen: existing ? CLAIM_STAGE[existing.status] ?? existing.status : null }]);
   }
 
   /** The stage 2c questions: which claim, customer, type or query; which field; the new value. */
@@ -2759,6 +2770,8 @@ ${link}` : refused(op.policy, r) });
     const o = this.d.links.origin;
     const no = (name: string, r: { reason: string; fields?: Record<string, string> }, link: string) =>
       r.reason === "CLOSED" ? `Not saved: ${name} is closed. Change it in the portal.\n${link}`
+      : r.reason === "OPEN_QUERY" ? `Not saved: ${name} has an insurer query still open. Mark it answered first.
+${link}`
       : r.reason === "CANNOT_EXTEND" ? `Not saved: ${name}'s documents can't be kept longer now. It has had its one extension, or it is not yet in the last 5 days.\n${link}`
       : refused(name, r);
     if (op.kind === "claimOpen") {
@@ -2802,7 +2815,7 @@ ${link}` : refused(op.policy, r) });
       const after = r.moved ? ` It is back at "${CLAIM_STAGE.under_process}".` : r.openLeft ? ` ${r.openLeft} more query still open.` : "";
       return {
         text: `✅ Query round ${op.seq} on ${op.name} is answered.${after}\n${link}`,
-        change: { kind: "claimAnswered", claimId: op.claimId, name: op.name, seq: op.seq, resolvedOn: r.resolvedOn, moved: r.moved, token: r.undoToken, at },
+        change: { kind: "claimAnswered", claimId: op.claimId, name: op.name, seq: op.seq, resolvedOn: r.resolvedOn, moved: r.moved, status: r.status, token: r.undoToken, at },
       };
     }
     if (op.kind === "claimExtend") {

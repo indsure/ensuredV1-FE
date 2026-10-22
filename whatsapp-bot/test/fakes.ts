@@ -416,6 +416,7 @@ export class FakeEngine implements Engine {
     const allowed = restore ? [...ED.CLAIM_OPEN_STAGES, "query_raised"] : ED.CLAIM_OPEN_STAGES;
     if (!allowed.includes(to) || (restore && token !== "fake-token")) return { ok: false as const, reason: "INVALID" };
     if (c.status !== from || ED.CLAIM_TERMINAL.includes(c.status)) return { ok: false as const, reason: "CHANGED" };
+    if (!restore && from === "query_raised" && this.queryStore.some((q) => q.claim_id === id && !q.resolved_on)) return { ok: false as const, reason: "OPEN_QUERY" };
     c.status = to;
     c.fresh = false;
     this.writes.push({ kind: "claimStage", id, body: { to } });
@@ -442,13 +443,13 @@ export class FakeEngine implements Engine {
     const moved = openLeft === 0 && c.status === "query_raised";
     if (moved) c.status = "under_process";
     this.writes.push({ kind: "claimAnswered", id, body: { seq } });
-    return { ok: true as const, resolvedOn: q.resolved_on, moved, openLeft, undoToken: "fake-token" };
+    return { ok: true as const, resolvedOn: q.resolved_on, moved, status: c.status as string, openLeft, undoToken: "fake-token" };
   }
-  async claimReopenQuery(_a: string, id: string, seq: number, resolvedOn: string, moved: boolean, token?: string) {
+  async claimReopenQuery(_a: string, id: string, seq: number, resolvedOn: string, moved: boolean, status: string, token?: string) {
     const c = this.claimStore.get(id);
     const q = this.queryStore.find((x) => x.claim_id === id && x.seq === seq && x.resolved_on === resolvedOn);
     if (token !== "fake-token") return { ok: false as const, reason: "INVALID" };
-    if (!c || !q || (moved && c.status !== "under_process")) return { ok: false as const, reason: "CHANGED" };
+    if (!c || !q || c.status !== status) return { ok: false as const, reason: "CHANGED" };
     q.resolved_on = null;
     if (moved) c.status = "query_raised";
     return { ok: true as const };

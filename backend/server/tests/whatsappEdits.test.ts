@@ -415,6 +415,8 @@ test("claim stage: open stages only, never into or out of closed; query_raised o
   assert.equal((await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "settled", from: "submitted" })).status, 400);
   assert.equal((await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "submitted", from: "rejected" })).status, 400);
   assert.equal((await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "query_raised", from: "under_process" })).status, 400);
+  const openQ = harness((sql) => (sql.includes("FROM claim_queries") ? { rows: [{ "?column?": 1 }], rowCount: 1 } : { rows: [{ id: CLM }], rowCount: 1 }));
+  assert.equal((await openQ.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "under_process", from: "query_raised" })).json.error, "OPEN_QUERY");
   const ok = await h.call("POST /api/internal/wa/claims/:id/stage", { id: CLM }, { to: "under_process", from: "query_raised" });
   assert.equal(ok.status, 200);
   const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
@@ -442,9 +444,16 @@ test("query answered moves the claim on only from query_raised, and its undo nee
   const r = await h.call("POST /api/internal/wa/claims/:id/queries/:seq/answered", { id: CLM, seq: "1" });
   assert.equal(r.json.moved, true);
   assert.ok(h.calls.some((c) => c.sql.includes("status = 'under_process'")));
+  assert.equal(r.json.status, "under_process");
   const u = harness(() => ({ rows: [{ id: CLM }], rowCount: 1 }));
-  assert.equal((await u.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: true, token: r.json.undoToken })).status, 200);
-  assert.equal((await u.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: false, token: r.json.undoToken })).status, 400);
+  assert.equal((await u.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: true, status: "under_process", token: r.json.undoToken })).status, 200);
+  assert.equal((await u.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: false, status: "under_process", token: r.json.undoToken })).status, 400);
+  // Not moved (another round still open): undo only on a claim still at that stage.
+  const two = harness((sql) => (sql.includes("FOR UPDATE") ? { rows: [{ status: "query_raised" }] } : sql.startsWith("UPDATE claim_queries") ? { rows: [{ resolved_on: "2026-10-22" }], rowCount: 1 } : sql.includes("count(*)") ? { rows: [{ n: 1 }] } : { rows: [], rowCount: 1 }));
+  const r2 = await two.call("POST /api/internal/wa/claims/:id/queries/:seq/answered", { id: CLM, seq: "1" });
+  assert.deepEqual([r2.json.moved, r2.json.status], [false, "query_raised"]);
+  const moved = harness((sql) => (sql.includes("status = $3") ? { rows: [], rowCount: 0 } : { rows: [{ id: CLM }], rowCount: 1 }));
+  assert.equal((await moved.call("POST /api/internal/wa/claims/:id/queries/:seq/reopen", { id: CLM, seq: "1" }, { resolvedOn: "2026-10-22", moved: false, status: "query_raised", token: r2.json.undoToken })).status, 409);
 });
 
 test("claim open needs an existing customer; undo-create compares every created value and nothing added", async () => {

@@ -5,6 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeBot, text } from "./fakes.js";
 import { ruleIntent } from "../src/core/intents.js";
+import { parseClaimAsk } from "../src/core/claimParse.js";
 
 const CUST = "33333333-3333-4333-8333-333333333333";
 const CLM = "88888888-8888-4888-8888-888888888888";
@@ -138,4 +139,73 @@ test("Hindi: the claim lines are translated", async () => {
   assert.match(transport.last(), /अब .* पर है|अब "/);
   await bot.handle(text("Sunita's claim settled"));
   assert.match(transport.last(), /पोर्टल/);
+});
+
+/* ── Critic findings (2026-10-22) ── */
+
+test("critic: a Hinglish 'query answered' is never logged as a new query", () => {
+  for (const s of ["Sunita ke claim me query ka jawab de diya", "Sunita ke claim mein query answered", "Sunita query answered"]) {
+    assert.equal(parseClaimAsk(s)?.kind, "answered", s);
+  }
+  assert.equal(parseClaimAsk("Sunita ke claim mein query answered done")?.kind === "query", false);
+  assert.equal(parseClaimAsk("Sunita ke claim mein query: final bill chahiye")?.kind, "query");
+});
+
+test("critic: UNDO right after a logged query does not reach back to the change before it", async () => {
+  const { bot, transport, engine } = setup();
+  await bot.handle(text("Sunita's claim hospital is Apollo"));
+  await bot.handle(text("yes"));
+  await bot.handle(text("insurer wants the final bill for Sunita's claim"));
+  await bot.handle(text("yes"));
+  await bot.handle(text("undo"));
+  assert.match(transport.last(), /nothing recent to undo/);
+  assert.equal(engine.claimStore.get(CLM).hospital, "Apollo");
+});
+
+test("critic: undo of 'answered' is refused once the claim has moved on", async () => {
+  const { bot, transport, engine } = setup();
+  engine.queryStore.push({ claim_id: CLM, seq: 1, question: "Bills", resolved_on: null }, { claim_id: CLM, seq: 2, question: "ID proof", resolved_on: null });
+  engine.claimStore.get(CLM).status = "query_raised";
+  await bot.handle(text("Sunita's claim query answered"));
+  await bot.handle(text("1"));
+  await bot.handle(text("yes"));
+  engine.queryStore[1].resolved_on = "2026-10-22"; // the portal answers round 2 ...
+  engine.claimStore.get(CLM).status = "under_process"; // ... which moves the claim on
+  await bot.handle(text("undo"));
+  await bot.handle(text("yes"));
+  assert.match(transport.last(), /can't be undone/);
+  assert.equal(engine.queryStore[0].resolved_on, "2026-10-22", "round 1 stays answered");
+});
+
+test("critic: a stage move is refused while an insurer query is open", async () => {
+  const { bot, transport, engine } = setup();
+  engine.queryStore.push({ claim_id: CLM, seq: 1, question: "Bills", resolved_on: null });
+  engine.claimStore.get(CLM).status = "query_raised";
+  await bot.handle(text("Sunita's claim is under process"));
+  assert.match(transport.last(), /insurer query still open\. When it is answered, type: Sunita Rao's claim query answered/);
+  assert.equal(engine.writes.length, 0);
+});
+
+test("critic: Devanagari claim phrasings reach the claim actions; questions and other words never do", () => {
+  assert.equal(ruleIntent("Sunita का claim submit हो गया"), "claimedit");
+  assert.equal(ruleIntent("सुनीता का क्लेम खोलो"), "claimedit");
+  assert.equal(ruleIntent("क्लेम"), "claims");
+  assert.equal(parseClaimAsk("is Sunita's claim submitted"), null);
+  assert.equal(parseClaimAsk("open claim for this customer"), null);
+  assert.equal(parseClaimAsk("Sunita's claim hospital is Apollo, amount 2 lakh"), null, "one detail at a time");
+  assert.equal(parseClaimAsk("Sunita's claim settled amount is 50000")?.kind, "close");
+  assert.equal(parseClaimAsk("raise a claim for Sunita")?.kind, "open");
+  assert.deepEqual(parseClaimAsk("Sunita ke claim ka hospital Apollo hai"), { kind: "edit", who: "Sunita", word: "hospital", value: "Apollo" });
+  assert.deepEqual(parseClaimAsk("change claim amount for Sunita to 2 lakh"), { kind: "edit", who: "Sunita", word: "amount", value: "2 lakh" });
+});
+
+test("critic: 'the claim' is forgotten after 15 minutes; a second open claim is pointed out", async () => {
+  const { bot, transport, engine, advance } = setup();
+  await bot.handle(text("Sunita's claim hospital is Apollo"));
+  await bot.handle(text("no"));
+  advance(16 * 60_000);
+  await bot.handle(text("the claim submitted"));
+  assert.match(transport.last(), /Which claim\? For example/);
+  await bot.handle(text("open a claim for Sunita cashless"));
+  assert.match(transport.last(), /already has an open claim \(Submitted to insurer\)/);
 });

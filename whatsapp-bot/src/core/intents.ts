@@ -59,13 +59,15 @@ export function ruleIntent(textRaw: string): Intent | null {
   // "note on Vikram: renewal in March" is a note, whatever words it contains.
   if (/^(?:add\s+)?(?:a\s+)?note\s+(?:for\s+|on\s+)?[^:]{2,40}:/.test(t)) return null;
   if (/^unlink$/.test(t)) return "unlink";
+  // Claim actions before the Hindi rules (which send any "क्लेम" to the read-only claims view) and
+  // before lead/customer edits ("edit Sunita's claim" is a claim). Questions never parse as actions.
+  if (parseClaimAsk(t)) return "claimedit";
   const hindi = hindiIntent(t);
   if (hindi) return hindi;
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";
   if (/^(how (do|can) i check (a )?polic(y|ies)|how to check (a )?polic(y|ies)|check a policy|policy kaise check (karu|karein|kare))[?.!]*$/.test(t)) return "howcheck";
   if (/^(find|search)( (a|someone|somebody|customer|lead|a customer|a lead|client))?[?.!]*$/.test(t)) return "howfind";
   // Edits before the read-only views: "add customer Sunita" must not become a portfolio question.
-  if (parseClaimAsk(t)) return "claimedit"; // before lead/customer edits: "edit Sunita's claim" is a claim
   if (parseUnshare(t)) return "unshare";
   if (parsePolicyFix(t)) return "policyfix"; // before lead/customer edits: "edit this policy" is not a person
   if (parseConvert(t)) return "convert";

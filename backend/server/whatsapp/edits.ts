@@ -478,7 +478,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       );
       const id = ins.rows[0].id;
       await claimEvent(id, agentId, "opened", "Claim opened");
-      void audit(agentId, id, "claim_open", "/api/internal/wa/claims");
+      void audit(agentId, id, "wa_claim_open", "/api/internal/wa/claims");
       const c = await claimRow(id, agentId);
       res.json({ claim: c, created: Object.fromEntries(["customer_id", ...CLAIM_FIELDS].map((k) => [k, c?.[k] ?? null])) });
     } catch (err) { fail(res, "claim open", err); }
@@ -566,6 +566,11 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       if (!okFrom.includes(from) || to === from) return bad(res, { from: "the stage seen before is required" });
       if (!(restore ? okFrom : CLAIM_OPEN_STAGES).includes(to)) return bad(res, { to: "close or reopen a claim in the portal" });
       if (restore && !tokenOk(req.body?.token, undoToken("claims.status", req.params.id, { status: to }, { status: from }))) return bad(res, { token: "undo is only for a change saved here" });
+      // A claim stays at query_raised while any round is open (migration 015): answer it first.
+      if (!restore && from === "query_raised") {
+        const open = await pool.query("SELECT 1 FROM claim_queries WHERE claim_id = $1 AND agent_id = $2 AND resolved_on IS NULL LIMIT 1", [req.params.id, agentId]);
+        if (open.rowCount) return res.status(400).json({ error: "OPEN_QUERY" });
+      }
       const r = await pool.query(
         `UPDATE claims SET status = $3, updated_at = now()
           WHERE id = $1 AND agent_id = $2 AND status = $4 AND status NOT IN ('settled', 'rejected') RETURNING id`,
@@ -634,7 +639,9 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       await db.query("COMMIT");
       void audit(agentId, req.params.id, "wa_claim_query_answered", "/api/internal/wa/claims/:id/queries/:seq/answered");
       const resolvedOn = q.rows[0].resolved_on;
-      res.json({ ok: true, resolvedOn, moved, openLeft: open, undoToken: undoToken("claim_queries", `${req.params.id}:${seq}`, { resolved_on: null, moved: false }, { resolved_on: resolvedOn, moved }) });
+      // The stage after answering is signed too: undo puts the round back only on a claim still there.
+      const status = moved ? "under_process" : c.rows[0].status;
+      res.json({ ok: true, resolvedOn, moved, status, openLeft: open, undoToken: undoToken("claim_queries", `${req.params.id}:${seq}`, { resolved_on: null, moved: false, status: null }, { resolved_on: resolvedOn, moved, status }) });
     } catch (err) {
       await db.query("ROLLBACK").catch(() => {});
       fail(res, "claim query answered", err);
@@ -648,8 +655,8 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
     if (!agentId) return;
     const seq = Number(req.params.seq);
     if (!UUID.test(req.params.id) || !Number.isInteger(seq) || seq < 1) return res.status(404).json({ error: "Not found" });
-    const resolvedOn = String(req.body?.resolvedOn || ""), moved = req.body?.moved === true;
-    if (!tokenOk(req.body?.token, undoToken("claim_queries", `${req.params.id}:${seq}`, { resolved_on: null, moved: false }, { resolved_on: resolvedOn, moved }))) return bad(res, { token: "undo is only for a change saved here" });
+    const resolvedOn = String(req.body?.resolvedOn || ""), moved = req.body?.moved === true, status = String(req.body?.status || "");
+    if (!tokenOk(req.body?.token, undoToken("claim_queries", `${req.params.id}:${seq}`, { resolved_on: null, moved: false, status: null }, { resolved_on: resolvedOn, moved, status }))) return bad(res, { token: "undo is only for a change saved here" });
     const db = await pool.connect();
     try {
       await db.query("BEGIN");
@@ -657,9 +664,10 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
         "UPDATE claim_queries SET resolved_on = NULL WHERE claim_id = $1 AND agent_id = $2 AND seq = $3 AND resolved_on::text = $4 RETURNING id",
         [req.params.id, agentId, seq, resolvedOn]
       );
+      // Only on a claim still at the stage answering left it in; else a newer change would be contradicted.
       const c = moved
         ? await db.query("UPDATE claims SET status = 'query_raised', updated_at = now() WHERE id = $1 AND agent_id = $2 AND status = 'under_process' RETURNING id", [req.params.id, agentId])
-        : await db.query("SELECT id FROM claims WHERE id = $1 AND agent_id = $2 AND status NOT IN ('settled', 'rejected')", [req.params.id, agentId]);
+        : await db.query("SELECT id FROM claims WHERE id = $1 AND agent_id = $2 AND status = $3 AND status NOT IN ('settled', 'rejected') FOR UPDATE", [req.params.id, agentId, status]);
       if (!q.rowCount || !c.rowCount) { await db.query("ROLLBACK"); return changed(res); }
       await db.query("INSERT INTO claim_events (claim_id, agent_id, status, note) VALUES ($1, $2, 'query_raised', $3)", [req.params.id, agentId, `Round ${seq} open again (undone from WhatsApp)`]);
       await db.query("COMMIT");
