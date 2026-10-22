@@ -233,3 +233,86 @@ test("dates are read as text, so the server timezone can never shift them", asyn
   await h.call("GET /api/internal/wa/leads/:id", { id: LEAD });
   assert.match(h.calls[0].sql, /next_follow_up::text AS next_follow_up/);
 });
+
+/* ── Stage 2b: policies ── */
+
+const POL = "44444444-4444-4444-8444-444444444444";
+const motorRow = {
+  insurance_type: "motor", insurer: "Some General", policy_name: "Car Plan", expiry_date: "2027-03-01", sum_insured: 500000,
+  extracted_data: { _rev: 3, insurer: "Some General", plan_name: "Car Plan", policy_expiry_date: "2027-03-01", idv: 500000, premium: 15400 },
+};
+
+test("policy fields: health is refused, and only allowlisted fields of that type", async () => {
+  const h = harness(() => ({ rows: [{ ...motorRow, insurance_type: "health" }] }));
+  const r = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 1 }, expectRev: 0 });
+  assert.equal(r.status, 400);
+  assert.equal(r.json.error, "NOT_EDITABLE");
+  const m = harness(() => ({ rows: [motorRow] }));
+  const r2 = await m.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { insurer_name: "Other" }, expectRev: 3 });
+  assert.equal(r2.status, 400);
+  assert.match(r2.json.fields.insurer_name, /cannot be changed/);
+  const r3 = await m.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: "" }, expectRev: 3 });
+  assert.equal(r3.json.fields.premium, "a value is needed", "clearing a value is for the portal");
+  const r4 = await m.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 14500 } });
+  assert.equal(r4.status, 400, "the revision seen before is required");
+  assert.ok(!m.calls.some((c) => c.sql.startsWith("UPDATE")));
+});
+
+test("policy fields: saved through the portal's own save, with the revision check", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [motorRow] }));
+  const r = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: "14,500" }, expectRev: 3 });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.json.before, { premium: 15400 });
+  assert.deepEqual(r.json.after, { premium: 14500 });
+  assert.equal(r.json.rev, 4);
+  const upd = h.calls.find((c) => c.sql.includes("UPDATE clients SET"))!;
+  assert.match(upd.sql, /extracted_data->>'_rev'/);
+  assert.equal(upd.params[10], 3, "only if nobody saved in between");
+  const stale = harness(() => ({ rows: [motorRow] }));
+  assert.equal((await stale.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 14500 }, expectRev: 2 })).status, 409);
+});
+
+test("policy fields: refused when the save would blank a column only the record's columns hold", async () => {
+  const old = { ...motorRow, extracted_data: { _rev: 0, premium: 15400 } };
+  const h = harness(() => ({ rows: [old] }));
+  const r = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 14500 }, expectRev: 0 });
+  assert.equal(r.status, 400);
+  assert.equal(r.json.error, "NOT_EDITABLE");
+  assert.ok(!h.calls.some((c) => c.sql.startsWith("UPDATE")));
+});
+
+test("policy fields undo: needs the token from the save, and the value must still be what was saved", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const s = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [motorRow] }));
+  const saved = await s.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 14500 }, expectRev: 3 });
+  const now = { ...motorRow, extracted_data: { ...motorRow.extracted_data, premium: 14500, _rev: 4 } };
+  const forged = harness(() => ({ rows: [now] }));
+  const f = await forged.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { restore: true, set: { premium: 1 }, expect: { premium: 14500 }, expectRev: 4, token: saved.json.undoToken });
+  assert.equal(f.status, 400);
+  const moved = harness(() => ({ rows: [{ ...now, extracted_data: { ...now.extracted_data, premium: 99 } }] }));
+  const m = await moved.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { restore: true, set: { premium: 15400 }, expect: { premium: 14500 }, expectRev: 4, token: saved.json.undoToken });
+  assert.equal(m.status, 409, "changed again in the portal: undo does nothing");
+  const ok = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [now] }));
+  const u = await ok.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { restore: true, set: { premium: 15400 }, expect: { premium: 14500 }, expectRev: 4, token: saved.json.undoToken });
+  assert.equal(u.status, 200);
+  assert.deepEqual(u.json.after, { premium: 15400 });
+});
+
+test("client details on a policy: compare-before, any type; sharing only flips the flag", async () => {
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ client_phone: "9812345678" }], rowCount: 1 } : { rows: [] }));
+  const nb = await h.call("POST /api/internal/wa/clients/:id/client-details", { id: POL }, { set: { client_phone: "98123 45678" } });
+  assert.equal(nb.status, 400, "no blind writes");
+  const r = await h.call("POST /api/internal/wa/clients/:id/client-details", { id: POL }, { set: { client_phone: "98123 45678" }, expect: { client_phone: null } });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.after.client_phone, "9812345678");
+  const bad = await h.call("POST /api/internal/wa/clients/:id/client-details", { id: POL }, { set: { score: 100 }, expect: {} });
+  assert.equal(bad.status, 400);
+  const sh = await h.call("POST /api/internal/wa/clients/:id/sharing", { id: POL }, { enabled: false, expectEnabled: true });
+  assert.equal(sh.status, 200);
+  const upd = h.calls.filter((c) => c.sql.startsWith("UPDATE")).pop()!;
+  assert.match(upd.sql, /SET share_enabled = \$3\s+WHERE/);
+  assert.doesNotMatch(upd.sql, /share_token/, "the link stays, so turning sharing back on gives the same link");
+  const none = harness(() => ({ rows: [], rowCount: 0 }));
+  assert.equal((await none.call("POST /api/internal/wa/clients/:id/sharing", { id: POL }, { enabled: false, expectEnabled: true })).status, 409);
+});

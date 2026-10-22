@@ -14,14 +14,14 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { Engine, ClientSummary, RenewalRow } from "../engine.js";
+import type { Engine, ClientSummary, PolicyFields, RenewalRow } from "../engine.js";
 import type { InboundMessage, Transport } from "../transport/types.js";
 import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Inspection, type PolicyType } from "./pdfInspect.js";
 import {
   bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
-import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, valueFor, type Field, type FileAsk } from "./editParse.js";
-import { cleanCustomerSet, cleanLeadSet, norm as normValue } from "../shared/editRules.js";
+import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
+import { cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -111,6 +111,9 @@ type State =
 
 /** Someone the advisor can edit: a lead or a customer. */
 type EditTarget = { kind: "lead" | "customer"; id: string; name: string; label: string };
+/** Stage 2b: a policy being edited, and one field of it. "client" = the row's client details. */
+type PolicyTarget = { clientId: string; policy: string };
+type PField = { group: "fix" | "client"; key: string; label: string; kind: FixKind | "client" };
 
 /** A change waiting for the advisor's YES. Nothing is written until then. */
 type Op =
@@ -121,7 +124,10 @@ type Op =
   | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown }
   | { kind: "convert"; leadId: string; name: string }
   | { kind: "addCustomer"; name: string; phone: string | null; city: string | null; email: string | null }
-  | { kind: "file"; clientId: string; policy: string; fromId: string | null; fromName: string | null; toId: string | null; toName: string | null; newCustomer?: { name: string; phone: string | null } };
+  | { kind: "file"; clientId: string; policy: string; fromId: string | null; fromName: string | null; toId: string | null; toName: string | null; newCustomer?: { name: string; phone: string | null } }
+  /* Stage 2b */
+  | { kind: "policyEdit"; clientId: string; policy: string; group: PField["group"]; key: string; label: string; vkind: PField["kind"]; from: unknown; to: unknown; rev: number }
+  | { kind: "sharing"; clientId: string; policy: string; enabled: boolean };
 
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
@@ -133,7 +139,10 @@ type LastChange =
   | { kind: "edit"; target: "lead" | "customer"; id: string; name: string; field: Field; from: unknown; to: unknown; token?: string; at: number }
   | { kind: "convert"; leadId: string; customerId: string; name: string; status: string; at: number }
   | { kind: "customerCreate"; customerId: string; name: string; created: Record<string, unknown>; at: number }
-  | { kind: "file"; clientId: string; name: string; fromId: string | null; toId: string | null; at: number };
+  | { kind: "file"; clientId: string; name: string; fromId: string | null; toId: string | null; at: number }
+  /* Stage 2b: from/to are the server's own values, so the undo token matches */
+  | { kind: "policyEdit"; clientId: string; name: string; group: PField["group"]; key: string; label: string; vkind: PField["kind"]; from: unknown; to: unknown; token?: string; rev?: number; at: number }
+  | { kind: "sharing"; clientId: string; name: string; enabled: boolean; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -142,7 +151,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
 
 /** Read-only views whose rules match a whole question, at any length. The model's form has
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
-const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file"]);
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare"]);
 
 const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
@@ -1048,6 +1057,11 @@ export class Bot {
         return this.addCustomerStart(agentId, conv, to, text);
       case "file":
         return this.fileStart(agentId, conv, to, text);
+      /* Stage 2b: policies */
+      case "policyfix":
+        return this.policyFixStart(agentId, conv, to, text);
+      case "unshare":
+        return this.unshareStart(agentId, conv, to, text);
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
@@ -1998,9 +2012,13 @@ export class Bot {
       if (c.kind === "convert") return `Undo: make ${b(c.name)} a lead again`;
       if (c.kind === "edit") return `Undo: ${FIELD_LABEL[c.field]} of ${b(c.name)} back to ${showValue(c.field, c.from)}`;
       if (c.kind === "file") return `Undo: put ${c.name} back where it was filed`;
+      if (c.kind === "policyEdit") return `Undo: ${c.label} of ${c.name} back to ${showPolicyValue(c.vkind, c.from)}`;
+      if (c.kind === "sharing") return `Undo: share ${c.name} again (same link)`;
       return `Undo: put ${b(c.name)} back as it was`;
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
+    if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
+    if (op.kind === "sharing") return `Stop sharing ${op.policy}. The customer's link stops opening until you share it again`;
     if (op.kind === "convert") return `Make ${b(op.name)} a customer. Their phone, email, city and notes are copied, and the lead is marked won`;
     if (op.kind === "addCustomer") return `Add customer ${b(op.name)}${[op.phone ? ph(op.phone) : null, op.city, op.email].filter(Boolean).map((x) => `, ${x}`).join("")}`;
     if (op.kind === "file") {
@@ -2121,6 +2139,11 @@ export class Bot {
       }
       case "customerCreate": return e.customerUndoCreate(agentId, x.customerId, x.created);
       case "file": return (await e.fileClient(agentId, x.clientId, x.fromId, x.toId)).ok;
+      case "policyEdit":
+        return x.group === "fix"
+          ? (await e.policyFieldSave(agentId, x.clientId, { [x.key]: x.from }, x.rev ?? -1, { expect: { [x.key]: x.to }, token: x.token })).ok
+          : (await e.clientDetailSave(agentId, x.clientId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
+      case "sharing": return (await e.setSharing(agentId, x.clientId, !x.enabled, x.enabled)).ok;
     }
   }
 
@@ -2185,6 +2208,37 @@ export class Bot {
       return {
         text: toId ? `✅ Filed: ${op.policy} is now under ${b(toName)}.\n${o}/agent/customers/${toId}` : `✅ ${op.policy} is no longer filed under ${b(op.fromName || "that customer")}.`,
         change: created ? { kind: "bulk", items: [created, filed], name: op.policy, at } : filed,
+      };
+    }
+    if (op.kind === "policyEdit") {
+      const link = `${o}/agent/policies/${op.clientId}`;
+      const no = (r: { reason: string; fields?: Record<string, string> }) =>
+        ({ text: r.reason === "NOT_EDITABLE" ? `Not saved: ${op.policy} has details that are only in the portal. Please change it there.
+${link}` : refused(op.policy, r) });
+      let before: unknown = op.from;
+      let after: unknown;
+      let token: string | undefined;
+      let rev: number | undefined;
+      if (op.group === "fix") {
+        const r = await e.policyFieldSave(agentId, op.clientId, { [op.key]: op.to }, op.rev);
+        if (!r.ok) return no(r);
+        [before, after, token, rev] = [r.before[op.key] ?? null, r.after[op.key] ?? null, r.undoToken, r.rev];
+      } else {
+        const r = await e.clientDetailSave(agentId, op.clientId, { [op.key]: op.to }, { [op.key]: op.from });
+        if (!r.ok) return no(r);
+        [after, token] = [r.after[op.key] ?? null, r.undoToken];
+      }
+      return {
+        text: `✅ Saved. ${op.policy}: ${op.label} is now ${showPolicyValue(op.vkind, after)}.\n${link}`,
+        change: { kind: "policyEdit", clientId: op.clientId, name: op.policy, group: op.group, key: op.key, label: op.label, vkind: op.vkind, from: before, to: after, token, rev, at },
+      };
+    }
+    if (op.kind === "sharing") {
+      const r = await e.setSharing(agentId, op.clientId, op.enabled, !op.enabled);
+      if (!r.ok) return { text: refused(op.policy, r) };
+      return {
+        text: `✅ Sharing stopped for ${op.policy}. The customer's link no longer opens.\nTo share it again, ask me to share it. The link stays the same.`,
+        change: { kind: "sharing", clientId: op.clientId, name: op.policy, enabled: op.enabled, at },
       };
     }
     return { text: "" };
@@ -2341,6 +2395,7 @@ export class Bot {
   /** The stage 2a questions: which one, which field, the new value, which policy or customer. */
   private async onEditAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
     const p = conv.pending || {};
+    if (p.mode === "policy" || p.mode === "unshare") return this.onPolicyAwaiting(agentId, conv, to, text);
     if (conv.state === "AWAITING_EDIT_PICK") {
       const targets: EditTarget[] = p.targets || [];
       const n = pickNumber(text, targets.length);
@@ -2376,6 +2431,146 @@ export class Bot {
     return false;
   }
 
+  /* ══ Stage 2b: policies ═══════════════════════════════════════════════ */
+
+  /** The policies a name (and an optional "car", "life" ...) points at. */
+  private async policiesOf(agentId: string, who: string, typeWord: string | null): Promise<ClientSummary[]> {
+    const ty = typeOfWord(typeWord);
+    const found = await this.d.engine.findClients(agentId, who);
+    return ty ? found.filter((c) => policyKind(c.insuranceType) === ty) : found;
+  }
+
+  /** "premium is 14,500 not 15,400", "change Ramesh's car policy premium to 14500", "edit this policy". */
+  private async policyFixStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parsePolicyFix(text);
+    if (!ask) return this.say(to, agentId, "Type it like: premium is 14,500, or: edit this policy", "policyfix");
+    if (ask.policyOf) {
+      const found = await this.policiesOf(agentId, ask.policyOf, ask.typeWord);
+      if (!found.length) return this.say(to, agentId, T.noSuchCustomer(ask.policyOf), "policyfix");
+      if (found.length > 1) return this.pickPolicy(agentId, conv, to, found, { mode: "policy", word: ask.word, value: ask.value });
+      return this.policyFixWith(agentId, conv, to, found[0].clientId, ask.word, ask.value);
+    }
+    const current = this.currentPolicy(agentId, conv);
+    if (!current) return this.say(to, agentId, "Which policy? For example: change Ramesh's car policy premium to 14500", "policyfix");
+    return this.policyFixWith(agentId, conv, to, current, ask.word, ask.value);
+  }
+
+  private async pickPolicy(agentId: string, conv: Conv, to: string, found: ClientSummary[], extra: Record<string, unknown>) {
+    const rows = found.slice(0, 5);
+    await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { ...extra, options: rows.map((c) => c.clientId) });
+    return this.say(to, agentId, T.whichPolicy(rows.map((r) => ({ name: r.policyholderName || "Unnamed", label: nicePlan(r.insurer, r.policyName) || r.insuranceType || "policy" }))), "policy_pick");
+  }
+
+  /** The policy, its editable fields and what it is called in replies. */
+  private async policyEditable(agentId: string, clientId: string): Promise<{ f: PolicyFields; t: PolicyTarget; list: PField[] } | null> {
+    const [f, c] = await Promise.all([this.d.engine.policyFields(agentId, clientId), this.d.engine.getClient(agentId, clientId)]);
+    if (!f || !c) return null;
+    return { f, t: { clientId, policy: policyLabel(c) }, list: policyFieldList(f) };
+  }
+
+  private async policyFixWith(agentId: string, conv: Conv, to: string, clientId: string, word: string | null, value: string | null) {
+    const p = await this.policyEditable(agentId, clientId);
+    if (!p) return this.say(to, agentId, T.noReport(), "policyfix");
+    this.setLast(agentId, { kind: "policy", clientId });
+    const { f, t, list } = p;
+    if (!word) {
+      await this.setState(agentId, to, "AWAITING_EDIT_FIELD", conv.currentClientId, { mode: "policy", ptarget: t });
+      return this.say(to, agentId,
+        `What should I change on ${t.policy}?\n${list.map((x, i) => `${i + 1}) ${x.label}: ${showPolicyValue(x.kind, currentOf(f, x))}`).join("\n")}\nReply with the number.`,
+        "policy_field");
+    }
+    const pf = policyFieldFor(f, list, word);
+    if (!pf) {
+      const labels = list.map((x) => x.label).join(", ");
+      return this.say(to, agentId, f.fields.length
+        ? `${capital(word)} can't be changed from WhatsApp. On ${t.policy} you can change: ${labels}.`
+        : `On a health policy, the details come from the policy check and can't be changed here. You can change: ${labels}.`, "policyfix");
+    }
+    return this.policyFieldChosen(agentId, conv, to, t, f, pf, value);
+  }
+
+  private async policyFieldChosen(agentId: string, conv: Conv, to: string, t: PolicyTarget, f: PolicyFields, pf: PField, value: string | null) {
+    if (value === null) {
+      await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "policy", ptarget: t, pkey: pf.key });
+      return this.say(to, agentId, `Type the new ${pf.label} for ${t.policy}. Now: ${showPolicyValue(pf.kind, currentOf(f, pf))}\n(CANCEL to stop.)`, "policy_value");
+    }
+    const raw = policyValueFor(pf.kind, value);
+    let next: unknown = null;
+    let err: string | undefined;
+    if (pf.group === "client") {
+      const c = cleanClientSet({ [pf.key]: raw });
+      err = c.errors[pf.key];
+      next = c.set[pf.key] ?? null;
+    } else {
+      const c = cleanFixValue(pf.kind as FixKind, raw);
+      if (!c.ok) err = c.error;
+      else if (c.value === null) err = "a value is needed";
+      else next = c.value;
+    }
+    if (err) {
+      await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "policy", ptarget: t, pkey: pf.key });
+      return this.say(to, agentId, `That ${pf.label} doesn't look right (${err}). Type it again, or CANCEL.`, "policy_value");
+    }
+    const from = currentOf(f, pf);
+    if (normValue(next) === normValue(from)) {
+      await this.rest(agentId, to, conv.currentClientId);
+      return this.say(to, agentId, `${t.policy}: ${pf.label} is already ${showPolicyValue(pf.kind, next)}. Nothing to change.`, "policyfix");
+    }
+    return this.confirm(agentId, conv, to, [{ kind: "policyEdit", clientId: t.clientId, policy: t.policy, group: pf.group, key: pf.key, label: pf.label, vkind: pf.kind, from, to: next, rev: f.rev }]);
+  }
+
+  /** "stop sharing Ramesh's report", "unshare this". Only the switch moves; the link stays. */
+  private async unshareStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parseUnshare(text);
+    if (ask?.policyOf) {
+      const found = (await this.policiesOf(agentId, ask.policyOf, null)).filter((c) => c.shareToken);
+      if (!found.length) return this.say(to, agentId, `I couldn't find a shared report for "${ask.policyOf}".`, "unshare");
+      if (found.length > 1) return this.pickPolicy(agentId, conv, to, found, { mode: "unshare" });
+      return this.unshareWith(agentId, conv, to, found[0].clientId);
+    }
+    const current = this.currentPolicy(agentId, conv);
+    if (!current) return this.say(to, agentId, "Which report should I stop sharing? For example: stop sharing Ramesh's report", "unshare");
+    return this.unshareWith(agentId, conv, to, current);
+  }
+
+  private async unshareWith(agentId: string, conv: Conv, to: string, clientId: string) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "unshare");
+    const policy = policyLabel(c);
+    if (!c.shareToken) return this.say(to, agentId, `${policy} is not being shared. Nothing to stop.`, "unshare");
+    return this.confirm(agentId, conv, to, [{ kind: "sharing", clientId, policy, enabled: false }]);
+  }
+
+  /** The stage 2b questions: which policy, which field, the new value. */
+  private async onPolicyAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    if (conv.state === "AWAITING_EDIT_PICK") {
+      const options: string[] = p.options || [];
+      const n = pickNumber(text, options.length);
+      if (!n) return false;
+      if (p.mode === "unshare") await this.unshareWith(agentId, conv, to, options[n - 1]);
+      else await this.policyFixWith(agentId, conv, to, options[n - 1], p.word ?? null, p.value ?? null);
+      return true;
+    }
+    const t: PolicyTarget = p.ptarget;
+    const ed = await this.policyEditable(agentId, t.clientId);
+    if (!ed) { await this.rest(agentId, to, conv.currentClientId); await this.say(to, agentId, T.noReport(), "policyfix"); return true; }
+    if (conv.state === "AWAITING_EDIT_FIELD") {
+      const n = pickNumber(text, ed.list.length);
+      const pf = n ? ed.list[n - 1] : policyFieldFor(ed.f, ed.list, text.trim().toLowerCase());
+      if (!pf) { await this.say(to, agentId, `Reply with a number from 1 to ${ed.list.length}, or CANCEL.`, "policy_field"); return true; }
+      await this.policyFieldChosen(agentId, conv, to, ed.t, ed.f, pf, null);
+      return true;
+    }
+    if (conv.state === "AWAITING_EDIT_VALUE") {
+      const pf = ed.list.find((x) => x.key === p.pkey);
+      if (!pf) { await this.rest(agentId, to, conv.currentClientId); await this.say(to, agentId, T.noReport(), "policyfix"); return true; }
+      await this.policyFieldChosen(agentId, conv, to, ed.t, ed.f, pf, text);
+      return true;
+    }
+    return false;
+  }
+
   private async proposeUndo(agentId: string, conv: Conv, to: string) {
     const c = this.lastChange.get(agentId);
     if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
@@ -2402,3 +2597,58 @@ function showValue(field: Field, v: unknown): string {
 function allLeads(c: { items: { kind: string }[] }): boolean {
   return c.items.every((x) => x.kind === "create" || x.kind === "update");
 }
+
+/* ── Stage 2b helpers ── */
+
+/** A policy as the bot names it in replies: "Ramesh Kumar's Care Supreme". */
+function policyLabel(c: ClientSummary): string {
+  return `${c.policyholderName ? `${c.policyholderName}'s ` : ""}${nicePlan(c.insurer, c.policyName) || c.insuranceType || "policy"}`;
+}
+
+/** "car" -> motor, "home" -> property ... (null = any type). */
+function typeOfWord(w: string | null): string | null {
+  if (!w) return null;
+  if (/^(?:car|bike|two wheeler|motor|vehicle)$/.test(w)) return "motor";
+  if (/^(?:home|house|property)$/.test(w)) return "property";
+  if (/^(?:health|mediclaim)$/.test(w)) return "health";
+  return w;
+}
+function policyKind(t: string | null | undefined): string {
+  const k = t || "health";
+  return k === "fire" ? "property" : k;
+}
+
+const CLIENT_LABEL: Record<string, string> = { policyholder_name: "Policyholder name", client_phone: "Phone", client_email: "Email", policy_identifier: "Policy number" };
+
+/** Every field the advisor may change on this policy, in the order shown: client details
+ *  first (any type), then the saved details of a non-health policy. On health the policy
+ *  number is the row's own column; elsewhere it is a saved detail. */
+function policyFieldList(f: PolicyFields): PField[] {
+  const keys = ["policyholder_name", "client_phone", "client_email", ...(f.fields.length ? [] : ["policy_identifier"])];
+  return [
+    ...keys.map((k): PField => ({ group: "client", key: k, label: CLIENT_LABEL[k], kind: "client" })),
+    ...f.fields.map((x): PField => ({ group: "fix", key: x.key, label: x.label, kind: x.kind })),
+  ];
+}
+
+function policyFieldFor(f: PolicyFields, list: PField[], word: string): PField | null {
+  const ck = clientKeyOf(word);
+  if (ck) return list.find((x) => x.key === ck) ?? null;
+  if (!f.fields.length && /^policy (?:number|no\.?|num)$/.test(word)) return list.find((x) => x.key === "policy_identifier") ?? null;
+  const fx = policyFieldOf(f.type, word);
+  return fx ? list.find((x) => x.group === "fix" && x.key === fx.key) ?? null : null;
+}
+
+function currentOf(f: PolicyFields, pf: PField): unknown {
+  return pf.group === "client" ? (f.client as Record<string, unknown>)[pf.key] ?? null : f.fields.find((x) => x.key === pf.key)?.value ?? null;
+}
+
+function showPolicyValue(kind: PField["kind"], v: unknown): string {
+  if (v === null || v === undefined || v === "") return "(empty)";
+  if (kind === "money") { const n = Number(v); return Number.isFinite(n) ? `₹${n.toLocaleString("en-IN")}` : String(v); }
+  if (kind === "percent") return `${v}%`;
+  if (kind === "date") { const s = normValue(v); return s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? prettyDate(s) : String(v); }
+  return String(v);
+}
+
+const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

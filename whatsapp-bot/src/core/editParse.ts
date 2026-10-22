@@ -5,6 +5,8 @@
  * server re-checks everything (backend/server/whatsapp/edits.ts).
  */
 
+import { POLICY_FIX_FIELDS } from "../shared/editRules.js";
+
 export type Field = "name" | "phone" | "email" | "city" | "source" | "insurance_interest" | "expected_value" | "dob";
 export type EditAsk = { who: string; field: Field | null; value: string | null };
 
@@ -181,3 +183,104 @@ export const FIELD_LABEL: Record<Field, string> = {
 };
 export const LEAD_FIELDS: Field[] = ["name", "phone", "email", "city", "insurance_interest", "source", "expected_value"];
 export const CUSTOMER_FIELDS: Field[] = ["name", "phone", "email", "city", "dob"];
+
+/* ── Stage 2b: policies ─────────────────────────────────────────────── */
+
+/** "premium is 14,500 not 15,400", "change Ramesh's car policy premium to 14500", "edit this
+ *  policy". `policyOf` null = the policy we are on. `word` is matched to a field later, for
+ *  that policy's type (bot.ts), so "cover" means IDV on a car and sum assured on life. */
+export type PolicyFixAsk = { policyOf: string | null; typeWord: string | null; word: string | null; value: string | null };
+
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** Saved-detail words, longest first. */
+const FIX_WORDS = [...new Set(Object.values(POLICY_FIX_FIELDS).flat().flatMap((f) => f.words))].sort((a, b) => b.length - a.length);
+/** Client details: only with the word "policy", since "Amit's phone" alone is a lead or customer. */
+export const CLIENT_WORDS: [string[], string][] = [
+  [["policyholder name", "policy holder name", "policyholder", "policy holder", "holder name", "proposer name", "insured name"], "policyholder_name"],
+  [["mobile number", "phone number", "contact number", "whatsapp number", "mobile", "phone"], "client_phone"],
+  [["email id", "email address", "email"], "client_email"],
+];
+const CLIENT_ALT = CLIENT_WORDS.flatMap(([w]) => w).sort((a, b) => b.length - a.length).map(esc).join("|");
+const FIX_ALT = FIX_WORDS.map(esc).join("|");
+/** Words that only ever mean an amount, a date or a percentage: their value must have a number, so
+ *  "cover calculate karna hai" or "premium is too high" is never an edit. */
+const NUMBER_WORDS = new Set(FIX_WORDS.filter((w) => Object.values(POLICY_FIX_FIELDS).flat().every((f) => !f.words.includes(w) || f.kind !== "text")));
+const TYPE_ALT = "car|bike|two wheeler|motor|vehicle|life|term|travel|home|house|property|fire|marine|health|mediclaim";
+
+export function clientKeyOf(word: string): string | null {
+  const w = word.trim().toLowerCase().replace(/\s+/g, " ");
+  return CLIENT_WORDS.find(([ws]) => ws.includes(w))?.[1] ?? null;
+}
+
+export function parsePolicyFix(textRaw: string): PolicyFixAsk | null {
+  const t = clean(textRaw).replace(/[’']/g, "'");
+  const W = `(${FIX_ALT})`;
+  const C = `(${CLIENT_ALT})`;
+  const TY = `(?:(${TYPE_ALT})\\s+)?`;
+  const TO = `\\s+(?:to|as|into|=|:)\\s+(.+)`;
+  // The old value after "not" is only the advisor's check: "premium is 14,500 not 15,400".
+  const val = (v: string) => clean(v.replace(/,?\s+(?:not|instead of|nahi|नहीं)\s+.*$/i, ""));
+  const tries: [RegExp, (m: RegExpMatchArray) => PolicyFixAsk][] = [
+    // change Ramesh's (car) (policy) premium to 14500
+    [new RegExp(`^(?:please\\s+)?(?:change|update|set|correct|fix|make)\\s+(?:the\\s+)?(?:(.+?)'s\\s+)?${TY}(?:policy\\s+)?${W}${TO}$`, "i"), (m) => ({ policyOf: m[1] ?? null, typeWord: m[2] ?? null, word: m[3], value: val(m[4]) })],
+    // change the IDV of this policy / of Ramesh's car policy to ...
+    [new RegExp(`^(?:please\\s+)?(?:change|update|set|correct|fix)\\s+(?:the\\s+)?${W}\\s+(?:of|on|for|in)\\s+(?:this\\s+policy|this|(.+?)'s\\s+${TY}policy)${TO}$`, "i"), (m) => ({ policyOf: m[2] ?? null, typeWord: m[3] ?? null, word: m[1], value: val(m[4]) })],
+    // Client details need the word policy: change Ramesh's policy phone to ... / this policy's email to ...
+    [new RegExp(`^(?:please\\s+)?(?:change|update|set|correct|fix)\\s+(?:the\\s+)?(?:(.+?)'s\\s+|this\\s+)${TY}policy(?:'s)?\\s+${C}${TO}$`, "i"), (m) => ({ policyOf: m[1] ?? null, typeWord: m[2] ?? null, word: m[3], value: val(m[4]) })],
+    [new RegExp(`^(?:please\\s+)?(?:change|update|set|correct|fix)\\s+(?:the\\s+)?${C}\\s+(?:of|on|for|in)\\s+(?:this\\s+policy|(.+?)'s\\s+${TY}policy)${TO}$`, "i"), (m) => ({ policyOf: m[2] ?? null, typeWord: m[3] ?? null, word: m[1], value: val(m[4]) })],
+    [new RegExp(`^(?:this\\s+)?policy(?:'s)?\\s+${C}\\s+(?:is|should be|=|:)\\s+(.+)$`, "i"), (m) => ({ policyOf: null, typeWord: null, word: m[1], value: val(m[2]) })],
+    // About the policy we are on: "premium is 14,500 not 15,400", "the IDV should be 5.2 lakh"
+    [new RegExp(`^(?:the\\s+)?(?:policy\\s+)?${W}\\s+(?:is actually|should be|is|=|:)\\s+(.+)$`, "i"), (m) => ({ policyOf: null, typeWord: null, word: m[1], value: val(m[2]) })],
+    // Hinglish: premium 14500 hai / Ramesh ki policy ka premium 14500 kar do
+    [new RegExp(`^(?:(.+?)\\s+(?:ki|ka|ke|की|का|के)\\s+${TY}(?:policy|पॉलिसी)\\s+(?:ka|ki|ke|का|की|के)\\s+)?${W}\\s+(.+?)\\s+(?:kar do|kardo|karo|hai|likh do|likho|कर दो|करो|है)$`, "i"), (m) => ({ policyOf: m[1] ?? null, typeWord: m[2] ?? null, word: m[3], value: val(m[4]) })],
+    // Guided: edit this policy / edit Ramesh's car policy
+    [new RegExp(`^(?:edit|correct|fix|change|update)\\s+(?:this\\s+policy|the\\s+policy|(.+?)'s\\s+${TY}policy)(?:'s)?(?:\\s+(?:details|info))?$`, "i"), (m) => ({ policyOf: m[1] ?? null, typeWord: m[2] ?? null, word: null, value: null })],
+    [new RegExp(`^(?:(.+?)\\s+(?:ki|ka|की|का)\\s+${TY})?(?:policy|पॉलिसी)\\s+(?:ki\\s+|की\\s+)?(?:details|detail|jankari|jaankari|जानकारी)\\s+(?:badlo|badal do|edit karo|theek karo|बदलो|बदल दो)$`, "i"), (m) => ({ policyOf: m[1] ?? null, typeWord: m[2] ?? null, word: null, value: null })],
+  ];
+  for (const [re, f] of tries) {
+    const m = t.match(re);
+    if (!m) continue;
+    const a = f(m);
+    if (a.policyOf !== null && !okWho(a.policyOf)) continue;
+    if (a.value !== null && (!a.value.trim() || QUESTION_VALUE.test(a.value.trim()))) continue;
+    if (a.value !== null && a.word && NUMBER_WORDS.has(a.word.toLowerCase()) && !/\d/.test(a.value)) continue;
+    return { policyOf: a.policyOf === null ? null : clean(a.policyOf), typeWord: a.typeWord?.toLowerCase() ?? null, word: a.word?.toLowerCase() ?? null, value: a.value };
+  }
+  return null;
+}
+
+/** "stop sharing Ramesh's report", "unshare this", "Ramesh ki report band karo". */
+export function parseUnshare(textRaw: string): { policyOf: string | null } | null {
+  const t = clean(textRaw).replace(/[’']/g, "'");
+  const m = t.match(/^(?:please\s+)?(?:stop|turn off|disable|end)\s+sharing(?:\s+(?:of\s+)?(?:(.+?)'s\s+(?:report|policy|link)|this(?:\s+report|\s+policy|\s+link)?|the\s+(?:report|link)|it))?$/i)
+    || t.match(/^unshare(?:\s+(?:(.+?)'s\s+(?:report|policy|link)|this(?:\s+report|\s+policy)?|the\s+report|it))?$/i)
+    || t.match(/^(?:(.+?)\s+(?:ki|ka|की|का)\s+)?(?:report|link|रिपोर्ट|लिंक)\s+(?:ka\s+)?(?:share\s+|sharing\s+)?(?:band karo|band kar do|bandh karo|बंद करो|बंद कर दो)$/i)
+    || t.match(/^(?:sharing|share)\s+(?:band karo|band kar do|बंद करो)$/i);
+  if (!m) return null;
+  if (m[1] && !okWho(m[1])) return null;
+  return { policyOf: m[1] ? clean(m[1]) : null };
+}
+
+/** A date as typed, past or future: "1 March 2027", "01/03/2027", "2027-03-01", "March 1, 2027". */
+export function anyDate(s: string): string | null {
+  const t = s.trim().toLowerCase().replace(/,/g, " ").replace(/\s+/g, " ");
+  let y: number, mo: number, d: number;
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) [y, mo, d] = [+m[1], +m[2], +m[3]];
+  else if ((m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
+  else if ((m = t.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*\s+(\d{4})$/)) && MONTHS.includes(m[2])) [d, mo, y] = [+m[1], MONTHS.indexOf(m[2]) + 1, +m[3]];
+  else if ((m = t.match(/^([a-z]{3})[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{4})$/)) && MONTHS.includes(m[1])) [d, mo, y] = [+m[2], MONTHS.indexOf(m[1]) + 1, +m[3]];
+  else return null;
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d || y < 1950 || y > 2125) return null;
+  return dt.toISOString().slice(0, 10);
+}
+
+/** A policy value as typed -> as the portal stores it. The server checks it again. */
+export function policyValueFor(kind: "money" | "percent" | "date" | "text" | "client", raw: string): string | number {
+  const v = raw.trim();
+  if (kind === "money") return amountWords(v) ?? v;
+  if (kind === "percent") { const n = v.replace(/\s*(?:%|percent)$/i, "").trim(); return /^\d+(?:\.\d+)?$/.test(n) ? parseFloat(n) : v; }
+  if (kind === "date") return anyDate(v) ?? v;
+  return v;
+}

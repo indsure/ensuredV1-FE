@@ -42,7 +42,10 @@ function tokenOk(given: unknown, want: string): boolean {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect } from "./editRules";
+import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet } from "./editRules";
+import { saveExtractedData } from "../services/policyValueStore";
+import { deriveSharedColumns } from "../services/extractionFields";
+import { scoreFromExtractedData } from "../../../shared/motorScore";
 import type { FieldErrors, Clean } from "./editRules";
 export { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate } from "./editRules";
 export type { FieldErrors, Clean } from "./editRules";
@@ -276,6 +279,130 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       void audit(agentId, req.params.id, to ? "wa_policy_file" : "wa_policy_unfile", "/api/internal/wa/clients/:id/file");
       res.json({ ok: true, customerId: r.rows[0].customer_id });
     } catch (err) { fail(res, "policy file", err); }
+  });
+  /* ── Stage 2b: policies (plan 3, 2b) ── */
+
+  const CLIENT_OUT = "id, insurance_type, status, policyholder_name, policy_identifier, client_email, client_phone, share_enabled, insurer, policy_name, extracted_data";
+
+  /** One policy's editable details: client details on any type; for a data-entry type also the
+   *  everyday saved fields (POLICY_FIX_FIELDS) with the record's revision. */
+  app.get("/api/internal/wa/clients/:id/fields", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const r = await pool.query(`SELECT ${CLIENT_OUT} FROM clients WHERE id = $1 AND agent_id = $2`, [req.params.id, agentId]);
+      if (!r.rows.length) return res.status(404).json({ error: "Not found" });
+      const c = r.rows[0];
+      const type = c.insurance_type || "health";
+      const data = c.extracted_data && typeof c.extracted_data === "object" ? c.extracted_data : {};
+      const fixable = POLICY_FIX_FIELDS[type] || [];
+      res.json({
+        id: c.id, type, status: c.status, shareEnabled: c.share_enabled !== false,
+        client: { policyholder_name: c.policyholder_name, policy_identifier: c.policy_identifier, client_email: c.client_email, client_phone: c.client_phone },
+        rev: Number.isInteger(data._rev) ? data._rev : 0,
+        fields: fixable.map((f) => ({ key: f.key, label: f.label, kind: f.kind, value: data[f.key] ?? null })),
+      });
+    } catch (err) { fail(res, "policy fields read", err); }
+  });
+
+  /** Client details on a policy (any type, health included). Body: { set, expect, restore?, token? }. */
+  app.post("/api/internal/wa/clients/:id/client-details", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const { set, errors } = req.body?.restore === true ? restoreSet(req.body?.set || {}, CLIENT_DETAIL_COLS) : cleanClientSet(req.body?.set || {});
+      if (Object.keys(errors).length) return bad(res, errors);
+      if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
+      const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
+      const known = Object.fromEntries(Object.entries(expect).filter(([k]) => CLIENT_DETAIL_COLS.includes(k)));
+      const missing = missingExpect(set, known);
+      if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
+      if (req.body?.restore === true && !tokenOk(req.body?.token, undoToken("clients", req.params.id, set, known))) return bad(res, { token: "undo is only for a change saved here" });
+      const q = guardedUpdate("clients", CLIENT_DETAIL_COLS, set, known);
+      const r = await pool.query(q.sql, [req.params.id, agentId, ...q.params]);
+      if (!r.rowCount) return changed(res);
+      void audit(agentId, req.params.id, "wa_policy_client_details", "/api/internal/wa/clients/:id/client-details");
+      const keys = Object.keys(set);
+      const after = Object.fromEntries(keys.map((k) => [k, r.rows[0][k] ?? null]));
+      res.json({ ok: true, after, undoToken: undoToken("clients", req.params.id, known, after) });
+    } catch (err) { fail(res, "policy client details", err); }
+  });
+
+  /** Fix saved details on a NON-health policy, through the portal's own save
+   *  (policyValueStore.saveExtractedData): same validation, revision check and shared columns.
+   *  Body: { set: { key: value }, expectRev, restore?, token? }. Health is refused: there,
+   *  deriveSharedColumns returns nothing and the save would blank the insurer, plan, expiry
+   *  and sum insured. */
+  app.post("/api/internal/wa/clients/:id/fields", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const r0 = await pool.query("SELECT insurance_type, extracted_data, insurer, policy_name, expiry_date::text AS expiry_date, sum_insured FROM clients WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      if (!r0.rows.length) return res.status(404).json({ error: "Not found" });
+      const type = r0.rows[0].insurance_type || "health";
+      const fixable = POLICY_FIX_FIELDS[type];
+      if (!fixable) return res.status(400).json({ error: "NOT_EDITABLE", message: "Only motor, life, term, travel, property, fire and marine details can be changed here." });
+      const expectRev = req.body?.expectRev;
+      if (!Number.isInteger(expectRev)) return bad(res, { expectRev: "the revision seen before is required" });
+      const raw = req.body?.set && typeof req.body.set === "object" ? req.body.set : {};
+      const set: Record<string, unknown> = {};
+      const errors: FieldErrors = {};
+      for (const [k, v] of Object.entries(raw)) {
+        const f = fixable.find((x) => x.key === k);
+        if (!f) { errors[k] = "cannot be changed from WhatsApp"; continue; }
+        if (req.body?.restore === true) { set[k] = v ?? null; continue; } // checked by the token below
+        const c = cleanFixValue(f.kind, v);
+        if (!c.ok) errors[k] = c.error;
+        else if (c.value === null) errors[k] = "a value is needed"; // clearing is for the portal
+        else set[k] = c.value;
+      }
+      if (Object.keys(errors).length) return bad(res, errors);
+      if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
+      const stored = r0.rows[0].extracted_data && typeof r0.rows[0].extracted_data === "object" ? r0.rows[0].extracted_data : {};
+      const before = Object.fromEntries(Object.keys(set).map((k) => [k, stored[k] ?? null]));
+      if (req.body?.restore === true) {
+        const expectAfter = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
+        if (!tokenOk(req.body?.token, undoToken("clients.extracted_data", req.params.id, set, expectAfter))) return bad(res, { token: "undo is only for a change saved here" });
+        if (Object.keys(set).some((k) => norm(stored[k]) !== norm(expectAfter[k]))) return changed(res);
+      }
+      // The portal's save rewrites insurer, plan, expiry and cover from the saved details. If one
+      // of those is only in the column (an older record), the save would blank it: refuse.
+      const derived = deriveSharedColumns(type, { ...stored, ...set }) as Record<string, unknown>;
+      if (["insurer", "policy_name", "expiry_date", "sum_insured"].some((k) => r0.rows[0][k] != null && derived[k] == null)) {
+        return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy has details that are only in the portal. Change it there." });
+      }
+      const out = await saveExtractedData(pool as any, agentId, req.params.id, { expected_rev: expectRev, extracted_data: set }, { deriveSharedColumns, scoreFromExtractedData });
+      if (out.status === 409) return changed(res);
+      if (out.status !== 200) return res.status(out.status === 404 ? 404 : 400).json({ error: "INVALID", fields: Object.fromEntries(((out.body as any)?.fields || []).map((e: any) => [e.field, e.reason])), message: (out.body as any)?.message });
+      void audit(agentId, req.params.id, "wa_policy_fields", "/api/internal/wa/clients/:id/fields");
+      const merged = (out.body as any).extracted_data || {};
+      const after = Object.fromEntries(Object.keys(set).map((k) => [k, merged[k] ?? null]));
+      res.json({ ok: true, before, after, rev: (out.body as any).rev, undoToken: undoToken("clients.extracted_data", req.params.id, before, after) });
+    } catch (err) { fail(res, "policy fields", err); }
+  });
+
+  /** Stop or restart sharing a report. Body: { enabled, expectEnabled }. Only the flag moves:
+   *  the share link (token) stays, so restarting gives the customer the same link back. */
+  app.post("/api/internal/wa/clients/:id/sharing", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const enabled = req.body?.enabled;
+      const was = req.body?.expectEnabled;
+      if (typeof enabled !== "boolean" || typeof was !== "boolean") return bad(res, { enabled: "true or false, with the value seen before" });
+      const r = await pool.query(
+        `UPDATE clients SET share_enabled = $3
+          WHERE id = $1 AND agent_id = $2 AND COALESCE(share_enabled, true) = $4 RETURNING id`,
+        [req.params.id, agentId, enabled, was]
+      );
+      if (!r.rowCount) return changed(res);
+      void audit(agentId, req.params.id, enabled ? "wa_share_on" : "wa_share_off", "/api/internal/wa/clients/:id/sharing");
+      res.json({ ok: true, enabled });
+    } catch (err) { fail(res, "policy sharing", err); }
   });
 }
 

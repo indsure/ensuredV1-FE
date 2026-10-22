@@ -156,3 +156,87 @@ export function restoreSet(raw: Record<string, unknown>, cols: string[]): Clean 
 export function missingExpect(set: Record<string, unknown>, expect: Record<string, unknown>): string[] {
   return Object.keys(set).filter((k) => !(k in expect));
 }
+
+/* ── Stage 2b: policies ───────────────────────────────────────────────── */
+
+export type FixKind = "money" | "percent" | "date" | "text";
+export type FixField = { key: string; label: string; kind: FixKind; words: string[] };
+
+const PREMIUM: FixField = { key: "premium", label: "Premium", kind: "money", words: ["premium", "premium amount"] };
+const POLICY_NO: FixField = { key: "policy_number", label: "Policy number", kind: "text", words: ["policy number", "policy no", "policy no.", "policy num"] };
+const START = (key: string): FixField => ({ key, label: "Start date", kind: "date", words: ["start date", "start", "commencement date", "commencement"] });
+const END = (key: string, label: string, extra: string[] = []): FixField => ({ key, label, kind: "date", words: ["expiry date", "expiry", "expiry date", "renewal date", "end date", "valid till", ...extra] });
+const COVER = (key: string, label: string): FixField => ({ key, label, kind: "money", words: ["sum insured", "cover", "cover amount", "sum assured", "idv"] });
+
+/**
+ * The saved details of a NON-health policy that WhatsApp may fix, per type: the everyday ones,
+ * never the valuation records or json. Keys are the portal's EXTRACTION_FIELDS keys.
+ * Health is never here: its details belong to the stored check.
+ */
+export const POLICY_FIX_FIELDS: Record<string, FixField[]> = {
+  motor: [
+    PREMIUM, COVER("idv", "IDV (sum insured)"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO,
+    { key: "vehicle_registration_no", label: "Vehicle registration no.", kind: "text", words: ["registration number", "registration no", "registration", "vehicle number", "car number", "bike number", "gaadi number"] },
+    { key: "make_and_model", label: "Make & model", kind: "text", words: ["make and model", "model", "car model", "bike model"] },
+    { key: "ncb_percent", label: "No-claim bonus (%)", kind: "percent", words: ["ncb", "no claim bonus", "no-claim bonus"] },
+  ],
+  life: [
+    PREMIUM, COVER("sum_assured", "Sum assured"), END("maturity_date", "Maturity date", ["maturity", "maturity date"]), START("start_date"), POLICY_NO,
+    { key: "next_premium_date", label: "Next premium due date", kind: "date", words: ["next premium date", "next premium", "premium due date", "due date", "next due date"] },
+    { key: "nominee_name", label: "Nominee", kind: "text", words: ["nominee", "nominee name"] },
+    { key: "premium_frequency", label: "Premium frequency", kind: "text", words: ["premium frequency", "frequency", "payment mode", "mode"] },
+  ],
+  term: [
+    PREMIUM, COVER("sum_assured", "Sum assured (cover)"), END("cover_end_date", "Cover end date", ["cover end date", "cover end"]), START("start_date"), POLICY_NO,
+    { key: "next_premium_date", label: "Next premium due date", kind: "date", words: ["next premium date", "next premium", "premium due date", "due date", "next due date"] },
+    { key: "nominee_name", label: "Nominee", kind: "text", words: ["nominee", "nominee name"] },
+    { key: "premium_frequency", label: "Premium frequency", kind: "text", words: ["premium frequency", "frequency", "payment mode", "mode"] },
+  ],
+  travel: [
+    PREMIUM, COVER("sum_insured", "Sum insured"), END("trip_end_date", "Trip end date", ["trip end", "trip end date", "return date"]), START("trip_start_date"), POLICY_NO,
+    { key: "destination", label: "Destination", kind: "text", words: ["destination", "country"] },
+  ],
+  property: [PREMIUM, COVER("sum_insured", "Sum insured"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO],
+  fire: [PREMIUM, COVER("sum_insured", "Total sum insured"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO],
+  marine: [PREMIUM, COVER("sum_insured", "Sum insured"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO],
+};
+
+/** The field a typed word means for this policy type, or null. */
+export function policyFieldOf(type: string, word: string): FixField | null {
+  const w = word.trim().toLowerCase().replace(/\s+/g, " ");
+  return (POLICY_FIX_FIELDS[type] || []).find((f) => f.words.includes(w)) ?? null;
+}
+
+/** A fixed value, checked for its kind (the portal checks only life and term itself). */
+export function cleanFixValue(kind: FixKind, v: unknown): { ok: true; value: string | number | null } | { ok: false; error: string } {
+  if (v === null || v === undefined || String(v).trim() === "") return { ok: true, value: null };
+  if (kind === "money") { const m = money(v); return m.ok && m.value !== null ? { ok: true, value: m.value } : { ok: false, error: "not an amount" }; }
+  if (kind === "percent") {
+    const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^\d.]/g, ""));
+    return Number.isFinite(n) && n >= 0 && n <= 100 ? { ok: true, value: n } : { ok: false, error: "not a percentage from 0 to 100" };
+  }
+  if (kind === "date") {
+    const s = String(v).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { ok: false, error: "not a date" };
+    const d = new Date(s + "T00:00:00Z");
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) return { ok: false, error: "not a date" };
+    return { ok: true, value: s };
+  }
+  const t = String(v).trim();
+  return t.length <= 200 ? { ok: true, value: t } : { ok: false, error: "too long" };
+}
+
+/** Client details on any policy row, health included (PolicyDetail.tsx saveClientDetails). */
+export const CLIENT_DETAIL_COLS = ["policyholder_name", "policy_identifier", "client_email", "client_phone"];
+export function cleanClientSet(raw: Record<string, unknown>): Clean {
+  const set: Record<string, unknown> = {};
+  const errors: FieldErrors = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (k === "policyholder_name") { const t = String(v ?? "").trim(); if (t.length < 2) errors[k] = "a name is needed"; else set[k] = t.slice(0, 120); }
+    else if (k === "policy_identifier") { const t = String(v ?? "").trim(); set[k] = t === "" ? null : t.slice(0, 80); }
+    else if (k === "client_phone") { const r = cleanLeadSet({ phone: v }); if (r.errors.phone) errors[k] = r.errors.phone; else set[k] = r.set.phone; }
+    else if (k === "client_email") { const r = cleanLeadSet({ email: v }); if (r.errors.email) errors[k] = r.errors.email; else set[k] = r.set.email; }
+    else errors[k] = "cannot be changed from WhatsApp";
+  }
+  return { set, errors };
+}

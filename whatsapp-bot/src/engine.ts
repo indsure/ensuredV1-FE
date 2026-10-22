@@ -149,6 +149,11 @@ export interface Engine {
   customerUndoCreate(agentId: string, id: string, created: Record<string, unknown>): Promise<boolean>;
   fileClient(agentId: string, clientId: string, customerId: string | null, expectCustomerId: string | null): Promise<WriteResult<{ customerId: string | null }>>;
   leadUndoCreate(agentId: string, id: string, created?: Record<string, unknown>): Promise<boolean>;
+  /* Stage 2b: policies. Client details on any policy; saved details on a non-health one. */
+  policyFields(agentId: string, clientId: string): Promise<PolicyFields | null>;
+  policyFieldSave(agentId: string, clientId: string, set: Record<string, unknown>, expectRev: number, undo?: { expect: Record<string, unknown>; token?: string }): Promise<WriteResult<{ before: Record<string, unknown>; after: Record<string, unknown>; rev: number; undoToken?: string }>>;
+  clientDetailSave(agentId: string, clientId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
+  setSharing(agentId: string, clientId: string, enabled: boolean, expectEnabled: boolean): Promise<WriteResult<{ enabled: boolean }>>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
@@ -300,6 +305,19 @@ export class HttpEngine implements Engine {
   fileClient(agentId: string, clientId: string, customerId: string | null, expectCustomerId: string | null) {
     return this.write<{ customerId: string | null }>(`/api/internal/wa/clients/${clientId}/file`, agentId, { customerId, expectCustomerId });
   }
+  async policyFields(agentId: string, clientId: string) {
+    try { return await this.call(`/api/internal/wa/clients/${clientId}/fields`, { agentId }) as PolicyFields; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  policyFieldSave(agentId: string, clientId: string, set: Record<string, unknown>, expectRev: number, undo?: { expect: Record<string, unknown>; token?: string }) {
+    return this.write<{ before: Record<string, unknown>; after: Record<string, unknown>; rev: number; undoToken?: string }>(
+      `/api/internal/wa/clients/${clientId}/fields`, agentId, { set, expectRev, ...(undo ? { restore: true, expect: undo.expect, token: undo.token } : {}) });
+  }
+  clientDetailSave(agentId: string, clientId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    return this.write<{ after: Record<string, unknown>; undoToken?: string }>(`/api/internal/wa/clients/${clientId}/client-details`, agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
+  }
+  setSharing(agentId: string, clientId: string, enabled: boolean, expectEnabled: boolean) {
+    return this.write<{ enabled: boolean }>(`/api/internal/wa/clients/${clientId}/sharing`, agentId, { enabled, expectEnabled });
+  }
   async leadUndoCreate(agentId: string, id: string, created?: Record<string, unknown>) {
     try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: { expect: created } }); return true; }
     catch { return false; }
@@ -351,6 +369,12 @@ export type FullLead = {
   id: string; name: string; phone: string | null; email: string | null; city: string | null; source: string | null;
   insurance_interest: string | null; expected_value: string | number | null; status: string; next_follow_up: string | null;
   notes: string | null; customer_id: string | null; created_at?: string; updated_at?: string;
+};
+/** One policy's editable details (GET /api/internal/wa/clients/:id/fields). `fields` is empty for health. */
+export type PolicyFields = {
+  id: string; type: string; status: string; shareEnabled: boolean; rev: number;
+  client: { policyholder_name: string | null; policy_identifier: string | null; client_email: string | null; client_phone: string | null };
+  fields: { key: string; label: string; kind: "money" | "percent" | "date" | "text"; value: unknown }[];
 };
 export type FullCustomer = { id: string; name: string; phone: string | null; email: string | null; city: string | null; dob: string | null; created_at?: string };
 /** A write the server refused is a plain result: CHANGED (edited meanwhile), INVALID (with

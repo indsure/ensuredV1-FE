@@ -291,6 +291,78 @@ export class FakeEngine implements Engine {
     this.writes.push({ kind: "fileClient", id: clientId, body: { customerId } });
     return { ok: true as const, customerId };
   }
+  /* Stage 2b: the same rules as backend whatsapp/edits.ts, through the shared editRules. */
+  policyExtra = new Map<string, { rev: number; data: Record<string, unknown>; email: string | null; identifier: string | null; token?: string }>();
+  private pol(id: string) {
+    const c = this.clients.get(id);
+    if (!c) return null;
+    let x = this.policyExtra.get(id);
+    if (!x) { x = { rev: 0, data: {}, email: null, identifier: null }; this.policyExtra.set(id, x); }
+    return { c, x };
+  }
+  async policyFields(_a: string, id: string) {
+    const p = this.pol(id);
+    if (!p) return null;
+    const type = p.c.insuranceType || "health";
+    return {
+      id, type, status: p.c.status, shareEnabled: !!p.c.shareToken, rev: p.x.rev,
+      client: { policyholder_name: p.c.policyholderName, policy_identifier: p.x.identifier, client_email: p.x.email, client_phone: p.c.customerPhone },
+      fields: (ED.POLICY_FIX_FIELDS[type] || []).map((f) => ({ key: f.key, label: f.label, kind: f.kind, value: p.x.data[f.key] ?? null })),
+    };
+  }
+  async policyFieldSave(_a: string, id: string, set: Record<string, unknown>, expectRev: number, undo?: { expect: Record<string, unknown>; token?: string }) {
+    const p = this.pol(id);
+    if (!p) return { ok: false as const, reason: "Not found" };
+    const fix = ED.POLICY_FIX_FIELDS[p.c.insuranceType || "health"];
+    if (!fix) return { ok: false as const, reason: "NOT_EDITABLE" };
+    if (expectRev !== p.x.rev) return { ok: false as const, reason: "CHANGED" };
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(set)) {
+      const f = fix.find((x) => x.key === k);
+      if (!f) return { ok: false as const, reason: "INVALID", fields: { [k]: "cannot be changed from WhatsApp" } };
+      if (undo) { clean[k] = v ?? null; continue; }
+      const c = ED.cleanFixValue(f.kind, v);
+      if (!c.ok || c.value === null) return { ok: false as const, reason: "INVALID", fields: { [k]: c.ok ? "a value is needed" : c.error } };
+      clean[k] = c.value;
+    }
+    if (undo) {
+      if (undo.token !== "fake-token") return { ok: false as const, reason: "INVALID", fields: { token: "undo is only for a change saved here" } };
+      if (Object.keys(clean).some((k) => ED.norm(p.x.data[k]) !== ED.norm(undo.expect[k]))) return { ok: false as const, reason: "CHANGED" };
+    }
+    const before = Object.fromEntries(Object.keys(clean).map((k) => [k, p.x.data[k] ?? null]));
+    Object.assign(p.x.data, clean);
+    p.x.rev += 1;
+    this.writes.push({ kind: "policyFieldSave", id, body: clean });
+    return { ok: true as const, before, after: { ...clean }, rev: p.x.rev, undoToken: "fake-token" };
+  }
+  async clientDetailSave(_a: string, id: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    const p = this.pol(id);
+    if (!p) return { ok: false as const, reason: "Not found" };
+    if (ED.missingExpect(set, expect).length) return { ok: false as const, reason: "INVALID", fields: { expect: "required" } };
+    const cl = restore ? ED.restoreSet(set, ED.CLIENT_DETAIL_COLS) : ED.cleanClientSet(set);
+    if (Object.keys(cl.errors).length) return { ok: false as const, reason: "INVALID", fields: cl.errors };
+    if (restore && token !== "fake-token") return { ok: false as const, reason: "INVALID", fields: { token: "undo is only for a change saved here" } };
+    const now: Record<string, unknown> = { policyholder_name: p.c.policyholderName, client_phone: p.c.customerPhone, client_email: p.x.email, policy_identifier: p.x.identifier };
+    if (Object.keys(expect).some((k) => ED.norm(now[k]) !== ED.norm(expect[k]))) return { ok: false as const, reason: "CHANGED" };
+    for (const [k, v] of Object.entries(cl.set)) {
+      if (k === "policyholder_name") p.c.policyholderName = v as string;
+      else if (k === "client_phone") p.c.customerPhone = (v as string) ?? null;
+      else if (k === "client_email") p.x.email = (v as string) ?? null;
+      else if (k === "policy_identifier") p.x.identifier = (v as string) ?? null;
+    }
+    this.writes.push({ kind: "clientDetailSave", id, body: cl.set });
+    return { ok: true as const, after: { ...cl.set }, undoToken: "fake-token" };
+  }
+  async setSharing(_a: string, id: string, enabled: boolean, expectEnabled: boolean) {
+    const p = this.pol(id);
+    if (!p) return { ok: false as const, reason: "Not found" };
+    if (!!p.c.shareToken !== expectEnabled) return { ok: false as const, reason: "CHANGED" };
+    // Only the switch moves: the same link comes back.
+    if (p.c.shareToken) p.x.token = p.c.shareToken;
+    p.c.shareToken = enabled ? (p.x.token ?? "tok-" + id.slice(0, 8)) : null;
+    this.writes.push({ kind: "setSharing", id, body: { enabled } });
+    return { ok: true as const, enabled };
+  }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {
     // Same as the backend: only if it still holds exactly what was created.
