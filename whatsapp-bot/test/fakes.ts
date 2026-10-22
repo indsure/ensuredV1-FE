@@ -307,14 +307,14 @@ export class FakeEngine implements Engine {
     return {
       id, type, status: p.c.status, shareEnabled: !!p.c.shareToken, rev: p.x.rev,
       client: { policyholder_name: p.c.policyholderName, policy_identifier: p.x.identifier, client_email: p.x.email, client_phone: p.c.customerPhone },
-      fields: (ED.POLICY_FIX_FIELDS[type] || []).map((f) => ({ key: f.key, label: f.label, kind: f.kind, value: p.x.data[f.key] ?? null })),
+      fields: ED.fixFieldsFor(type, p.x.data).map((f) => ({ key: f.key, label: f.label, kind: f.kind, value: p.x.data[f.key] ?? null })),
     };
   }
   async policyFieldSave(_a: string, id: string, set: Record<string, unknown>, expectRev: number, undo?: { expect: Record<string, unknown>; token?: string }) {
     const p = this.pol(id);
     if (!p) return { ok: false as const, reason: "Not found" };
-    const fix = ED.POLICY_FIX_FIELDS[p.c.insuranceType || "health"];
-    if (!fix) return { ok: false as const, reason: "NOT_EDITABLE" };
+    if (!ED.POLICY_FIX_FIELDS[p.c.insuranceType || "health"]) return { ok: false as const, reason: "NOT_EDITABLE" };
+    const fix = ED.fixFieldsFor(p.c.insuranceType || "health", p.x.data);
     if (expectRev !== p.x.rev) return { ok: false as const, reason: "CHANGED" };
     const clean: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(set)) {

@@ -42,9 +42,9 @@ function tokenOk(given: unknown, want: string): boolean {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet } from "./editRules";
+import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet } from "./editRules";
 import { saveExtractedData } from "../services/policyValueStore";
-import { deriveSharedColumns } from "../services/extractionFields";
+import { deriveSharedColumns, EXTRACTION_FIELDS } from "../services/extractionFields";
 import { scoreFromExtractedData } from "../../../shared/motorScore";
 import type { FieldErrors, Clean } from "./editRules";
 export { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate } from "./editRules";
@@ -282,7 +282,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
   });
   /* ── Stage 2b: policies (plan 3, 2b) ── */
 
-  const CLIENT_OUT = "id, insurance_type, status, policyholder_name, policy_identifier, client_email, client_phone, share_enabled, insurer, policy_name, extracted_data";
+  const CLIENT_OUT = "id, insurance_type, status, policyholder_name, policy_identifier, client_email, client_phone, share_enabled, insurer, policy_name, expiry_date::text AS expiry_date, sum_insured, extracted_data";
 
   /** One policy's editable details: client details on any type; for a data-entry type also the
    *  everyday saved fields (POLICY_FIX_FIELDS) with the record's revision. */
@@ -296,12 +296,17 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const c = r.rows[0];
       const type = c.insurance_type || "health";
       const data = c.extracted_data && typeof c.extracted_data === "object" ? c.extracted_data : {};
-      const fixable = POLICY_FIX_FIELDS[type] || [];
+      const fixable = fixFieldsFor(type, data);
       res.json({
-        id: c.id, type, status: c.status, shareEnabled: c.share_enabled !== false,
+        id: c.id, type, status: c.status, shareEnabled: c.share_enabled === true,
         client: { policyholder_name: c.policyholder_name, policy_identifier: c.policy_identifier, client_email: c.client_email, client_phone: c.client_phone },
         rev: Number.isInteger(data._rev) ? data._rev : 0,
-        fields: fixable.map((f) => ({ key: f.key, label: f.label, kind: f.kind, value: data[f.key] ?? null })),
+        // A saved detail kept only in the row's column (older records) is shown as the portal shows it.
+        fields: fixable.map((f) => {
+          const col = sharedColumnOf(type, f.key);
+          const v = data[f.key] ?? null;
+          return { key: f.key, label: f.label, kind: f.kind, value: empty(v) && col ? c[col] ?? null : v };
+        }),
       });
     } catch (err) { fail(res, "policy fields read", err); }
   });
@@ -320,7 +325,15 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const missing = missingExpect(set, known);
       if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
       if (req.body?.restore === true && !tokenOk(req.body?.token, undoToken("clients", req.params.id, set, known))) return bad(res, { token: "undo is only for a change saved here" });
-      const q = guardedUpdate("clients", CLIENT_DETAIL_COLS, set, known);
+      // On a non-health policy the portal's detail save re-derives the name from extracted_data
+      // (policyValueStore: COALESCE(derived, column)). Keep both in step, and move the revision
+      // so a form opened before this change cannot save the old name back.
+      const keys0 = Object.keys(set);
+      const ni = keys0.indexOf("policyholder_name");
+      const syncName = ni < 0 ? "" : `extracted_data = CASE WHEN COALESCE(insurance_type, 'health') <> 'health' AND jsonb_typeof(extracted_data) = 'object'
+           THEN jsonb_set(jsonb_set(extracted_data, '{policyholder_name}', to_jsonb($${ni + 3}::text)), '{_rev}', to_jsonb(COALESCE((extracted_data->>'_rev')::int, 0) + 1))
+           ELSE extracted_data END`;
+      const q = guardedUpdate("clients", CLIENT_DETAIL_COLS, set, known, syncName);
       const r = await pool.query(q.sql, [req.params.id, agentId, ...q.params]);
       if (!r.rowCount) return changed(res);
       void audit(agentId, req.params.id, "wa_policy_client_details", "/api/internal/wa/clients/:id/client-details");
@@ -340,11 +353,14 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
-      const r0 = await pool.query("SELECT insurance_type, extracted_data, insurer, policy_name, expiry_date::text AS expiry_date, sum_insured FROM clients WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      const r0 = await pool.query("SELECT insurance_type, status, extracted_data, insurer, policy_name, policyholder_name, expiry_date::text AS expiry_date, sum_insured FROM clients WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
       if (!r0.rows.length) return res.status(404).json({ error: "Not found" });
-      const type = r0.rows[0].insurance_type || "health";
-      const fixable = POLICY_FIX_FIELDS[type];
-      if (!fixable) return res.status(400).json({ error: "NOT_EDITABLE", message: "Only motor, life, term, travel, property, fire and marine details can be changed here." });
+      const row = r0.rows[0];
+      const type = row.insurance_type || "health";
+      if (!POLICY_FIX_FIELDS[type]) return res.status(400).json({ error: "NOT_EDITABLE", message: "Only motor, life, term, travel, property, fire and marine details can be changed here." });
+      // A policy still being read would have this save overwritten by the reader.
+      if (row.status !== "done") return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy is still being read. Try again when it is done." });
+      const fixable = fixFieldsFor(type, row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {});
       const expectRev = req.body?.expectRev;
       if (!Number.isInteger(expectRev)) return bad(res, { expectRev: "the revision seen before is required" });
       const raw = req.body?.set && typeof req.body.set === "object" ? req.body.set : {};
@@ -361,17 +377,24 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       }
       if (Object.keys(errors).length) return bad(res, errors);
       if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
-      const stored = r0.rows[0].extracted_data && typeof r0.rows[0].extracted_data === "object" ? r0.rows[0].extracted_data : {};
+      const stored = row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {};
       const before = Object.fromEntries(Object.keys(set).map((k) => [k, stored[k] ?? null]));
-      if (req.body?.restore === true) {
+      const restore = req.body?.restore === true;
+      if (restore) {
         const expectAfter = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
         if (!tokenOk(req.body?.token, undoToken("clients.extracted_data", req.params.id, set, expectAfter))) return bad(res, { token: "undo is only for a change saved here" });
         if (Object.keys(set).some((k) => norm(stored[k]) !== norm(expectAfter[k]))) return changed(res);
       }
-      // The portal's save rewrites insurer, plan, expiry and cover from the saved details. If one
-      // of those is only in the column (an older record), the save would blank it: refuse.
+      // The portal's save rewrites insurer, plan, expiry, cover and name from the saved details.
+      // A column that does not match them (an older record, or fixed elsewhere) would be silently
+      // overwritten or blanked by a premium fix: refuse, the portal shows both. The columns the
+      // edited fields themselves feed are expected to move.
+      const moving = new Set(Object.keys(set).map((k) => sharedColumnOf(type, k)).filter(Boolean));
+      const notOurs = (k: string) => !restore && empty(stored[k]) && !!sharedColumnOf(type, k) && !empty(row[sharedColumnOf(type, k)!]);
       const derived = deriveSharedColumns(type, { ...stored, ...set }) as Record<string, unknown>;
-      if (["insurer", "policy_name", "expiry_date", "sum_insured"].some((k) => r0.rows[0][k] != null && derived[k] == null)) {
+      const drift = ["insurer", "policy_name", "expiry_date", "sum_insured", "policyholder_name"]
+        .some((col) => !moving.has(col) && !empty(row[col]) && !sameColumn(col, derived[col], row[col]) && !(col === "policyholder_name" && empty(derived[col])));
+      if (drift || Object.keys(set).some(notOurs)) {
         return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy has details that are only in the portal. Change it there." });
       }
       const out = await saveExtractedData(pool as any, agentId, req.params.id, { expected_rev: expectRev, extracted_data: set }, { deriveSharedColumns, scoreFromExtractedData });
@@ -453,4 +476,24 @@ function pick(row: any, cols: string): Record<string, unknown> {
   // "next_follow_up::text AS next_follow_up" -> the key is the alias.
   for (const c of cols.split(",").map((s) => s.trim().split(/\s+AS\s+/i).pop()!.trim())) out[c] = row?.[c] instanceof Date ? norm(row[c]) : row?.[c] ?? null;
   return out;
+}
+
+/* ── Stage 2b helpers ── */
+
+const empty = (v: unknown) => v === null || v === undefined || v === "";
+
+/** The clients column a saved detail feeds (extractionFields `shared`; motor's OD date feeds expiry). */
+export function sharedColumnOf(type: string, key: string): string | null {
+  if (type === "motor" && key === "od_expiry_date") return "expiry_date";
+  const f = ((EXTRACTION_FIELDS as Record<string, { key: string; shared?: string }[]>)[type] || []).find((x) => x.key === key);
+  return f?.shared ?? null;
+}
+
+/** Whether a derived value and the stored column say the same thing (numbers as numbers, dates as days). */
+export function sameColumn(col: string, derived: unknown, column: unknown): boolean {
+  if (empty(derived) && empty(column)) return true;
+  if (empty(derived) || empty(column)) return false;
+  if (col === "sum_insured") return Number(derived) === Number(column);
+  if (col === "expiry_date") return norm(derived) === norm(column);
+  return String(derived).trim() === String(column).trim();
 }

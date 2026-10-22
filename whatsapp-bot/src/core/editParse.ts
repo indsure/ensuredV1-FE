@@ -5,7 +5,7 @@
  * server re-checks everything (backend/server/whatsapp/edits.ts).
  */
 
-import { POLICY_FIX_FIELDS } from "../shared/editRules.js";
+import { POLICY_FIX_FIELDS, strictAmount } from "../shared/editRules.js";
 
 export type Field = "name" | "phone" | "email" | "city" | "source" | "insurance_interest" | "expected_value" | "dob";
 export type EditAsk = { who: string; field: Field | null; value: string | null };
@@ -213,7 +213,10 @@ export function clientKeyOf(word: string): string | null {
 }
 
 export function parsePolicyFix(textRaw: string): PolicyFixAsk | null {
+  // A question is never an edit: "premium is 15,400?", "premium 15000 hai na", "... right".
+  if (/\?\s*$/.test(textRaw.trim()) || /\s(?:right|kya|na|naa|correct|sahi)\s*[.!।]*$/i.test(textRaw.trim())) return null;
   const t = clean(textRaw).replace(/[’']/g, "'");
+  const IS = `(?:\\s*[:=]\\s*|\\s+(?:is actually|should be|is)\\s+)`;
   const W = `(${FIX_ALT})`;
   const C = `(${CLIENT_ALT})`;
   const TY = `(?:(${TYPE_ALT})\\s+)?`;
@@ -230,7 +233,11 @@ export function parsePolicyFix(textRaw: string): PolicyFixAsk | null {
     [new RegExp(`^(?:please\\s+)?(?:change|update|set|correct|fix)\\s+(?:the\\s+)?${C}\\s+(?:of|on|for|in)\\s+(?:this\\s+policy|(.+?)'s\\s+${TY}policy)${TO}$`, "i"), (m) => ({ policyOf: m[2] ?? null, typeWord: m[3] ?? null, word: m[1], value: val(m[4]) })],
     [new RegExp(`^(?:this\\s+)?policy(?:'s)?\\s+${C}\\s+(?:is|should be|=|:)\\s+(.+)$`, "i"), (m) => ({ policyOf: null, typeWord: null, word: m[1], value: val(m[2]) })],
     // About the policy we are on: "premium is 14,500 not 15,400", "the IDV should be 5.2 lakh"
-    [new RegExp(`^(?:the\\s+)?(?:policy\\s+)?${W}\\s+(?:is actually|should be|is|=|:)\\s+(.+)$`, "i"), (m) => ({ policyOf: null, typeWord: null, word: m[1], value: val(m[2]) })],
+    [new RegExp(`^(?:the\\s+)?(?:policy\\s+)?${W}${IS}(.+)$`, "i"), (m) => ({ policyOf: null, typeWord: null, word: m[1], value: val(m[2]) })],
+    // Named: "Ramesh's premium is 15000", "Ramesh's car policy due date is 5 March 2027"
+    [new RegExp(`^(.+?)'s\\s+${TY}(?:policy(?:'s)?\\s+)?${W}${IS}(.+)$`, "i"), (m) => ({ policyOf: m[1], typeWord: m[2] ?? null, word: m[3], value: val(m[4]) })],
+    // Hinglish, named without "policy": "Sunita ka premium 15000 hai"
+    [new RegExp(`^(.+?)\\s+(?:ki|ka|ke|की|का|के)\\s+${W}\\s+(.+?)\\s+(?:kar do|kardo|karo|hai|likh do|likho|कर दो|करो|है)$`, "i"), (m) => ({ policyOf: m[1], typeWord: null, word: m[2], value: val(m[3]) })],
     // Hinglish: premium 14500 hai / Ramesh ki policy ka premium 14500 kar do
     [new RegExp(`^(?:(.+?)\\s+(?:ki|ka|ke|की|का|के)\\s+${TY}(?:policy|पॉलिसी)\\s+(?:ka|ki|ke|का|की|के)\\s+)?${W}\\s+(.+?)\\s+(?:kar do|kardo|karo|hai|likh do|likho|कर दो|करो|है)$`, "i"), (m) => ({ policyOf: m[1] ?? null, typeWord: m[2] ?? null, word: m[3], value: val(m[4]) })],
     // Guided: edit this policy / edit Ramesh's car policy
@@ -243,7 +250,8 @@ export function parsePolicyFix(textRaw: string): PolicyFixAsk | null {
     const a = f(m);
     if (a.policyOf !== null && !okWho(a.policyOf)) continue;
     if (a.value !== null && (!a.value.trim() || QUESTION_VALUE.test(a.value.trim()))) continue;
-    if (a.value !== null && a.word && NUMBER_WORDS.has(a.word.toLowerCase()) && !/\d/.test(a.value)) continue;
+    // An amount or date word needs a value that reads as one: "cover 1 crore for family of 4" is a question.
+    if (a.value !== null && a.word && NUMBER_WORDS.has(a.word.toLowerCase()) && !readsAsNumber(a.value)) continue;
     return { policyOf: a.policyOf === null ? null : clean(a.policyOf), typeWord: a.typeWord?.toLowerCase() ?? null, word: a.word?.toLowerCase() ?? null, value: a.value };
   }
   return null;
@@ -254,7 +262,8 @@ export function parseUnshare(textRaw: string): { policyOf: string | null } | nul
   const t = clean(textRaw).replace(/[’']/g, "'");
   const m = t.match(/^(?:please\s+)?(?:stop|turn off|disable|end)\s+sharing(?:\s+(?:of\s+)?(?:(.+?)'s\s+(?:report|policy|link)|this(?:\s+report|\s+policy|\s+link)?|the\s+(?:report|link)|it))?$/i)
     || t.match(/^unshare(?:\s+(?:(.+?)'s\s+(?:report|policy|link)|this(?:\s+report|\s+policy)?|the\s+report|it))?$/i)
-    || t.match(/^(?:(.+?)\s+(?:ki|ka|की|का)\s+)?(?:report|link|रिपोर्ट|लिंक)\s+(?:ka\s+)?(?:share\s+|sharing\s+)?(?:band karo|band kar do|bandh karo|बंद करो|बंद कर दो)$/i)
+    // A name is needed here: "report band karo" alone may mean the morning brief.
+    || t.match(/^(.+?)\s+(?:ki|ka|की|का)\s+(?:report|link|रिपोर्ट|लिंक)\s+(?:ka\s+)?(?:share\s+|sharing\s+)?(?:band karo|band kar do|bandh karo|बंद करो|बंद कर दो)$/i)
     || t.match(/^(?:sharing|share)\s+(?:band karo|band kar do|बंद करो)$/i);
   if (!m) return null;
   if (m[1] && !okWho(m[1])) return null;
@@ -267,13 +276,22 @@ export function anyDate(s: string): string | null {
   let y: number, mo: number, d: number;
   let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (m) [y, mo, d] = [+m[1], +m[2], +m[3]];
-  else if ((m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
-  else if ((m = t.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*\s+(\d{4})$/)) && MONTHS.includes(m[2])) [d, mo, y] = [+m[1], MONTHS.indexOf(m[2]) + 1, +m[3]];
-  else if ((m = t.match(/^([a-z]{3})[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{4})$/)) && MONTHS.includes(m[1])) [d, mo, y] = [+m[2], MONTHS.indexOf(m[1]) + 1, +m[3]];
+  else if ((m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})$/))) [d, mo, y] = [+m[1], +m[2], yyyy(m[3])];
+  else if ((m = t.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*\s+(\d{4}|\d{2})$/)) && MONTHS.includes(m[2])) [d, mo, y] = [+m[1], MONTHS.indexOf(m[2]) + 1, yyyy(m[3])];
+  else if ((m = t.match(/^([a-z]{3})[a-z]*\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{4}|\d{2})$/)) && MONTHS.includes(m[1])) [d, mo, y] = [+m[2], MONTHS.indexOf(m[1]) + 1, yyyy(m[3])];
   else return null;
   const dt = new Date(Date.UTC(y, mo - 1, d));
   if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d || y < 1950 || y > 2125) return null;
   return dt.toISOString().slice(0, 10);
+}
+
+/** "27" -> 2027 (policy dates are this century); four digits as typed. */
+const yyyy = (s: string) => (s.length === 2 ? 2000 + +s : +s);
+
+/** Reads as an amount, a date or a percentage. */
+function readsAsNumber(v: string): boolean {
+  const s = v.trim();
+  return amountWords(s) !== null || anyDate(s) !== null || strictAmount(s) !== null || /^\d+(?:\.\d+)?\s*(?:%|percent)$/i.test(s);
 }
 
 /** A policy value as typed -> as the portal stores it. The server checks it again. */

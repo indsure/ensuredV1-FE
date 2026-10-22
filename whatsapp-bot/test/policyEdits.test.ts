@@ -5,6 +5,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeBot, text, healthClient } from "./fakes.js";
 import { ruleIntent } from "../src/core/intents.js";
+import { anyDate } from "../src/core/editParse.js";
+import { strictAmount } from "../src/shared/editRules.js";
 
 const CAR = "55555555-5555-4555-8555-555555555555";
 const LIFE = "66666666-6666-4666-8666-666666666666";
@@ -170,4 +172,29 @@ test("an amount or date word needs a number: questions and other requests are ne
   assert.notEqual(ruleIntent("premium is too high"), "policyfix");
   assert.notEqual(ruleIntent("expiry date kya hai"), "policyfix");
   assert.equal(ruleIntent("nominee is Sunita Rao"), "policyfix", "a text detail needs no number");
+});
+
+test("critic: questions, other commands and unreadable amounts are never policy edits", () => {
+  for (const s of ["premium is 15000?", "premium 15000 hai na", "the premium is 15,400 right", "premium is 15000 kya",
+    "mode is hindi", "change mode to hindi", "set the mode to hindi", "cover 1 crore for family of 4 hai", "report band karo"]) {
+    assert.ok(!["policyfix", "unshare"].includes(String(ruleIntent(s))), s);
+  }
+});
+
+test("critic: phrasings advisors will use are understood", () => {
+  for (const s of ["Ramesh's premium is 15000", "Sunita ka premium 15000 hai", "premium: 15000", "Ramesh's due date is 5 march 2027"]) {
+    assert.equal(ruleIntent(s), "policyfix", s);
+  }
+  assert.equal(anyDate("1-3-27"), "2027-03-01");
+  assert.equal(strictAmount("Rs. 5,00,000/-"), 500000);
+});
+
+test("critic: 'expiry' on a motor policy with an own-damage date changes the renewal date", async () => {
+  const { bot, transport, engine } = setup();
+  engine.policyExtra.get(CAR)!.data.od_expiry_date = "2026-12-01";
+  await bot.handle(text("change Ramesh's car policy expiry to 1 Dec 2027"));
+  assert.match(transport.last(), /Own-damage expiry \(renewal date\) .* → /);
+  await bot.handle(text("yes"));
+  assert.equal(engine.policyExtra.get(CAR)!.data.od_expiry_date, "2027-12-01");
+  assert.equal(engine.policyExtra.get(CAR)!.data.policy_expiry_date, "2027-03-01");
 });

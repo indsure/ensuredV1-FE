@@ -164,7 +164,7 @@ export type FixField = { key: string; label: string; kind: FixKind; words: strin
 
 const PREMIUM: FixField = { key: "premium", label: "Premium", kind: "money", words: ["premium", "premium amount"] };
 const POLICY_NO: FixField = { key: "policy_number", label: "Policy number", kind: "text", words: ["policy number", "policy no", "policy no.", "policy num"] };
-const START = (key: string): FixField => ({ key, label: "Start date", kind: "date", words: ["start date", "start", "commencement date", "commencement"] });
+const START = (key: string): FixField => ({ key, label: "Start date", kind: "date", words: ["start date", "commencement date", "commencement"] });
 const END = (key: string, label: string, extra: string[] = []): FixField => ({ key, label, kind: "date", words: ["expiry date", "expiry", "expiry date", "renewal date", "end date", "valid till", ...extra] });
 const COVER = (key: string, label: string): FixField => ({ key, label, kind: "money", words: ["sum insured", "cover", "cover amount", "sum assured", "idv"] });
 
@@ -177,40 +177,62 @@ export const POLICY_FIX_FIELDS: Record<string, FixField[]> = {
   motor: [
     PREMIUM, COVER("idv", "IDV (sum insured)"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO,
     { key: "vehicle_registration_no", label: "Vehicle registration no.", kind: "text", words: ["registration number", "registration no", "registration", "vehicle number", "car number", "bike number", "gaadi number"] },
-    { key: "make_and_model", label: "Make & model", kind: "text", words: ["make and model", "model", "car model", "bike model"] },
+    { key: "make_and_model", label: "Make & model", kind: "text", words: ["make and model", "car model", "bike model", "vehicle model"] },
     { key: "ncb_percent", label: "No-claim bonus (%)", kind: "percent", words: ["ncb", "no claim bonus", "no-claim bonus"] },
   ],
   life: [
     PREMIUM, COVER("sum_assured", "Sum assured"), END("maturity_date", "Maturity date", ["maturity", "maturity date"]), START("start_date"), POLICY_NO,
     { key: "next_premium_date", label: "Next premium due date", kind: "date", words: ["next premium date", "next premium", "premium due date", "due date", "next due date"] },
     { key: "nominee_name", label: "Nominee", kind: "text", words: ["nominee", "nominee name"] },
-    { key: "premium_frequency", label: "Premium frequency", kind: "text", words: ["premium frequency", "frequency", "payment mode", "mode"] },
+    { key: "premium_frequency", label: "Premium frequency", kind: "text", words: ["premium frequency", "payment frequency", "payment mode", "premium mode"] },
   ],
   term: [
     PREMIUM, COVER("sum_assured", "Sum assured (cover)"), END("cover_end_date", "Cover end date", ["cover end date", "cover end"]), START("start_date"), POLICY_NO,
     { key: "next_premium_date", label: "Next premium due date", kind: "date", words: ["next premium date", "next premium", "premium due date", "due date", "next due date"] },
     { key: "nominee_name", label: "Nominee", kind: "text", words: ["nominee", "nominee name"] },
-    { key: "premium_frequency", label: "Premium frequency", kind: "text", words: ["premium frequency", "frequency", "payment mode", "mode"] },
+    { key: "premium_frequency", label: "Premium frequency", kind: "text", words: ["premium frequency", "payment frequency", "payment mode", "premium mode"] },
   ],
   travel: [
     PREMIUM, COVER("sum_insured", "Sum insured"), END("trip_end_date", "Trip end date", ["trip end", "trip end date", "return date"]), START("trip_start_date"), POLICY_NO,
-    { key: "destination", label: "Destination", kind: "text", words: ["destination", "country"] },
+    { key: "destination", label: "Destination", kind: "text", words: ["destination", "destination country"] },
   ],
   property: [PREMIUM, COVER("sum_insured", "Sum insured"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO],
   fire: [PREMIUM, COVER("sum_insured", "Total sum insured"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO],
   marine: [PREMIUM, COVER("sum_insured", "Sum insured"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO],
 };
 
+/**
+ * The fields offered for this record. A motor policy with an own-damage end date renews on THAT
+ * date (extractionFields.deriveSharedColumns), so "expiry" there means the OD date: changing the
+ * plain policy expiry would leave the renewal date where it was.
+ */
+export function fixFieldsFor(type: string, data: Record<string, unknown>): FixField[] {
+  const list = POLICY_FIX_FIELDS[type] || [];
+  const od = data?.od_expiry_date;
+  if (type !== "motor" || od === null || od === undefined || od === "") return list;
+  return list.map((f) => f.key !== "policy_expiry_date" ? f
+    : { key: "od_expiry_date", label: "Own-damage expiry (renewal date)", kind: "date", words: [...f.words, "od expiry", "od expiry date", "own damage expiry"] });
+}
+
 /** The field a typed word means for this policy type, or null. */
-export function policyFieldOf(type: string, word: string): FixField | null {
+export function policyFieldOf(type: string, word: string, data: Record<string, unknown> = {}): FixField | null {
   const w = word.trim().toLowerCase().replace(/\s+/g, " ");
-  return (POLICY_FIX_FIELDS[type] || []).find((f) => f.words.includes(w)) ?? null;
+  return fixFieldsFor(type, data).find((f) => f.words.includes(w)) ?? null;
+}
+
+/** An amount exactly as written: "15400", "15,400", "₹15,400", "Rs. 5,00,000/-". Letters or
+ *  extra numbers are never stripped away ("2 lakh 50 hazar" is not 250). The bot turns
+ *  "5.2 lakh" into a number before it gets here. */
+export function strictAmount(v: unknown): number | null {
+  if (typeof v === "number") return Number.isFinite(v) && v >= 0 ? v : null;
+  const m = String(v ?? "").trim().match(/^(?:₹|rs\.?|inr)?\s*(\d{1,3}(?:,\d{2,3})*|\d+)(\.\d{1,2})?\s*(?:\/-)?$/i);
+  return m ? parseFloat(m[1].replace(/,/g, "") + (m[2] || "")) : null;
 }
 
 /** A fixed value, checked for its kind (the portal checks only life and term itself). */
 export function cleanFixValue(kind: FixKind, v: unknown): { ok: true; value: string | number | null } | { ok: false; error: string } {
   if (v === null || v === undefined || String(v).trim() === "") return { ok: true, value: null };
-  if (kind === "money") { const m = money(v); return m.ok && m.value !== null ? { ok: true, value: m.value } : { ok: false, error: "not an amount" }; }
+  if (kind === "money") { const n = strictAmount(v); return n !== null ? { ok: true, value: n } : { ok: false, error: "not an amount" }; }
   if (kind === "percent") {
     const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^\d.]/g, ""));
     return Number.isFinite(n) && n >= 0 && n <= 100 ? { ok: true, value: n } : { ok: false, error: "not a percentage from 0 to 100" };

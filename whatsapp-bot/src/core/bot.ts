@@ -2636,7 +2636,10 @@ function policyFieldFor(f: PolicyFields, list: PField[], word: string): PField |
   if (ck) return list.find((x) => x.key === ck) ?? null;
   if (!f.fields.length && /^policy (?:number|no\.?|num)$/.test(word)) return list.find((x) => x.key === "policy_identifier") ?? null;
   const fx = policyFieldOf(f.type, word);
-  return fx ? list.find((x) => x.group === "fix" && x.key === fx.key) ?? null : null;
+  if (!fx) return null;
+  // A motor policy with an own-damage date offers that date in place of the plain expiry.
+  return list.find((x) => x.group === "fix" && x.key === fx.key)
+    ?? (fx.key === "policy_expiry_date" ? list.find((x) => x.key === "od_expiry_date") ?? null : null);
 }
 
 function currentOf(f: PolicyFields, pf: PField): unknown {

@@ -4,6 +4,7 @@ import {
   cleanCustomerSet, cleanInterests, cleanLeadSet, freshEmptyCustomerDelete, freshUntouchedLeadDelete,
   guardedUpdate, money, norm, registerWaEdits,
 } from "../whatsapp/edits";
+import { strictAmount, cleanFixValue, fixFieldsFor } from "../whatsapp/editRules";
 
 const AGENT = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
@@ -238,7 +239,7 @@ test("dates are read as text, so the server timezone can never shift them", asyn
 
 const POL = "44444444-4444-4444-8444-444444444444";
 const motorRow = {
-  insurance_type: "motor", insurer: "Some General", policy_name: "Car Plan", expiry_date: "2027-03-01", sum_insured: 500000,
+  insurance_type: "motor", status: "done", insurer: "Some General", policy_name: "Car Plan", policyholder_name: "Ramesh Kumar", expiry_date: "2027-03-01", sum_insured: "500000.00",
   extracted_data: { _rev: 3, insurer: "Some General", plan_name: "Car Plan", policy_expiry_date: "2027-03-01", idv: 500000, premium: 15400 },
 };
 
@@ -315,4 +316,64 @@ test("client details on a policy: compare-before, any type; sharing only flips t
   assert.doesNotMatch(upd.sql, /share_token/, "the link stays, so turning sharing back on gives the same link");
   const none = harness(() => ({ rows: [], rowCount: 0 }));
   assert.equal((await none.call("POST /api/internal/wa/clients/:id/sharing", { id: POL }, { enabled: false, expectEnabled: true })).status, 409);
+});
+
+/* ── Stage 2b critic findings (2026-10-22) ── */
+
+test("amounts are read exactly as written: never letters or stray numbers stripped away", () => {
+  assert.equal(strictAmount("Rs. 5,00,000/-"), 500000);
+  assert.equal(strictAmount("₹15,400"), 15400);
+  assert.equal(strictAmount("2 lakh 50 hazar"), null);
+  assert.equal(strictAmount("1 crore for family of 4"), null);
+  assert.deepEqual(cleanFixValue("money", "15,400 right"), { ok: false, error: "not an amount" });
+});
+
+test("UNDO of a detail that was empty before is allowed (the token proves this chat filled it)", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const empty = { ...motorRow, sum_insured: null, extracted_data: { ...motorRow.extracted_data, idv: null } };
+  const s = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [empty] }));
+  const saved = await s.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { idv: 600000 }, expectRev: 3 });
+  assert.equal(saved.status, 200);
+  const now = { ...empty, sum_insured: "600000", extracted_data: { ...empty.extracted_data, idv: 600000, _rev: 4 } };
+  const u = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [now] }));
+  const r = await u.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { restore: true, set: { idv: null }, expect: { idv: 600000 }, expectRev: 4, token: saved.json.undoToken });
+  assert.equal(r.status, 200);
+});
+
+test("a detail kept only in the column: shown as the portal shows it, and not overwritten blind", async () => {
+  const colOnly = { ...motorRow, id: POL, policy_identifier: null, client_email: null, client_phone: null, share_enabled: null, extracted_data: { ...motorRow.extracted_data, idv: null } };
+  const g = harness(() => ({ rows: [colOnly] }));
+  const got = await g.call("GET /api/internal/wa/clients/:id/fields", { id: POL });
+  assert.equal(got.json.fields.find((f: any) => f.key === "idv").value, "500000.00");
+  assert.equal(got.json.shareEnabled, false, "null share_enabled is off, as the public report treats it");
+  const r = await g.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { idv: 600000 }, expectRev: 3 });
+  assert.equal(r.json.error, "NOT_EDITABLE");
+});
+
+test("a column fixed elsewhere is never put back by a premium fix; a policy still being read is refused", async () => {
+  const fixed = { ...motorRow, insurer: "Corrected General" };
+  const h = harness(() => ({ rows: [fixed] }));
+  assert.equal((await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 14500 }, expectRev: 3 })).json.error, "NOT_EDITABLE");
+  const reading = harness(() => ({ rows: [{ ...motorRow, status: "processing" }] }));
+  assert.equal((await reading.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 14500 }, expectRev: 3 })).json.error, "NOT_EDITABLE");
+  assert.ok(!h.calls.some((c) => c.sql.startsWith("UPDATE")) && !reading.calls.some((c) => c.sql.startsWith("UPDATE")));
+});
+
+test("motor with an own-damage date: 'expiry' edits the OD date, the one renewals read", async () => {
+  const od = { ...motorRow, extracted_data: { ...motorRow.extracted_data, od_expiry_date: "2026-12-01" }, expiry_date: "2026-12-01" };
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [od] }));
+  assert.equal(fixFieldsFor("motor", od.extracted_data).find((f) => f.words.includes("expiry"))!.key, "od_expiry_date");
+  const r = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { od_expiry_date: "2027-12-01" }, expectRev: 3 });
+  assert.equal(r.status, 200);
+  const upd = h.calls.find((c) => c.sql.includes("UPDATE clients SET"))!;
+  assert.equal(upd.params[3], "2027-12-01", "clients.expiry_date moves with it");
+  assert.equal((await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { policy_expiry_date: "2027-12-01" }, expectRev: 3 })).status, 400);
+});
+
+test("a policyholder name fixed on a non-health policy is kept in the saved details too", async () => {
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [{ policyholder_name: "Ramesh K Kumar" }], rowCount: 1 } : { rows: [] }));
+  await h.call("POST /api/internal/wa/clients/:id/client-details", { id: POL }, { set: { policyholder_name: "Ramesh K Kumar" }, expect: { policyholder_name: "Ramesh Kumar" } });
+  const upd = h.calls.find((c) => c.sql.startsWith("UPDATE"))!;
+  assert.match(upd.sql, /jsonb_set\(jsonb_set\(extracted_data, '\{policyholder_name\}', to_jsonb\(\$3::text\)\), '\{_rev\}'/);
+  assert.match(upd.sql, /<> 'health'/, "a health check's stored report is left alone");
 });
