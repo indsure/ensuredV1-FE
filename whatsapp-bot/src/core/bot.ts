@@ -21,8 +21,9 @@ import {
   bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
 import { parseClaimAsk, claimKeyOf, type ClaimAsk } from "./claimParse.js";
+import { parseLifeAsk, type LifeAsk } from "./lifeParse.js";
 import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, amountWords, anyDate, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
-import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, cleanClaimSet, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
+import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, cleanClaimSet, strictAmount, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -135,7 +136,9 @@ type Op =
   | { kind: "claimStage"; claimId: string; name: string; from: string; to: string }
   | { kind: "claimQuery"; claimId: string; name: string; question: string; from: string }
   | { kind: "claimAnswered"; claimId: string; name: string; seq: number; question: string }
-  | { kind: "claimExtend"; claimId: string; name: string };
+  | { kind: "claimExtend"; claimId: string; name: string }
+  /* Stage 2d */
+  | { kind: "lifeRecord"; clientId: string; policy: string; recKind: "payment" | "loan" | "quote"; input: Record<string, any>; rev: number };
 
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
@@ -155,7 +158,9 @@ type LastChange =
   | { kind: "claimCreate"; claimId: string; name: string; created: Record<string, unknown>; at: number }
   | { kind: "claimEdit"; claimId: string; name: string; key: string; from: unknown; to: unknown; token?: string; at: number }
   | { kind: "claimStage"; claimId: string; name: string; from: string; to: string; token?: string; at: number }
-  | { kind: "claimAnswered"; claimId: string; name: string; seq: number; resolvedOn: string; moved: boolean; status: string; token?: string; at: number };
+  | { kind: "claimAnswered"; claimId: string; name: string; seq: number; resolvedOn: string; moved: boolean; status: string; token?: string; at: number }
+  /* Stage 2d: undo adds a void that supersedes the record (kept in the history) */
+  | { kind: "lifeRecord"; clientId: string; name: string; list: string; recordId: string; rev: number; token?: string; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -164,7 +169,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
 
 /** Read-only views whose rules match a whole question, at any length. The model's form has
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
-const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit"]);
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit", "liferecord"]);
 
 const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
@@ -1079,6 +1084,9 @@ export class Bot {
       /* Stage 2c: claims */
       case "claimedit":
         return this.claimStart(agentId, conv, to, text);
+      /* Stage 2d: life records */
+      case "liferecord":
+        return this.lifeStart(agentId, conv, to, text);
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
@@ -2035,10 +2043,12 @@ export class Bot {
       if (c.kind === "claimEdit") return `Undo: ${CLAIM_LABELS[c.key]} of ${c.name} back to ${showClaimValue(c.key, c.from)}`;
       if (c.kind === "claimStage") return `Undo: ${c.name} back to "${CLAIM_STAGE[c.from]}"`;
       if (c.kind === "claimAnswered") return `Undo: query round ${c.seq} on ${c.name} open again`;
+      if (c.kind === "lifeRecord") return `Undo: remove the record just added to ${c.name}. It stays in the policy's history, marked removed`;
       return `Undo: put ${b(c.name)} back as it was`;
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
+    if (op.kind === "lifeRecord") return `${op.policy}: ${lifeLine(op.recKind, op.input)}. Saved as told by you, not checked against an insurer document`;
     if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}${op.alreadyOpen ? `. Note: ${op.name} already has an open claim (${op.alreadyOpen})` : ""}`;
     if (op.kind === "claimEdit") return `${op.name}: ${CLAIM_LABELS[op.key]} ${showClaimValue(op.key, op.from)} → ${showClaimValue(op.key, op.to)}`;
     if (op.kind === "claimStage") return `${op.name}: "${CLAIM_STAGE[op.from]}" → "${CLAIM_STAGE[op.to]}"`;
@@ -2100,6 +2110,7 @@ export class Bot {
           : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
           : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
           : c.kind === "claimCreate" ? `Undone: removed the claim for ${b(c.name)}.`
+          : c.kind === "lifeRecord" ? `Undone: the record on ${c.name} is removed. The policy's history keeps it, marked removed.`
           : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.${this.takeUndoNote(agentId)}`
           : `Undone: ${b(c.name)} is back as it was.`);
       } else {
@@ -2177,6 +2188,7 @@ export class Bot {
       case "claimCreate": return e.claimUndoCreate(agentId, x.claimId, x.created);
       case "claimEdit": return (await e.claimEdit(agentId, x.claimId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
       case "claimStage": return (await e.claimStage(agentId, x.claimId, x.from, x.to, true, x.token)).ok;
+      case "lifeRecord": return (await e.lifeVoid(agentId, x.clientId, x.list, x.recordId, x.rev, x.token)).ok;
       case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.status, x.token)).ok;
     }
   }
@@ -2268,6 +2280,19 @@ ${link}` : refused(op.policy, r) });
       };
     }
     if (op.kind.startsWith("claim")) return this.applyClaim(agentId, op, refused, at);
+    if (op.kind === "lifeRecord") {
+      const link = `${o}/agent/policies/${op.clientId}`;
+      const r = await e.lifeAdd(agentId, op.clientId, op.recKind, op.input, op.rev);
+      if (!r.ok) {
+        return { text: r.reason === "DUPLICATE" ? `Not saved: ${op.policy} already has that payment.\n${link}`
+          : r.reason === "NOT_EDITABLE" ? `Not saved: ${op.policy} has details that are only in the portal. Please add it there.\n${link}`
+          : refused(op.policy, r) };
+      }
+      return {
+        text: `✅ Recorded on ${op.policy}: ${lifeLine(op.recKind, op.input)}.\n${link}`,
+        change: { kind: "lifeRecord", clientId: op.clientId, name: op.policy, list: r.list, recordId: r.record.id, rev: r.rev, token: r.undoToken, at },
+      };
+    }
     if (op.kind === "sharing") {
       const r = await e.setSharing(agentId, op.clientId, op.enabled, !op.enabled);
       if (!r.ok) return { text: refused(op.policy, r) };
@@ -2432,6 +2457,7 @@ ${link}` : refused(op.policy, r) });
     const p = conv.pending || {};
     if (p.mode === "policy" || p.mode === "unshare") return this.onPolicyAwaiting(agentId, conv, to, text);
     if (["claim", "claimcust", "claimtype", "claimquery"].includes(p.mode)) return this.onClaimAwaiting(agentId, conv, to, text);
+    if (p.mode === "life" || p.mode === "lifedue") return this.onLifeAwaiting(agentId, conv, to, text);
     if (conv.state === "AWAITING_EDIT_PICK") {
       const targets: EditTarget[] = p.targets || [];
       const n = pickNumber(text, targets.length);
@@ -2826,6 +2852,96 @@ ${link}`
     return { text: "" };
   }
 
+  /* ══ Stage 2d: life records ═══════════════════════════════════════════ */
+
+  /** "Ramesh paid premium 25,000 on 5 Oct 2026", "no loan on Ramesh's policy", "Ramesh's policy is lapsed". */
+  private async lifeStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parseLifeAsk(text);
+    if (!ask) return this.say(to, agentId, "Type it like: Ramesh paid premium 25,000 on 5 Oct 2026", "liferecord");
+    if (ask.who) {
+      const ty = ask.typeWord === "term" ? "term" : null;
+      const found = (await this.d.engine.findClients(agentId, ask.who))
+        .filter((c) => ["life", "term"].includes(c.insuranceType || "") && (!ty || c.insuranceType === ty));
+      if (!found.length) return this.say(to, agentId, `I couldn't find a life or term policy for "${ask.who}".`, "liferecord");
+      if (found.length > 1) {
+        const rows = found.slice(0, 5);
+        await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "life", ask, options: rows.map((c) => c.clientId) });
+        return this.say(to, agentId, T.whichPolicy(rows.map((r) => ({ name: r.policyholderName || "Unnamed", label: nicePlan(r.insurer, r.policyName) || r.insuranceType || "policy" }))), "life_pick");
+      }
+      return this.lifeWith(agentId, conv, to, found[0].clientId, ask);
+    }
+    const current = this.currentPolicy(agentId, conv);
+    if (!current) return this.say(to, agentId, "Which policy? For example: Ramesh paid premium 25,000 on 5 Oct 2026", "liferecord");
+    return this.lifeWith(agentId, conv, to, current, ask);
+  }
+
+  private async lifeWith(agentId: string, conv: Conv, to: string, clientId: string, ask: LifeAsk, dueDate: string | null = null) {
+    const [life, c] = await Promise.all([this.d.engine.lifeGet(agentId, clientId), this.d.engine.getClient(agentId, clientId)]);
+    if (!life || !c) return this.say(to, agentId, T.noReport(), "liferecord");
+    const policy = policyLabel(c);
+    if (!["life", "term"].includes(life.type)) return this.say(to, agentId, `${policy} is not a life or term policy. These records are kept only on life and term policies.`, "liferecord");
+    this.setLast(agentId, { kind: "policy", clientId });
+    const today = istToday(this.now());
+    const amountOf = (s: string) => strictAmount(amountWords(s) ?? s);
+    const dateOf = (s: string | null) => (s === null ? today : anyDate(s));
+    let input: Record<string, unknown>;
+    let kind: "payment" | "loan" | "quote" = ask.kind;
+    if (ask.kind === "payment") {
+      const amount = amountOf(ask.amount);
+      const paidOn = dateOf(ask.paidOn);
+      if (!amount || amount <= 0) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}"). Type it like: Ramesh paid premium 25,000 on 5 Oct 2026`, "liferecord");
+      if (!paidOn || paidOn > today) return this.say(to, agentId, "That payment date doesn't look right. Type a date up to today, like 5 Oct 2026.", "liferecord");
+      const due = dueDate ?? (ask.dueDate ? anyDate(ask.dueDate) : null);
+      if (!due) {
+        // The instalment a payment covers decides what the value engine counts; never guessed.
+        await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "lifedue", clientId, ask: { ...ask, paidOn } });
+        return this.say(to, agentId, `Which premium does this payment cover? Type its due date, like 1 Oct 2026, or SAME if it was due on ${prettyDate(paidOn)}.\n(CANCEL to stop.)`, "life_due");
+      }
+      if (life.active.payments.some((p) => p.dueDate === due && Number(p.amount) === amount)) {
+        return this.say(to, agentId, `${policy} already has a payment of ₹${amount.toLocaleString("en-IN")} for the premium due ${prettyDate(due)}. Nothing to add.`, "liferecord");
+      }
+      input = { amount, paidOn, dueDate: due };
+    } else if (ask.kind === "loan") {
+      if (ask.status === "none") input = { status: "none", asOf: today };
+      else {
+        const principal = amountOf(ask.amount);
+        if (!principal || principal <= 0) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
+        input = { status: "outstanding", principal, interest: null, asOf: today };
+      }
+    } else if (ask.quoteType === "policy_status") {
+      input = { quoteType: "policy_status", status: ask.status, quoteDate: today };
+    } else if (ask.quoteType === "premiums_paid_to") {
+      const paidTo = anyDate(ask.paidTo);
+      if (!paidTo || paidTo > today) return this.say(to, agentId, "That date doesn't look right. Type the date premiums are paid up to, up to today, like 1 Oct 2026.", "liferecord");
+      input = { quoteType: "premiums_paid_to", paidTo, quoteDate: today };
+    } else {
+      const amount = amountOf(ask.amount);
+      if (amount === null) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
+      input = { quoteType: ask.quoteType, amount, quoteDate: today };
+    }
+    return this.confirm(agentId, conv, to, [{ kind: "lifeRecord", clientId, policy, recKind: kind, input, rev: life.rev }]);
+  }
+
+  /** The stage 2d questions: which policy, and the due date a payment covers. */
+  private async onLifeAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    if (conv.state === "AWAITING_EDIT_PICK" && p.mode === "life") {
+      const options: string[] = p.options || [];
+      const n = pickNumber(text, options.length);
+      if (!n) return false;
+      await this.lifeWith(agentId, conv, to, options[n - 1], p.ask);
+      return true;
+    }
+    if (conv.state === "AWAITING_EDIT_VALUE" && p.mode === "lifedue") {
+      const w = text.trim();
+      const due = /^(?:same|same day|wahi|वही)$/i.test(w) ? p.ask.paidOn : anyDate(w);
+      if (!due) { await this.say(to, agentId, "Type the due date like 1 Oct 2026, or SAME, or CANCEL.", "life_due"); return true; }
+      await this.lifeWith(agentId, conv, to, p.clientId, { ...p.ask, paidOn: p.ask.paidOn }, due);
+      return true;
+    }
+    return false;
+  }
+
   private async proposeUndo(agentId: string, conv: Conv, to: string) {
     const c = this.lastChange.get(agentId);
     if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
@@ -2938,4 +3054,24 @@ function claimValueFor(key: string, raw: string): unknown {
   if (key === "admitted_on" || key === "discharged_on") return anyDate(v) ?? v;
   if (key === "claim_type") return /^cash/i.test(v) ? "cashless" : /^reimb|^refund/i.test(v) ? "reimbursement" : v;
   return v;
+}
+
+/* ── Stage 2d helpers ── */
+
+/** India's calendar date for "today" (records carry the day they were entered). */
+function istToday(now: number): string {
+  return new Date(now + 330 * 60_000).toISOString().slice(0, 10);
+}
+
+const LIFE_STATUS: Record<string, string> = { in_force: "in force", lapsed: "lapsed", paid_up: "paid up", surrendered: "surrendered", matured: "matured" };
+const rupees = (v: unknown) => `₹${Number(v).toLocaleString("en-IN")}`;
+
+/** One life record as the confirm shows it. */
+function lifeLine(kind: string, input: Record<string, any>): string {
+  if (kind === "payment") return `premium ${rupees(input.amount)} paid on ${prettyDate(input.paidOn)}, for the premium due ${prettyDate(input.dueDate)}`;
+  if (kind === "loan") return input.status === "none" ? "no loan on the policy, as of today" : `a loan of ${rupees(input.principal)} outstanding, as of today`;
+  if (input.quoteType === "surrender_payable") return `the insurer's surrender value is ${rupees(input.amount)}, as of today`;
+  if (input.quoteType === "loan_available") return `the insurer says up to ${rupees(input.amount)} can be borrowed, as of today`;
+  if (input.quoteType === "policy_status") return `the insurer says the policy is ${LIFE_STATUS[input.status] ?? input.status}`;
+  return `premiums are paid up to ${prettyDate(input.paidTo)}`;
 }

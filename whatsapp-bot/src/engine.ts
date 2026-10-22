@@ -164,6 +164,10 @@ export interface Engine {
   claimAnswered(agentId: string, id: string, seq: number): Promise<WriteResult<{ resolvedOn: string; moved: boolean; status: string; openLeft: number; undoToken?: string }>>;
   claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, status: string, token?: string): Promise<WriteResult<{}>>;
   claimExtend(agentId: string, id: string): Promise<WriteResult<{ purgeOn: string }>>;
+  /* Stage 2d: life records. Only ever added; undo adds a void that keeps the record in the history. */
+  lifeGet(agentId: string, clientId: string): Promise<LifeRecords | null>;
+  lifeAdd(agentId: string, clientId: string, kind: "payment" | "loan" | "quote", input: Record<string, unknown>, expectRev: number): Promise<WriteResult<{ rev: number; list: string; record: Record<string, any>; undoToken?: string }>>;
+  lifeVoid(agentId: string, clientId: string, list: string, recordId: string, expectRev: number, token?: string): Promise<WriteResult<{ rev: number }>>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
@@ -343,6 +347,15 @@ export class HttpEngine implements Engine {
   claimAnswered(agentId: string, id: string, seq: number) { return this.write<{ resolvedOn: string; moved: boolean; status: string; openLeft: number; undoToken?: string }>(`/api/internal/wa/claims/${id}/queries/${seq}/answered`, agentId, {}); }
   claimReopenQuery(agentId: string, id: string, seq: number, resolvedOn: string, moved: boolean, status: string, token?: string) { return this.write<{}>(`/api/internal/wa/claims/${id}/queries/${seq}/reopen`, agentId, { resolvedOn, moved, status, token }); }
   claimExtend(agentId: string, id: string) { return this.write<{ purgeOn: string }>(`/api/internal/wa/claims/${id}/extend`, agentId, {}); }
+  async lifeGet(agentId: string, clientId: string) {
+    try { return await this.call(`/api/internal/wa/clients/${clientId}/life`, { agentId }) as LifeRecords; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  lifeAdd(agentId: string, clientId: string, kind: "payment" | "loan" | "quote", input: Record<string, unknown>, expectRev: number) {
+    return this.write<{ rev: number; list: string; record: Record<string, any>; undoToken?: string }>(`/api/internal/wa/clients/${clientId}/life-record`, agentId, { kind, input, expectRev });
+  }
+  lifeVoid(agentId: string, clientId: string, list: string, recordId: string, expectRev: number, token?: string) {
+    return this.write<{ rev: number }>(`/api/internal/wa/clients/${clientId}/life-record/void`, agentId, { list, recordId, expectRev, token });
+  }
   async leadUndoCreate(agentId: string, id: string, created?: Record<string, unknown>) {
     try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: { expect: created } }); return true; }
     catch { return false; }
@@ -401,6 +414,8 @@ export type PolicyFields = {
   client: { policyholder_name: string | null; policy_identifier: string | null; client_email: string | null; client_phone: string | null };
   fields: { key: string; label: string; kind: "money" | "percent" | "date" | "text"; value: unknown }[];
 };
+/** A life or term policy's records still in force (GET /api/internal/wa/clients/:id/life). */
+export type LifeRecords = { type: string; status: string; rev: number; active: { payments: any[]; loans: any[]; quotes: any[] } };
 /** One claim as the edit routes see it (GET /api/internal/wa/claims/:id/row). */
 export type ClaimEditRow = {
   claim: {

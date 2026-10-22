@@ -5,6 +5,7 @@
 
 import { devanagariToLatin } from "./i18n.js";
 import { parseClaimAsk } from "./claimParse.js";
+import { parseLifeAsk } from "./lifeParse.js";
 import { parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare } from "./editParse.js";
 
 export type Intent =
@@ -21,7 +22,9 @@ export type Intent =
   // Stage 2b: policies (fix a saved detail or client detail; stop sharing a report)
   | "policyfix" | "unshare"
   // Stage 2c: claims (open, details, stage, insurer query, extend)
-  | "claimedit";
+  | "claimedit"
+  // Stage 2d: life records (premium paid, loan, insurer figures, status)
+  | "liferecord";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -62,6 +65,8 @@ export function ruleIntent(textRaw: string): Intent | null {
   // Claim actions before the Hindi rules (which send any "क्लेम" to the read-only claims view) and
   // before lead/customer edits ("edit Sunita's claim" is a claim). Questions never parse as actions.
   if (parseClaimAsk(t)) return "claimedit";
+  // A life record states a figure ("Ramesh's surrender value is 1.2 lakh"); asking for one stays a lookup.
+  if (parseLifeAsk(t)) return "liferecord";
   const hindi = hindiIntent(t);
   if (hindi) return hindi;
   if (/^(more|all commands|everything|full menu|help all|all features|what else)[.!?]*$/.test(t)) return "more";

@@ -43,7 +43,8 @@ function tokenOk(given: unknown, want: string): boolean {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet } from "./editRules";
-import { saveExtractedData } from "../services/policyValueStore";
+import { saveExtractedData, EVIDENCE_KEY } from "../services/policyValueStore";
+import { readEvidence, activeRecords } from "../../../shared/policyEvidence";
 import { deriveSharedColumns, EXTRACTION_FIELDS } from "../services/extractionFields";
 import { scoreFromExtractedData } from "../../../shared/motorScore";
 import type { FieldErrors, Clean } from "./editRules";
@@ -391,10 +392,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       // edited fields themselves feed are expected to move.
       const moving = new Set(Object.keys(set).map((k) => sharedColumnOf(type, k)).filter(Boolean));
       const notOurs = (k: string) => !restore && empty(stored[k]) && !!sharedColumnOf(type, k) && !empty(row[sharedColumnOf(type, k)!]);
-      const derived = deriveSharedColumns(type, { ...stored, ...set }) as Record<string, unknown>;
-      const drift = ["insurer", "policy_name", "expiry_date", "sum_insured", "policyholder_name"]
-        .some((col) => !moving.has(col) && !empty(row[col]) && !sameColumn(col, derived[col], row[col]) && !(col === "policyholder_name" && empty(derived[col])));
-      if (drift || Object.keys(set).some(notOurs)) {
+      if (columnsDrift(type, row, { ...stored, ...set }, moving) || Object.keys(set).some(notOurs)) {
         return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy has details that are only in the portal. Change it there." });
       }
       const out = await saveExtractedData(pool as any, agentId, req.params.id, { expected_rev: expectRev, extracted_data: set }, { deriveSharedColumns, scoreFromExtractedData });
@@ -701,6 +699,106 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       res.json({ ok: true, purgeOn: r.rows[0].purge_on });
     } catch (err) { fail(res, "claim extend", err); }
   });
+
+  /* ── Stage 2d: life records (plan 3, 2d). Records the advisor's evidence on a life or term
+   *  policy through the portal's own save. Records are only ever ADDED (the save merges by id and
+   *  keeps every stored record); undo adds a "void" that supersedes the record, so the history
+   *  keeps it, as the portal's voidRecord does. ── */
+
+  const LIFE_TYPES = ["life", "term"];
+  const LIFE_LISTS = { payment: "payments", loan: "loans", quote: "quotes" } as const;
+  /** India's calendar date: records carry the day the advisor entered them. */
+  const todayIst = () => new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+  const lifeRow = async (id: string, agentId: string) =>
+    (await pool.query(
+      "SELECT insurance_type, status, extracted_data, insurer, policy_name, policyholder_name, expiry_date::text AS expiry_date, sum_insured FROM clients WHERE id = $1 AND agent_id = $2",
+      [id, agentId]
+    )).rows[0] ?? null;
+  const notLife = (res: any) => res.status(400).json({ error: "NOT_LIFE", message: "Only life and term policies keep these records." });
+
+  /** One life or term policy's records still in force (not voided or superseded), with its revision. */
+  app.get("/api/internal/wa/clients/:id/life", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const row = await lifeRow(req.params.id, agentId);
+      if (!row) return res.status(404).json({ error: "Not found" });
+      const data = row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {};
+      const { evidence } = readEvidence(data[EVIDENCE_KEY]);
+      res.json({
+        type: row.insurance_type || "health", status: row.status, rev: Number.isInteger(data._rev) ? data._rev : 0,
+        active: { payments: activeRecords(evidence.payments), loans: activeRecords(evidence.loans), quotes: activeRecords(evidence.quotes) },
+      });
+    } catch (err) { fail(res, "life records read", err); }
+  });
+
+  /** Add one record. Body: { kind: payment|loan|quote, input, expectRev }. The server builds the
+   *  record (id, date entered, "self reported", note) and checks it with the portal's own reader. */
+  app.post("/api/internal/wa/clients/:id/life-record", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const kind = String(req.body?.kind || "") as keyof typeof LIFE_LISTS;
+      const list = LIFE_LISTS[kind];
+      if (!list) return bad(res, { kind: "payment, loan or quote" });
+      const expectRev = req.body?.expectRev;
+      if (!Number.isInteger(expectRev)) return bad(res, { expectRev: "the revision seen before is required" });
+      const row = await lifeRow(req.params.id, agentId);
+      if (!row) return res.status(404).json({ error: "Not found" });
+      if (!LIFE_TYPES.includes(row.insurance_type)) return notLife(res);
+      if (row.status !== "done") return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy is still being read. Try again when it is done." });
+      const today = todayIst();
+      const input = req.body?.input && typeof req.body.input === "object" ? req.body.input : {};
+      const built = buildLifeRecord(kind, input, today);
+      if ("error" in built) return bad(res, { input: built.error });
+      const data = row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {};
+      const { evidence } = readEvidence(data[EVIDENCE_KEY]);
+      // A resend of the same payment must not count the premium twice.
+      if (kind === "payment" && activeRecords(evidence.payments).some((p) => p.dueDate === (built.record as any).dueDate && p.amount === (built.record as any).amount)) {
+        return res.status(409).json({ error: "DUPLICATE" });
+      }
+      if (columnsDrift(row.insurance_type, row, data, new Set())) return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy has details that are only in the portal. Change it there." });
+      const out = await saveExtractedData(pool as any, agentId, req.params.id,
+        { expected_rev: expectRev, extracted_data: { [EVIDENCE_KEY]: { schema: 1, [list]: [built.record] } } }, { deriveSharedColumns, scoreFromExtractedData });
+      if (out.status === 409) return changed(res);
+      if (out.status !== 200) return res.status(400).json({ error: "INVALID", message: (out.body as any)?.message || (out.body as any)?.error });
+      void audit(agentId, req.params.id, `wa_life_${kind}`, "/api/internal/wa/clients/:id/life-record");
+      res.json({ ok: true, rev: (out.body as any).rev, list, record: built.record, undoToken: undoToken("value_evidence", req.params.id, { record: null }, { record: built.record.id }) });
+    } catch (err) { fail(res, "life record", err); }
+  });
+
+  /** Undo of a record added here: a void that supersedes it (kept in the history as removed).
+   *  Body: { list, recordId, expectRev, token }. Only while the record is still in force. */
+  app.post("/api/internal/wa/clients/:id/life-record/void", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const list = String(req.body?.list || "") as "payments" | "loans" | "quotes";
+      const recordId = String(req.body?.recordId || "");
+      if (!["payments", "loans", "quotes"].includes(list) || !recordId) return bad(res, { list: "payments, loans or quotes, with the record" });
+      if (!tokenOk(req.body?.token, undoToken("value_evidence", req.params.id, { record: null }, { record: recordId }))) return bad(res, { token: "undo is only for a record added here" });
+      const expectRev = req.body?.expectRev;
+      if (!Number.isInteger(expectRev)) return bad(res, { expectRev: "the revision seen before is required" });
+      const row = await lifeRow(req.params.id, agentId);
+      if (!row) return res.status(404).json({ error: "Not found" });
+      if (!LIFE_TYPES.includes(row.insurance_type)) return notLife(res);
+      const data = row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {};
+      const { evidence } = readEvidence(data[EVIDENCE_KEY]);
+      const target = activeRecords(evidence[list] as any[]).find((r: any) => r.id === recordId);
+      if (!target) return changed(res);
+      if (columnsDrift(row.insurance_type, row, data, new Set())) return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy has details that are only in the portal. Change it there." });
+      const voided = { ...target, id: crypto.randomUUID(), enteredOn: todayIst(), supersedes: recordId, voided: true, note: "Removed: undone on WhatsApp" };
+      const out = await saveExtractedData(pool as any, agentId, req.params.id,
+        { expected_rev: expectRev, extracted_data: { [EVIDENCE_KEY]: { schema: 1, [list]: [voided] } } }, { deriveSharedColumns, scoreFromExtractedData });
+      if (out.status === 409) return changed(res);
+      if (out.status !== 200) return res.status(400).json({ error: "INVALID", message: (out.body as any)?.message || (out.body as any)?.error });
+      void audit(agentId, req.params.id, "wa_life_void", "/api/internal/wa/clients/:id/life-record/void");
+      res.json({ ok: true, rev: (out.body as any).rev });
+    } catch (err) { fail(res, "life record void", err); }
+  });
 }
 
 /** Remove a customer only if created in the last 15 minutes and nothing refers to it:
@@ -763,6 +861,17 @@ export function sharedColumnOf(type: string, key: string): string | null {
   return f?.shared ?? null;
 }
 
+/**
+ * The portal's detail save re-derives insurer, plan, expiry, cover and name from extracted_data
+ * (extractionFields.deriveSharedColumns). True when that would change a filled column that this
+ * save is not meant to move (an older record, or a column fixed elsewhere): such a save is refused.
+ */
+export function columnsDrift(type: string, row: Record<string, any>, data: Record<string, any>, moving: Set<string | null>): boolean {
+  const derived = deriveSharedColumns(type, data) as Record<string, unknown>;
+  return ["insurer", "policy_name", "expiry_date", "sum_insured", "policyholder_name"]
+    .some((col) => !moving.has(col) && !empty(row[col]) && !sameColumn(col, derived[col], row[col]) && !(col === "policyholder_name" && empty(derived[col])));
+}
+
 /** Whether a derived value and the stored column say the same thing (numbers as numbers, dates as days). */
 export function sameColumn(col: string, derived: unknown, column: unknown): boolean {
   if (empty(derived) && empty(column)) return true;
@@ -770,4 +879,39 @@ export function sameColumn(col: string, derived: unknown, column: unknown): bool
   if (col === "sum_insured") return Number(derived) === Number(column);
   if (col === "expiry_date") return norm(derived) === norm(column);
   return String(derived).trim() === String(column).trim();
+}
+
+/* ── Stage 2d helpers ── */
+
+/**
+ * Build one life record from what the advisor said, the portal's way (shared/policyEvidence.ts),
+ * then check it with the portal's own reader: anything it would drop is refused here instead.
+ * Always "self reported": an advisor typing a figure on WhatsApp is not an insurer document.
+ * Dates the advisor reports cannot be in the future (a payment made, a statement dated).
+ */
+export function buildLifeRecord(kind: "payment" | "loan" | "quote", input: Record<string, any>, today: string):
+  { record: Record<string, any> } | { error: string } {
+  const base = { id: crypto.randomUUID(), enteredOn: today, origin: "agent_entered", confirmation: "self_reported", reference: null, note: "From WhatsApp", supersedes: null, voided: false };
+  const future = (d: unknown) => typeof d === "string" && d > today;
+  let record: Record<string, any>;
+  if (kind === "payment") {
+    if (future(input.paidOn)) return { error: "the payment date is in the future" };
+    record = { ...base, kind: "payment", amount: input.amount, currency: "INR", dueDate: input.dueDate, paidOn: input.paidOn };
+  } else if (kind === "loan") {
+    const asOf = input.asOf ?? today;
+    if (future(asOf)) return { error: "the date is in the future" };
+    record = input.status === "none"
+      ? { ...base, kind: "loan", status: "none", principal: 0, interest: 0, asOf }
+      : { ...base, kind: "loan", status: "outstanding", principal: input.principal, interest: input.interest ?? null, asOf };
+  } else {
+    const quoteDate = input.quoteDate ?? today;
+    if (future(quoteDate)) return { error: "the date is in the future" };
+    record = { ...base, kind: "quote", quoteType: input.quoteType, amount: input.amount ?? null, status: input.status ?? null, paidTo: input.paidTo ?? null, quoteDate };
+  }
+  const list = kind === "payment" ? "payments" : kind === "loan" ? "loans" : "quotes";
+  const { evidence, issues } = readEvidence({ schema: 1, [list]: [record] });
+  const read = (evidence as any)[list][0];
+  if (issues.length || !read) return { error: "not a record the portal can read (check the amount and dates)" };
+  // Store exactly what the portal's reader understood (numbers as numbers, dates as days).
+  return { record: read };
 }

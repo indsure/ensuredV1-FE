@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   cleanCustomerSet, cleanInterests, cleanLeadSet, freshEmptyCustomerDelete, freshUntouchedLeadDelete,
-  guardedUpdate, money, norm, registerWaEdits,
+  guardedUpdate, money, norm, registerWaEdits, buildLifeRecord,
 } from "../whatsapp/edits";
 import { strictAmount, cleanFixValue, fixFieldsFor, cleanClaimSet } from "../whatsapp/editRules";
 
@@ -468,4 +468,71 @@ test("claim open needs an existing customer; undo-create compares every created 
   await ok.call("POST /api/internal/wa/claims/:id/undo-create", { id: CLM }, { expect: r.json.created });
   const del = ok.calls.find((c) => c.sql.startsWith("DELETE"))!;
   for (const re of [/interval '15 minutes'/, /status = 'opened'/, /claim_queries/, /claim_documents/, /x.status <> 'opened'/, /hospital::text IS NOT DISTINCT FROM/]) assert.match(del.sql, re);
+});
+
+/* ── Stage 2d: life records ── */
+
+const LIFE = "99999999-9999-4999-8999-999999999999";
+const lifeRowFix = (evidence: any = undefined) => ({
+  insurance_type: "life", status: "done", insurer: "Some Life", policy_name: "Life Plan", policyholder_name: "Ramesh Kumar", expiry_date: "2040-01-01", sum_insured: "1000000.00",
+  extracted_data: { _rev: 5, insurer: "Some Life", plan_name: "Life Plan", policyholder_name: "Ramesh Kumar", maturity_date: "2040-01-01", sum_assured: 1000000, ...(evidence ? { value_evidence: evidence } : {}) },
+});
+
+test("life record: built and read the portal's way, always self reported, never a future date", () => {
+  const ok = buildLifeRecord("payment", { amount: "25,000", dueDate: "2026-10-01", paidOn: "2026-10-05" }, "2026-10-22");
+  assert.ok("record" in ok);
+  const r = (ok as any).record;
+  assert.deepEqual([r.kind, r.amount, r.dueDate, r.paidOn, r.confirmation, r.voided, r.supersedes], ["payment", 25000, "2026-10-01", "2026-10-05", "self_reported", false, null]);
+  assert.ok("error" in buildLifeRecord("payment", { amount: 25000, dueDate: "2026-10-01", paidOn: "2026-11-05" }, "2026-10-22"), "paid in the future");
+  assert.ok("error" in buildLifeRecord("payment", { amount: 0, dueDate: "2026-10-01", paidOn: "2026-10-05" }, "2026-10-22"));
+  assert.ok("error" in buildLifeRecord("quote", { quoteType: "premiums_paid_to", paidTo: "2027-03-01" }, "2026-10-22"), "paid up to a future date: the portal's reader refuses it");
+  assert.equal((buildLifeRecord("loan", { status: "none" }, "2026-10-22") as any).record.asOf, "2026-10-22");
+  assert.equal((buildLifeRecord("quote", { quoteType: "policy_status", status: "lapsed" }, "2026-10-22") as any).record.status, "lapsed");
+  assert.ok("error" in buildLifeRecord("quote", { quoteType: "settled_amount", amount: 1 }, "2026-10-22"));
+});
+
+test("life record: life and term only, finished policies only, through the portal save with the revision", async () => {
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [lifeRowFix()] }));
+  const r = await h.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "loan", input: { status: "none" }, expectRev: 5 });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.rev, 6);
+  const upd = h.calls.find((c) => c.sql.includes("UPDATE clients SET"))!;
+  const saved = JSON.parse(String(upd.params[0]));
+  assert.equal(saved.value_evidence.loans.length, 1);
+  assert.equal(saved.value_evidence.loans[0].status, "none");
+  const motor = harness(() => ({ rows: [{ ...lifeRowFix(), insurance_type: "motor" }] }));
+  assert.equal((await motor.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "loan", input: { status: "none" }, expectRev: 5 })).json.error, "NOT_LIFE");
+  const stale = harness(() => ({ rows: [lifeRowFix()] }));
+  assert.equal((await stale.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "loan", input: { status: "none" }, expectRev: 4 })).status, 409);
+  const noRev = await stale.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "loan", input: { status: "none" } });
+  assert.equal(noRev.status, 400);
+});
+
+test("life record: the same payment twice is refused; stored records always survive the save", async () => {
+  const stored = { schema: 1, payments: [{ id: "p1", kind: "payment", enteredOn: "2026-10-01", origin: "agent_entered", confirmation: "self_reported", reference: null, note: null, supersedes: null, voided: false, amount: 25000, currency: "INR", dueDate: "2026-10-01", paidOn: "2026-10-05" }], loans: [], quotes: [] };
+  const dup = harness(() => ({ rows: [lifeRowFix(stored)] }));
+  assert.equal((await dup.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2026-10-01", paidOn: "2026-10-05" }, expectRev: 5 })).json.error, "DUPLICATE");
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [lifeRowFix(stored)] }));
+  await h.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "payment", input: { amount: 25000, dueDate: "2027-10-01", paidOn: "2026-10-05" }, expectRev: 5 });
+  const saved = JSON.parse(String(h.calls.find((c) => c.sql.includes("UPDATE clients SET"))!.params[0]));
+  assert.deepEqual(saved.value_evidence.payments.map((p: any) => p.id)[0], "p1");
+  assert.equal(saved.value_evidence.payments.length, 2);
+});
+
+test("life record undo: a void that supersedes it (kept in the history), only with the token and while in force", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const s = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [lifeRowFix()] }));
+  const added = await s.call("POST /api/internal/wa/clients/:id/life-record", { id: LIFE }, { kind: "quote", input: { quoteType: "surrender_payable", amount: 120000 }, expectRev: 5 });
+  const rec = added.json.record;
+  const after = { schema: 1, payments: [], loans: [], quotes: [rec] };
+  const forged = harness(() => ({ rows: [lifeRowFix(after)] }));
+  assert.equal((await forged.call("POST /api/internal/wa/clients/:id/life-record/void", { id: LIFE }, { list: "quotes", recordId: rec.id, expectRev: 6, token: "f".repeat(64) })).status, 400);
+  const v = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [{ ...lifeRowFix(after), extracted_data: { ...lifeRowFix(after).extracted_data, _rev: 6 } }] }));
+  const r = await v.call("POST /api/internal/wa/clients/:id/life-record/void", { id: LIFE }, { list: "quotes", recordId: rec.id, expectRev: 6, token: added.json.undoToken });
+  assert.equal(r.status, 200);
+  const saved = JSON.parse(String(v.calls.find((c) => c.sql.includes("UPDATE clients SET"))!.params[0]));
+  assert.equal(saved.value_evidence.quotes.length, 2, "the record stays; a void is added");
+  assert.deepEqual([saved.value_evidence.quotes[1].supersedes, saved.value_evidence.quotes[1].voided], [rec.id, true]);
+  const gone = harness(() => ({ rows: [lifeRowFix({ ...after, quotes: [rec, { ...rec, id: "v9", supersedes: rec.id, voided: true }] })] }));
+  assert.equal((await gone.call("POST /api/internal/wa/clients/:id/life-record/void", { id: LIFE }, { list: "quotes", recordId: rec.id, expectRev: 6, token: added.json.undoToken })).status, 409, "already removed in the portal");
 });

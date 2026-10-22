@@ -9,6 +9,7 @@ import { Bot } from "../src/core/bot.js";
 import type { Inspection } from "../src/core/pdfInspect.js";
 import * as BV from "../../backend/server/whatsapp/bookViews.js";
 import * as ED from "../../backend/server/whatsapp/editRules.js";
+import * as PE from "../src/shared/policyEvidence.js";
 
 export const AGENT = "11111111-1111-4111-8111-111111111111";
 export const ADVISOR = "919800000001";
@@ -459,6 +460,42 @@ export class FakeEngine implements Engine {
     this.canExtend.delete(id);
     this.writes.push({ kind: "claimExtend", id, body: {} });
     return { ok: true as const, purgeOn: "2026-12-01" };
+  }
+  /* Stage 2d: life records, read the portal's way (shared/policyEvidence.ts). Only ever appended. */
+  async lifeGet(_a: string, clientId: string) {
+    const p = this.pol(clientId);
+    if (!p) return null;
+    const { evidence } = PE.readEvidence(p.x.data.value_evidence);
+    return { type: p.c.insuranceType || "health", status: p.c.status, rev: p.x.rev, active: { payments: PE.activeRecords(evidence.payments), loans: PE.activeRecords(evidence.loans), quotes: PE.activeRecords(evidence.quotes) } };
+  }
+  async lifeAdd(_a: string, clientId: string, kind: "payment" | "loan" | "quote", input: Record<string, unknown>, expectRev: number) {
+    const p = this.pol(clientId);
+    if (!p) return { ok: false as const, reason: "Not found" };
+    if (!["life", "term"].includes(p.c.insuranceType || "")) return { ok: false as const, reason: "NOT_LIFE" };
+    if (expectRev !== p.x.rev) return { ok: false as const, reason: "CHANGED" };
+    const list = kind === "payment" ? "payments" : kind === "loan" ? "loans" : "quotes";
+    const rec: any = { id: crypto.randomUUID(), enteredOn: "2026-10-22", origin: "agent_entered", confirmation: "self_reported", reference: null, note: "From WhatsApp", supersedes: null, voided: false, kind, currency: "INR", ...input };
+    if (kind === "loan" && input.status === "none") Object.assign(rec, { principal: 0, interest: 0 });
+    const read = (PE.readEvidence({ schema: 1, [list]: [rec] }).evidence as any)[list][0];
+    if (!read) return { ok: false as const, reason: "INVALID", fields: { input: "not readable" } };
+    const ev: any = p.x.data.value_evidence ?? { schema: 1, payments: [], loans: [], quotes: [] };
+    if (kind === "payment" && PE.activeRecords(ev.payments as any[]).some((x: any) => x.dueDate === read.dueDate && x.amount === read.amount)) return { ok: false as const, reason: "DUPLICATE" };
+    p.x.data.value_evidence = { ...ev, [list]: [...(ev[list] ?? []), read] };
+    p.x.rev += 1;
+    this.writes.push({ kind: "lifeAdd", id: clientId, body: read });
+    return { ok: true as const, rev: p.x.rev, list, record: read, undoToken: "fake-token" };
+  }
+  async lifeVoid(_a: string, clientId: string, list: string, recordId: string, expectRev: number, token?: string) {
+    const p = this.pol(clientId);
+    if (!p || token !== "fake-token") return { ok: false as const, reason: "INVALID" };
+    if (expectRev !== p.x.rev) return { ok: false as const, reason: "CHANGED" };
+    const ev: any = p.x.data.value_evidence;
+    const target = ev && PE.activeRecords((ev[list] ?? []) as any[]).find((r: any) => r.id === recordId);
+    if (!target) return { ok: false as const, reason: "CHANGED" };
+    ev[list] = [...ev[list], { ...target, id: crypto.randomUUID(), supersedes: recordId, voided: true }];
+    p.x.rev += 1;
+    this.writes.push({ kind: "lifeVoid", id: clientId, body: { recordId } });
+    return { ok: true as const, rev: p.x.rev };
   }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {
