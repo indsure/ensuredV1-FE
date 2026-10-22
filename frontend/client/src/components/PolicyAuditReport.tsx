@@ -21,7 +21,8 @@ import {
     describeRestoration,
     deriveCoverView,
     isScoredUnderOldRules,
-    getBenefitStatus
+    getBenefitStatus,
+    roomRentCapCutsClaims
 } from "@shared/policy";
 import type { WaitingPeriodView, BenefitView, ClauseSource } from "@shared/policy";
 import { cn } from "@/lib/utils";
@@ -366,7 +367,9 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                 }
             }
 
-            if (roomRent && roomRent.limit_type !== "none") {
+            // Only when the cap really triggers a deduction. A room category paid in
+            // full was flagged as a penalty right above its own "no room rent cap".
+            if (roomRentCapCutsClaims(roomRent)) {
                 items.push({
                     issue: "Room Rent Capping Penalty",
                     real_world_claim_impact: roomRent.explanation || "Room rent is capped, leading to proportional deductions on all hospital bills.",
