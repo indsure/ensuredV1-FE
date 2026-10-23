@@ -63,11 +63,11 @@ const LEAD_OUT = "id, name, phone, email, city, source, insurance_interest, expe
 const CUSTOMER_OUT = "id, name, phone, email, city, dob::text AS dob, notes, created_at";
 
 export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
-  const audit = (agentId: string, targetId: string | null, action: string, route: string) =>
+  const audit = (agentId: string, targetId: string | null, action: string, route: string, method: "GET" | "POST" = "POST") =>
     pool.query(
       `INSERT INTO access_audit_log (agent_id, client_id, action, route, method, ip, user_agent)
-       VALUES ($1, $2, $3, $4, 'POST', NULL, 'whatsapp-bot')`,
-      [agentId, targetId, action, route]
+       VALUES ($1, $2, $3, $4, $5, NULL, 'whatsapp-bot')`,
+      [agentId, targetId, action, route, method]
     ).catch((e: any) => log.warn("wa edit audit failed", { error: e?.message }));
 
   const fail = (res: any, where: string, err: any) => {
@@ -869,7 +869,8 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
         if (!q.rowCount) return bad(res, { queryId: "not an open query of this claim" });
       }
       const docId = docIdFor(agentId, msgId);
-      const seen = await pool.query("SELECT id FROM claim_documents WHERE id = $1 AND agent_id = $2", [docId, agentId]);
+      const seen = await pool.query("SELECT id, claim_id FROM claim_documents WHERE id = $1 AND agent_id = $2", [docId, agentId]);
+      if (seen.rowCount && seen.rows[0].claim_id !== req.params.id) return res.status(409).json({ error: "OTHER_CLAIM" });
       if (seen.rowCount) {
         // A resend of the same WhatsApp message: already saved, nothing stored twice.
         const p = await pool.query("SELECT purge_at::date::text AS purge_on FROM claims WHERE id = $1", [req.params.id]);
@@ -883,13 +884,14 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       // purge date would never be deleted by the daily sweep.
       const db = await pool.connect();
       let purgeOn: string | null = null;
+      let inserted = false;
       try {
         await db.query("BEGIN");
-        await db.query(
+        inserted = !!(await db.query(
           `INSERT INTO claim_documents (id, claim_id, agent_id, query_id, category, doc_type, storage_path, filename, file_size, mime_type)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING RETURNING id`,
           [docId, req.params.id, agentId, queryId, category, label, storagePath, fileName, file.size ?? file.buffer.length, file.mimetype]
-        );
+        )).rowCount;
         // Start the clock once, on the first file (as the portal does).
         await db.query(
           `UPDATE claims SET retention_started_at = now(), purge_at = now() + make_interval(days => $3), updated_at = now()
@@ -900,9 +902,12 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
         await db.query("COMMIT");
       } catch (e) {
         await db.query("ROLLBACK").catch(() => {});
-        await storage().remove([storagePath]).catch(() => {});
+        // Remove the object only if no row points at it (a parallel upload of the same message may have won).
+        const owned = await pool.query("SELECT 1 FROM claim_documents WHERE id = $1", [docId]).catch(() => ({ rowCount: 1 }));
+        if (!owned.rowCount) await storage().remove([storagePath]).catch(() => {});
         throw e;
       } finally { db.release(); }
+      if (!inserted) return res.json({ ok: true, duplicate: true, docId, purgeOn });
       void audit(agentId, req.params.id, `claim_doc_upload_${category}`, "/api/internal/wa/claims/:id/documents");
       res.json({ ok: true, duplicate: false, docId, purgeOn, undoToken: undoToken("claim_documents", docId, { doc: null }, { doc: docId }) });
     } catch (err) { fail(res, "claim document upload", err); }
@@ -924,7 +929,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const rm = await storage().remove([d.rows[0].storage_path]);
       if (rm.error) return res.status(502).json({ error: "STORE_FAILED" });
       await pool.query("DELETE FROM claim_documents WHERE id = $1 AND agent_id = $2", [req.params.docId, agentId]);
-      void audit(agentId, req.params.id, "wa_claim_doc_undo", "/api/internal/wa/claims/:id/documents/:docId/undo");
+      void audit(agentId, req.params.id, "claim_doc_delete", "/api/internal/wa/claims/:id/documents/:docId/undo");
       res.json({ ok: true });
     } catch (err) { fail(res, "claim document undo", err); }
   });
@@ -941,7 +946,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       if (!d.rows.length) return res.status(404).json({ error: "Not found" });
       const blob = await storage().download(d.rows[0].storage_path);
       if (blob.error || !blob.data) return res.status(409).json({ error: "NOT_STORED" });
-      void audit(agentId, req.params.id, "claim_doc_download", "/api/internal/wa/claims/:id/documents/:docId/file");
+      void audit(agentId, req.params.id, "claim_doc_download", "/api/internal/wa/claims/:id/documents/:docId/file", "GET");
       sendBytes(res, Buffer.from(await blob.data.arrayBuffer()), d.rows[0].mime_type || "application/pdf", d.rows[0].filename || "document.pdf");
     } catch (err) { fail(res, "claim document file", err); }
   });
@@ -960,7 +965,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const [bucket, ...rest] = m[1].split("/");
       const blob = await storageClient().storage.from(bucket).download(rest.join("/"));
       if (blob.error || !blob.data) return res.status(409).json({ error: "NOT_STORED" });
-      void audit(agentId, req.params.id, "download_pdf", "/api/internal/wa/clients/:id/pdf");
+      void audit(agentId, req.params.id, "download_pdf", "/api/internal/wa/clients/:id/pdf", "GET");
       const ext = (rest.join("/").split(".").pop() || "pdf").toLowerCase();
       const mime = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "application/pdf";
       sendBytes(res, Buffer.from(await blob.data.arrayBuffer()), mime, r.rows[0].filename || `policy.${ext}`);

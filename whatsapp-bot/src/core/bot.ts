@@ -864,6 +864,7 @@ export class Bot {
       if (/^(?:done|finished|that'?s all|bas|ho gaya|हो गया|बस)[.!]*$/i.test(typed)) {
         return this.say(to, agentId, `Done: ${docSession.added} ${docSession.added === 1 ? "file" : "files"} added to ${docSession.name}.`, "claimdoc_done");
       }
+      await this.say(to, agentId, `Stopped adding files to ${docSession.name} (${docSession.added} added).`, "claimdoc_done");
     }
     const seen = detectLang(typed);
     if (seen && seen !== (this.replyLang.get(agentId) ?? "english")) {
@@ -911,6 +912,7 @@ export class Bot {
 
     if (intent === "cancel") {
       await this.dropHeldFile(conv);
+      this.docQueue.delete(agentId);
       await this.rest(agentId, to, conv.currentClientId);
       return this.say(to, agentId, T.cancelled(), "cancel");
     }
@@ -927,6 +929,7 @@ export class Bot {
     if (conv.state === "AWAITING_CONFIRM") {
       if (isYes(text) || /^(yes|haan|confirm|save|kar do|theek hai|ha+n)\b/i.test(text)) return this.confirmYes(agentId, conv, to);
       await this.rest(agentId, to, conv.currentClientId);
+      this.docQueue.delete(agentId);
       if (isNo(text) || /^(no|nahi|mat|don'?t|wait|stop|never ?mind|leave it|chhodo)\b/i.test(text)) {
         return this.say(to, agentId, "Okay, nothing changed.", "confirm_no");
       }
@@ -2074,7 +2077,7 @@ export class Bot {
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
     if (op.kind === "claimDocs") return `Add ${op.labels.length === 1 ? op.labels[0] : `${op.labels.length} files (${op.labels.join(", ")})`} to ${op.name}.${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from today, then deleted."}`;
-    if (op.kind === "claimDocSession") return `Files you send in the next 15 minutes go into ${op.name}. Name each one in its caption, like "final bill".${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from the first file, then deleted."}`;
+    if (op.kind === "claimDocSession") return `Files you send in the next 15 minutes go into ${op.name}. Name each one in its caption, like "final bill". Any other message ends it.${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from the first file, then deleted."}`;
     if (op.kind === "claimDocSend") return `Send all ${op.count} documents of ${op.name} here, including identity papers (Aadhaar, PAN, cheque)`;
     if (op.kind === "lifeRecord") return `${op.policy}: ${lifeLine(op.recKind, op.input, istToday(this.now()))}. Saved as told by you, not checked against an insurer document${op.warn ? `. Note: ${op.warn}` : ""}`;
     if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}${op.alreadyOpen ? `. Note: ${op.name} already has an open claim (${op.alreadyOpen})` : ""}`;
@@ -2104,6 +2107,7 @@ export class Bot {
   }
 
   private async confirm(agentId: string, conv: Conv, to: string, ops: Op[]) {
+    if (!ops.some((o) => o.kind === "claimDocs")) this.docQueue.delete(agentId);
     await this.setState(agentId, to, "AWAITING_CONFIRM", conv.currentClientId, { ops });
     const lines = ops.map((o) => `• ${this.describe(o)}`);
     return this.say(to, agentId, `Please confirm:\n${lines.join("\n")}\n\nReply YES to save, or NO.`, "confirm_ask");
@@ -3063,10 +3067,13 @@ ${link}`
   /** Images and documents first come here. True when it was a claim document (handled). */
   private async claimDocIn(agentId: string, conv: Conv, msg: InboundMessage): Promise<boolean> {
     const to = msg.replyTo;
+    this.sweepDocs();
     const session = this.sessionOf(agentId);
-    const cap = parseDocCaption(msg.text || "");
+    const caption = (msg.text || "").trim();
+    const cap = parseDocCaption(caption);
     const queue = this.queueOf(agentId);
-    const albumFollower = !cap && !session && msg.kind === "image" && !!queue && this.now() - queue.lastAt <= 60_000;
+    // Files sent right after a waiting claim file (an album, or a second PDF) join that batch.
+    const albumFollower = !cap && !caption && !session && !!queue && this.now() - queue.lastAt <= 60_000;
     if (!session && !cap && !albumFollower) return false;
 
     if (msg.fileSize != null && msg.fileSize > MAX_BYTES) { await this.say(to, agentId, T.tooLarge(), "too_large"); return true; }
@@ -3074,21 +3081,24 @@ ${link}`
     if (/heic|heif/.test(mime)) { await this.say(to, agentId, "This photo is in a format the portal can't show (HEIC). Please send it as a photo, not as a document.", "claimdoc"); return true; }
     if (!DOC_MIME.includes(mime)) { await this.say(to, agentId, "A claim document must be a PDF or a photo.", "claimdoc"); return true; }
 
-    // Which claim: the session's (pinned when it started), the album's, or the caption's.
+    // Which claim: the session's (pinned when it started), the batch's, or the caption's.
     let claimId: string | null = session?.claimId ?? (albumFollower ? queue!.claimId : null);
     if (!claimId && cap) {
       if (cap.who) {
         const open = (await this.d.engine.claims(agentId, cap.who)).filter((r) => r.customer_name && nameMatches(cap.who!, r.customer_name) && !CLAIM_TERMINAL.includes(r.status));
         if (!open.length) { await this.say(to, agentId, `I couldn't find an open claim for "${cap.who}". The file was not saved.`, "claimdoc"); return true; }
-        if (open.length > 1) { await this.say(to, agentId, `${open[0].customer_name} has ${open.length} open claims. Type: add documents to ${open[0].customer_name}'s claim (you'll pick one), then send the files. The file was not saved.`, "claimdoc"); return true; }
+        if (open.length > 1) { await this.say(to, agentId, `"${cap.who}" matches ${open.length} open claims. Type: add documents to ${cap.who}'s claim (you'll pick one), then send the files. The file was not saved.`, "claimdoc"); return true; }
         claimId = open[0].id;
       } else {
-        claimId = this.lastClaim.get(agentId) ?? null;
+        // Only "this claim" / "the claim" means the claim we are on; anything else must name the person.
+        claimId = cap.thisClaim ? this.lastClaim.get(agentId) ?? null : null;
         if (!claimId) { await this.say(to, agentId, "Which claim? Send the file with a caption like: final bill for Sunita's claim. The file was not saved.", "claimdoc"); return true; }
       }
     }
-    if (session && cap?.who && session.customer && !nameMatches(cap.who, session.customer)) {
-      await this.say(to, agentId, `Files are going into ${session.name} right now. Type DONE first, then send ${cap.who}'s file. This file was not saved.`, "claimdoc");
+    // Inside a session, a caption that names someone else is never saved into this claim.
+    const other = session ? foreignName(cap?.who ?? caption, session.customer) : null;
+    if (session && other) {
+      await this.say(to, agentId, `Files are going into ${session.name} right now. Type DONE first, then send ${other}'s file. This file was not saved.`, "claimdoc");
       return true;
     }
     const t = await this.claimTarget(agentId, claimId!);
@@ -3097,16 +3107,17 @@ ${link}`
 
     const buf = await this.d.transport.downloadMedia(msg);
     if (buf.length > MAX_BYTES) { await this.say(to, agentId, T.tooLarge(), "too_large"); return true; }
-    // Inside a session, an uncaptioned PDF that reads like a policy is asked about, never saved.
-    if (session && !cap && mime === "application/pdf") {
+    // Inside a session, a PDF with NO caption that reads like a policy schedule is asked about.
+    // Any caption saves it (claim papers often print a policy number).
+    if (session && !caption && mime === "application/pdf") {
       const insp = await (this.d.inspect ?? inspectPdf)(buf).catch(() => null);
-      if (insp?.kind === "ok" && /policy (?:no|number|schedule|period)|sum insured|period of insurance/i.test(insp.text)) {
+      if (insp?.kind === "ok" && /policy schedule|schedule of (?:the )?policy|period of insurance/i.test(insp.text)) {
         await this.say(to, agentId, `This looks like a policy document. To add it to ${t.name} anyway, send it again with a caption like "policy copy". To check it as a policy, type DONE first and send it again.`, "claimdoc");
         return true;
       }
     }
     // Inside a session any caption names the file ("aadhaar"); outside, the claim caption does.
-    const words = cap?.words || (session ? (msg.text || "").trim() : "");
+    const words = cap?.words || (session ? caption : "");
     const { label, category } = words ? labelFor(words, t.claimType) : { label: "Claim document", category: "case" as const };
     const queryId = cap?.reply ? t.openQueries[t.openQueries.length - 1]?.id ?? null : null;
     const item: QueuedDoc = { buffer: buf, mime, label, category, queryId, msgId: msg.id, kind: msg.kind === "image" ? "photo" : "PDF" };
@@ -3118,18 +3129,29 @@ ${link}`
       session.added += r.duplicate ? 0 : 1;
       session.until = this.now() + UNDO_WINDOW_MS;
       if (r.change) this.lastChange.set(agentId, r.change);
-      await this.say(to, agentId, `${r.text}\n(Wrong file? Reply UNDO within 15 minutes.)`, "claimdoc_saved");
+      await this.say(to, agentId, `${r.text}${r.change ? "\n(Wrong file? Reply UNDO within 15 minutes.)" : ""}`, "claimdoc_saved");
       return true;
     }
     // Held for YES: one confirm for all files sent together.
-    const total = (queue?.claimId === t.claimId ? queue.items : []).concat(item);
+    const same = queue?.claimId === t.claimId;
+    if (queue && !same) {
+      await this.say(to, agentId, `The ${queue.items.length === 1 ? "file" : `${queue.items.length} files`} waiting for ${queue.name} were not saved.`, "claimdoc");
+    }
+    const total = (same ? queue!.items : []).concat(item);
     if (total.length > 10 || total.reduce((n, x) => n + x.buffer.length, 0) > 40 * 1024 * 1024) {
       await this.say(to, agentId, "That's too many files to hold at once. Reply YES to add the ones so far, then send the rest.", "claimdoc");
       return true;
     }
-    this.docQueue.set(agentId, { claimId: t.claimId, items: total, at: queue?.claimId === t.claimId ? queue.at : this.now(), lastAt: this.now() });
+    this.docQueue.set(agentId, { claimId: t.claimId, name: t.name, items: total, at: same ? queue!.at : this.now(), lastAt: this.now() });
     await this.confirm(agentId, conv, to, [{ kind: "claimDocs", claimId: t.claimId, name: t.name, labels: total.map((x) => `${showLabel(x.label)} (${x.kind})`), purgeOn: t.purgeOn }]);
     return true;
+  }
+
+  /** Waiting files never outlive their 15 minutes, whoever stops writing. */
+  private sweepDocs() {
+    const now = this.now();
+    for (const [k, q] of this.docQueue) if (now - q.at > UNDO_WINDOW_MS) this.docQueue.delete(k);
+    for (const [k, s] of this.docSession) if (now > s.until) this.docSession.delete(k);
   }
 
   /** Save one document. Never "saved" unless the server said so. */
@@ -3137,13 +3159,14 @@ ${link}`
     const ext = x.mime === "application/pdf" ? "pdf" : x.mime === "image/png" ? "png" : x.mime === "image/webp" ? "webp" : "jpg";
     const r = await this.d.engine.claimDocUpload(agentId, t.claimId, { buffer: x.buffer, mime: x.mime, fileName: `document.${ext}` }, { docType: x.label, category: x.category, msgId: x.msgId, queryId: x.queryId });
     if (!r.ok) {
-      return { ok: false, text: r.reason === "PURGED" ? `Not saved: ${t.name}'s documents were deleted when it closed.`
+      return { ok: false, text: r.reason === "OTHER_CLAIM" ? `Not saved: this file was already added to another claim.`
+        : r.reason === "PURGED" ? `Not saved: ${t.name}'s documents were deleted when it closed.`
         : r.reason === "BAD_TYPE" ? "Not saved: a claim document must be a PDF or a photo."
         : r.reason === "TOO_LARGE" ? T.tooLarge()
         : `Not saved: ${showLabel(x.label)} could not be stored. Please send it again.` };
     }
     this.lastClaim.set(agentId, t.claimId);
-    const kept = r.purgeOn ? ` Kept until ${prettyDate(r.purgeOn)}, then deleted.` : "";
+    const kept = !r.purgeOn ? "" : r.purgeOn < istToday(this.now()) ? " Its documents are due to be deleted now." : ` Kept until ${prettyDate(r.purgeOn)}, then deleted.`;
     if (r.duplicate) return { ok: true, duplicate: true, text: `${showLabel(x.label)} is already in ${t.name}.` };
     return {
       ok: true, duplicate: false,
@@ -3192,7 +3215,7 @@ ${link}`
     for (const d of docs) {
       const f = await this.d.engine.claimDocFile(agentId, t.claimId, d.id);
       if (!f) continue;
-      await tr.sendDocument(to, f.buffer, f.fileName, f.mime, `${showLabel(d.label)} · ${t.name}.${gone} Delete from this chat after use.`);
+      await tr.sendDocument(to, f.buffer, f.fileName, f.mime, localise(`${showLabel(d.label)} · ${t.name}.${gone} Delete from this chat after use.`, this.replyLang.get(agentId)));
       sent++;
     }
     return sent;
@@ -3230,7 +3253,7 @@ ${link}`
       return this.say(to, agentId, f.error === "NO_PDF" ? `No PDF is stored for ${policy}.` : `I couldn't fetch ${policy}'s PDF. Open it in the portal: ${link}`, "policypdf");
     }
     this.setLast(agentId, { kind: "policy", clientId });
-    await tr.sendDocument(to, f.buffer, f.fileName, f.mime, `${policy}. Delete from this chat after use.`);
+    await tr.sendDocument(to, f.buffer, f.fileName, f.mime, localise(`${policy}. Delete from this chat after use.`, this.replyLang.get(agentId)));
   }
 
   /** The stage 3 questions: which document to send, which policy's PDF. */
@@ -3409,10 +3432,24 @@ function lifeLine(kind: string, input: Record<string, any>, today: string): stri
 /** What a claim document may be (the server checks again; HEIC is refused). */
 const DOC_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 type QueuedDoc = { buffer: Buffer; mime: string; label: string; category: "personal" | "case"; queryId: string | null; msgId: string; kind: "photo" | "PDF" };
-type DocQueue = { claimId: string; items: QueuedDoc[]; at: number; lastAt: number };
+type DocQueue = { claimId: string; name: string; items: QueuedDoc[]; at: number; lastAt: number };
 type DocSession = { claimId: string; name: string; customer: string | null; until: number; added: number };
 type DocTarget = {
   claimId: string; claimType: string; customer: string | null; name: string; purged: boolean; purgeOn: string | null; status: string;
   openQueries: { id?: string; seq: number; question: string }[];
   docs: { id: string; label: string; category: string }[];
 };
+
+/** Stoplist for foreignName: words a caption uses that are not a person. */
+const DOC_WORD = /^(?:final|bill|bills|claim|form|part|copy|policy|hospital|discharge|summary|report|reports|card|cheque|pan|aadhaar|aadhar|photo|page|front|back|side|receipt|receipts|prescription|prescriptions|pharmacy|estimate|advice|doctor|mandate|neft|query|reply|scan|xray|mri|ct|lab|test|original|new|old|second|first|and|of|for|the|this|my|ka|ki|ke)$/i;
+/** A person named in a caption who is not this claim's customer ("Ramesh aadhaar" in Sunita's
+ *  session). Null when every word is a document word or part of the customer's own name. */
+function foreignName(caption: string, customer: string | null): string | null {
+  const own = new Set(String(customer || "").toLowerCase().split(/\s+/).filter(Boolean));
+  for (const w of caption.split(/[\s,:;.\-]+/)) {
+    if (!/^[A-Z][a-z]{2,}$/.test(w)) continue;
+    if (own.has(w.toLowerCase()) || DOC_WORD.test(w) || !labelFor(w, "cashless").custom) continue;
+    return w;
+  }
+  return null;
+}

@@ -88,7 +88,7 @@ const okWho = (w: string | undefined) => !!w && w.trim().length >= 2 && !NOT_WHO
  * policy caption ("Sunita health"), as before. `who` null = "this claim" / the claim we are on.
  * `words` = what the document is; `reply` = it answers an insurer query.
  */
-export function parseDocCaption(captionRaw: string): { who: string | null; words: string; reply: boolean } | null {
+export function parseDocCaption(captionRaw: string): { who: string | null; words: string; reply: boolean; thisClaim: boolean } | null {
   const t = clean(captionRaw).replace(/[’']/g, "'");
   if (!new RegExp(`\\b${CLAIM}\\b|क्लेम`, "i").test(t)) return null;
   let who: string | null = null;
@@ -101,14 +101,19 @@ export function parseDocCaption(captionRaw: string): { who: string | null; words
   ];
   for (const re of pats) {
     const m = t.match(re);
-    if (!m || !okWho(m[2]) || /\b(?:this|the)\b/i.test(m[2])) continue;
+    // "discharge summary claim Sunita" or "policy for claim": document words are never the person.
+    if (!m || !okWho(m[2]) || /\b(?:this|the|my|policy)\b/i.test(m[2]) || !labelFor(m[2], "cashless").custom) continue;
     who = clean(m[2]);
     rest = `${m[1]} ${m[3]}`;
     break;
   }
   if (!who) rest = t.replace(new RegExp(`\\b(?:for|of|on|in)?\\s*(?:this|the)\\s+${CLAIM}\\b`, "i"), " ");
   rest = rest.replace(new RegExp(`\\b${CLAIM}\\b|क्लेम`, "gi"), " ").replace(/\s+/g, " ").trim().replace(/^[:,-]\s*|\s*[:,-]$/g, "");
-  return { who, words: rest, reply: /\b(?:query|reply|answer|jawab)\b|जवाब/i.test(rest) };
+  return {
+    who, words: rest, reply: /\b(?:query|reply|answer|jawab)\b|जवाब/i.test(rest),
+    // Only "this claim" / "the claim" / a caption starting "claim" means the claim we are on.
+    thisClaim: !who && new RegExp(`\\b(?:this|the)\\s+${CLAIM}\\b|^${CLAIM}\\b`, "i").test(t),
+  };
 }
 
 /** "add documents to Sunita's claim", "Sunita ke claim ke documents", "documents for Sunita's claim". */
@@ -133,6 +138,8 @@ export function parseDocSend(textRaw: string): { who: string | null; words: stri
   if (m[1] !== undefined && !okWho(m[1])) return null;
   const what = m[2].trim();
   const all = /^(?:all\s+)?(?:documents?|docs?|papers?|files?)$|^saare\s+documents$|^सारे\s+डॉक्यूमेंट$/i.test(what);
+  // Only a real document: "send Sunita's claim status" or "... update" stays a claim question.
+  if (!all && labelFor(what, "reimbursement").custom && labelFor(what, "cashless").custom) return null;
   return { who: m[1] ? clean(m[1]) : null, words: all ? null : what };
 }
 

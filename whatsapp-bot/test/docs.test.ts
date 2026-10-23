@@ -39,7 +39,7 @@ test("the checklist labels are the portal's, character for character", () => {
 test("a caption must say 'claim': a name alone is still a policy caption", () => {
   assert.equal(parseDocCaption("Sunita health"), null);
   assert.equal(parseDocCaption("Ramesh Kumar 98123 45678"), null);
-  assert.deepEqual(parseDocCaption("final bill for Sunita's claim"), { who: "Sunita", words: "final bill", reply: false });
+  assert.deepEqual(parseDocCaption("final bill for Sunita's claim"), { who: "Sunita", words: "final bill", reply: false, thisClaim: false });
   assert.equal(ruleIntent("add documents to Sunita's claim"), "claimdocs");
   assert.equal(ruleIntent("send Sunita's claim documents"), "docsend");
   assert.equal(ruleIntent("send Ramesh's policy PDF"), "policypdf");
@@ -89,7 +89,7 @@ test("session: one YES, then each file is saved as it arrives; DONE ends it; ide
 });
 
 test("session: an uncaptioned PDF that reads like a policy is asked about, never saved", async () => {
-  const t = makeBot({ inspect: async () => ({ kind: "ok", text: "Policy Number 123 Sum Insured 5,00,000", hindi: false, guess: "health", scores: {} }) as any });
+  const t = makeBot({ inspect: async () => ({ kind: "ok", text: "Policy Schedule. Period of Insurance 1 Oct 2026 to 30 Sep 2027", hindi: false, guess: "health", scores: {} }) as any });
   t.engine.customers.push({ id: CUST, name: "Sunita Rao", phone: "9800000002" } as any);
   t.engine.claimStore.set(CLM, { id: CLM, status: "submitted", claim_type: "cashless", insurer: null, admitted_on: null, customer_id: CUST });
   await t.bot.handle(text("add documents to Sunita's claim"));
@@ -164,5 +164,49 @@ test("a photo with no claim caption and no session still gets the usual reply", 
   const { bot, transport, engine } = setup();
   await bot.handle(photo(transport));
   assert.doesNotMatch(transport.last(), /claim/i);
+  assert.equal(engine.docStore.length, 0);
+});
+
+/* ── Critic findings (2026-10-23) ── */
+
+test("critic: a claim question is never a document request; a vague caption never guesses the claim", async () => {
+  for (const s of ["give me the claim status", "share Sunita's claim status"]) assert.notEqual(ruleIntent(s), "docsend", s);
+  assert.equal(ruleIntent("send Sunita's claim update"), null);
+  const { bot, transport, engine } = setup();
+  await bot.handle(text("Sunita's claim hospital is Apollo"));
+  await bot.handle(text("no"));
+  await bot.handle(photo(transport, "aadhaar for my claim"));
+  assert.match(transport.last(), /Which claim\? Send the file with a caption like/);
+  assert.equal(engine.docStore.length, 0);
+});
+
+test("critic: in a session, any caption saves the PDF; another person's name is refused", async () => {
+  const t = makeBot({ inspect: async () => ({ kind: "ok", text: "Claim form Part A. Policy No 123", hindi: false, guess: "health", scores: {} }) as any });
+  t.engine.customers.push({ id: CUST, name: "Sunita Rao", phone: "9800000002" } as any);
+  t.engine.claimStore.set(CLM, { id: CLM, status: "submitted", claim_type: "reimbursement", insurer: null, admitted_on: null, customer_id: CUST });
+  await t.bot.handle(text("add documents to Sunita's claim"));
+  await t.bot.handle(text("yes"));
+  await t.bot.handle(pdf(t.transport, "claim form", { caption: "claim form part a" }));
+  assert.equal(t.engine.docStore[0]?.label, "Claim form Part A");
+  await t.bot.handle(pdf(t.transport, "form without caption"));
+  assert.equal(t.engine.docStore.length, 2, "a claim form printing a policy number is not taken for a policy");
+  await t.bot.handle(photo(t.transport, "Ramesh aadhaar"));
+  assert.match(t.transport.last(), /Type DONE first, then send Ramesh's file/);
+  assert.equal(t.engine.docStore.length, 2);
+});
+
+test("critic: NO drops waiting files for good; a session ended by other text says so", async () => {
+  const { bot, transport, engine } = setup();
+  await bot.handle(photo(transport, "final bill for Sunita's claim"));
+  await bot.handle(text("no"));
+  await bot.handle(photo(transport, "pan card for Sunita's claim"));
+  assert.match(transport.last(), /Add PAN card \(photo\) to/);
+  assert.doesNotMatch(transport.last(), /Final bill/, "the refused file does not come back");
+  await bot.handle(text("no"));
+  await bot.handle(text("add documents to Sunita's claim"));
+  assert.match(transport.last(), /Any other message ends it/);
+  await bot.handle(text("yes"));
+  await bot.handle(text("next is discharge summary"));
+  assert.match(transport.sent.map((m) => m.text).join("\n"), /Stopped adding files to Sunita Rao's claim .*\(0 added\)/);
   assert.equal(engine.docStore.length, 0);
 });

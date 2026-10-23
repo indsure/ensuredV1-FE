@@ -573,7 +573,7 @@ async function upload(h: ReturnType<typeof harness>, body: any, file: any = { bu
 test("claim document: stored, then the row and the clock in ONE transaction; same WhatsApp message twice = one document", async () => {
   process.env.WA_BOT_KEY = "k".repeat(40);
   const st = fakeStorage(); setWaStorageForTests(st.client);
-  const h = harness((sql) => (sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : sql.includes("purge_on") ? { rows: [{ purge_on: "2026-11-21" }] } : { rows: [], rowCount: 0 }));
+  const h = harness((sql) => (sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : sql.includes("purge_on") ? { rows: [{ purge_on: "2026-11-21" }] } : sql.includes("INSERT INTO claim_documents") ? { rows: [{ id: "x" }], rowCount: 1 } : { rows: [], rowCount: 0 }));
   const r = await upload(h, { docType: "Final bill", category: "case", msgId: "WAMSG1" });
   assert.equal(r.status, 200);
   assert.equal(r.json.purgeOn, "2026-11-21");
@@ -584,7 +584,7 @@ test("claim document: stored, then the row and the clock in ONE transaction; sam
   assert.match(ins.sql, /ON CONFLICT \(id\) DO NOTHING/);
   assert.equal(ins.params[7], "final-bill.pdf", "a photo or PDF gets a name from its label");
   assert.equal(st.objects.size, 1);
-  const again = harness((sql) => (sql.startsWith("SELECT id FROM claim_documents") ? { rows: [{ id: r.json.docId }], rowCount: 1 } : sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : { rows: [{ purge_on: "2026-11-21" }] }));
+  const again = harness((sql) => (sql.startsWith("SELECT id, claim_id FROM claim_documents") ? { rows: [{ id: r.json.docId, claim_id: CLM }], rowCount: 1 } : sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : { rows: [{ purge_on: "2026-11-21" }] }));
   const r2 = await upload(again, { docType: "Final bill", category: "case", msgId: "WAMSG1" });
   assert.equal(r2.json.duplicate, true);
   assert.equal(st.objects.size, 1, "nothing stored twice");
@@ -628,4 +628,15 @@ test("claim document undo: only with the token, only within 15 minutes; the file
   const keep = harness((sql) => (sql.startsWith("SELECT storage_path") ? { rows: [{ storage_path: "p" }] } : { rows: [], rowCount: 1 }));
   assert.equal((await keep.call("POST /api/internal/wa/claims/:id/documents/:docId/undo", { id: CLM, docId }, { token })).status, 502);
   assert.ok(!keep.calls.some((c) => c.sql.startsWith("DELETE")), "the row stays while its file could not be removed");
+});
+
+test("claim document: the same message on another claim is refused; a lost race reports a duplicate and keeps the winner's file", async () => {
+  const st = fakeStorage(); setWaStorageForTests(st.client);
+  const other = harness((sql) => (sql.startsWith("SELECT id, claim_id FROM claim_documents") ? { rows: [{ id: "d", claim_id: CUST }], rowCount: 1 } : sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : { rows: [] }));
+  assert.equal((await upload(other, { docType: "Bill", category: "case", msgId: "R1" })).json.error, "OTHER_CLAIM");
+  const lost = harness((sql) => (sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : sql.includes("purge_on") ? { rows: [{ purge_on: "2026-11-21" }] } : { rows: [], rowCount: 0 }));
+  const r = await upload(lost, { docType: "Bill", category: "case", msgId: "R2" });
+  assert.equal(r.json.duplicate, true);
+  assert.equal(r.json.undoToken, undefined, "no undo for a file this request did not save");
+  assert.equal(st.objects.size, 1, "the stored object stays: the winning row points at it");
 });
