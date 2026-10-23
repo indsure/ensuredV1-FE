@@ -110,12 +110,12 @@ test("HINDI / ENGLISH switch the language, and it is remembered", async () => {
   assert.match(transport.last(), /अब जवाब हिंदी में आएँगे/);
   assert.equal(engine.conv.pending.replyLang, "hindi", "saved with the conversation");
   await bot.handle(text("help"));
-  assert.match(transport.last(), /मैं ये काम सबसे ज़्यादा करता हूँ/);
+  assert.match(transport.last(), /नंबर लिखिए, या सीधे बताइए क्या चाहिए/);
   await bot.handle(text("renewals"));
   assert.match(transport.last(), /कुछ बाकी नहीं/, "a bare command keeps Hindi");
   await bot.handle(text("ENGLISH"));
   await bot.handle(text("help"));
-  assert.match(transport.last(), /Here's what I do most/);
+  assert.match(transport.last(), /Reply with a number, or just tell me what you need/);
 });
 
 test("the customer's message is never translated; only the bot's own wording is", async () => {

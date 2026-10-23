@@ -224,9 +224,9 @@ test("the help menu lists the new tools", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("help"));
   assert.ok(transport.last().split("\n").length <= 11, "help stays one screen: 9 numbered choices");
-  assert.match(transport.last(), /Or just type what you need/);
+  assert.match(transport.last(), /I can also update leads, policies and claims/);
   await bot.handle(text("more"));
-  for (const w of ["CALCULATOR", "COMPARE", "LEAD", "LINK", "FOLLOW UPS", "CLAIMS", "VIEWS", "CHECKS", "FIND", "SURRENDER VALUE", "UPGRADE MESSAGE", "MY CLIENTS"]) {
+  for (const w of ["Find Sunita", "New lead", "Follow up", "Who opened my report", "Open a claim", "final bill for Sunita's claim", "Surrender value", "How is my business", "My page details", "How many checks", "UNDO"]) {
     assert.ok(transport.last().includes(w), w);
   }
 });

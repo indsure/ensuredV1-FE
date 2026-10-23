@@ -27,7 +27,7 @@ test("LINK with the right code connects and welcomes; a wrong code is refused", 
   await bot.handle(text("LINK 999999", STRANGER));
   assert.match(transport.last(), /didn't work/);
   await bot.handle(text("link 123 456", STRANGER));
-  assert.match(transport.texts().at(-2)!, /You're connected to IndSure/);
+  assert.match(transport.texts().at(-2)!, /You're connected\. I'm your IndSure assistant/);
   assert.match(transport.last(), /IndSure AI Assistant, not a number/);
   assert.deepEqual(transport.contacts, [{ to: transport.sent.at(-1)!.to, name: "IndSure AI Assistant" }]);
 });
@@ -37,7 +37,7 @@ test("a failed contact card never undoes the link", async () => {
   engine.pendingCodes.set(STRANGER, { code: "123456", agentId: AGENT });
   transport.sendContact = async () => { throw new Error("offline"); };
   await bot.handle(text("LINK 123456", STRANGER));
-  assert.match(transport.texts().at(-2)!, /You're connected to IndSure/);
+  assert.match(transport.texts().at(-2)!, /You're connected\. I'm your IndSure assistant/);
 });
 
 test("photos, non-PDF files and oversized files get the right reply and no check", async () => {
@@ -274,13 +274,13 @@ test("a pending question lapses after 15 minutes", async () => {
   engine.conv = { state: "AWAITING_TYPE", currentClientId: null, pending: { to: `${ADVISOR}@s.whatsapp.net` }, updatedAt: new Date(0).toISOString() };
   await bot.handle(text("5"));
   // "5" is no longer a type pick; with no report and no rule it falls to the help menu.
-  assert.match(transport.last(), /Here's what I do most/);
+  assert.match(transport.last(), /Reply with a number, or just tell me what you need/);
 });
 
 test("unrecognised text with no report: help menu", async () => {
   const { bot, transport } = makeBot();
   await bot.handle(text("what's up with the market"));
-  assert.match(transport.last(), /Here's what I do most/);
+  assert.match(transport.last(), /Reply with a number, or just tell me what you need/);
 });
 
 test("house copy rules: no em dash, never 'AI' or 'credits' in anything sent", async () => {

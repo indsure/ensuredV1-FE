@@ -172,7 +172,7 @@ test("hi: a hello by name, with today's follow-ups when there are any", async ()
   await bot.handle(text("hi"));
   assert.match(transport.lastRaw(), /^👋 Hi Deep!/);
   assert.match(transport.last(), /You have 2 follow-ups due\. Reply \*?FOLLOW UPS\*? to see them\./);
-  assert.match(transport.last(), /Here's what I do most/);
+  assert.match(transport.last(), /Reply with a number, or just tell me what you need/);
   engine.followupRows = [];
   await bot.handle(text("good morning sir"));
   assert.match(transport.lastRaw(), /^👋 Good morning Deep!/, "answered in kind");
@@ -328,11 +328,11 @@ test("menu: hi, help, services and 'what can you do' all show the numbered menu"
   const { bot, transport } = makeBot();
   for (const t of ["hi", "help", "services", "what services do you offer?", "what can you do?", "menu"]) {
     await bot.handle(text(t));
-    assert.match(transport.last(), /Reply with a number:\n1\) Check a policy: send me the PDF/, t);
+    assert.match(transport.last(), /tell me what you need:\n1\) Check a customer's policy/, t);
     assert.match(transport.lastRaw(), /\n9\. Compare two plans/, t);
   }
   await bot.handle(text("kya kya hai"));
-  assert.match(transport.last(), /Number likhiye:\n1\) Policy check/, "asked in Hinglish, menu in Hinglish");
+  assert.match(transport.last(), /kya chahiye:\n1\) Customer ki policy check karein/, "asked in Hinglish, menu in Hinglish");
 });
 
 test("menu: a number runs that choice, exactly as if typed", async () => {
@@ -364,7 +364,7 @@ test("menu: in Hindi the choices are in Hindi, and a number still works", async 
   const { bot, transport } = makeBot();
   await bot.handle(text("HINDI"));
   await bot.handle(text("मदद"));
-  assert.match(transport.last(), /नंबर लिखिए:\n1\) पॉलिसी चेक: मुझे PDF भेजिए/);
+  assert.match(transport.last(), /क्या चाहिए:\n1\) कस्टमर की पॉलिसी चेक करें/);
   await bot.handle(text("2"));
   assert.match(transport.last(), /फॉलो-अप|follow/i);
 });
