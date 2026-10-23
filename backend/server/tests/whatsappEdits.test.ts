@@ -559,7 +559,7 @@ function fakeStorage(fail: { upload?: boolean; remove?: boolean } = {}) {
   const bucket = {
     async upload(path: string, buf: Buffer) { if (fail.upload) return { error: { message: "down" } }; objects.set(path, buf); return { error: null }; },
     async remove(paths: string[]) { if (fail.remove) return { error: { message: "down" } }; for (const p of paths) { objects.delete(p); removed.push(p); } return { error: null }; },
-    async download(path: string) { const b = objects.get(path); return b ? { data: new Blob([b]), error: null } : { data: null, error: { message: "missing" } }; },
+    async download(path: string) { const b = objects.get(path); return b ? { data: new Blob([new Uint8Array(b)]), error: null } : { data: null, error: { message: "missing" } }; },
   };
   return { objects, removed, client: { storage: { from: () => bucket } } };
 }
