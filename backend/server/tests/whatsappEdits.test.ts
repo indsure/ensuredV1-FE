@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   cleanCustomerSet, cleanInterests, cleanLeadSet, freshEmptyCustomerDelete, freshUntouchedLeadDelete,
-  guardedUpdate, money, norm, registerWaEdits, buildLifeRecord, lifeDueDates,
+  guardedUpdate, money, norm, registerWaEdits, buildLifeRecord, lifeDueDates, docIdFor, setWaStorageForTests, undoToken,
 } from "../whatsapp/edits";
 import { strictAmount, cleanFixValue, fixFieldsFor, cleanClaimSet } from "../whatsapp/editRules";
 
@@ -549,4 +549,83 @@ test("life record: a payment must cover a due date on the policy's schedule; a p
   const got = await g.call("GET /api/internal/wa/clients/:id/life", { id: LIFE });
   assert.equal(got.json.premium, 25000);
   assert.equal(got.json.dues[0] > got.json.dues[1], true, "newest first");
+});
+
+/* ── Stage 3: claim documents and files ── */
+
+function fakeStorage(fail: { upload?: boolean; remove?: boolean } = {}) {
+  const objects = new Map<string, Buffer>();
+  const removed: string[] = [];
+  const bucket = {
+    async upload(path: string, buf: Buffer) { if (fail.upload) return { error: { message: "down" } }; objects.set(path, buf); return { error: null }; },
+    async remove(paths: string[]) { if (fail.remove) return { error: { message: "down" } }; for (const p of paths) { objects.delete(p); removed.push(p); } return { error: null }; },
+    async download(path: string) { const b = objects.get(path); return b ? { data: new Blob([b]), error: null } : { data: null, error: { message: "missing" } }; },
+  };
+  return { objects, removed, client: { storage: { from: () => bucket } } };
+}
+async function upload(h: ReturnType<typeof harness>, body: any, file: any = { buffer: Buffer.from("%PDF-1.4 bill"), mimetype: "application/pdf", size: 13 }) {
+  let status = 200; let json: any = null;
+  const res: any = { status(s: number) { status = s; return res; }, json(j: any) { json = j; return res; }, setHeader() {}, send() {} };
+  await h.handlers.get("POST /api/internal/wa/claims/:id/documents")({ params: { id: CLM }, body, file, headers: {} }, res);
+  return { status, json };
+}
+
+test("claim document: stored, then the row and the clock in ONE transaction; same WhatsApp message twice = one document", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const st = fakeStorage(); setWaStorageForTests(st.client);
+  const h = harness((sql) => (sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : sql.includes("purge_on") ? { rows: [{ purge_on: "2026-11-21" }] } : { rows: [], rowCount: 0 }));
+  const r = await upload(h, { docType: "Final bill", category: "case", msgId: "WAMSG1" });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.purgeOn, "2026-11-21");
+  assert.equal(r.json.docId, docIdFor(AGENT, "WAMSG1"));
+  const sqls = h.calls.map((c) => c.sql.trim().split(/\s/)[0]);
+  assert.deepEqual(sqls.filter((w) => ["BEGIN", "COMMIT"].includes(w)), ["BEGIN", "COMMIT"]);
+  const ins = h.calls.find((c) => c.sql.includes("INSERT INTO claim_documents"))!;
+  assert.match(ins.sql, /ON CONFLICT \(id\) DO NOTHING/);
+  assert.equal(ins.params[7], "final-bill.pdf", "a photo or PDF gets a name from its label");
+  assert.equal(st.objects.size, 1);
+  const again = harness((sql) => (sql.startsWith("SELECT id FROM claim_documents") ? { rows: [{ id: r.json.docId }], rowCount: 1 } : sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: null }] } : { rows: [{ purge_on: "2026-11-21" }] }));
+  const r2 = await upload(again, { docType: "Final bill", category: "case", msgId: "WAMSG1" });
+  assert.equal(r2.json.duplicate, true);
+  assert.equal(st.objects.size, 1, "nothing stored twice");
+});
+
+test("claim document: a failed row write removes the stored file; purged claims, outcome letters, HEIC and unknown claims are refused before storing", async () => {
+  const st = fakeStorage(); setWaStorageForTests(st.client);
+  const h = harness((sql) => {
+    if (sql.startsWith("SELECT id, documents_purged_at")) return { rows: [{ id: CLM, documents_purged_at: null }] };
+    if (sql.includes("INSERT INTO claim_documents")) throw new Error("db down");
+    return { rows: [], rowCount: 0 };
+  });
+  const r = await upload(h, { docType: "Final bill", category: "case", msgId: "WAMSG2" });
+  assert.equal(r.status, 500);
+  assert.equal(st.objects.size, 0, "no orphaned file: the daily sweep could never find it");
+  assert.ok(h.calls.some((c) => c.sql.startsWith("ROLLBACK")));
+  const purged = harness((sql) => (sql.startsWith("SELECT id, documents_purged_at") ? { rows: [{ id: CLM, documents_purged_at: new Date() }] } : { rows: [] }));
+  assert.equal((await upload(purged, { docType: "Bill", category: "case", msgId: "m3" })).json.error, "PURGED");
+  const none = harness(() => ({ rows: [] }));
+  assert.equal((await upload(none, { docType: "Bill", category: "case", msgId: "m4" })).status, 404);
+  assert.equal((await upload(none, { docType: "Settlement letter", category: "outcome", msgId: "m5" })).status, 400);
+  assert.equal((await upload(none, { docType: "Bill", category: "case", msgId: "m6" }, { buffer: Buffer.from("x"), mimetype: "image/heic", size: 1 })).json.error, "BAD_TYPE");
+  assert.equal(st.objects.size, 0);
+});
+
+test("claim document undo: only with the token, only within 15 minutes; the file goes first, then the row", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const st = fakeStorage(); setWaStorageForTests(st.client);
+  st.objects.set("a/claims/x/case/d.pdf", Buffer.from("x"));
+  const docId = docIdFor(AGENT, "WAMSG9");
+  const token = undoToken("claim_documents", docId, { doc: null }, { doc: docId });
+  const h = harness((sql) => (sql.startsWith("SELECT storage_path") ? { rows: [{ storage_path: "a/claims/x/case/d.pdf" }] } : { rows: [], rowCount: 1 }));
+  assert.equal((await h.call("POST /api/internal/wa/claims/:id/documents/:docId/undo", { id: CLM, docId }, { token: "f".repeat(64) })).status, 400);
+  const r = await h.call("POST /api/internal/wa/claims/:id/documents/:docId/undo", { id: CLM, docId }, { token });
+  assert.equal(r.status, 200);
+  assert.deepEqual(st.removed, ["a/claims/x/case/d.pdf"]);
+  assert.match(h.calls.find((c) => c.sql.startsWith("SELECT storage_path"))!.sql, /uploaded_at > now\(\) - interval '15 minutes'/);
+  const late = harness(() => ({ rows: [], rowCount: 0 }));
+  assert.equal((await late.call("POST /api/internal/wa/claims/:id/documents/:docId/undo", { id: CLM, docId }, { token })).status, 409);
+  const down = fakeStorage({ remove: true }); setWaStorageForTests(down.client);
+  const keep = harness((sql) => (sql.startsWith("SELECT storage_path") ? { rows: [{ storage_path: "p" }] } : { rows: [], rowCount: 1 }));
+  assert.equal((await keep.call("POST /api/internal/wa/claims/:id/documents/:docId/undo", { id: CLM, docId }, { token })).status, 502);
+  assert.ok(!keep.calls.some((c) => c.sql.startsWith("DELETE")), "the row stays while its file could not be removed");
 });

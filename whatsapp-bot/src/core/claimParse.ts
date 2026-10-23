@@ -13,7 +13,10 @@ export type ClaimAsk =
   | { kind: "query"; who: string | null; question: string }
   | { kind: "answered"; who: string | null }
   | { kind: "extend"; who: string | null }
-  | { kind: "edit"; who: string | null; word: string | null; value: string | null };
+  | { kind: "edit"; who: string | null; word: string | null; value: string | null }
+  /* Stage 3: put documents into a claim / get them back (docParse.ts reads the words) */
+  | { kind: "docs"; who: string | null }
+  | { kind: "docsend"; who: string | null; words: string | null };
 
 /** Claim detail words -> the claim column. Longest first when matching. */
 export const CLAIM_WORDS: [string[], string][] = [

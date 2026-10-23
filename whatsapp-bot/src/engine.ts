@@ -168,6 +168,12 @@ export interface Engine {
   lifeGet(agentId: string, clientId: string): Promise<LifeRecords | null>;
   lifeAdd(agentId: string, clientId: string, kind: "payment" | "loan" | "quote", input: Record<string, unknown>, expectRev: number): Promise<WriteResult<{ rev: number; list: string; record: Record<string, any>; undoToken?: string }>>;
   lifeVoid(agentId: string, clientId: string, list: string, recordId: string, expectRev: number, token?: string): Promise<WriteResult<{ rev: number }>>;
+  /* Stage 3: files. Claim documents in (one per WhatsApp message), files back to the advisor's own chat. */
+  claimDocs(agentId: string, claimId: string): Promise<ClaimDocList | null>;
+  claimDocUpload(agentId: string, claimId: string, file: FileBytes, meta: { docType: string; category: "personal" | "case"; msgId: string; queryId: string | null }): Promise<WriteResult<{ docId: string; duplicate: boolean; purgeOn: string | null; undoToken?: string }>>;
+  claimDocUndo(agentId: string, claimId: string, docId: string, token?: string): Promise<boolean>;
+  claimDocFile(agentId: string, claimId: string, docId: string): Promise<FileBytes | null>;
+  policyPdf(agentId: string, clientId: string): Promise<FileBytes | { error: string }>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
@@ -356,6 +362,40 @@ export class HttpEngine implements Engine {
   lifeVoid(agentId: string, clientId: string, list: string, recordId: string, expectRev: number, token?: string) {
     return this.write<{ rev: number }>(`/api/internal/wa/clients/${clientId}/life-record/void`, agentId, { list, recordId, expectRev, token });
   }
+  async claimDocs(agentId: string, claimId: string) {
+    try { return await this.call(`/api/internal/wa/claims/${claimId}/documents`, { agentId }) as ClaimDocList; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  async claimDocUpload(agentId: string, claimId: string, file: FileBytes, meta: { docType: string; category: "personal" | "case"; msgId: string; queryId: string | null }): Promise<WriteResult<{ docId: string; duplicate: boolean; purgeOn: string | null; undoToken?: string }>> {
+    const form = new FormData();
+    form.append("file", new Blob([new Uint8Array(file.buffer)], { type: file.mime }), file.fileName);
+    form.append("docType", meta.docType);
+    form.append("category", meta.category);
+    form.append("msgId", meta.msgId);
+    if (meta.queryId) form.append("queryId", meta.queryId);
+    const res = await fetch(this.base + `/api/internal/wa/claims/${claimId}/documents`, { method: "POST", headers: { "x-wa-bot-key": this.key, "x-wa-agent-id": agentId }, body: form });
+    const json: any = await res.json().catch(() => ({}));
+    if (res.ok) return { ok: true, ...json };
+    if (res.status >= 500 && res.status !== 502) throw new Error(`claim document upload -> ${res.status}`);
+    return { ok: false, reason: json.error || "ERROR", fields: json.fields };
+  }
+  async claimDocUndo(agentId: string, claimId: string, docId: string, token?: string) {
+    return (await this.write(`/api/internal/wa/claims/${claimId}/documents/${docId}/undo`, agentId, { token })).ok;
+  }
+  async claimDocFile(agentId: string, claimId: string, docId: string) {
+    const r = await this.bytes(`/api/internal/wa/claims/${claimId}/documents/${docId}/file`, agentId);
+    return "error" in r ? null : r;
+  }
+  policyPdf(agentId: string, clientId: string) { return this.bytes(`/api/internal/wa/clients/${clientId}/pdf`, agentId); }
+  /** A file's bytes from an internal route, with its type and name. */
+  private async bytes(path: string, agentId: string): Promise<FileBytes | { error: string }> {
+    const res = await fetch(this.base + path, { headers: { "x-wa-bot-key": this.key, "x-wa-agent-id": agentId } });
+    if (!res.ok) { const j: any = await res.json().catch(() => ({})); return { error: j.error || `HTTP ${res.status}` }; }
+    return {
+      buffer: Buffer.from(await res.arrayBuffer()),
+      mime: res.headers.get("content-type") || "application/pdf",
+      fileName: decodeURIComponent(res.headers.get("x-file-name") || "document.pdf"),
+    };
+  }
   async leadUndoCreate(agentId: string, id: string, created?: Record<string, unknown>) {
     try { await this.call(`/api/internal/wa/leads/${id}/undo-create`, { method: "POST", agentId, body: { expect: created } }); return true; }
     catch { return false; }
@@ -414,6 +454,13 @@ export type PolicyFields = {
   client: { policyholder_name: string | null; policy_identifier: string | null; client_email: string | null; client_phone: string | null };
   fields: { key: string; label: string; kind: "money" | "percent" | "date" | "text"; value: unknown }[];
 };
+/** A file going in or out. */
+export type FileBytes = { buffer: Buffer; mime: string; fileName: string };
+/** A claim's documents and when they will be deleted (GET /api/internal/wa/claims/:id/documents). */
+export type ClaimDocList = {
+  claim_type: string; purge_on: string | null; purged: boolean; customer_name: string | null;
+  documents: { id: string; label: string; category: string; mime: string | null; size: number | null; uploadedOn: string; queryId: string | null }[];
+};
 /** A life or term policy's records still in force (GET /api/internal/wa/clients/:id/life). */
 export type LifeRecords = { type: string; status: string; rev: number; dues: string[] | null; premium: number | null; active: { payments: any[]; loans: any[]; quotes: any[] } };
 /** One claim as the edit routes see it (GET /api/internal/wa/claims/:id/row). */
@@ -423,7 +470,7 @@ export type ClaimEditRow = {
     hospital: string | null; ailment: string | null; claimed_amount: string | null; settled_amount: string | null;
     admitted_on: string | null; discharged_on: string | null; customer_id: string | null; customer_name: string | null;
   };
-  openQueries: { seq: number; question: string; raised_on: string }[];
+  openQueries: { id?: string; seq: number; question: string; raised_on: string }[];
 };
 export type FullCustomer = { id: string; name: string; phone: string | null; email: string | null; city: string | null; dob: string | null; created_at?: string };
 /** A write the server refused is a plain result: CHANGED (edited meanwhile), INVALID (with

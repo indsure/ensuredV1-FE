@@ -34,4 +34,7 @@ export interface Transport {
    *  in one tap and the chat shows the name instead of a number. Optional: a transport
    *  that cannot do it simply leaves it out. */
   sendContact?(to: string, name: string): Promise<void>;
+  /** Sends a file (a policy PDF, a claim document) as a WhatsApp document, to the advisor's own
+   *  chat only. Optional: without it the bot says the file is in the portal. */
+  sendDocument?(to: string, file: Buffer, fileName: string, mimeType: string, caption?: string): Promise<void>;
 }

@@ -5,6 +5,7 @@
 
 import { devanagariToLatin } from "./i18n.js";
 import { parseClaimAsk } from "./claimParse.js";
+import { parseDocSend, parseDocSession, parsePolicyPdf } from "./docParse.js";
 import { parseLifeAsk } from "./lifeParse.js";
 import { parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare } from "./editParse.js";
 
@@ -24,7 +25,9 @@ export type Intent =
   // Stage 2c: claims (open, details, stage, insurer query, extend)
   | "claimedit"
   // Stage 2d: life records (premium paid, loan, insurer figures, status)
-  | "liferecord";
+  | "liferecord"
+  // Stage 3: files (claim documents in and out, the policy PDF back)
+  | "claimdocs" | "docsend" | "policypdf";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -64,6 +67,9 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^unlink$/.test(t)) return "unlink";
   // Claim actions before the Hindi rules (which send any "क्लेम" to the read-only claims view) and
   // before lead/customer edits ("edit Sunita's claim" is a claim). Questions never parse as actions.
+  if (parseDocSession(t)) return "claimdocs";
+  if (parseDocSend(t)) return "docsend";
+  if (parsePolicyPdf(t)) return "policypdf";
   if (parseClaimAsk(t)) return "claimedit";
   // A life record states a figure ("Ramesh's surrender value is 1.2 lakh"); asking for one stays a lookup.
   if (parseLifeAsk(t)) return "liferecord";

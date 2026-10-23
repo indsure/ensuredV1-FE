@@ -165,7 +165,8 @@ export class BaileysTransport implements Transport {
       text: String(text || ""),
       fileName: doc?.fileName ?? null,
       mimeType: doc?.mimetype ?? img?.mimetype ?? null,
-      fileSize: doc?.fileLength != null ? Number(doc.fileLength) : null,
+      // Photos carry their size too, so a huge one is refused before it is downloaded.
+      fileSize: doc?.fileLength != null ? Number(doc.fileLength) : img?.fileLength != null ? Number(img.fileLength) : null,
       timestampMs: Number(m.messageTimestamp ?? 0) * 1000 || Date.now(),
       raw: m,
     };
@@ -178,6 +179,10 @@ export class BaileysTransport implements Transport {
 
   async sendText(to: string, text: string): Promise<void> {
     await this.need().sendMessage(to, { text });
+  }
+
+  async sendDocument(to: string, file: Buffer, fileName: string, mimeType: string, caption?: string): Promise<void> {
+    await this.need().sendMessage(to, { document: file, mimetype: mimeType, fileName, ...(caption ? { caption } : {}) });
   }
 
   async sendContact(to: string, name: string): Promise<void> {

@@ -34,6 +34,8 @@ export class FakeTransport implements Transport {
   async sendTyping() {}
   async downloadMedia(m: InboundMessage) { return this.files.get(m.id) ?? Buffer.from("%PDF-1.4 x"); }
   async markRead() {}
+  documents: { to: string; fileName: string; mimeType: string; size: number; caption?: string }[] = [];
+  async sendDocument(to: string, file: Buffer, fileName: string, mimeType: string, caption?: string) { this.documents.push({ to, fileName, mimeType, size: file.length, caption }); }
   contacts: { to: string; name: string }[] = [];
   async sendContact(to: string, name: string) { this.contacts.push({ to, name }); }
   /** The words of each message, without the house style (a leading emoji, bold commands,
@@ -376,7 +378,7 @@ export class FakeEngine implements Engine {
   async claimRow(_a: string, id: string) {
     const claim = this.claimOut(id);
     if (!claim) return null;
-    return { claim, openQueries: this.queryStore.filter((q) => q.claim_id === id && !q.resolved_on).map((q) => ({ seq: q.seq, question: q.question, raised_on: "2026-10-20" })) };
+    return { claim, openQueries: this.queryStore.filter((q) => q.claim_id === id && !q.resolved_on).map((q) => ({ id: `q-${q.seq}`, seq: q.seq, question: q.question, raised_on: "2026-10-20" })) };
   }
   async claimOpen(_a: string, customerId: string, set: Record<string, unknown>) {
     if (!this.customers.some((x) => x.id === customerId)) return { ok: false as const, reason: "Customer not found" };
@@ -509,6 +511,47 @@ export class FakeEngine implements Engine {
     p.x.rev += 1;
     this.writes.push({ kind: "lifeVoid", id: clientId, body: { recordId } });
     return { ok: true as const, rev: p.x.rev };
+  }
+  /* Stage 3: files. Same rules as the server: one document per WhatsApp message, the clock starts
+   *  on the first file, purged claims refuse working documents, undo only for a file saved here. */
+  docStore: { id: string; msgId: string; claimId: string; label: string; category: string; mime: string; size: number; queryId: string | null }[] = [];
+  pdfs = new Map<string, { buffer: Buffer; mime: string; fileName: string }>();
+  async claimDocs(_a: string, claimId: string) {
+    const c = this.claimOut(claimId);
+    if (!c) return null;
+    return {
+      claim_type: c.claim_type, purge_on: c.purge_on ?? null, purged: !!c.documents_purged_at, customer_name: c.customer_name,
+      documents: this.docStore.filter((d) => d.claimId === claimId).map((d) => ({ id: d.id, label: d.label, category: d.category, mime: d.mime, size: d.size, uploadedOn: "2026-10-22", queryId: d.queryId })),
+    };
+  }
+  async claimDocUpload(_a: string, claimId: string, file: { buffer: Buffer; mime: string; fileName: string }, meta: { docType: string; category: "personal" | "case"; msgId: string; queryId: string | null }) {
+    const c = this.claimStore.get(claimId);
+    if (!c) return { ok: false as const, reason: "Not found" };
+    if (c.documents_purged_at) return { ok: false as const, reason: "PURGED" };
+    if (!["application/pdf", "image/jpeg", "image/png", "image/webp"].includes(file.mime)) return { ok: false as const, reason: "BAD_TYPE" };
+    const seen = this.docStore.find((d) => d.msgId === meta.msgId);
+    if (seen) return { ok: true as const, docId: seen.id, duplicate: true, purgeOn: c.purge_on ?? null };
+    const id = crypto.randomUUID();
+    this.docStore.push({ id, msgId: meta.msgId, claimId, label: meta.docType, category: meta.category, mime: file.mime, size: file.buffer.length, queryId: meta.queryId });
+    c.purge_on ??= "2026-11-21";
+    c.fresh = false;
+    this.writes.push({ kind: "claimDocUpload", id, body: { label: meta.docType, category: meta.category, queryId: meta.queryId } });
+    return { ok: true as const, docId: id, duplicate: false, purgeOn: c.purge_on, undoToken: "fake-token" };
+  }
+  async claimDocUndo(_a: string, claimId: string, docId: string, token?: string) {
+    if (token !== "fake-token") return false;
+    const i = this.docStore.findIndex((d) => d.id === docId && d.claimId === claimId);
+    if (i < 0) return false;
+    this.docStore.splice(i, 1);
+    this.writes.push({ kind: "claimDocUndo", id: docId, body: {} });
+    return true;
+  }
+  async claimDocFile(_a: string, claimId: string, docId: string) {
+    const d = this.docStore.find((x) => x.id === docId && x.claimId === claimId);
+    return d ? { buffer: Buffer.alloc(d.size || 1), mime: d.mime, fileName: `${d.label}.pdf` } : null;
+  }
+  async policyPdf(_a: string, clientId: string) {
+    return this.pdfs.get(clientId) ?? { error: "NO_PDF" };
   }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {

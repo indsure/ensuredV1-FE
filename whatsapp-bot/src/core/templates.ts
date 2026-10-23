@@ -101,6 +101,7 @@ export const T = {
       "• Surrender values · SURRENDER VALUE Ramesh",
       "• Ramesh paid premium 25,000 on 5 Oct 2026 · No loan on Ramesh's policy",
       "• CLAIMS · Where is Sunita's claim?",
+      "• Photo with caption: final bill for Sunita's claim · Send Ramesh's policy PDF",
       "• Open a claim for Sunita · Sunita's claim submitted · Insurer wants the final bill for Sunita's claim",
       "• CALCULATOR · COMPARE Care Supreme vs Niva ReAssure 2.0",
       "",

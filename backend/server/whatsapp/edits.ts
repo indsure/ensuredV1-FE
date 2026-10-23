@@ -24,6 +24,8 @@ type Deps = {
 };
 
 import crypto from "crypto";
+import multer from "multer";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * UNDO may only put back a value the server itself saw before an edit. Each saved edit returns
@@ -451,7 +453,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
       const c = await claimRow(req.params.id, agentId);
       if (!c) return res.status(404).json({ error: "Not found" });
-      const q = await pool.query("SELECT seq, question, raised_on::text AS raised_on FROM claim_queries WHERE claim_id = $1 AND agent_id = $2 AND resolved_on IS NULL ORDER BY seq", [req.params.id, agentId]);
+      const q = await pool.query("SELECT id, seq, question, raised_on::text AS raised_on FROM claim_queries WHERE claim_id = $1 AND agent_id = $2 AND resolved_on IS NULL ORDER BY seq", [req.params.id, agentId]);
       res.json({ claim: c, openQueries: q.rows });
     } catch (err) { fail(res, "claim read", err); }
   });
@@ -810,6 +812,160 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       res.json({ ok: true, rev: (out.body as any).rev });
     } catch (err) { fail(res, "life record void", err); }
   });
+
+  /* ── Stage 3: files (docs/plans/2026-10-22-wa-stage3-files.md). Claim documents in (atomic,
+   *  idempotent per WhatsApp message), the list, files back to the advisor's own chat, and undo of
+   *  a file this chat saved in the last 15 minutes (founder decision 2026-10-22). Internal routes
+   *  only (bot key + loopback), never added to BOT_ROUTES. ── */
+
+  const CLAIM_RETENTION_DAYS = 30; // routes.ts CLAIM_RETENTION_DAYS
+  const docUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
+  const readFile = (req: any, res: any) => new Promise<void>((ok, no) => docUpload.single("file")(req, res, (e: any) => (e ? no(e) : ok())));
+
+  /** The claim's documents (labels as the portal shows them) and when they will be deleted. */
+  app.get("/api/internal/wa/claims/:id/documents", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const c = await pool.query(
+        `SELECT c.claim_type, c.purge_at::date::text AS purge_on, c.documents_purged_at IS NOT NULL AS purged, cu.name AS customer_name
+           FROM claims c LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.agent_id = c.agent_id
+          WHERE c.id = $1 AND c.agent_id = $2`, [req.params.id, agentId]);
+      if (!c.rows.length) return res.status(404).json({ error: "Not found" });
+      const d = await pool.query(
+        `SELECT id, category, doc_type, filename, mime_type, file_size, uploaded_at::date::text AS uploaded_on, query_id
+           FROM claim_documents WHERE claim_id = $1 AND agent_id = $2 ORDER BY uploaded_at`, [req.params.id, agentId]);
+      res.json({ ...c.rows[0], documents: d.rows.map((r: any) => ({ id: r.id, label: r.doc_type || r.filename, category: r.category, mime: r.mime_type, size: r.file_size, uploadedOn: r.uploaded_on, queryId: r.query_id })) });
+    } catch (err) { fail(res, "claim documents list", err); }
+  });
+
+  /** Put one document into a claim. Multipart: file, docType, category (personal|case), msgId
+   *  (the WhatsApp message id: the same message twice is one document), queryId (optional). */
+  app.post("/api/internal/wa/claims/:id/documents", async (req, res) => {
+    const agentId = await scopedAgent(req, res);
+    if (!agentId) return;
+    if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+    // (A test hands the file in already parsed.)
+    if (!req.file) try { await readFile(req, res); } catch (e: any) { return res.status(400).json({ error: e?.code === "LIMIT_FILE_SIZE" ? "TOO_LARGE" : "NO_FILE" }); }
+    const file = req.file;
+    if (!file?.buffer?.length) return res.status(400).json({ error: "NO_FILE" });
+    const ext = DOC_EXT[String(file.mimetype || "").toLowerCase()];
+    if (!ext) return res.status(400).json({ error: "BAD_TYPE" });
+    const category = String(req.body?.category || "");
+    if (category !== "personal" && category !== "case") return bad(res, { category: "personal or case" });
+    const label = String(req.body?.docType || "").trim().slice(0, 120);
+    if (label.length < 2) return bad(res, { docType: "a name for the document is needed" });
+    const msgId = String(req.body?.msgId || "");
+    if (!msgId) return bad(res, { msgId: "the WhatsApp message id is required" });
+    const queryId = req.body?.queryId ? String(req.body.queryId) : null;
+    try {
+      const claim = await pool.query("SELECT id, documents_purged_at FROM claims WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      if (!claim.rows.length) return res.status(404).json({ error: "Not found" });
+      if (claim.rows[0].documents_purged_at) return res.status(409).json({ error: "PURGED" });
+      if (queryId) {
+        if (!UUID.test(queryId)) return bad(res, { queryId: "not a query of this claim" });
+        const q = await pool.query("SELECT 1 FROM claim_queries WHERE id = $1 AND claim_id = $2 AND agent_id = $3 AND resolved_on IS NULL", [queryId, req.params.id, agentId]);
+        if (!q.rowCount) return bad(res, { queryId: "not an open query of this claim" });
+      }
+      const docId = docIdFor(agentId, msgId);
+      const seen = await pool.query("SELECT id FROM claim_documents WHERE id = $1 AND agent_id = $2", [docId, agentId]);
+      if (seen.rowCount) {
+        // A resend of the same WhatsApp message: already saved, nothing stored twice.
+        const p = await pool.query("SELECT purge_at::date::text AS purge_on FROM claims WHERE id = $1", [req.params.id]);
+        return res.json({ ok: true, duplicate: true, docId, purgeOn: p.rows[0]?.purge_on ?? null });
+      }
+      const fileName = `${label.replace(/[^\w\- ]+/g, " ").trim().replace(/\s+/g, "-").toLowerCase().slice(0, 60) || "document"}.${ext}`;
+      const storagePath = `${agentId}/claims/${req.params.id}/${category}/${docId}.${ext}`;
+      const up = await storage().upload(storagePath, file.buffer, { contentType: file.mimetype, upsert: true });
+      if (up.error) { log.error("wa claim doc store failed", { error: up.error.message }); return res.status(502).json({ error: "STORE_FAILED" }); }
+      // The row and the clock together, or neither: an orphaned object or a row without a
+      // purge date would never be deleted by the daily sweep.
+      const db = await pool.connect();
+      let purgeOn: string | null = null;
+      try {
+        await db.query("BEGIN");
+        await db.query(
+          `INSERT INTO claim_documents (id, claim_id, agent_id, query_id, category, doc_type, storage_path, filename, file_size, mime_type)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (id) DO NOTHING`,
+          [docId, req.params.id, agentId, queryId, category, label, storagePath, fileName, file.size ?? file.buffer.length, file.mimetype]
+        );
+        // Start the clock once, on the first file (as the portal does).
+        await db.query(
+          `UPDATE claims SET retention_started_at = now(), purge_at = now() + make_interval(days => $3), updated_at = now()
+            WHERE id = $1 AND agent_id = $2 AND retention_started_at IS NULL`,
+          [req.params.id, agentId, CLAIM_RETENTION_DAYS]
+        );
+        purgeOn = (await db.query("SELECT purge_at::date::text AS purge_on FROM claims WHERE id = $1", [req.params.id])).rows[0]?.purge_on ?? null;
+        await db.query("COMMIT");
+      } catch (e) {
+        await db.query("ROLLBACK").catch(() => {});
+        await storage().remove([storagePath]).catch(() => {});
+        throw e;
+      } finally { db.release(); }
+      void audit(agentId, req.params.id, `claim_doc_upload_${category}`, "/api/internal/wa/claims/:id/documents");
+      res.json({ ok: true, duplicate: false, docId, purgeOn, undoToken: undoToken("claim_documents", docId, { doc: null }, { doc: docId }) });
+    } catch (err) { fail(res, "claim document upload", err); }
+  });
+
+  /** Undo: remove a file THIS chat saved in the last 15 minutes (founder decision 2026-10-22).
+   *  The object first, then the row, as the portal's sweeps do. Body: { token }. */
+  app.post("/api/internal/wa/claims/:id/documents/:docId/undo", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id) || !UUID.test(req.params.docId)) return res.status(404).json({ error: "Not found" });
+      if (!tokenOk(req.body?.token, undoToken("claim_documents", req.params.docId, { doc: null }, { doc: req.params.docId }))) return bad(res, { token: "undo is only for a file saved here" });
+      const d = await pool.query(
+        `SELECT storage_path FROM claim_documents
+          WHERE id = $1 AND claim_id = $2 AND agent_id = $3 AND uploaded_at > now() - interval '15 minutes'`,
+        [req.params.docId, req.params.id, agentId]);
+      if (!d.rows.length) return changed(res);
+      const rm = await storage().remove([d.rows[0].storage_path]);
+      if (rm.error) return res.status(502).json({ error: "STORE_FAILED" });
+      await pool.query("DELETE FROM claim_documents WHERE id = $1 AND agent_id = $2", [req.params.docId, agentId]);
+      void audit(agentId, req.params.id, "wa_claim_doc_undo", "/api/internal/wa/claims/:id/documents/:docId/undo");
+      res.json({ ok: true });
+    } catch (err) { fail(res, "claim document undo", err); }
+  });
+
+  /** One claim document's bytes, for the advisor's own chat. */
+  app.get("/api/internal/wa/claims/:id/documents/:docId/file", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id) || !UUID.test(req.params.docId)) return res.status(404).json({ error: "Not found" });
+      const d = await pool.query(
+        `SELECT d.storage_path, d.filename, d.doc_type, d.mime_type FROM claim_documents d JOIN claims c ON c.id = d.claim_id
+          WHERE d.id = $1 AND d.claim_id = $2 AND c.agent_id = $3`, [req.params.docId, req.params.id, agentId]);
+      if (!d.rows.length) return res.status(404).json({ error: "Not found" });
+      const blob = await storage().download(d.rows[0].storage_path);
+      if (blob.error || !blob.data) return res.status(409).json({ error: "NOT_STORED" });
+      void audit(agentId, req.params.id, "claim_doc_download", "/api/internal/wa/claims/:id/documents/:docId/file");
+      sendBytes(res, Buffer.from(await blob.data.arrayBuffer()), d.rows[0].mime_type || "application/pdf", d.rows[0].filename || "document.pdf");
+    } catch (err) { fail(res, "claim document file", err); }
+  });
+
+  /** The original policy PDF, as the portal's download-pdf finds it (never a storage link). */
+  app.get("/api/internal/wa/clients/:id/pdf", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
+      const r = await pool.query("SELECT pdf_url, filename FROM clients WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      if (!r.rows.length) return res.status(404).json({ error: "Not found" });
+      const m = String(r.rows[0].pdf_url || "").match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
+      if (!r.rows[0].pdf_url) return res.status(404).json({ error: "NO_PDF" });
+      if (!m) return res.status(409).json({ error: "NOT_STORED" });
+      const [bucket, ...rest] = m[1].split("/");
+      const blob = await storageClient().storage.from(bucket).download(rest.join("/"));
+      if (blob.error || !blob.data) return res.status(409).json({ error: "NOT_STORED" });
+      void audit(agentId, req.params.id, "download_pdf", "/api/internal/wa/clients/:id/pdf");
+      const ext = (rest.join("/").split(".").pop() || "pdf").toLowerCase();
+      const mime = ext === "png" ? "image/png" : ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "application/pdf";
+      sendBytes(res, Buffer.from(await blob.data.arrayBuffer()), mime, r.rows[0].filename || `policy.${ext}`);
+    } catch (err) { fail(res, "policy pdf", err); }
+  });
 }
 
 /** Remove a customer only if created in the last 15 minutes and nothing refers to it:
@@ -945,4 +1101,32 @@ export function lifeDueDates(data: Record<string, any>, today: string): string[]
   if (!start || per === null || (per !== "single" && (ppt ?? term) === null)) return null;
   const dues = per === "single" ? [start] : Array.from({ length: (ppt ?? term)! * per }, (_, k) => addMonthsIso(start, k * (12 / per)));
   return dues.filter((d) => d <= today);
+}
+
+/* ── Stage 3 helpers ── */
+
+/** The file types a claim document may be (the portal accepts PDFs and images). HEIC is left
+ *  out on purpose: browsers cannot show it, so the portal would show a broken file. */
+export const DOC_EXT: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+/** One WhatsApp message = one document id, so a resend or a retry never stores a second copy. */
+export function docIdFor(agentId: string, msgId: string): string {
+  const h = crypto.createHash("sha256").update(`wa-claim-doc:${agentId}:${msgId}`).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+/** The storage client: the same project and bucket as routes.ts. Tests swap it. */
+let storageOverride: any = null;
+let storageReal: any = null;
+export function setWaStorageForTests(s: any) { storageOverride = s; }
+function storageClient(): any {
+  if (storageOverride) return storageOverride;
+  return (storageReal ??= createClient(process.env.SUPABASE_URL || "https://khxbabotbvnyjwvqtumt.supabase.co", process.env.SUPABASE_SERVICE_ROLE_KEY || ""));
+}
+const storage = () => storageClient().storage.from("policy-pdfs");
+
+function sendBytes(res: any, buf: Buffer, mime: string, fileName: string) {
+  res.setHeader("Content-Type", mime);
+  res.setHeader("X-File-Name", encodeURIComponent(fileName));
+  res.send(buf);
 }

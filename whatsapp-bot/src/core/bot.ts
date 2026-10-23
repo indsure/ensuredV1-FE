@@ -22,6 +22,7 @@ import {
 } from "./intents.js";
 import { parseClaimAsk, claimKeyOf, type ClaimAsk } from "./claimParse.js";
 import { parseLifeAsk, type LifeAsk } from "./lifeParse.js";
+import { labelFor, parseDocCaption, parseDocSend, parseDocSession, parsePolicyPdf, showLabel } from "./docParse.js";
 import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, amountWords, anyDate, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
 import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, cleanClaimSet, strictAmount, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
@@ -138,7 +139,11 @@ type Op =
   | { kind: "claimAnswered"; claimId: string; name: string; seq: number; question: string }
   | { kind: "claimExtend"; claimId: string; name: string }
   /* Stage 2d */
-  | { kind: "lifeRecord"; clientId: string; policy: string; recKind: "payment" | "loan" | "quote"; input: Record<string, any>; rev: number; warn?: string | null };
+  | { kind: "lifeRecord"; clientId: string; policy: string; recKind: "payment" | "loan" | "quote"; input: Record<string, any>; rev: number; warn?: string | null }
+  /* Stage 3 */
+  | { kind: "claimDocs"; claimId: string; name: string; labels: string[]; purgeOn: string | null }
+  | { kind: "claimDocSession"; claimId: string; name: string; purgeOn: string | null }
+  | { kind: "claimDocSend"; claimId: string; name: string; docIds: string[]; count: number; to: string };
 
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
@@ -160,7 +165,9 @@ type LastChange =
   | { kind: "claimStage"; claimId: string; name: string; from: string; to: string; token?: string; at: number }
   | { kind: "claimAnswered"; claimId: string; name: string; seq: number; resolvedOn: string; moved: boolean; status: string; token?: string; at: number }
   /* Stage 2d: undo adds a void that supersedes the record (kept in the history) */
-  | { kind: "lifeRecord"; clientId: string; name: string; list: string; recordId: string; rev: number; token?: string; at: number };
+  | { kind: "lifeRecord"; clientId: string; name: string; list: string; recordId: string; rev: number; token?: string; at: number }
+  /* Stage 3: a file this chat saved; undo removes it within 15 minutes (founder decision 2026-10-22) */
+  | { kind: "claimDoc"; claimId: string; docId: string; name: string; label: string; token?: string; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -169,7 +176,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
 
 /** Read-only views whose rules match a whole question, at any length. The model's form has
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
-const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit", "liferecord"]);
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit", "liferecord", "claimdocs", "docsend", "policypdf"]);
 
 const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
@@ -317,6 +324,7 @@ export class Bot {
           await this.saveConv(agentId, conv);
           await this.say(msg.replyTo, agentId, T.lapsed(lapsed), "topup_lapsed");
         }
+        if ((msg.kind === "document" || msg.kind === "image") && (await this.claimDocIn(agentId, conv, msg))) return;
         if (msg.kind === "document") return await this.pdfIn(agentId, conv, msg);
         if (msg.kind === "image") return await this.say(msg.replyTo, agentId, T.notPdf(), "not_pdf");
         if (msg.kind === "text") return await this.onText(agentId, conv, msg);
@@ -850,6 +858,13 @@ export class Bot {
       await this.saveConv(agentId, conv);
       return this.say(to, agentId, LANG_SET[chosen], "lang");
     }
+    const docSession = this.sessionOf(agentId);
+    if (docSession) {
+      this.docSession.delete(agentId);
+      if (/^(?:done|finished|that'?s all|bas|ho gaya|हो गया|बस)[.!]*$/i.test(typed)) {
+        return this.say(to, agentId, `Done: ${docSession.added} ${docSession.added === 1 ? "file" : "files"} added to ${docSession.name}.`, "claimdoc_done");
+      }
+    }
     const seen = detectLang(typed);
     if (seen && seen !== (this.replyLang.get(agentId) ?? "english")) {
       this.replyLang.set(agentId, seen);
@@ -1087,6 +1102,15 @@ export class Bot {
       /* Stage 2d: life records */
       case "liferecord":
         return this.lifeStart(agentId, conv, to, text);
+      /* Stage 3: files */
+      case "claimdocs":
+        return this.claimStart(agentId, conv, to, text, { kind: "docs", who: parseDocSession(text)?.who ?? null });
+      case "docsend": {
+        const d = parseDocSend(text);
+        return this.claimStart(agentId, conv, to, text, { kind: "docsend", who: d?.who ?? null, words: d?.words ?? null });
+      }
+      case "policypdf":
+        return this.policyPdfStart(agentId, conv, to, text);
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
@@ -2043,11 +2067,15 @@ export class Bot {
       if (c.kind === "claimEdit") return `Undo: ${CLAIM_LABELS[c.key]} of ${c.name} back to ${showClaimValue(c.key, c.from)}`;
       if (c.kind === "claimStage") return `Undo: ${c.name} back to "${CLAIM_STAGE[c.from]}"`;
       if (c.kind === "claimAnswered") return `Undo: query round ${c.seq} on ${c.name} open again`;
+      if (c.kind === "claimDoc") return `Undo: remove ${showLabel(c.label)} from ${c.name}`;
       if (c.kind === "lifeRecord") return `Undo: remove the record just added to ${c.name}. It stays in the policy's history, marked removed`;
       return `Undo: put ${b(c.name)} back as it was`;
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
+    if (op.kind === "claimDocs") return `Add ${op.labels.length === 1 ? op.labels[0] : `${op.labels.length} files (${op.labels.join(", ")})`} to ${op.name}.${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from today, then deleted."}`;
+    if (op.kind === "claimDocSession") return `Files you send in the next 15 minutes go into ${op.name}. Name each one in its caption, like "final bill".${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from the first file, then deleted."}`;
+    if (op.kind === "claimDocSend") return `Send all ${op.count} documents of ${op.name} here, including identity papers (Aadhaar, PAN, cheque)`;
     if (op.kind === "lifeRecord") return `${op.policy}: ${lifeLine(op.recKind, op.input, istToday(this.now()))}. Saved as told by you, not checked against an insurer document${op.warn ? `. Note: ${op.warn}` : ""}`;
     if (op.kind === "claimOpen") return `Open a ${op.claimType} claim for ${b(op.name)}${op.alreadyOpen ? `. Note: ${op.name} already has an open claim (${op.alreadyOpen})` : ""}`;
     if (op.kind === "claimEdit") return `${op.name}: ${CLAIM_LABELS[op.key]} ${showClaimValue(op.key, op.from)} → ${showClaimValue(op.key, op.to)}`;
@@ -2110,6 +2138,7 @@ export class Bot {
           : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
           : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
           : c.kind === "claimCreate" ? `Undone: removed the claim for ${b(c.name)}.`
+          : c.kind === "claimDoc" ? `Undone: removed ${showLabel(c.label)} from ${c.name}.`
           : c.kind === "lifeRecord" ? `Undone: the record on ${c.name} is removed. The policy's history keeps it, marked removed.`
           : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.${this.takeUndoNote(agentId)}`
           : `Undone: ${b(c.name)} is back as it was.`);
@@ -2120,11 +2149,11 @@ export class Bot {
       }
     }
     // A change with no undo (a logged query, an extension) is now the latest: UNDO must not reach past it.
-    if (ops.some((o) => o.kind === "claimQuery" || o.kind === "claimExtend")) this.lastChange.delete(agentId);
+    if (ops.some((o) => ["claimQuery", "claimExtend", "claimDocSession", "claimDocSend"].includes(o.kind))) this.lastChange.delete(agentId);
     if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
     else if (changes.length > 1) this.lastChange.set(agentId, { kind: "bulk", items: changes, name: `${changes.length} leads`, at: this.now() });
     await this.saveConv(agentId, { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: { to }, updatedAt: null });
-    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => !["undo", "claimQuery", "claimExtend"].includes(o.kind)) ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
+    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => !["undo", "claimQuery", "claimExtend", "claimDocSession", "claimDocSend"].includes(o.kind)) ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
   }
 
   /** The follow-up list, remembered so "sabke reminders 1st November" means these leads. */
@@ -2188,6 +2217,7 @@ export class Bot {
       case "claimCreate": return e.claimUndoCreate(agentId, x.claimId, x.created);
       case "claimEdit": return (await e.claimEdit(agentId, x.claimId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
       case "claimStage": return (await e.claimStage(agentId, x.claimId, x.from, x.to, true, x.token)).ok;
+      case "claimDoc": return e.claimDocUndo(agentId, x.claimId, x.docId, x.token);
       case "lifeRecord": return (await e.lifeVoid(agentId, x.clientId, x.list, x.recordId, x.rev, x.token)).ok;
       case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.status, x.token)).ok;
     }
@@ -2460,6 +2490,7 @@ ${link}` : refused(op.policy, r) });
     const p = conv.pending || {};
     if (p.mode === "policy" || p.mode === "unshare") return this.onPolicyAwaiting(agentId, conv, to, text);
     if (["claim", "claimcust", "claimtype", "claimquery"].includes(p.mode)) return this.onClaimAwaiting(agentId, conv, to, text);
+    if (p.mode === "docsend" || p.mode === "policypdf") return this.onFileAwaiting(agentId, conv, to, text);
     if (p.mode === "life" || p.mode === "lifedue" || p.mode === "lifedate") return this.onLifeAwaiting(agentId, conv, to, text);
     if (conv.state === "AWAITING_EDIT_PICK") {
       const targets: EditTarget[] = p.targets || [];
@@ -2647,8 +2678,8 @@ ${link}` : refused(op.policy, r) });
   };
 
   /** "open a claim for Sunita", "Sunita's claim submitted", "insurer wants X for Sunita's claim". */
-  private async claimStart(agentId: string, conv: Conv, to: string, text: string) {
-    const ask = parseClaimAsk(text);
+  private async claimStart(agentId: string, conv: Conv, to: string, text: string, given?: ClaimAsk) {
+    const ask = given ?? parseClaimAsk(text);
     if (!ask) return this.say(to, agentId, "Type it like: open a claim for Sunita, or: Sunita's claim submitted", "claimedit");
     if (ask.kind === "open") return this.claimOpenStart(agentId, conv, to, ask.who, ask.claimType);
     if (ask.kind === "close") {
@@ -2656,7 +2687,7 @@ ${link}` : refused(op.policy, r) });
     }
     if (ask.who) {
       const rows = (await this.d.engine.claims(agentId, ask.who)).filter((r) => r.customer_name && nameMatches(ask.who!, r.customer_name));
-      const open = rows.filter((r) => !CLAIM_TERMINAL.includes(r.status));
+      const open = ask.kind === "docsend" ? rows : rows.filter((r) => !CLAIM_TERMINAL.includes(r.status));
       if (!rows.length) return this.say(to, agentId, `I couldn't find a claim for "${ask.who}".`, "claimedit");
       if (!open.length) return this.say(to, agentId, `${rows[0].customer_name}'s claim is closed. Change it in the portal.\n${this.d.links.origin}/agent/claims/${rows[0].id}`, "claimedit");
       if (open.length > 1) {
@@ -2674,6 +2705,8 @@ ${link}` : refused(op.policy, r) });
   }
 
   private async claimWith(agentId: string, conv: Conv, to: string, id: string, ask: ClaimAsk) {
+    if (ask.kind === "docs") return this.docSessionStart(agentId, conv, to, id);
+    if (ask.kind === "docsend") return this.docSend(agentId, conv, to, id, ask.words);
     const row = await this.d.engine.claimRow(agentId, id);
     if (!row) return this.say(to, agentId, "I couldn't find that claim any more.", "claimedit");
     this.lastClaim.set(agentId, id);
@@ -2803,6 +2836,34 @@ ${link}` : refused(op.policy, r) });
 ${link}`
       : r.reason === "CANNOT_EXTEND" ? `Not saved: ${name}'s documents can't be kept longer now. It has had its one extension, or it is not yet in the last 5 days.\n${link}`
       : refused(name, r);
+    if (op.kind === "claimDocs") {
+      const q = this.queueOf(agentId);
+      this.docQueue.delete(agentId);
+      if (!q || q.claimId !== op.claimId) return { text: "Those files are no longer held (15 minutes passed). Please send them again." };
+      const t = await this.claimTarget(agentId, op.claimId);
+      if (!t) return { text: "Not saved: I couldn't find that claim any more." };
+      const texts: string[] = [];
+      const changes: LastChange[] = [];
+      for (const item of q.items) {
+        const r = await this.saveDoc(agentId, t, item);
+        texts.push(r.text);
+        if (r.ok && r.change) changes.push(r.change);
+      }
+      return { text: texts.join("\n"), change: changes.length > 1 ? { kind: "bulk", items: changes, name: op.name, at } : changes[0] };
+    }
+    if (op.kind === "claimDocSession") {
+      const t = await this.claimTarget(agentId, op.claimId);
+      if (!t) return { text: "I couldn't find that claim any more." };
+      this.docSession.set(agentId, { claimId: op.claimId, name: t.name, customer: t.customer, until: this.now() + UNDO_WINDOW_MS, added: 0 });
+      this.lastClaim.set(agentId, op.claimId);
+      return { text: `Send the files now, one by one, each with a name in its caption, like "final bill". Type DONE when finished.` };
+    }
+    if (op.kind === "claimDocSend") {
+      const t = await this.claimTarget(agentId, op.claimId);
+      if (!t) return { text: "I couldn't find that claim any more." };
+      const n = await this.sendDocFiles(agentId, op.to, t, t.docs.filter((d) => op.docIds.includes(d.id)));
+      return { text: `Sent ${n} of ${op.count}.` };
+    }
     if (op.kind === "claimOpen") {
       const r = await e.claimOpen(agentId, op.customerId, { claim_type: op.claimType });
       if (!r.ok) return { text: refused(op.name, r) };
@@ -2966,6 +3027,246 @@ ${link}`
     return false;
   }
 
+  /* ══ Stage 3: files ═══════════════════════════════════════════════════ */
+
+  /** Files waiting for YES (a captioned photo, an album): held in memory, per advisor, 15 minutes. */
+  private readonly docQueue = new Map<string, DocQueue>();
+  /** An open "add documents to X's claim" session: files go straight into that claim. */
+  private readonly docSession = new Map<string, DocSession>();
+
+  private queueOf(agentId: string): DocQueue | null {
+    const q = this.docQueue.get(agentId);
+    if (q && this.now() - q.at <= UNDO_WINDOW_MS) return q;
+    this.docQueue.delete(agentId);
+    return null;
+  }
+  private sessionOf(agentId: string): DocSession | null {
+    const s = this.docSession.get(agentId);
+    if (s && this.now() <= s.until) return s;
+    this.docSession.delete(agentId);
+    return null;
+  }
+
+  /** A claim's full name for a confirm: person, insurer, type, admission date. Two Sunitas, or
+   *  one Sunita with two claims, is how a file lands on the wrong claim. */
+  private async claimTarget(agentId: string, claimId: string): Promise<DocTarget | null> {
+    const [row, docs] = await Promise.all([this.d.engine.claimRow(agentId, claimId), this.d.engine.claimDocs(agentId, claimId)]);
+    if (!row || !docs) return null;
+    const c = row.claim;
+    const bits = [c.insurer, c.claim_type, c.admitted_on ? `admitted ${prettyDate(c.admitted_on)}` : null].filter(Boolean).join(", ");
+    return {
+      claimId, claimType: c.claim_type, customer: c.customer_name, purged: docs.purged, purgeOn: docs.purge_on,
+      name: `${claimName(c)}${bits ? ` (${bits})` : ""}`, openQueries: row.openQueries, docs: docs.documents, status: c.status,
+    };
+  }
+
+  /** Images and documents first come here. True when it was a claim document (handled). */
+  private async claimDocIn(agentId: string, conv: Conv, msg: InboundMessage): Promise<boolean> {
+    const to = msg.replyTo;
+    const session = this.sessionOf(agentId);
+    const cap = parseDocCaption(msg.text || "");
+    const queue = this.queueOf(agentId);
+    const albumFollower = !cap && !session && msg.kind === "image" && !!queue && this.now() - queue.lastAt <= 60_000;
+    if (!session && !cap && !albumFollower) return false;
+
+    if (msg.fileSize != null && msg.fileSize > MAX_BYTES) { await this.say(to, agentId, T.tooLarge(), "too_large"); return true; }
+    const mime = String(msg.mimeType || (msg.kind === "image" ? "image/jpeg" : "")).toLowerCase().split(";")[0];
+    if (/heic|heif/.test(mime)) { await this.say(to, agentId, "This photo is in a format the portal can't show (HEIC). Please send it as a photo, not as a document.", "claimdoc"); return true; }
+    if (!DOC_MIME.includes(mime)) { await this.say(to, agentId, "A claim document must be a PDF or a photo.", "claimdoc"); return true; }
+
+    // Which claim: the session's (pinned when it started), the album's, or the caption's.
+    let claimId: string | null = session?.claimId ?? (albumFollower ? queue!.claimId : null);
+    if (!claimId && cap) {
+      if (cap.who) {
+        const open = (await this.d.engine.claims(agentId, cap.who)).filter((r) => r.customer_name && nameMatches(cap.who!, r.customer_name) && !CLAIM_TERMINAL.includes(r.status));
+        if (!open.length) { await this.say(to, agentId, `I couldn't find an open claim for "${cap.who}". The file was not saved.`, "claimdoc"); return true; }
+        if (open.length > 1) { await this.say(to, agentId, `${open[0].customer_name} has ${open.length} open claims. Type: add documents to ${open[0].customer_name}'s claim (you'll pick one), then send the files. The file was not saved.`, "claimdoc"); return true; }
+        claimId = open[0].id;
+      } else {
+        claimId = this.lastClaim.get(agentId) ?? null;
+        if (!claimId) { await this.say(to, agentId, "Which claim? Send the file with a caption like: final bill for Sunita's claim. The file was not saved.", "claimdoc"); return true; }
+      }
+    }
+    if (session && cap?.who && session.customer && !nameMatches(cap.who, session.customer)) {
+      await this.say(to, agentId, `Files are going into ${session.name} right now. Type DONE first, then send ${cap.who}'s file. This file was not saved.`, "claimdoc");
+      return true;
+    }
+    const t = await this.claimTarget(agentId, claimId!);
+    if (!t) { await this.say(to, agentId, "I couldn't find that claim any more. The file was not saved.", "claimdoc"); return true; }
+    if (t.purged) { await this.say(to, agentId, `${t.name}: its documents were deleted when it closed. Only the insurer's letter can be added, in the portal.`, "claimdoc"); return true; }
+
+    const buf = await this.d.transport.downloadMedia(msg);
+    if (buf.length > MAX_BYTES) { await this.say(to, agentId, T.tooLarge(), "too_large"); return true; }
+    // Inside a session, an uncaptioned PDF that reads like a policy is asked about, never saved.
+    if (session && !cap && mime === "application/pdf") {
+      const insp = await (this.d.inspect ?? inspectPdf)(buf).catch(() => null);
+      if (insp?.kind === "ok" && /policy (?:no|number|schedule|period)|sum insured|period of insurance/i.test(insp.text)) {
+        await this.say(to, agentId, `This looks like a policy document. To add it to ${t.name} anyway, send it again with a caption like "policy copy". To check it as a policy, type DONE first and send it again.`, "claimdoc");
+        return true;
+      }
+    }
+    // Inside a session any caption names the file ("aadhaar"); outside, the claim caption does.
+    const words = cap?.words || (session ? (msg.text || "").trim() : "");
+    const { label, category } = words ? labelFor(words, t.claimType) : { label: "Claim document", category: "case" as const };
+    const queryId = cap?.reply ? t.openQueries[t.openQueries.length - 1]?.id ?? null : null;
+    const item: QueuedDoc = { buffer: buf, mime, label, category, queryId, msgId: msg.id, kind: msg.kind === "image" ? "photo" : "PDF" };
+
+    if (session) {
+      // The session's YES covers each file: saved now, with UNDO for 15 minutes.
+      const r = await this.saveDoc(agentId, t, item);
+      if (!r.ok) { await this.say(to, agentId, r.text, "claimdoc"); return true; }
+      session.added += r.duplicate ? 0 : 1;
+      session.until = this.now() + UNDO_WINDOW_MS;
+      if (r.change) this.lastChange.set(agentId, r.change);
+      await this.say(to, agentId, `${r.text}\n(Wrong file? Reply UNDO within 15 minutes.)`, "claimdoc_saved");
+      return true;
+    }
+    // Held for YES: one confirm for all files sent together.
+    const total = (queue?.claimId === t.claimId ? queue.items : []).concat(item);
+    if (total.length > 10 || total.reduce((n, x) => n + x.buffer.length, 0) > 40 * 1024 * 1024) {
+      await this.say(to, agentId, "That's too many files to hold at once. Reply YES to add the ones so far, then send the rest.", "claimdoc");
+      return true;
+    }
+    this.docQueue.set(agentId, { claimId: t.claimId, items: total, at: queue?.claimId === t.claimId ? queue.at : this.now(), lastAt: this.now() });
+    await this.confirm(agentId, conv, to, [{ kind: "claimDocs", claimId: t.claimId, name: t.name, labels: total.map((x) => `${showLabel(x.label)} (${x.kind})`), purgeOn: t.purgeOn }]);
+    return true;
+  }
+
+  /** Save one document. Never "saved" unless the server said so. */
+  private async saveDoc(agentId: string, t: DocTarget, x: QueuedDoc): Promise<{ ok: true; text: string; duplicate: boolean; change?: LastChange } | { ok: false; text: string }> {
+    const ext = x.mime === "application/pdf" ? "pdf" : x.mime === "image/png" ? "png" : x.mime === "image/webp" ? "webp" : "jpg";
+    const r = await this.d.engine.claimDocUpload(agentId, t.claimId, { buffer: x.buffer, mime: x.mime, fileName: `document.${ext}` }, { docType: x.label, category: x.category, msgId: x.msgId, queryId: x.queryId });
+    if (!r.ok) {
+      return { ok: false, text: r.reason === "PURGED" ? `Not saved: ${t.name}'s documents were deleted when it closed.`
+        : r.reason === "BAD_TYPE" ? "Not saved: a claim document must be a PDF or a photo."
+        : r.reason === "TOO_LARGE" ? T.tooLarge()
+        : `Not saved: ${showLabel(x.label)} could not be stored. Please send it again.` };
+    }
+    this.lastClaim.set(agentId, t.claimId);
+    const kept = r.purgeOn ? ` Kept until ${prettyDate(r.purgeOn)}, then deleted.` : "";
+    if (r.duplicate) return { ok: true, duplicate: true, text: `${showLabel(x.label)} is already in ${t.name}.` };
+    return {
+      ok: true, duplicate: false,
+      text: `✅ ${showLabel(x.label)} added to ${t.name}.${kept}${x.queryId ? ` Linked to the open insurer query. When it is answered, type: ${claimName({ customer_name: t.customer })} query answered` : ""}`,
+      change: { kind: "claimDoc", claimId: t.claimId, docId: r.docId, name: t.name, label: x.label, token: r.undoToken, at: this.now() },
+    };
+  }
+
+  /** "add documents to Sunita's claim": after YES, files go into that claim for 15 minutes. */
+  private async docSessionStart(agentId: string, conv: Conv, to: string, claimId: string) {
+    const t = await this.claimTarget(agentId, claimId);
+    if (!t) return this.say(to, agentId, "I couldn't find that claim any more.", "claimdoc");
+    if (t.purged) return this.say(to, agentId, `${t.name}: its documents were deleted when it closed. Only the insurer's letter can be added, in the portal.`, "claimdoc");
+    return this.confirm(agentId, conv, to, [{ kind: "claimDocSession", claimId, name: t.name, purgeOn: t.purgeOn }]);
+  }
+
+  /** "send Sunita's claim documents" / "send Sunita's claim final bill". */
+  private async docSend(agentId: string, conv: Conv, to: string, claimId: string, words: string | null) {
+    const t = await this.claimTarget(agentId, claimId);
+    if (!t) return this.say(to, agentId, "I couldn't find that claim any more.", "claimdoc");
+    this.lastClaim.set(agentId, claimId);
+    if (!t.docs.length) return this.say(to, agentId, `${t.name} has no documents yet.`, "claimdoc");
+    if (words) {
+      const want = labelFor(words, t.claimType).label.toLowerCase();
+      const hit = t.docs.filter((d) => d.label.toLowerCase() === want || d.label.toLowerCase().includes(words.toLowerCase()));
+      if (hit.length) return this.sendDocs(agentId, to, t, hit.slice(0, 5));
+    }
+    const list = t.docs.slice(0, 15);
+    await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "docsend", claimId, options: list.map((d) => d.id) });
+    return this.say(to, agentId, `Which document of ${t.name}?\n${list.map((d, i) => `${i + 1}) ${showLabel(d.label)}`).join("\n")}\nReply with the number, or ALL.`, "claimdoc_pick");
+  }
+
+  /** Files out, one at a time, to the advisor's own chat only, each with a "delete after use" note. */
+  private async sendDocs(agentId: string, to: string, t: DocTarget, docs: DocTarget["docs"]) {
+    if (!this.d.transport.sendDocument) return this.say(to, agentId, `Open them in the portal: ${this.d.links.origin}/agent/claims/${t.claimId}`, "claimdoc");
+    const sent = await this.sendDocFiles(agentId, to, t, docs);
+    return this.say(to, agentId, sent ? `Sent ${sent} of ${docs.length}.` : `I couldn't fetch the file. Open it in the portal: ${this.d.links.origin}/agent/claims/${t.claimId}`, "claimdoc_sent");
+  }
+
+  /** Files out, one at a time (never all held at once), to the advisor's own chat only. */
+  private async sendDocFiles(agentId: string, to: string, t: DocTarget, docs: DocTarget["docs"]): Promise<number> {
+    const tr = this.d.transport;
+    if (!tr.sendDocument) return 0;
+    const gone = t.purgeOn ? ` Deleted from IndSure on ${prettyDate(t.purgeOn)}.` : "";
+    let sent = 0;
+    for (const d of docs) {
+      const f = await this.d.engine.claimDocFile(agentId, t.claimId, d.id);
+      if (!f) continue;
+      await tr.sendDocument(to, f.buffer, f.fileName, f.mime, `${showLabel(d.label)} · ${t.name}.${gone} Delete from this chat after use.`);
+      sent++;
+    }
+    return sent;
+  }
+
+  /** "send Ramesh's policy PDF", "send the PDF": the original file, to the advisor's own chat. */
+  private async policyPdfStart(agentId: string, conv: Conv, to: string, text: string) {
+    const ask = parsePolicyPdf(text);
+    if (!ask) return this.say(to, agentId, "Type it like: send Ramesh's policy PDF", "policypdf");
+    let clientId: string | null = null;
+    if (ask.who) {
+      const ty = typeOfWord(ask.typeWord);
+      const found = (await this.d.engine.findClients(agentId, ask.who)).filter((c) => !ty || policyKind(c.insuranceType) === ty);
+      if (!found.length) return this.say(to, agentId, T.noSuchCustomer(ask.who), "policypdf");
+      if (found.length > 1) {
+        const rows = found.slice(0, 5);
+        await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "policypdf", options: rows.map((c) => c.clientId) });
+        return this.say(to, agentId, T.whichPolicy(rows.map((r) => ({ name: r.policyholderName || "Unnamed", label: nicePlan(r.insurer, r.policyName) || r.insuranceType || "policy" }))), "policypdf_pick");
+      }
+      clientId = found[0].clientId;
+    } else clientId = this.currentPolicy(agentId, conv);
+    if (!clientId) return this.say(to, agentId, "Which policy? For example: send Ramesh's policy PDF", "policypdf");
+    return this.policyPdfSend(agentId, to, clientId);
+  }
+
+  private async policyPdfSend(agentId: string, to: string, clientId: string) {
+    const c = await this.d.engine.getClient(agentId, clientId);
+    if (!c) return this.say(to, agentId, T.noReport(), "policypdf");
+    const policy = policyLabel(c);
+    const tr = this.d.transport;
+    const link = `${this.d.links.origin}/agent/policies/${clientId}`;
+    if (!tr.sendDocument) return this.say(to, agentId, `Open it in the portal: ${link}`, "policypdf");
+    const f = await this.d.engine.policyPdf(agentId, clientId);
+    if ("error" in f) {
+      return this.say(to, agentId, f.error === "NO_PDF" ? `No PDF is stored for ${policy}.` : `I couldn't fetch ${policy}'s PDF. Open it in the portal: ${link}`, "policypdf");
+    }
+    this.setLast(agentId, { kind: "policy", clientId });
+    await tr.sendDocument(to, f.buffer, f.fileName, f.mime, `${policy}. Delete from this chat after use.`);
+  }
+
+  /** The stage 3 questions: which document to send, which policy's PDF. */
+  private async onFileAwaiting(agentId: string, conv: Conv, to: string, text: string): Promise<boolean> {
+    const p = conv.pending || {};
+    if (conv.state !== "AWAITING_EDIT_PICK") return false;
+    const options: string[] = p.options || [];
+    if (p.mode === "policypdf") {
+      const n = pickNumber(text, options.length);
+      if (!n) return false;
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.policyPdfSend(agentId, to, options[n - 1]);
+      return true;
+    }
+    if (p.mode === "docsend") {
+      const t = await this.claimTarget(agentId, p.claimId);
+      if (!t) { await this.rest(agentId, to, conv.currentClientId); await this.say(to, agentId, "I couldn't find that claim any more.", "claimdoc"); return true; }
+      if (/^(?:all|sab|saare|सब|सारे)$/i.test(text.trim())) {
+        const docs = t.docs.filter((d) => options.includes(d.id));
+        // Identity papers (Aadhaar, PAN, cheque) in bulk: asked first.
+        if (docs.some((d) => d.category === "personal")) {
+          return this.confirm(agentId, conv, to, [{ kind: "claimDocSend", claimId: t.claimId, name: t.name, docIds: docs.map((d) => d.id), count: docs.length, to }]).then(() => true);
+        }
+        await this.rest(agentId, to, conv.currentClientId);
+        await this.sendDocs(agentId, to, t, docs);
+        return true;
+      }
+      const n = pickNumber(text, options.length);
+      if (!n) return false;
+      await this.rest(agentId, to, conv.currentClientId);
+      await this.sendDocs(agentId, to, t, t.docs.filter((d) => d.id === options[n - 1]));
+      return true;
+    }
+    return false;
+  }
+
   private async proposeUndo(agentId: string, conv: Conv, to: string) {
     const c = this.lastChange.get(agentId);
     if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
@@ -3102,3 +3403,16 @@ function lifeLine(kind: string, input: Record<string, any>, today: string): stri
   if (input.quoteType === "policy_status") return `policy status: ${LIFE_STATUS[input.status] ?? input.status}, as stated by the insurer on ${on(input.quoteDate)}`;
   return `premiums paid up to and including the one due ${prettyDate(input.paidTo)}`;
 }
+
+/* ── Stage 3 helpers ── */
+
+/** What a claim document may be (the server checks again; HEIC is refused). */
+const DOC_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+type QueuedDoc = { buffer: Buffer; mime: string; label: string; category: "personal" | "case"; queryId: string | null; msgId: string; kind: "photo" | "PDF" };
+type DocQueue = { claimId: string; items: QueuedDoc[]; at: number; lastAt: number };
+type DocSession = { claimId: string; name: string; customer: string | null; until: number; added: number };
+type DocTarget = {
+  claimId: string; claimType: string; customer: string | null; name: string; purged: boolean; purgeOn: string | null; status: string;
+  openQueries: { id?: string; seq: number; question: string }[];
+  docs: { id: string; label: string; category: string }[];
+};

@@ -8,6 +8,8 @@ const PHONE = /(?<!\d)(?:91)?[6-9]\d{9}(?!\d)/g;
 export function redact(text: string): string {
   return String(text)
     .replace(PHONE, (m) => "…" + m.slice(-4))
+    // Aadhaar-like 12-digit numbers (an advisor may type one into a document caption).
+    .replace(/(?<!\d)\d{4}[\s-]?\d{4}[\s-]?\d{4}(?!\d)/g, "[id]")
     // Policy-number-ish tokens: long runs mixing letters, digits and slashes.
     .replace(/\b(?=[A-Za-z0-9\/-]*\d)(?=[A-Za-z0-9\/-]*[A-Za-z])[A-Za-z0-9\/-]{10,}\b/g, "[ref]");
 }
