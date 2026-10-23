@@ -49,7 +49,7 @@ test("end to end: the confirm message as an advisor sees it", async () => {
   const { bot, transport, engine } = makeBot();
   engine.leadRows = [{ id: "l1", name: "Ramesh Kumar", phone: "9812345678", status: "new", insurance_interest: "Health", next_follow_up: null, notes: null }];
   await bot.handle(text("Ramesh won"));
-  assert.equal(transport.lastRaw(), "📝 Please confirm:\n• *Ramesh Kumar* (98123 45678): mark won\n\nReply *YES* to save, or *NO*.");
+  assert.equal(transport.lastRaw(), "📝 Shall I go ahead with this?\n• *Ramesh Kumar* (98123 45678): mark won\n\nReply *YES*, or *NO* if it's not right.");
 });
 
 test("end to end: the share message keeps the customer's text untouched", async () => {

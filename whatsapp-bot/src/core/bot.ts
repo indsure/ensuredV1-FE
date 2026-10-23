@@ -871,7 +871,7 @@ export class Bot {
       if (/^(?:done|finished|that'?s all|bas|ho gaya|हो गया|बस)[.!]*$/i.test(typed)) {
         return this.say(to, agentId, `Done: ${docSession.added} ${docSession.added === 1 ? "file" : "files"} added to ${docSession.name}.`, "claimdoc_done");
       }
-      await this.say(to, agentId, `Stopped adding files to ${docSession.name} (${docSession.added} added).`, "claimdoc_done");
+      await this.say(to, agentId, `Okay, I've stopped adding files to ${docSession.name} (${docSession.added} added).`, "claimdoc_done");
     }
     const seen = detectLang(typed);
     if (seen && seen !== (this.replyLang.get(agentId) ?? "english")) {
@@ -938,9 +938,9 @@ export class Bot {
       await this.rest(agentId, to, conv.currentClientId);
       this.docQueue.delete(agentId);
       if (isNo(text) || /^(no|nahi|mat|don'?t|wait|stop|never ?mind|leave it|chhodo)\b/i.test(text)) {
-        return this.say(to, agentId, "Okay, nothing changed.", "confirm_no");
+        return this.say(to, agentId, "No problem, I haven't changed anything.", "confirm_no");
       }
-      await this.say(to, agentId, "(That change was not saved.)", "confirm_dropped");
+      await this.say(to, agentId, "(I haven't saved that change.)", "confirm_dropped");
       conv = { ...conv, state: conv.currentClientId ? "REPORT_READY" : "IDLE", pending: { to } };
       intent = ruleIntent(text);
     }
@@ -1158,7 +1158,7 @@ export class Bot {
 
     // Deleting is never done from WhatsApp: say so plainly, and where it can be done.
     if (/^(?:please\s+)?(?:delete|remove|erase)\b|\b(?:hata do|hatao|mita do|delete karo|delete kar do)\b|हटा दो|मिटा दो/i.test(text)) {
-      return this.say(to, agentId, `I can't delete anything from WhatsApp, so nothing is lost by mistake. You can remove a lead in the portal: ${this.d.links.origin}/agent/leads`, "no_delete");
+      return this.say(to, agentId, `To keep your records safe, I don't delete anything from WhatsApp. You can remove a lead in the portal: ${this.d.links.origin}/agent/leads`, "no_delete");
     }
 
     // Not a dead end: offer the closest commands, and the person if a name in the message is
@@ -1172,9 +1172,9 @@ export class Bot {
     const day = istClock(this.now()).iso;
     if (sachReason === "free_plan" && this.sachNudged.get(agentId) !== day && words > 2) {
       this.sachNudged.set(agentId, day);
-      return this.menu(agentId, to, "I didn't catch that.", "unknown", `With Sach Assistant (paid plan) you can just type it your way, in English, Hinglish or Hindi: ${this.d.teamLink}`);
+      return this.menu(agentId, to, "Sorry, I didn't get that. Try saying it another way, or pick a number below.", "unknown", `With Sach Assistant (paid plan) you can just type it your way, in English, Hinglish or Hindi: ${this.d.teamLink}`);
     }
-    return this.menu(agentId, to, "I didn't catch that.", "unknown");
+    return this.menu(agentId, to, "Sorry, I didn't get that. Try saying it another way, or pick a number below.", "unknown");
   }
 
   /* ══ Sach Assistant: BALANCE, TODAY and the 9 AM brief ════════════════ */
@@ -1639,7 +1639,7 @@ export class Bot {
     } else if (p.step === "phone") {
       if (!isSkip(text)) {
         const ph = parseCaption(text).phone;
-        if (!ph) { await this.say(to, agentId, "That doesn't look like a 10-digit mobile number. Send it again, or SKIP.", "lead"); return true; }
+        if (!ph) { await this.say(to, agentId, "I need a 10-digit mobile number for this. Could you send it again? Or reply SKIP.", "lead"); return true; }
         d.phone = ph;
       }
       d.interest = d.interest || interestIn(text);
@@ -1816,7 +1816,7 @@ export class Bot {
     // The search is a loose substring match; a typed name that changes data must match
     // word starts, so "ok done" can never touch "Alok".
     if (isPronounName(u.name)) {
-      await this.say(to, agentId, "Who do you mean? Say it with the name, for example: Ramesh won", "clarify");
+      await this.say(to, agentId, "Who is this for? Just add the name, for example: Ramesh won", "clarify");
       return true;
     }
     let rows = (await this.d.engine.leadSearch(agentId, u.name)).filter((r) => nameMatches(u.name, r.name));
@@ -1975,7 +1975,7 @@ export class Bot {
         await this.rest(agentId, to, conv.currentClientId);
         return this.say(to, agentId, T.cancelled(), "cancel");
       case "undo": return this.proposeUndo(agentId, conv, to);
-      case "unknown": return clarify ? this.say(to, agentId, clarify, "unknown") : this.menu(agentId, to, "I didn't catch that.", "unknown");
+      case "unknown": return clarify ? this.say(to, agentId, clarify, "unknown") : this.menu(agentId, to, "Sorry, I didn't get that. Try saying it another way, or pick a number below.", "unknown");
       case "ask_report": return this.ask(agentId, conv, to, text, a.name);
       case "share": return this.shareStart(agentId, conv, to, text, { name: a.name, phone: a.phone, lang });
       case "renewals": return this.say(to, agentId, renewalsReply(await e.renewals(agentId), this.d.links), "renewals");
@@ -2127,7 +2127,7 @@ export class Bot {
     if (!ops.some((o) => o.kind === "claimDocs")) this.docQueue.delete(agentId);
     await this.setState(agentId, to, "AWAITING_CONFIRM", conv.currentClientId, { ops });
     const lines = ops.map((o) => `• ${this.describe(o)}`);
-    return this.say(to, agentId, `Please confirm:\n${lines.join("\n")}\n\nReply YES to save, or NO.`, "confirm_ask");
+    return this.say(to, agentId, `Shall I go ahead with this?\n${lines.join("\n")}\n\nReply YES, or NO if it's not right.`, "confirm_ask");
   }
 
   private async confirmYes(agentId: string, conv: Conv, to: string) {
@@ -2154,7 +2154,7 @@ export class Bot {
         const c = op.change;
         const ok = await this.undoOne(agentId, c);
         this.lastChange.delete(agentId);
-        out.push(!ok ? "That can't be undone here any more: it was changed since, or something was added to it. Please fix it in the portal."
+        out.push(!ok ? "I can't undo that from here any more, because it has been changed or added to since. Please fix it in the portal."
           : c.kind === "bulk" ? `Undone: ${c.items.length} ${allLeads(c) ? "leads" : "changes"} are back as they were.`
           : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
           : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
@@ -2174,7 +2174,7 @@ export class Bot {
     if (changes.length === 1) this.lastChange.set(agentId, changes[0]);
     else if (changes.length > 1) this.lastChange.set(agentId, { kind: "bulk", items: changes, name: `${changes.length} leads`, at: this.now() });
     await this.saveConv(agentId, { state: conv.currentClientId ? "REPORT_READY" : "IDLE", currentClientId: conv.currentClientId, pending: { to }, updatedAt: null });
-    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => !["undo", "claimQuery", "claimExtend", "claimDocSession", "claimDocSend"].includes(o.kind)) ? "\n\n(Wrong? Reply UNDO within 15 minutes.)" : ""), "confirm_saved");
+    return this.say(to, agentId, out.join("\n\n") + (ops.some((o) => !["undo", "claimQuery", "claimExtend", "claimDocSession", "claimDocSend"].includes(o.kind)) ? "\n\nMade a mistake? Just reply UNDO within 15 minutes." : ""), "confirm_saved");
   }
 
   /** The follow-up list, remembered so "sabke reminders 1st November" means these leads. */
@@ -2253,10 +2253,10 @@ export class Bot {
     const e = this.d.engine;
     const o = this.d.links.origin;
     const refused = (name: string, r: { reason: string; fields?: Record<string, string> }) =>
-      r.reason === "CHANGED" ? `Not saved: ${b(name)} was changed in the portal a moment ago. Ask again to see the latest.`
-      : r.reason === "INVALID" ? `Not saved: ${Object.values(r.fields || {}).join(", ") || "that value"}.`
+      r.reason === "CHANGED" ? `I didn't save it, because someone just changed ${b(name)} in the portal. Ask me again and I'll show the latest.`
+      : r.reason === "INVALID" ? `I didn't save it: ${Object.values(r.fields || {}).join(", ") || "that value"}.`
       : r.reason === "ALREADY_CUSTOMER" ? `${b(name)} is already a customer.`
-      : `Not saved: I couldn't find ${b(name)} any more.`;
+      : `I didn't save it, because I can't find ${b(name)} any more. It may have been changed in the portal.`;
     const at = this.now();
     if (op.kind === "edit") {
       const set = { [op.field]: op.to };
@@ -2266,7 +2266,7 @@ export class Bot {
       this.lastPerson.set(agentId, op.name);
       const link = `${o}/agent/${op.target === "lead" ? "leads" : "customers"}/${op.id}`;
       return {
-        text: `✅ Saved. ${b(op.name)}: ${FIELD_LABEL[op.field]} is now ${showValue(op.field, op.to)}.\n${link}`,
+        text: `✅ Done. ${b(op.name)}: ${FIELD_LABEL[op.field]} is now ${showValue(op.field, op.to)}.\n${link}`,
         change: { kind: "edit", target: op.target, id: op.id, name: op.name, field: op.field, from: op.from, to: op.to, token: r.undoToken, at },
       };
     }
@@ -2314,7 +2314,7 @@ export class Bot {
     if (op.kind === "policyEdit") {
       const link = `${o}/agent/policies/${op.clientId}`;
       const no = (r: { reason: string; fields?: Record<string, string> }) =>
-        ({ text: r.reason === "NOT_EDITABLE" ? `Not saved: ${op.policy} has details that are only in the portal. Please change it there.
+        ({ text: r.reason === "NOT_EDITABLE" ? `I didn't save it, because ${op.policy} has details that are only in the portal. Please change it there.
 ${link}` : refused(op.policy, r) });
       let before: unknown = op.from;
       let after: unknown;
@@ -2330,7 +2330,7 @@ ${link}` : refused(op.policy, r) });
         [after, token] = [r.after[op.key] ?? null, r.undoToken];
       }
       return {
-        text: `✅ Saved. ${op.policy}: ${op.label} is now ${showPolicyValue(op.vkind, after)}.\n${link}`,
+        text: `✅ Done. ${op.policy}: ${op.label} is now ${showPolicyValue(op.vkind, after)}.\n${link}`,
         change: { kind: "policyEdit", clientId: op.clientId, name: op.policy, group: op.group, key: op.key, label: op.label, vkind: op.vkind, from: before, to: after, token, rev, at },
       };
     }
@@ -2340,11 +2340,11 @@ ${link}` : refused(op.policy, r) });
       const link = `${o}/agent/policies/${op.clientId}`;
       const r = await e.lifeAdd(agentId, op.clientId, op.recKind, op.input, op.rev);
       if (!r.ok) {
-        return { text: r.reason === "DUPLICATE" ? `Not saved: ${op.policy} already has that payment.\n${link}`
-          : r.reason === "NOT_EDITABLE" ? `Not saved: ${op.policy} has details that are only in the portal. Please add it there.\n${link}`
-          : r.reason === "BEING_READ" ? `Not saved: ${op.policy} is still being read. Try again when it is done.`
-          : r.reason === "NOT_LIFE" ? `Not saved: ${op.policy} is not a life or term policy.`
-          : r.reason === "OFF_SCHEDULE" || r.reason === "NO_SCHEDULE" ? `Not saved: that due date is not on ${op.policy}'s premium schedule. Check the policy's start date, frequency and term in the portal.\n${link}`
+        return { text: r.reason === "DUPLICATE" ? `I didn't save it, because ${op.policy} already has that payment.\n${link}`
+          : r.reason === "NOT_EDITABLE" ? `I didn't save it, because ${op.policy} has details that are only in the portal. Please add it there.\n${link}`
+          : r.reason === "BEING_READ" ? `I didn't save it, because ${op.policy} is still being read. Please try again in a few minutes.`
+          : r.reason === "NOT_LIFE" ? `I didn't save it, because ${op.policy} is not a life or term policy.`
+          : r.reason === "OFF_SCHEDULE" || r.reason === "NO_SCHEDULE" ? `I didn't save it, because that due date isn't on ${op.policy}'s premium schedule. Please check the policy's start date, frequency and term in the portal.\n${link}`
           : refused(op.policy, r) };
       }
       return {
@@ -2387,9 +2387,9 @@ ${link}` : refused(op.policy, r) });
   /** "change Amit's phone to ...", "edit Amit", "Amit ka city Pune kar do". */
   private async editStart(agentId: string, conv: Conv, to: string, text: string) {
     const ask = parseEditAsk(text);
-    if (!ask) return this.say(to, agentId, "Type it like: change Amit's phone to 98123 45678, or: edit Amit", "edit");
+    if (!ask) return this.say(to, agentId, "You can say it like this: change Amit's phone to 98123 45678, or: edit Amit", "edit");
     const targets = await this.editTargets(agentId, ask.who);
-    if (!targets.length) return this.say(to, agentId, `I couldn't find a lead or customer called "${ask.who}".`, "edit");
+    if (!targets.length) return this.say(to, agentId, `I couldn't find anyone called "${ask.who}" in your leads or customers. Could you check the spelling?`, "edit");
     if (targets.length > 1) return this.pickTarget(agentId, conv, to, targets, { mode: "edit", field: ask.field, value: ask.value });
     return this.editWith(agentId, conv, to, targets[0], ask.field, ask.value);
   }
@@ -2413,7 +2413,7 @@ ${link}` : refused(op.policy, r) });
     }
     if (value === null) {
       await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { target: t, field });
-      return this.say(to, agentId, `Type the new ${FIELD_LABEL[field]} for ${b(t.name)}. Now: ${showValue(field, row[field])}\n(Or NONE to clear it, CANCEL to stop.)`, "edit_value");
+      return this.say(to, agentId, `What's the new ${FIELD_LABEL[field]} for ${b(t.name)}? Right now it is ${showValue(field, row[field])}.\n(Reply NONE to clear it, or CANCEL if you've changed your mind.)`, "edit_value");
     }
     return this.proposeEdit(agentId, conv, to, t, row, field, value);
   }
@@ -2423,12 +2423,12 @@ ${link}` : refused(op.policy, r) });
     const clean = (t.kind === "lead" ? cleanLeadSet : cleanCustomerSet)({ [field]: v });
     if (clean.errors[field]) {
       await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { target: t, field });
-      return this.say(to, agentId, `That ${FIELD_LABEL[field]} doesn't look right (${clean.errors[field]}). Type it again, or CANCEL.`, "edit_value");
+      return this.say(to, agentId, `That ${FIELD_LABEL[field]} seems a little off (${clean.errors[field]}). Could you send it again? Or reply CANCEL.`, "edit_value");
     }
     const next = clean.set[field] ?? null;
     if (normValue(next) === normValue(row[field])) {
       await this.rest(agentId, to, conv.currentClientId);
-      return this.say(to, agentId, `${b(t.name)}'s ${FIELD_LABEL[field]} is already ${showValue(field, next)}. Nothing to change.`, "edit");
+      return this.say(to, agentId, `${b(t.name)}'s ${FIELD_LABEL[field]} is already ${showValue(field, next)}, so no change is needed.`, "edit");
     }
     return this.confirm(agentId, conv, to, [{ kind: "edit", target: t.kind, id: t.id, name: t.name, field, from: row[field] ?? null, to: next }]);
   }
@@ -2436,7 +2436,7 @@ ${link}` : refused(op.policy, r) });
   /** "make Amit a customer". */
   private async convertStart(agentId: string, conv: Conv, to: string, text: string) {
     const who = parseConvert(text);
-    if (!who) return this.say(to, agentId, "Type it like: make Amit a customer", "convert");
+    if (!who) return this.say(to, agentId, "You can say it like this: make Amit a customer", "convert");
     const targets = await this.editTargets(agentId, who, ["lead"]);
     if (!targets.length) return this.say(to, agentId, `I couldn't find a lead called "${who}".`, "convert");
     if (targets.length > 1) return this.pickTarget(agentId, conv, to, targets, { mode: "convert" });
@@ -2453,17 +2453,17 @@ ${link}` : refused(op.policy, r) });
   /** "add customer Sunita Rao 98123 45678, Pune". */
   private async addCustomerStart(agentId: string, conv: Conv, to: string, text: string) {
     const a = parseAddCustomer(text);
-    if (!a?.name) return this.say(to, agentId, "Type it like: add customer Sunita Rao 98123 45678, Pune", "addcustomer");
+    if (!a?.name) return this.say(to, agentId, "You can say it like this: add customer Sunita Rao 98123 45678, Pune", "addcustomer");
     const clean = cleanCustomerSet({ name: a.name, ...(a.phone ? { phone: a.phone } : {}), ...(a.email ? { email: a.email } : {}), ...(a.city ? { city: a.city } : {}) });
     const errs = Object.values(clean.errors);
-    if (errs.length) return this.say(to, agentId, `That doesn't look right (${errs.join(", ")}). Type it like: add customer Sunita Rao 98123 45678, Pune`, "addcustomer");
+    if (errs.length) return this.say(to, agentId, `Something seems a little off there (${errs.join(", ")}). Please try it like this: add customer Sunita Rao 98123 45678, Pune`, "addcustomer");
     return this.confirm(agentId, conv, to, [{ kind: "addCustomer", name: String(clean.set.name), phone: (clean.set.phone as string) ?? null, city: (clean.set.city as string) ?? null, email: (clean.set.email as string) ?? null }]);
   }
 
   /** "file Ramesh's policy under Sunita", "this is Sunita's", "new customer from this policy", "unfile this policy". */
   private async fileStart(agentId: string, conv: Conv, to: string, text: string) {
     const ask = parseFile(text);
-    if (!ask) return this.say(to, agentId, "Type it like: file Ramesh's policy under Sunita", "file");
+    if (!ask) return this.say(to, agentId, "You can say it like this: file Ramesh's policy under Sunita", "file");
     const policyOf = ask.kind === "newCustomer" ? null : ask.policyOf;
     if (policyOf) {
       const found = await this.d.engine.findClients(agentId, policyOf);
@@ -2490,7 +2490,7 @@ ${link}` : refused(op.policy, r) });
       return this.confirm(agentId, conv, to, [{ kind: "file", clientId, policy, fromId: c.customerId, fromName: from?.name ?? null, toId: null, toName: null }]);
     }
     if (ask.kind === "newCustomer") {
-      if (!c.policyholderName) return this.say(to, agentId, "This policy has no policyholder name to make a customer from. Type it like: add customer Sunita Rao 98123 45678", "file");
+      if (!c.policyholderName) return this.say(to, agentId, "This policy has no policyholder name to make a customer from. You can say it like this: add customer Sunita Rao 98123 45678", "file");
       return this.confirm(agentId, conv, to, [{
         kind: "file", clientId, policy, fromId: c.customerId, fromName: from?.name ?? null, toId: null, toName: c.policyholderName,
         newCustomer: { name: c.policyholderName, phone: c.customerPhone ?? null },
@@ -2565,7 +2565,7 @@ ${link}` : refused(op.policy, r) });
   /** "premium is 14,500 not 15,400", "change Ramesh's car policy premium to 14500", "edit this policy". */
   private async policyFixStart(agentId: string, conv: Conv, to: string, text: string) {
     const ask = parsePolicyFix(text);
-    if (!ask) return this.say(to, agentId, "Type it like: premium is 14,500, or: edit this policy", "policyfix");
+    if (!ask) return this.say(to, agentId, "You can say it like this: premium is 14,500, or: edit this policy", "policyfix");
     if (ask.policyOf) {
       const found = await this.policiesOf(agentId, ask.policyOf, ask.typeWord);
       if (!found.length) return this.say(to, agentId, T.noSuchCustomer(ask.policyOf), "policyfix");
@@ -2605,7 +2605,7 @@ ${link}` : refused(op.policy, r) });
     if (!pf) {
       const labels = list.map((x) => x.label).join(", ");
       return this.say(to, agentId, f.fields.length
-        ? `${capital(word)} can't be changed from WhatsApp. On ${t.policy} you can change: ${labels}.`
+        ? `${capital(word)} can only be changed in the portal. On ${t.policy} I can change: ${labels}.`
         : `On a health policy, the details come from the policy check and can't be changed here. You can change: ${labels}.`, "policyfix");
     }
     return this.policyFieldChosen(agentId, conv, to, t, f, pf, value);
@@ -2614,7 +2614,7 @@ ${link}` : refused(op.policy, r) });
   private async policyFieldChosen(agentId: string, conv: Conv, to: string, t: PolicyTarget, f: PolicyFields, pf: PField, value: string | null) {
     if (value === null) {
       await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "policy", ptarget: t, pkey: pf.key });
-      return this.say(to, agentId, `Type the new ${pf.label} for ${t.policy}. Now: ${showPolicyValue(pf.kind, currentOf(f, pf))}\n(CANCEL to stop.)`, "policy_value");
+      return this.say(to, agentId, `What's the new ${pf.label} for ${t.policy}? Right now it is ${showPolicyValue(pf.kind, currentOf(f, pf))}.\n(CANCEL to stop.)`, "policy_value");
     }
     const raw = policyValueFor(pf.kind, value);
     let next: unknown = null;
@@ -2631,12 +2631,12 @@ ${link}` : refused(op.policy, r) });
     }
     if (err) {
       await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "policy", ptarget: t, pkey: pf.key });
-      return this.say(to, agentId, `That ${pf.label} doesn't look right (${err}). Type it again, or CANCEL.`, "policy_value");
+      return this.say(to, agentId, `That ${pf.label} seems a little off (${err}). Could you send it again? Or reply CANCEL.`, "policy_value");
     }
     const from = currentOf(f, pf);
     if (normValue(next) === normValue(from)) {
       await this.rest(agentId, to, conv.currentClientId);
-      return this.say(to, agentId, `${t.policy}: ${pf.label} is already ${showPolicyValue(pf.kind, next)}. Nothing to change.`, "policyfix");
+      return this.say(to, agentId, `${t.policy}: ${pf.label} is already ${showPolicyValue(pf.kind, next)}, so no change is needed.`, "policyfix");
     }
     return this.confirm(agentId, conv, to, [{ kind: "policyEdit", clientId: t.clientId, policy: t.policy, group: pf.group, key: pf.key, label: pf.label, vkind: pf.kind, from, to: next, rev: f.rev }]);
   }
@@ -2659,7 +2659,7 @@ ${link}` : refused(op.policy, r) });
     const c = await this.d.engine.getClient(agentId, clientId);
     if (!c) return this.say(to, agentId, T.noReport(), "unshare");
     const policy = policyLabel(c);
-    if (!c.shareToken) return this.say(to, agentId, `${policy} is not being shared. Nothing to stop.`, "unshare");
+    if (!c.shareToken) return this.say(to, agentId, `${policy} isn't being shared right now, so there's nothing to stop.`, "unshare");
     return this.confirm(agentId, conv, to, [{ kind: "sharing", clientId, policy, enabled: false }]);
   }
 
@@ -2706,7 +2706,7 @@ ${link}` : refused(op.policy, r) });
   /** "open a claim for Sunita", "Sunita's claim submitted", "insurer wants X for Sunita's claim". */
   private async claimStart(agentId: string, conv: Conv, to: string, text: string, given?: ClaimAsk) {
     const ask = given ?? parseClaimAsk(text);
-    if (!ask) return this.say(to, agentId, "Type it like: open a claim for Sunita, or: Sunita's claim submitted", "claimedit");
+    if (!ask) return this.say(to, agentId, "You can say it like this: open a claim for Sunita, or: Sunita's claim submitted", "claimedit");
     if (ask.kind === "open") return this.claimOpenStart(agentId, conv, to, ask.who, ask.claimType);
     if (ask.kind === "close") {
       return this.say(to, agentId, `Settling or rejecting a claim is done in the portal, where you attach the insurer's letter.\n${this.d.links.origin}/agent/claims`, "claimedit");
@@ -2715,7 +2715,7 @@ ${link}` : refused(op.policy, r) });
       const rows = (await this.d.engine.claims(agentId, ask.who)).filter((r) => r.customer_name && nameMatches(ask.who!, r.customer_name));
       const open = ask.kind === "docsend" ? rows : rows.filter((r) => !CLAIM_TERMINAL.includes(r.status));
       if (!rows.length) return this.say(to, agentId, `I couldn't find a claim for "${ask.who}".`, "claimedit");
-      if (!open.length) return this.say(to, agentId, `${rows[0].customer_name}'s claim is closed. Change it in the portal.\n${this.d.links.origin}/agent/claims/${rows[0].id}`, "claimedit");
+      if (!open.length) return this.say(to, agentId, `${rows[0].customer_name}'s claim is closed, so it can only be changed in the portal.\n${this.d.links.origin}/agent/claims/${rows[0].id}`, "claimedit");
       if (open.length > 1) {
         const opts = open.slice(0, 6);
         await this.setState(agentId, to, "AWAITING_EDIT_PICK", conv.currentClientId, { mode: "claim", ask, options: opts.map((r) => r.id) });
@@ -2738,9 +2738,9 @@ ${link}` : refused(op.policy, r) });
     this.lastClaim.set(agentId, id);
     const c = row.claim;
     const name = claimName(c);
-    if (CLAIM_TERMINAL.includes(c.status)) return this.say(to, agentId, `${name} is closed. Change it in the portal.\n${this.d.links.origin}/agent/claims/${id}`, "claimedit");
+    if (CLAIM_TERMINAL.includes(c.status)) return this.say(to, agentId, `${name} is closed, so it can only be changed in the portal.\n${this.d.links.origin}/agent/claims/${id}`, "claimedit");
     if (ask.kind === "stage") {
-      if (c.status === ask.to) return this.say(to, agentId, `${name} is already at "${CLAIM_STAGE[ask.to]}". Nothing to change.`, "claimedit");
+      if (c.status === ask.to) return this.say(to, agentId, `${name} is already at "${CLAIM_STAGE[ask.to]}", so no change is needed.`, "claimedit");
       // A claim stays at "Insurer query open" while a round is open (the server refuses too).
       if (row.openQueries.length) return this.say(to, agentId, `${name} has an insurer query still open. When it is answered, type: ${name} query answered`, "claimedit");
       return this.confirm(agentId, conv, to, [{ kind: "claimStage", claimId: id, name, from: c.status, to: ask.to }]);
@@ -2768,28 +2768,28 @@ ${link}` : refused(op.policy, r) });
           "claim_field");
       }
       const key = claimKeyOf(ask.word);
-      if (!key) return this.say(to, agentId, `${capital(ask.word)} can't be changed from WhatsApp.`, "claimedit");
+      if (!key) return this.say(to, agentId, `${capital(ask.word)} can only be changed in the portal.`, "claimedit");
       return this.claimFieldChosen(agentId, conv, to, { id, name }, row, key, ask.value);
     }
-    return this.say(to, agentId, "Type it like: Sunita's claim submitted", "claimedit");
+    return this.say(to, agentId, "You can say it like this: Sunita's claim submitted", "claimedit");
   }
 
   private async claimFieldChosen(agentId: string, conv: Conv, to: string, t: { id: string; name: string }, row: ClaimEditRow, key: string, value: string | null) {
     const from = (row.claim as Record<string, unknown>)[key] ?? null;
     if (value === null) {
       await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "claim", ctarget: t, ckey: key });
-      return this.say(to, agentId, `Type the new ${CLAIM_LABELS[key]} for ${t.name}. Now: ${showClaimValue(key, from)}\n(CANCEL to stop.)`, "claim_value");
+      return this.say(to, agentId, `What's the new ${CLAIM_LABELS[key]} for ${t.name}? Right now it is ${showClaimValue(key, from)}.\n(CANCEL to stop.)`, "claim_value");
     }
     const c = cleanClaimSet({ [key]: claimValueFor(key, value) });
     if (c.errors[key]) {
       await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "claim", ctarget: t, ckey: key });
-      return this.say(to, agentId, `That ${CLAIM_LABELS[key]} doesn't look right (${c.errors[key]}). Type it again, or CANCEL.`, "claim_value");
+      return this.say(to, agentId, `That ${CLAIM_LABELS[key]} seems a little off (${c.errors[key]}). Could you send it again? Or reply CANCEL.`, "claim_value");
     }
     const next = c.set[key];
     const same = key === "claimed_amount" ? from !== null && Number(from) === Number(next) : normValue(from) === normValue(next);
     if (same) {
       await this.rest(agentId, to, conv.currentClientId);
-      return this.say(to, agentId, `${t.name}: ${CLAIM_LABELS[key]} is already ${showClaimValue(key, next)}. Nothing to change.`, "claimedit");
+      return this.say(to, agentId, `${t.name}: ${CLAIM_LABELS[key]} is already ${showClaimValue(key, next)}, so no change is needed.`, "claimedit");
     }
     return this.confirm(agentId, conv, to, [{ kind: "claimEdit", claimId: t.id, name: t.name, key, from, to: next }]);
   }
@@ -2857,17 +2857,17 @@ ${link}` : refused(op.policy, r) });
     const e = this.d.engine;
     const o = this.d.links.origin;
     const no = (name: string, r: { reason: string; fields?: Record<string, string> }, link: string) =>
-      r.reason === "CLOSED" ? `Not saved: ${name} is closed. Change it in the portal.\n${link}`
-      : r.reason === "OPEN_QUERY" ? `Not saved: ${name} has an insurer query still open. Mark it answered first.
+      r.reason === "CLOSED" ? `I didn't save it, because ${name} is closed. You can change it in the portal.\n${link}`
+      : r.reason === "OPEN_QUERY" ? `I didn't save it, because ${name} still has an insurer query open. Please mark that answered first.
 ${link}`
-      : r.reason === "CANNOT_EXTEND" ? `Not saved: ${name}'s documents can't be kept longer now. It has had its one extension, or it is not yet in the last 5 days.\n${link}`
+      : r.reason === "CANNOT_EXTEND" ? `I couldn't keep ${name}'s documents longer. It has already had its one extension, or it is not yet in its last 5 days.\n${link}`
       : refused(name, r);
     if (op.kind === "claimDocs") {
       const q = this.queueOf(agentId);
       this.docQueue.delete(agentId);
-      if (!q || q.claimId !== op.claimId) return { text: "Those files are no longer held (15 minutes passed). Please send them again." };
+      if (!q || q.claimId !== op.claimId) return { text: "Sorry, I only hold files for 15 minutes, and that time has passed. Please send them again." };
       const t = await this.claimTarget(agentId, op.claimId);
-      if (!t) return { text: "Not saved: I couldn't find that claim any more." };
+      if (!t) return { text: "I didn't save it, because I can't find that claim any more." };
       const texts: string[] = [];
       const changes: LastChange[] = [];
       for (const item of q.items) {
@@ -2908,7 +2908,7 @@ ${link}`
       if (!r.ok) return { text: no(op.name, r, link) };
       const after = r.after[op.key] ?? op.to;
       return {
-        text: `✅ Saved. ${op.name}: ${CLAIM_LABELS[op.key]} is now ${showClaimValue(op.key, after)}.\n${link}`,
+        text: `✅ Done. ${op.name}: ${CLAIM_LABELS[op.key]} is now ${showClaimValue(op.key, after)}.\n${link}`,
         change: { kind: "claimEdit", claimId: op.claimId, name: op.name, key: op.key, from: op.from, to: after, token: r.undoToken, at },
       };
     }
@@ -2947,7 +2947,7 @@ ${link}`
   /** "Ramesh paid premium 25,000 on 5 Oct 2026", "no loan on Ramesh's policy", "Ramesh's policy is lapsed". */
   private async lifeStart(agentId: string, conv: Conv, to: string, text: string) {
     const ask = parseLifeAsk(text);
-    if (!ask) return this.say(to, agentId, "Type it like: Ramesh paid premium 25,000 on 5 Oct 2026", "liferecord");
+    if (!ask) return this.say(to, agentId, "You can say it like this: Ramesh paid premium 25,000 on 5 Oct 2026", "liferecord");
     if (ask.who) {
       const ty = ask.typeWord === "term" ? "term" : null;
       const found = (await this.d.engine.findClients(agentId, ask.who))
@@ -2973,7 +2973,7 @@ ${link}`
     if (!life || !c) return this.say(to, agentId, T.noReport(), "liferecord");
     const policy = policyLabel(c);
     if (!["life", "term"].includes(life.type)) return this.say(to, agentId, `${policy} is not a life or term policy. These records are kept only on life and term policies.`, "liferecord");
-    if (life.status !== "done") return this.say(to, agentId, `${policy} is still being read. Try again when it is done.`, "liferecord");
+    if (life.status !== "done") return this.say(to, agentId, `${policy} is still being read. Please try again in a few minutes.`, "liferecord");
     this.setLast(agentId, { kind: "policy", clientId });
     const today = istToday(this.now());
     const amountOf = (s: string) => strictAmount(amountWords(s) ?? s);
@@ -2981,9 +2981,9 @@ ${link}`
     let warn: string | null = null;
     if (ask.kind === "payment") {
       const amount = amountOf(ask.amount);
-      if (!amount || amount <= 0) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}"). Type it like: Ramesh paid premium 25,000 on 5 Oct 2026`, "liferecord");
+      if (!amount || amount <= 0) return this.say(to, agentId, `I couldn't read the amount "${ask.amount}". Please try it like this: Ramesh paid premium 25,000 on 5 Oct 2026`, "liferecord");
       const paidOn = ask.paidOn ? anyDate(ask.paidOn) : null;
-      if (ask.paidOn && (!paidOn || paidOn > today)) return this.say(to, agentId, "That payment date doesn't look right. Type a date up to today, like 5 Oct 2026.", "liferecord");
+      if (ask.paidOn && (!paidOn || paidOn > today)) return this.say(to, agentId, "I couldn't use that payment date. Please send a date up to today, like 5 Oct 2026.", "liferecord");
       // A payment counts only on a scheduled due date (the portal offers only those).
       if (!life.dues) return this.say(to, agentId, `${policy}'s premium schedule is not complete (start date, how often premiums are paid, or the term is missing), so a payment can't be matched to a due date. Fill those in the portal first.`, "liferecord");
       const said = picked.dueDate ?? (ask.dueDate ? anyDate(ask.dueDate) : null);
@@ -2997,7 +2997,7 @@ ${link}`
         return this.say(to, agentId, `Which premium does this payment cover?\n${options.map((d, i) => `${i + 1}) due ${prettyDate(d)}`).join("\n")}\nReply with the number.`, "life_due");
       }
       if (life.active.payments.some((p) => p.dueDate === said && Number(p.amount) === amount)) {
-        return this.say(to, agentId, `${policy} already has a payment of ₹${amount.toLocaleString("en-IN")} for the premium due ${prettyDate(said)}. Nothing to add.`, "liferecord");
+        return this.say(to, agentId, `${policy} already has a payment of ₹${amount.toLocaleString("en-IN")} for the premium due ${prettyDate(said)}, so there's nothing to add.`, "liferecord");
       }
       if (life.premium && (amount > life.premium * 2 || amount < life.premium / 2)) warn = `the premium on file is ₹${life.premium.toLocaleString("en-IN")}`;
       input = { amount, dueDate: said, ...(paidOn ? { paidOn } : {}) };
@@ -3005,17 +3005,17 @@ ${link}`
       if (ask.status === "none") input = { status: "none" };
       else {
         const principal = amountOf(ask.amount);
-        if (!principal || principal <= 0) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
+        if (!principal || principal <= 0) return this.say(to, agentId, `I couldn't read the amount "${ask.amount}". Could you send it again, like 25,000?`, "liferecord");
         input = { status: "outstanding", principal, interest: null };
       }
     } else if (ask.quoteType === "premiums_paid_to") {
       const paidTo = anyDate(ask.paidTo);
-      if (!paidTo || paidTo > today) return this.say(to, agentId, "That date doesn't look right. Type the last due date that is paid, up to today, like 1 Oct 2026.", "liferecord");
+      if (!paidTo || paidTo > today) return this.say(to, agentId, "I couldn't use that date. Please send the last due date that is paid, up to today, like 1 Oct 2026.", "liferecord");
       input = { quoteType: "premiums_paid_to", paidTo };
     } else {
       // An insurer's figure is dated by its statement, so it never jumps ahead of a newer one.
       const qd = picked.quoteDate ?? (ask.quoteDate ? anyDate(ask.quoteDate) : null);
-      if (ask.quoteDate && !picked.quoteDate && (!qd || qd > today)) return this.say(to, agentId, "That date doesn't look right. Type the date of the insurer's statement, up to today, like 5 Oct 2026.", "liferecord");
+      if (ask.quoteDate && !picked.quoteDate && (!qd || qd > today)) return this.say(to, agentId, "I couldn't use that date. Please send the date of the insurer's statement, up to today, like 5 Oct 2026.", "liferecord");
       if (!qd) {
         await this.setState(agentId, to, "AWAITING_EDIT_VALUE", conv.currentClientId, { mode: "lifedate", clientId, ask });
         return this.say(to, agentId, "What date is the insurer's statement or message from? Type a date like 5 Oct 2026, or TODAY.\n(CANCEL to do something else.)", "life_date");
@@ -3024,7 +3024,7 @@ ${link}`
       if (ask.quoteType === "policy_status") input = { quoteType: "policy_status", status: ask.status, ...dated };
       else {
         const amount = amountOf(ask.amount);
-        if (amount === null) return this.say(to, agentId, `That amount doesn't look right ("${ask.amount}").`, "liferecord");
+        if (amount === null) return this.say(to, agentId, `I couldn't read the amount "${ask.amount}". Could you send it again, like 25,000?`, "liferecord");
         input = { quoteType: ask.quoteType, amount, ...dated };
       }
     }
@@ -3100,31 +3100,31 @@ ${link}`
 
     if (msg.fileSize != null && msg.fileSize > MAX_BYTES) { await this.say(to, agentId, T.tooLarge(), "too_large"); return true; }
     const mime = String(msg.mimeType || (msg.kind === "image" ? "image/jpeg" : "")).toLowerCase().split(";")[0];
-    if (/heic|heif/.test(mime)) { await this.say(to, agentId, "This photo is in a format the portal can't show (HEIC). Please send it as a photo, not as a document.", "claimdoc"); return true; }
-    if (!DOC_MIME.includes(mime)) { await this.say(to, agentId, "A claim document must be a PDF or a photo.", "claimdoc"); return true; }
+    if (/heic|heif/.test(mime)) { await this.say(to, agentId, "The portal can't show this photo's format (HEIC). Could you send it as a normal photo, not as a document?", "claimdoc"); return true; }
+    if (!DOC_MIME.includes(mime)) { await this.say(to, agentId, "A claim document needs to be a PDF or a photo. Could you send it that way?", "claimdoc"); return true; }
 
     // Which claim: the session's (pinned when it started), the batch's, or the caption's.
     let claimId: string | null = session?.claimId ?? (albumFollower ? queue!.claimId : null);
     if (!claimId && cap) {
       if (cap.who) {
         const open = (await this.d.engine.claims(agentId, cap.who)).filter((r) => r.customer_name && nameMatches(cap.who!, r.customer_name) && !CLAIM_TERMINAL.includes(r.status));
-        if (!open.length) { await this.say(to, agentId, `I couldn't find an open claim for "${cap.who}". The file was not saved.`, "claimdoc"); return true; }
-        if (open.length > 1) { await this.say(to, agentId, `"${cap.who}" matches ${open.length} open claims. Type: add documents to ${cap.who}'s claim (you'll pick one), then send the files. The file was not saved.`, "claimdoc"); return true; }
+        if (!open.length) { await this.say(to, agentId, `I couldn't find an open claim for "${cap.who}", so I haven't saved the file.`, "claimdoc"); return true; }
+        if (open.length > 1) { await this.say(to, agentId, `"${cap.who}" matches ${open.length} open claims. Type: add documents to ${cap.who}'s claim (you'll pick one), then send the files. I haven't saved this one yet.`, "claimdoc"); return true; }
         claimId = open[0].id;
       } else {
         // Only "this claim" / "the claim" means the claim we are on; anything else must name the person.
         claimId = cap.thisClaim ? this.lastClaim.get(agentId) ?? null : null;
-        if (!claimId) { await this.say(to, agentId, "Which claim? Send the file with a caption like: final bill for Sunita's claim. The file was not saved.", "claimdoc"); return true; }
+        if (!claimId) { await this.say(to, agentId, "Which claim is this for? Send the file again with a caption like: final bill for Sunita's claim. I haven't saved this one yet.", "claimdoc"); return true; }
       }
     }
     // Inside a session, a caption that names someone else is never saved into this claim.
     const other = session ? foreignName(cap?.who ?? caption, session.customer) : null;
     if (session && other) {
-      await this.say(to, agentId, `Files are going into ${session.name} right now. Type DONE first, then send ${other}'s file. This file was not saved.`, "claimdoc");
+      await this.say(to, agentId, `I'm adding files to ${session.name} right now. Type DONE first, then send ${other}'s file. I haven't saved this one.`, "claimdoc");
       return true;
     }
     const t = await this.claimTarget(agentId, claimId!);
-    if (!t) { await this.say(to, agentId, "I couldn't find that claim any more. The file was not saved.", "claimdoc"); return true; }
+    if (!t) { await this.say(to, agentId, "I can't find that claim any more, so I haven't saved the file.", "claimdoc"); return true; }
     if (t.purged) { await this.say(to, agentId, `${t.name}: its documents were deleted when it closed. Only the insurer's letter can be added, in the portal.`, "claimdoc"); return true; }
 
     const buf = await this.d.transport.downloadMedia(msg);
@@ -3151,13 +3151,13 @@ ${link}`
       session.added += r.duplicate ? 0 : 1;
       session.until = this.now() + UNDO_WINDOW_MS;
       if (r.change) this.lastChange.set(agentId, r.change);
-      await this.say(to, agentId, `${r.text}${r.change ? "\n(Wrong file? Reply UNDO within 15 minutes.)" : ""}`, "claimdoc_saved");
+      await this.say(to, agentId, `${r.text}${r.change ? "\nSent the wrong file? Just reply UNDO within 15 minutes." : ""}`, "claimdoc_saved");
       return true;
     }
     // Held for YES: one confirm for all files sent together.
     const same = queue?.claimId === t.claimId;
     if (queue && !same) {
-      await this.say(to, agentId, `The ${queue.items.length === 1 ? "file" : `${queue.items.length} files`} waiting for ${queue.name} were not saved.`, "claimdoc");
+      await this.say(to, agentId, queue.items.length === 1 ? `I haven't saved the file that was waiting for ${queue.name}.` : `I haven't saved the ${queue.items.length} files that were waiting for ${queue.name}.`, "claimdoc");
     }
     const total = (same ? queue!.items : []).concat(item);
     if (total.length > 10 || total.reduce((n, x) => n + x.buffer.length, 0) > 40 * 1024 * 1024) {
@@ -3181,15 +3181,15 @@ ${link}`
     const ext = x.mime === "application/pdf" ? "pdf" : x.mime === "image/png" ? "png" : x.mime === "image/webp" ? "webp" : "jpg";
     const r = await this.d.engine.claimDocUpload(agentId, t.claimId, { buffer: x.buffer, mime: x.mime, fileName: `document.${ext}` }, { docType: x.label, category: x.category, msgId: x.msgId, queryId: x.queryId });
     if (!r.ok) {
-      return { ok: false, text: r.reason === "OTHER_CLAIM" ? `Not saved: this file was already added to another claim.`
-        : r.reason === "PURGED" ? `Not saved: ${t.name}'s documents were deleted when it closed.`
-        : r.reason === "BAD_TYPE" ? "Not saved: a claim document must be a PDF or a photo."
+      return { ok: false, text: r.reason === "OTHER_CLAIM" ? `I didn't save it, because this file is already in another claim.`
+        : r.reason === "PURGED" ? `I didn't save it, because ${t.name}'s documents were deleted when it closed.`
+        : r.reason === "BAD_TYPE" ? "I didn't save it. A claim document needs to be a PDF or a photo."
         : r.reason === "TOO_LARGE" ? T.tooLarge()
-        : `Not saved: ${showLabel(x.label)} could not be stored. Please send it again.` };
+        : `Sorry, I couldn't store ${showLabel(x.label)}, so nothing was saved. Please send it again.` };
     }
     this.lastClaim.set(agentId, t.claimId);
     const kept = !r.purgeOn ? "" : r.purgeOn < istToday(this.now()) ? " Its documents are due to be deleted now." : ` Kept until ${prettyDate(r.purgeOn)}, then deleted.`;
-    if (r.duplicate) return { ok: true, duplicate: true, text: `${showLabel(x.label)} is already in ${t.name}.` };
+    if (r.duplicate) return { ok: true, duplicate: true, text: `${showLabel(x.label)} is already in ${t.name}, so there's no need to add it again.` };
     return {
       ok: true, duplicate: false,
       text: `✅ ${showLabel(x.label)} added to ${t.name}.${kept}${x.queryId ? ` Linked to the open insurer query. When it is answered, type: ${claimName({ customer_name: t.customer })} query answered` : ""}`,
@@ -3225,7 +3225,7 @@ ${link}`
   private async sendDocs(agentId: string, to: string, t: DocTarget, docs: DocTarget["docs"]) {
     if (!this.d.transport.sendDocument) return this.say(to, agentId, `Open them in the portal: ${this.d.links.origin}/agent/claims/${t.claimId}`, "claimdoc");
     const sent = await this.sendDocFiles(agentId, to, t, docs);
-    return this.say(to, agentId, sent ? `Sent ${sent} of ${docs.length}.` : `I couldn't fetch the file. Open it in the portal: ${this.d.links.origin}/agent/claims/${t.claimId}`, "claimdoc_sent");
+    return this.say(to, agentId, sent ? `Sent ${sent} of ${docs.length}.` : `Sorry, I couldn't get the file just now. You can open it in the portal: ${this.d.links.origin}/agent/claims/${t.claimId}`, "claimdoc_sent");
   }
 
   /** Files out, one at a time (never all held at once), to the advisor's own chat only. */
@@ -3246,7 +3246,7 @@ ${link}`
   /** "send Ramesh's policy PDF", "send the PDF": the original file, to the advisor's own chat. */
   private async policyPdfStart(agentId: string, conv: Conv, to: string, text: string) {
     const ask = parsePolicyPdf(text);
-    if (!ask) return this.say(to, agentId, "Type it like: send Ramesh's policy PDF", "policypdf");
+    if (!ask) return this.say(to, agentId, "You can say it like this: send Ramesh's policy PDF", "policypdf");
     let clientId: string | null = null;
     if (ask.who) {
       const ty = typeOfWord(ask.typeWord);
@@ -3272,7 +3272,7 @@ ${link}`
     if (!tr.sendDocument) return this.say(to, agentId, `Open it in the portal: ${link}`, "policypdf");
     const f = await this.d.engine.policyPdf(agentId, clientId);
     if ("error" in f) {
-      return this.say(to, agentId, f.error === "NO_PDF" ? `No PDF is stored for ${policy}.` : `I couldn't fetch ${policy}'s PDF. Open it in the portal: ${link}`, "policypdf");
+      return this.say(to, agentId, f.error === "NO_PDF" ? `I don't have a PDF saved for ${policy}.` : `Sorry, I couldn't get ${policy}'s PDF just now. You can open it in the portal: ${link}`, "policypdf");
     }
     this.setLast(agentId, { kind: "policy", clientId });
     await tr.sendDocument(to, f.buffer, f.fileName, f.mime, localise(`${policy}. Delete from this chat after use.`, this.replyLang.get(agentId)));
@@ -3324,7 +3324,7 @@ ${link}`
     if (prof) return this.profileStart(agentId, conv, to, prof);
     const page = parsePageAsk(text);
     if (page) return this.pageStart(agentId, conv, to, page);
-    return this.say(to, agentId, "Type it like: my page details, or: my profile", "account");
+    return this.say(to, agentId, "You can say it like this: my page details, or: my profile", "account");
   }
 
   private async pageStart(agentId: string, conv: Conv, to: string, ask: PageAsk) {
@@ -3359,7 +3359,7 @@ ${link}`
     if (ask.kind === "set") {
       key = ask.field;
       const c = cleanPageSet({ [key]: ask.value });
-      if (c.errors[key]) return this.say(to, agentId, `That ${ACCT_LABEL[key]} doesn't look right (${c.errors[key]}).`, "page");
+      if (c.errors[key]) return this.say(to, agentId, `That ${ACCT_LABEL[key]} seems a little off (${c.errors[key]}). Could you send it again?`, "page");
       next = c.set[key];
     } else {
       key = ask.kind === "lines" ? "lines_of_business" : "languages";
@@ -3369,7 +3369,7 @@ ${link}`
       next = c.set[key];
     }
     const from = (p as any)[key] ?? null;
-    if (JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your page's ${ACCT_LABEL[key]} is already ${showAcct(key, next)}. Nothing to change.`, "page");
+    if (JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your page's ${ACCT_LABEL[key]} is already ${showAcct(key, next)}, so no change is needed.`, "page");
     return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "page", key, from, to: next }]);
   }
 
@@ -3390,7 +3390,7 @@ ${link}`
     if (ask.kind === "set") {
       key = ask.field;
       const c = cleanProfileSet({ [key]: ask.value });
-      if (c.errors[key]) return this.say(to, agentId, `That ${ACCT_LABEL[key]} doesn't look right (${c.errors[key]}).`, "profile");
+      if (c.errors[key]) return this.say(to, agentId, `That ${ACCT_LABEL[key]} seems a little off (${c.errors[key]}). Could you send it again?`, "profile");
       next = c.set[key];
     } else {
       if (ask.unknown.length) return this.say(to, agentId, `I don't know "${ask.unknown.join('", "')}". Partner insurers come from the portal's list, for example: Star, Care, Niva, HDFC Ergo.`, "profile");
@@ -3402,7 +3402,7 @@ ${link}`
     }
     const from = (p as any)[key] ?? null;
     const sameSet = Array.isArray(from) && Array.isArray(next) && from.length === next.length && next.every((x) => from.includes(x));
-    if (sameSet || JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your ${ACCT_LABEL[key]} is already ${showAcct(key, next)}. Nothing to change.`, "profile");
+    if (sameSet || JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your ${ACCT_LABEL[key]} is already ${showAcct(key, next)}, so no change is needed.`, "profile");
     return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "profile", key, from, to: next }]);
   }
 
@@ -3442,21 +3442,21 @@ ${link}`
         : await e.profileEdit(agentId, { [op.key]: op.to }, { [op.key]: op.from });
       const whose = op.what === "page" ? "your page" : "your profile";
       if (!r.ok) {
-        return { text: r.reason === "NOT_ENABLED" ? `Not saved: your page is switched off. Switch it on in the portal: ${this.d.links.origin}/agent/my-page`
-          : r.reason === "NOT_READY" ? "Not saved: your page needs a name, at least one kind of insurance and a WhatsApp number before it can go live."
-          : r.reason === "NO_PAGE" ? "Not saved: you don't have a page yet."
-          : r.reason === "CHANGED" ? `Not saved: ${whose} was changed in the portal a moment ago. Ask again to see the latest.`
+        return { text: r.reason === "NOT_ENABLED" ? `I didn't save it, because your page is switched off. You can switch it on in the portal: ${this.d.links.origin}/agent/my-page`
+          : r.reason === "NOT_READY" ? "I didn't save it. Before your page can go live, it needs a name, at least one kind of insurance and a WhatsApp number."
+          : r.reason === "NO_PAGE" ? "I didn't save it, because you don't have a page yet."
+          : r.reason === "CHANGED" ? `I didn't save it, because ${whose} was just changed in the portal. Ask me again and I'll show the latest.`
           : refused(whose, r) };
       }
       const after = r.after[op.key] ?? op.to;
       const text = op.key === "published"
         ? (after ? `✅ Your page is live.` : `✅ Your page is offline. Visitors see that it is not active.`)
-        : `✅ Saved. ${op.what === "page" ? "Your page" : "Your profile"}: ${ACCT_LABEL[op.key]} is now ${showAcct(op.key, after)}.`;
+        : `✅ Done. ${op.what === "page" ? "Your page" : "Your profile"}: ${ACCT_LABEL[op.key]} is now ${showAcct(op.key, after)}.`;
       return { text, change: { kind: "acctEdit", what: op.what, name: op.what === "page" ? "Your page" : "Your profile", key: op.key, from: op.from, to: after, token: r.undoToken, at } };
     }
     if (op.kind === "teamMove") {
       const r = await e.teamMove(agentId, op.memberId, op.count);
-      if (!r.ok) return { text: r.reason === "NOT_ENOUGH" ? "Not saved: you don't have that many checks left." : r.reason === "NOT_OWNER" ? "Not saved: only the team owner can move checks." : refused(op.name, r) };
+      if (!r.ok) return { text: r.reason === "NOT_ENOUGH" ? "I didn't move them, because you don't have that many checks left." : r.reason === "NOT_OWNER" ? "I didn't move them, because only the team owner can move checks." : refused(op.name, r) };
       return {
         text: `✅ Moved ${op.count} ${op.count === 1 ? "check" : "checks"} to ${op.name}. You have ${r.ownerLeft} left. This lasts until the monthly refill.`,
         change: { kind: "teamMove", memberId: op.memberId, name: op.name, count: op.count, token: r.undoToken, issued: r.at, at },

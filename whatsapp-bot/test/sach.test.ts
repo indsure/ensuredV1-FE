@@ -65,7 +65,7 @@ test("limit reached: told once a month, then the rules carry on", async () => {
   const all = transport.texts();
   assert.ok(all.some((t) => /You've used all 500 Sach Assistant replies this month\. Until Thu 1 Oct/.test(t)));
   await bot.handle(text("Ramesh won"));
-  assert.match(transport.last(), /Please confirm:/, "the rules still work");
+  assert.match(transport.last(), /Shall I go ahead with this\?/, "the rules still work");
   const before = transport.sent.length;
   await bot.handle(text("and the other one from delhi too please"));
   assert.equal(transport.texts().slice(before).filter((t) => /used all 500/.test(t)).length, 0, "not repeated");

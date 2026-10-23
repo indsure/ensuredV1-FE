@@ -41,7 +41,7 @@ test("one-shot fix on the car policy: old -> new shown, saved only on YES, UNDO 
   assert.match(transport.last(), /Ramesh Kumar's .*: Premium ₹15,400 → ₹14,500/);
   assert.equal(engine.writes.length, 0, "nothing written before YES");
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /Saved\. Ramesh Kumar's .*: Premium is now ₹14,500/);
+  assert.match(transport.last(), /Done\. Ramesh Kumar's .*: Premium is now ₹14,500/);
   assert.match(transport.last(), new RegExp(`/agent/policies/${CAR}`));
   assert.equal(engine.policyExtra.get(CAR)!.data.premium, 14500);
   assert.equal(engine.policyExtra.get(CAR)!.rev, 3);
@@ -78,7 +78,7 @@ test("a change in the portal between the confirm and YES: not saved, said plainl
   await bot.handle(text("change Ramesh's car policy idv to 5.2 lakh"));
   engine.policyExtra.get(CAR)!.rev = 9; // saved in the portal meanwhile
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /Not saved: .* was changed in the portal a moment ago/);
+  assert.match(transport.last(), /I didn't save it, because someone just changed .* in the portal/);
   assert.equal(engine.policyExtra.get(CAR)!.data.idv, 500000);
 });
 
@@ -89,7 +89,7 @@ test("UNDO is refused when the value was changed again after our save", async ()
   engine.policyExtra.get(CAR)!.data.premium = 16000;
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /can't be undone/);
+  assert.match(transport.last(), /can't undo that from here/);
   assert.equal(engine.policyExtra.get(CAR)!.data.premium, 16000, "the later edit is never overwritten");
 });
 
@@ -100,9 +100,9 @@ test("guided: field list, then a bad value is asked again, then a date in words"
   assert.match(list, /1\) Policyholder name: Ramesh Kumar/);
   const n = list.split("\n").find((l) => /Policy expiry date/.test(l))!.match(/^(\d+)\)/)![1];
   await bot.handle(text(n));
-  assert.match(transport.last(), /Type the new Policy expiry date for .* Now: /);
+  assert.match(transport.last(), /What's the new Policy expiry date for .* Right now it is /);
   await bot.handle(text("someday"));
-  assert.match(transport.last(), /doesn't look right \(not a date\)/);
+  assert.match(transport.last(), /seems a little off \(not a date\)/);
   await bot.handle(text("1 April 2027"));
   assert.match(transport.last(), /→/);
   await bot.handle(text("yes"));
@@ -130,7 +130,7 @@ test("clearing a saved detail is for the portal", async () => {
   const n = transport.last().split("\n").find((l) => /Premium:/.test(l))!.match(/^(\d+)\)/)![1];
   await bot.handle(text(n));
   await bot.handle(text("none"));
-  assert.match(transport.last(), /doesn't look right/);
+  assert.match(transport.last(), /seems a little off/);
 });
 
 test("stop sharing: confirm, only the switch moves, UNDO gives the same link back", async () => {

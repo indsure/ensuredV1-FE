@@ -54,12 +54,12 @@ export const MENU: { label: string; command: string }[] = [
 export const T = {
   welcome: () =>
     "✅ You're connected. I'm your IndSure assistant. Send me a customer's policy PDF, or just tell me what you need. Say HI any time to see what I can do.",
-  received: () => "Got it. Reading this PDF.",
+  received: () => "Got it, thank you. Reading this PDF now.",
   checkingNow: () => "Checking it now, usually about a minute.",
   stillWorking: () => "Still reading this one. Longer policies take a bit more time.",
   takingLong: (url: string) =>
     `This is taking longer than usual. I'll message you when it's ready. You can also check it in the portal: ${url}`,
-  notPdf: () => "I can only read PDF files. Could you send the insurer's original PDF?",
+  notPdf: () => "I can only read PDF files. Could you send me the insurer's original PDF?",
   tooLarge: () => "This file is over 25MB, which is too big to read. The insurer's original PDF is usually much smaller.",
   nonHealth: (type: PolicyType, customer: string | null) =>
     `Saved ${TYPE_LABEL[type]} policy${customer ? ` for ${customer}` : ""} to your book. Scores are for health policies only right now, so this one has its key details filled in, no score. This used data entry, not a policy check.`,
@@ -131,7 +131,7 @@ export const T = {
   saveContact: () => "Save the contact below so this chat shows as IndSure AI Assistant, not a number.",
   linkNotBeta: () => "Your number is connected, but WhatsApp is only open to a few advisors right now. We'll let you know when it opens up.",
   unlinked: () => "Done. This WhatsApp number is no longer connected to your IndSure account.",
-  cancelled: () => "Okay, cancelled. Send a PDF or type HELP any time.",
+  cancelled: () => "No problem, I've stopped. I'm here whenever you need me.",
   locked: () => T.couldNotRead("the PDF is password-protected", "Remove the password and send it again").replace(" It's waiting in Needs Attention in the portal.", " No policy check was used."),
   hindiPolicy: () => "This policy is written in Hindi. I can only read English policies for now, so no policy check was used.",
   pickType: () =>
@@ -154,10 +154,10 @@ export const T = {
   queueStoppedNoChecks: (waiting: number, url: string) =>
     `You've run out of policy checks, so I've stopped here. ${waiting} ${waiting === 1 ? "file is" : "files are"} still waiting and ${waiting === 1 ? "was" : "were"} not checked. Message the IndSure team to get more: ${url}`,
   gaveUp: (url: string) =>
-    `I couldn't get a result for this policy. Please check it in the portal: ${url}`,
-  didNotCatch: () => `I didn't catch that.\n\n${T.help()}`,
-  resendFile: () => "I no longer have that file. Please send the PDF again.",
-  resendBoth: () => "I no longer have those files. Please send the base policy and the super top-up again.",
+    `Sorry, I couldn't finish this policy. You can see it in the portal: ${url}`,
+  didNotCatch: () => `Sorry, I didn't get that. Try saying it another way, or pick a number below.\n\n${T.help()}`,
+  resendFile: () => "Sorry, I no longer have that file. Could you send the PDF again?",
+  resendBoth: () => "Sorry, I no longer have those files. Could you send the base policy and the super top-up again?",
 
   /* Base policy + super top-up: one check for both. Every line here is in i18n.ts. */
   topUpAsk: (person: string | null) =>
@@ -204,7 +204,7 @@ export const T = {
   lapsed: (label: string) =>
     `I didn't hear back about ${label}, so I didn't check it and no policy check was used. Send it again when you're ready.`,
   heldDropped: (label: string) => `I've set aside ${label} without checking it. No policy check was used. Send it again when you're ready.`,
-  genericError: () => "Something went wrong on my side. Please try again in a minute.",
+  genericError: () => "Sorry, something went wrong on my side. Please try again in a minute.",
   stillChecking: () => "I'm still checking a policy. I'll send the report as soon as it's ready.",
 };
 

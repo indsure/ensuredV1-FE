@@ -95,7 +95,7 @@ test("'call him tomorrow' with nobody in mind: asks who, never looks for a lead 
   const { bot, transport, engine } = makeBot();
   engine.leadRows = [lead()];
   await bot.handle(text("call him tomorrow"));
-  assert.match(transport.last(), /Who do you mean\?/);
+  assert.match(transport.last(), /Who is this for\?/);
   assert.doesNotMatch(transport.last(), /lead called "Him"/);
   assert.equal(engine.leadUpdates.length, 0);
 });
@@ -115,14 +115,14 @@ test("after a lookup, 'does it cover maternity?' is about that policy", async ()
   await bot.handle(text("find Santosh"));
   await bot.handle(text("is there a co-pay?"));
   assert.match(transport.last(), /co-pay/i);
-  assert.doesNotMatch(transport.last(), /didn't catch/);
+  assert.doesNotMatch(transport.last(), /didn't get that/);
 });
 
 test("not understood: a numbered 'did you mean' list, and a number runs the choice", async () => {
   const { bot, transport, engine } = makeBot();
   engine.leadRows = [lead()];
   await bot.handle(text("pls show the renwals"));
-  assert.match(transport.last(), /Did you mean:/);
+  assert.match(transport.last(), /did you mean:/);
   assert.match(transport.last(), /1\) Renewals due/);
   assert.match(transport.lastRaw(), /\n1\. Renewals due/, "WhatsApp sees a numbered list");
   await bot.handle(text("1"));
@@ -151,7 +151,7 @@ test("off-topic: no list of guesses, nothing changes", async () => {
   engine.leadRows = [lead()];
   for (const t of ["tell me a joke", "India won!", "what's the weather in Mumbai"]) {
     await bot.handle(text(t));
-    assert.match(transport.last(), /I didn't catch that/, t);
+    assert.match(transport.last(), /I didn't get that/, t);
   }
   assert.equal(engine.leadUpdates.length, 0);
 });
@@ -161,7 +161,7 @@ test("delete requests: said plainly that WhatsApp never deletes, with where to d
   engine.leadRows = [lead()];
   for (const t of ["delete Ramesh", "Ramesh ko hata do", "remove all my leads"]) {
     await bot.handle(text(t));
-    assert.match(transport.last(), /can't delete anything from WhatsApp/, t);
+    assert.match(transport.last(), /I don't delete anything from WhatsApp/, t);
     assert.match(transport.last(), /\/agent\/leads/);
   }
 });
@@ -206,16 +206,16 @@ test("a city typed for the calculator is never rephrased", async () => {
   const before = transport.sent.length;
   await bot.handle(text("Pune"));
   assert.ok(transport.sent.length > before);
-  assert.doesNotMatch(transport.last(), /Did you mean|didn't catch/);
+  assert.doesNotMatch(transport.last(), /did you mean|didn't get that/);
 });
 
 test("the new replies have Hindi and Hinglish", () => {
   const lines = [
     "You're welcome. Anything else, just type it.", "👋 Hi Deep!", "👋 Hi!",
     "You have 3 follow-ups due. Reply FOLLOW UPS to see them.", "You have 1 follow-up due. Reply FOLLOW UPS to see them.",
-    "I'm not sure I got that. Did you mean:", "Reply with the number, or type HELP to see everything.",
-    "1) Everything on Ramesh Kumar", "Who do you mean? Say it with the name, for example: Ramesh won",
-    "I can't delete anything from WhatsApp, so nothing is lost by mistake. You can remove a lead in the portal: https://indsure.in/agent/leads",
+    "Just to be sure, did you mean:", "Reply with the number, or type HELP to see everything.",
+    "1) Everything on Ramesh Kumar", "Who is this for? Just add the name, for example: Ramesh won",
+    "To keep your records safe, I don't delete anything from WhatsApp. You can remove a lead in the portal: https://indsure.in/agent/leads",
     ...["renewals", "follow up", "leads", "calculator", "compare", "claims", "clients", "website", "checks", "share", "message", "surrender", "views"]
       .map((w) => `1) ${suggest(w)[0].label}`),
   ];
@@ -233,7 +233,7 @@ test("critic: a typo never lands on a different person (Rohit/Mohit, Rakesh/Rame
   engine.leadRows = [lead({ name: "Mohit Jain" }), lead({ name: "Ramesh Kumar", phone: "9812345670" }), lead({ name: "Indra Shah", phone: "9812345671" })];
   for (const t of ["Rohit won", "Rakesh won", "India won"]) {
     await bot.handle(text(t));
-    assert.doesNotMatch(transport.last(), /Please confirm/, t);
+    assert.doesNotMatch(transport.last(), /Shall I go ahead/, t);
   }
   assert.equal(engine.leadUpdates.length, 0);
 });

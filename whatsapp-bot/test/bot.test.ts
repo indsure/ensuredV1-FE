@@ -57,7 +57,7 @@ test("health PDF: acknowledge, report card from stored fields, report becomes cu
   await bot.handle(text("no"));
   await settle(bot);
   const all = transport.texts().join("\n---\n");
-  assert.match(transport.texts()[0], /Got it\. Reading this PDF\./);
+  assert.match(transport.texts()[0], /Got it, thank you\. Reading this PDF now\./);
   assert.match(transport.texts()[1], /Does \*?Ramesh Kumar\*? also have a super top-up policy\?/);
   assert.match(transport.texts()[2], /Checking it now, usually about a minute\./);
   // Answer first (who, short plan name, score), then why, then the one next action.
@@ -148,7 +148,7 @@ test("three PDFs at once: one question for all three, NO runs each, one at a tim
   await bot.handle(text("no"));
   await settle(bot);
   const all = transport.texts();
-  assert.equal(all.filter((x) => /Got it\. Reading this PDF/.test(x)).length, 3);
+  assert.equal(all.filter((x) => /Reading this PDF now/.test(x)).length, 3);
   assert.equal(all.filter((x) => /\/100/.test(x)).length, 3);
   assert.equal(engine.analyzeCalls.length, 3);
   assert.ok(engine.analyzeCalls.every((c: any) => !c.companion));
@@ -265,7 +265,7 @@ test("cancel from a pending question returns to idle", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(pdf(transport, "UNKNOWN"));
   await bot.handle(text("cancel"));
-  assert.match(transport.last(), /cancelled/);
+  assert.match(transport.last(), /I've stopped/);
   assert.equal(engine.conv.state, "IDLE");
 });
 

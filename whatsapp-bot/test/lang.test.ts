@@ -89,7 +89,7 @@ test("a Hindi message gets Hindi replies, YES can be हाँ, and the change i
   const r = lead();
   engine.leadRows = [r];
   await bot.handle(text("रमेश ने पॉलिसी ले ली"));
-  assert.match(transport.last(), /^पक्का कीजिए:\n• \*Ramesh Kumar\* \(98123 45678\): स्टेटस won\n\nसेव करने के लिए YES या हाँ लिखिए, नहीं तो NO।$/);
+  assert.match(transport.last(), /^क्या मैं यह कर दूँ\?\n• \*Ramesh Kumar\* \(98123 45678\): स्टेटस won\n\nसही है तो YES \(या हाँ\) लिखिए, ठीक न हो तो NO।$/);
   await bot.handle(text("हाँ"));
   assert.equal(engine.leadUpdates[0].id, r.id);
   assert.equal(engine.leadUpdates[0].status, "won");
@@ -184,7 +184,7 @@ test("THE SCREENSHOT: 'Sabke reminders 1st November kardo' moves every listed fo
   await bot.handle(text("Followups"));
   await bot.handle(text("Sabke reminders 1st November kardo"));
   const ask = transport.last();
-  assert.match(ask, /^Pakka kijiye:/);
+  assert.match(ask, /^Kya main yeh kar doon\?/);
   for (const n of ["Deep Shah", "Aniket Bang", "Tester Sharma"]) assert.match(ask, new RegExp(`\\*${n}\\* \\(\\d{5} \\d{5}\\): follow-up Sun 1 Nov`));
   assert.equal(engine.understandCalls.length, 0, "no model needed");
   await bot.handle(text("haan"));

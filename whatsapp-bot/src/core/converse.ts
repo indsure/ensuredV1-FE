@@ -223,7 +223,7 @@ export function nameCandidates(textRaw: string): string[] {
 /** The "did you mean" reply. Lines are fixed so they translate (i18n.ts). */
 export function suggestReply(options: Suggestion[]): string {
   return [
-    "I'm not sure I got that. Did you mean:",
+    "Just to be sure, did you mean:",
     ...options.map((o, i) => `${i + 1}) ${o.label}`),
     "Reply with the number, or type HELP to see everything.",
   ].join("\n");

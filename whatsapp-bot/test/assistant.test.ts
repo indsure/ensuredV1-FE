@@ -60,7 +60,7 @@ test("NO cancels; nothing is written", async () => {
   engine.leadRows = [lead()];
   await bot.handle(text("Ramesh won"));
   await bot.handle(text("no"));
-  assert.match(transport.last(), /Okay, nothing changed\./);
+  assert.match(transport.last(), /No problem, I haven't changed anything\./);
   assert.equal(engine.leadUpdates.length, 0);
 });
 
@@ -70,7 +70,7 @@ test("a different request during a confirmation drops the change (unsaved) and c
   await bot.handle(text("Ramesh won"));
   await bot.handle(text("renewals"));
   const texts = transport.texts();
-  assert.ok(texts.some((t) => t === "(That change was not saved.)"));
+  assert.ok(texts.some((t) => t === "(I haven't saved that change.)"));
   assert.match(transport.last(), /Nothing due|renewal/);
   assert.equal(engine.leadUpdates.length, 0);
 });
@@ -157,7 +157,7 @@ test("Hinglish: 'Ramesh ne policy le li' becomes an update to Ramesh, after YES"
   engine.leadRows = [lead()];
   engine.understandMap.set("Ramesh ne policy le li", says(act("update_lead", { name: "Ramesh", status: "won" })));
   await bot.handle(text("Ramesh ne policy le li"));
-  assert.match(transport.last(), /^Pakka kijiye:\n• \*Ramesh Kumar\* \(98123 45678\): status won/, "a Hinglish message gets a Hinglish reply");
+  assert.match(transport.last(), /^Kya main yeh kar doon\?\n• \*Ramesh Kumar\* \(98123 45678\): status won/, "a Hinglish message gets a Hinglish reply");
   await bot.handle(text("haan"));
   assert.equal(engine.leadUpdates[0].status, "won");
 });
@@ -200,6 +200,6 @@ test("model off (production default): free text still works through the rules", 
   const { bot, transport, engine } = makeBot();
   engine.leadRows = [lead()];
   await bot.handle(text("Ramesh won"));
-  assert.match(transport.last(), /Please confirm:/);
+  assert.match(transport.last(), /Shall I go ahead with this\?/);
   assert.equal(engine.understandCalls.length, 0, "a change the rules read with certainty never calls the model");
 });

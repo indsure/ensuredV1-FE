@@ -119,7 +119,7 @@ test("critic: 'kaise' questions about a person stay where they were; Hinglish ac
 test("critic: a page name that reads as official is refused; no team means 'who opened my book' shows report views", async () => {
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("change my page name to IRDAI Official Helpline"));
-  assert.match(transport.last(), /doesn't look right \(your own name/);
+  assert.match(transport.last(), /seems a little off \(your own name/);
   assert.equal(engine.writes.length, 0);
   engine.viewRows = [];
   await bot.handle(text("who opened my book"));

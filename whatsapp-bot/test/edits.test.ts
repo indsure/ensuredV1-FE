@@ -18,7 +18,7 @@ test("one-shot edit: old -> new shown, nothing saved before YES, saved on YES, U
   assert.match(transport.last(), /Amit Shah\* \(lead\): City Mumbai → Pune/);
   assert.equal(engine.writes.length, 0, "nothing written before YES");
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /Saved\. \*Amit Shah\*: City is now Pune/);
+  assert.match(transport.last(), /Done\. \*Amit Shah\*: City is now Pune/);
   assert.equal(l.city, "Pune");
   await bot.handle(text("undo"));
   assert.match(transport.last(), /Undo: City of \*Amit Shah\* back to Mumbai/);
@@ -33,7 +33,7 @@ test("a change in the portal between the confirm and YES: not saved, said plainl
   await bot.handle(text("change Amit's phone to 98123 45678"));
   l.phone = "9811111111"; // someone edits it in the portal
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /Not saved: \*Amit Shah\* was changed in the portal a moment ago/);
+  assert.match(transport.last(), /I didn't save it, because someone just changed \*Amit Shah\* in the portal/);
   assert.equal(l.phone, "9811111111", "the portal's value is untouched");
   assert.equal(engine.writes.length, 0);
 });
@@ -47,7 +47,7 @@ test("UNDO is refused when the value was changed again after our save", async ()
   l.city = "Nashik"; // a later portal edit
   await bot.handle(text("undo"));
   await bot.handle(text("haan"));
-  assert.match(transport.last(), /undo nahi ho sakta|can't be undone/);
+  assert.match(transport.last(), /undo nahi ho sakta|can't undo that from here/);
   assert.equal(l.city, "Nashik", "the later edit is never overwritten");
 });
 
@@ -59,9 +59,9 @@ test("guided: edit Amit -> numbered fields with current values -> new value -> c
   assert.match(transport.last(), /What should I change for \*Amit Shah\* \(lead\)\?/);
   assert.match(transport.last(), /2\) Phone: 98000 00001/);
   await bot.handle(text("2"));
-  assert.match(transport.last(), /Type the new Phone for \*Amit Shah\*/);
+  assert.match(transport.last(), /What's the new Phone for \*Amit Shah\*\?/);
   await bot.handle(text("12345"));
-  assert.match(transport.last(), /doesn't look right \(not a 10 digit mobile number\)/);
+  assert.match(transport.last(), /seems a little off \(not a 10 digit mobile number\)/);
   await bot.handle(text("98765 43210"));
   assert.match(transport.last(), /Phone 98000 00001 → 98765 43210/);
   await bot.handle(text("yes"));
@@ -72,7 +72,7 @@ test("the same value again: nothing to change", async () => {
   const { bot, transport, engine } = makeBot();
   engine.leadRows = [lead()];
   await bot.handle(text("Amit's city is Mumbai"));
-  assert.match(transport.last(), /already Mumbai\. Nothing to change/);
+  assert.match(transport.last(), /already Mumbai, so no change is needed/);
 });
 
 test("a lead and a customer with the same name: asked which one", async () => {
@@ -193,15 +193,15 @@ test("Hinglish edit: the confirm comes in Hinglish", async () => {
   const { bot, transport, engine } = makeBot();
   engine.leadRows = [lead()];
   await bot.handle(text("Amit ka city Pune kar do"));
-  assert.match(transport.last(), /Pakka kijiye/);
+  assert.match(transport.last(), /Kya main yeh kar doon/);
 });
 
 test("every new fixed line has Hindi and Hinglish", () => {
   const lines = [
-    "What should I change for Amit (lead)?", "1) Phone: 98", "Type the new Phone for Amit. Now: 98",
-    "(Or NONE to clear it, CANCEL to stop.)", "Not saved: Amit was changed in the portal a moment ago. Ask again to see the latest.",
-    "✅ Saved. Amit: City is now Pune.", "✅ Amit is now a customer.", "✅ Customer Sunita added.",
-    "That can't be undone here any more: it was changed since, or something was added to it. Please fix it in the portal.",
+    "What should I change for Amit (lead)?", "1) Phone: 98", "What's the new Phone for Amit? Right now it is 98.",
+    "(Reply NONE to clear it, or CANCEL if you've changed your mind.)", "I didn't save it, because someone just changed Amit in the portal. Ask me again and I'll show the latest.",
+    "✅ Done. Amit: City is now Pune.", "✅ Amit is now a customer.", "✅ Customer Sunita added.",
+    "I can't undo that from here any more, because it has been changed or added to since. Please fix it in the portal.",
     "• Make Amit a customer. Their phone, email, city and notes are copied, and the lead is marked won",
     "• Take X out of Sunita", "Which customer?",
   ];
@@ -244,7 +244,7 @@ test("critic: UNDO restores a value today's rules would reject (old free-text in
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
   assert.equal(l.insurance_interest, "health insurance", "the original is back exactly");
-  assert.doesNotMatch(transport.last(), /can't be undone/);
+  assert.doesNotMatch(transport.last(), /can't undo that from here/);
 });
 
 test("critic: UNDO of a just-added customer is refused once the portal changed it", async () => {
@@ -254,7 +254,7 @@ test("critic: UNDO of a just-added customer is refused once the portal changed i
   engine.customers[0].city = "Pune"; // a portal edit within the 15 minutes
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /can't be undone/);
+  assert.match(transport.last(), /can't undo that from here/);
   assert.equal(engine.customers.length, 1, "the edited customer stays");
 });
 

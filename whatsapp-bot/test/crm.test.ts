@@ -59,11 +59,11 @@ test("'Ramesh won' asks for YES first, then updates the one matching lead", asyn
   const r = lead(); engine.leadRows = [r, lead({ name: "Alok Verma", phone: "9800000001" })];
   await bot.handle(text("Ramesh won"));
   assert.equal(engine.leadUpdates.length, 0, "nothing is saved before YES");
-  assert.match(transport.last(), /^Please confirm:\n• \*Ramesh Kumar\* \(98123 45678\): mark won\n\nReply YES to save, or NO\.$/);
+  assert.match(transport.last(), /^Shall I go ahead with this\?\n• \*Ramesh Kumar\* \(98123 45678\): mark won\n\nReply YES, or NO if it's not right\.$/);
   await bot.handle(text("yes"));
   assert.deepEqual(engine.leadUpdates, [{ id: r.id, status: "won", nextFollowUp: undefined, note: undefined }]);
   assert.match(transport.last(), /^\*Ramesh Kumar\*: marked won\./);
-  assert.match(transport.last(), /Reply UNDO within 15 minutes/);
+  assert.match(transport.last(), /reply UNDO within 15 minutes/);
 });
 
 test("'ok done' and 'alok'-style near misses change nothing", async () => {

@@ -172,7 +172,7 @@ export function answer(step: CalcStep, textRaw: string, s: CalcState): string | 
         [fa, ma] = nums;
       }
       const ok = (x: number | null) => x === null || x === 0 || (x >= 35 && x <= 100);
-      if (!ok(fa) || !ok(ma)) return "Those ages look off. Reply father then mother, for example: 65 and 60.";
+      if (!ok(fa) || !ok(ma)) return "I couldn't read those ages. Please send father's first, then mother's, for example: 65 and 60.";
       i.fatherAge = fa || 0;
       i.motherAge = ma || 0;
       return null;

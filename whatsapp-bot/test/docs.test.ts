@@ -153,7 +153,7 @@ test("the policy PDF comes back to the advisor's chat, named; none stored is sai
   const { bot, transport, engine } = setup();
   engine.clients.set(POL, healthClient(POL, { policyholderName: "Ramesh Kumar" }));
   await bot.handle(text("send Ramesh's policy PDF"));
-  assert.match(transport.last(), /No PDF is stored for Ramesh Kumar's/);
+  assert.match(transport.last(), /I don't have a PDF saved for Ramesh Kumar's/);
   engine.pdfs.set(POL, { buffer: Buffer.from("%PDF"), mime: "application/pdf", fileName: "policy.pdf" });
   await bot.handle(text("send Ramesh's policy PDF"));
   assert.equal(transport.documents.length, 1);
@@ -176,7 +176,7 @@ test("critic: a claim question is never a document request; a vague caption neve
   await bot.handle(text("Sunita's claim hospital is Apollo"));
   await bot.handle(text("no"));
   await bot.handle(photo(transport, "aadhaar for my claim"));
-  assert.match(transport.last(), /Which claim\? Send the file with a caption like/);
+  assert.match(transport.last(), /Which claim is this for\? Send the file again with a caption like/);
   assert.equal(engine.docStore.length, 0);
 });
 
@@ -207,6 +207,6 @@ test("critic: NO drops waiting files for good; a session ended by other text say
   assert.match(transport.last(), /Any other message ends it/);
   await bot.handle(text("yes"));
   await bot.handle(text("next is discharge summary"));
-  assert.match(transport.sent.map((m) => m.text).join("\n"), /Stopped adding files to Sunita Rao's claim .*\(0 added\)/);
+  assert.match(transport.sent.map((m) => m.text).join("\n"), /stopped adding files to Sunita Rao's claim .*\(0 added\)/);
   assert.equal(engine.docStore.length, 0);
 });

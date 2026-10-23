@@ -73,9 +73,9 @@ test("payment on a policy without a known schedule is refused before any confirm
 test("a payment in the future and a paid-up date in the future are refused", async () => {
   const { bot, transport, engine } = setup();
   await bot.handle(text("Ramesh paid premium 25000 on 5 Dec 2026"));
-  assert.match(transport.last(), /payment date doesn't look right/);
+  assert.match(transport.last(), /couldn't use that payment date/);
   await bot.handle(text("Ramesh's premiums are paid up to 1 Mar 2027"));
-  assert.match(transport.last(), /date doesn't look right/);
+  assert.match(transport.last(), /couldn't use that date/);
   assert.equal(engine.writes.length, 0);
 });
 
@@ -106,7 +106,7 @@ test("not a life policy: refused before any confirm; a portal save in between: n
   await bot.handle(text("Ramesh's surrender value is 120000 as of 1 Oct 2026"));
   engine.policyExtra.get(LIFE)!.rev = 9; // saved in the portal meanwhile
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /Not saved: .* was changed in the portal a moment ago/);
+  assert.match(transport.last(), /I didn't save it, because someone just changed .* in the portal/);
   assert.equal(ev(engine), undefined);
 });
 

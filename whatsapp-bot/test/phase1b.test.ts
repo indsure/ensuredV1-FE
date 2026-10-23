@@ -36,7 +36,7 @@ test("one line: lead name + phone + interest, confirmed with YES, then saved", a
   const { bot, transport, engine } = makeBot();
   await bot.handle(text("lead Ramesh Kumar 9812345678 health"));
   assert.equal(engine.leads.length, 0);
-  assert.match(transport.last(), /^Please confirm:\n• Add lead \*Ramesh Kumar\*: 98123 45678, Health\n\nReply YES to save, or NO\.$/);
+  assert.match(transport.last(), /^Shall I go ahead with this\?\n• Add lead \*Ramesh Kumar\*: 98123 45678, Health\n\nReply YES, or NO if it's not right\.$/);
   await bot.handle(text("yes"));
   assert.deepEqual(engine.leads.map((l) => [l.name, l.phone, l.interest]), [["Ramesh Kumar", "9812345678", "Health"]]);
   assert.match(transport.last(), /^Saved lead \*Ramesh Kumar\*, 98123 45678, Health\.\nhttps:\/\/indsure\.in\/agent\/leads\/\S+\nNext: follow up Ramesh Friday/);
@@ -61,7 +61,7 @@ test("lead: SKIP phone and interest still saves (after YES); a bad number is ask
   await bot.handle(text("add lead Anil"));
   assert.match(transport.last(), /phone number/);
   await bot.handle(text("12345"));
-  assert.match(transport.last(), /doesn't look like a 10-digit/);
+  assert.match(transport.last(), /I need a 10-digit mobile number/);
   await bot.handle(text("skip"));
   await bot.handle(text("skip"));
   await bot.handle(text("yes"));
@@ -239,7 +239,7 @@ test("with a report open, unrelated text is NOT answered as a report question", 
   engine.clients.set(id, healthClient(id));
   engine.conv = { state: "REPORT_READY", currentClientId: id, pending: {}, updatedAt: new Date(1_000_000 - 2 * 3600_000).toISOString() };
   await bot.handle(text("what's the weather like"));
-  assert.match(transport.last(), /I didn't catch that/);
+  assert.match(transport.last(), /I didn't get that/);
   assert.doesNotMatch(transport.last(), /report doesn't cover/);
   assert.equal(engine.llmPhraseCalls, 0);
 });

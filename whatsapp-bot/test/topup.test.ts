@@ -202,7 +202,7 @@ test("a held file gone before the check: asks for both again, nothing run", asyn
   await bot.handle(text("yes"));
   await settle(bot);
   assert.equal(engine.analyzeCalls.length, 0);
-  assert.match(transport.last(), /Please send the base policy and the super top-up again\./);
+  assert.match(transport.last(), /Could you send the base policy and the super top-up again\?/);
 });
 
 test("Hindi: the question is in Hindi and a Hindi NO works", async () => {

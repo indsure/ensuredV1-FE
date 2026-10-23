@@ -65,14 +65,14 @@ test("stage: old -> new shown, saved on YES, UNDO puts it back; closing goes to 
 test("a closed claim is never changed from WhatsApp", async () => {
   const { bot, transport, engine } = setup("settled");
   await bot.handle(text("Sunita's claim hospital is Apollo"));
-  assert.match(transport.last(), /claim is closed\. Change it in the portal/);
+  assert.match(transport.last(), /claim is closed, so it can only be changed in the portal/);
   assert.equal(engine.writes.length, 0);
 });
 
 test("details: strict amount, compare-before, UNDO refused after a later portal change", async () => {
   const { bot, transport, engine } = setup();
   await bot.handle(text("change Sunita's claim amount to 2 lakh 50 hazar"));
-  assert.match(transport.last(), /doesn't look right \(not an amount\)/);
+  assert.match(transport.last(), /seems a little off \(not an amount\)/);
   await bot.handle(text("cancel"));
   await bot.handle(text("change Sunita's claim amount to 1.8 lakh"));
   assert.match(transport.last(), /Amount claimed ₹1,50,000 → ₹1,80,000/);
@@ -81,7 +81,7 @@ test("details: strict amount, compare-before, UNDO refused after a later portal 
   engine.claimStore.get(CLM).claimed_amount = "190000.00"; // edited in the portal after
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /can't be undone/);
+  assert.match(transport.last(), /can't undo that from here/);
   assert.equal(engine.claimStore.get(CLM).claimed_amount, "190000.00");
 });
 
@@ -134,7 +134,7 @@ test("Hindi: the claim lines are translated", async () => {
   const { bot, transport } = setup();
   await bot.handle(text("hindi"));
   await bot.handle(text("Sunita's claim is under process"));
-  assert.match(transport.last(), /पक्का कीजिए|Pakka/);
+  assert.match(transport.last(), /क्या मैं यह कर दूँ|Kya main yeh kar doon/);
   await bot.handle(text("haan"));
   assert.match(transport.last(), /अब .* पर है|अब "/);
   await bot.handle(text("Sunita's claim settled"));
@@ -173,7 +173,7 @@ test("critic: undo of 'answered' is refused once the claim has moved on", async 
   engine.claimStore.get(CLM).status = "under_process"; // ... which moves the claim on
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
-  assert.match(transport.last(), /can't be undone/);
+  assert.match(transport.last(), /can't undo that from here/);
   assert.equal(engine.queryStore[0].resolved_on, "2026-10-22", "round 1 stays answered");
 });
 
