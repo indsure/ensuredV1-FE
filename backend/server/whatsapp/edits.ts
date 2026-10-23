@@ -44,7 +44,7 @@ function tokenOk(given: unknown, want: string): boolean {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet } from "./editRules";
+import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet, PAGE_COLS, cleanPageSet, PROFILE_COLS, cleanProfileSet } from "./editRules";
 import { saveExtractedData, EVIDENCE_KEY } from "../services/policyValueStore";
 import { readEvidence, activeRecords } from "../../../shared/policyEvidence";
 import { addMonthsIso, parseIsoDate, parseWholeNumber, parseRupees } from "../../../shared/policyNumbers";
@@ -971,6 +971,168 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       sendBytes(res, Buffer.from(await blob.data.arrayBuffer()), mime, r.rows[0].filename || `policy.${ext}`);
     } catch (err) { fail(res, "policy pdf", err); }
   });
+
+  /* ── Stage 4: My Page, profile, team (docs/plans/2026-10-22-wa-stage3-files.md is stage 3; stage 4
+   *  scope: page fields + publish, profile name/city/partners, team members + moving checks).
+   *  Creating a page, the photo, invites, removing members and the phone stay in the portal. ── */
+
+  const PAGE_OUT = "id, slug, display_name, city, whatsapp_number, primary_locale, lines_of_business, languages, enabled, published";
+  const PROFILE_OUT = "COALESCE(full_name, name) AS name, COALESCE(city, location) AS city, phone, partnered_companies";
+  /** A typed equality: arrays as text[], booleans as boolean, the rest as text. */
+  const castOf = (v: unknown) => (Array.isArray(v) ? "::text[]" : typeof v === "boolean" ? "::boolean" : "::text");
+
+  app.get("/api/internal/wa/page", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(`SELECT ${PAGE_OUT} FROM agent_pages WHERE agent_id = $1`, [agentId]);
+      res.json({ page: r.rows[0] ?? null });
+    } catch (err) { fail(res, "page read", err); }
+  });
+
+  /** Change My Page. Body: { set, expect, restore?, token? }. Publishing needs a page IndSure enabled. */
+  app.post("/api/internal/wa/page/edit", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const restore = req.body?.restore === true;
+      const { set, errors } = restore ? looseSet(req.body?.set || {}, PAGE_COLS) : cleanPageSet(req.body?.set || {});
+      if (Object.keys(errors).length) return bad(res, errors);
+      if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
+      const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
+      const known = Object.fromEntries(Object.entries(expect).filter(([k]) => PAGE_COLS.includes(k)));
+      const missing = missingExpect(set, known);
+      if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
+      if (restore && !tokenOk(req.body?.token, undoToken("agent_pages", agentId, set, known))) return bad(res, { token: "undo is only for a change saved here" });
+      const params: unknown[] = [agentId];
+      const sets = Object.entries(set).map(([k, v]) => { params.push(v); return `${k} = $${params.length}${castOf(v)}`; });
+      const checks = Object.entries(known).map(([k, v]) => { params.push(v); return `${k} IS NOT DISTINCT FROM $${params.length}${castOf(v)}`; });
+      const r = await pool.query(
+        `UPDATE agent_pages SET ${sets.join(", ")} WHERE agent_id = $1 ${set.published === true ? "AND enabled" : ""} ${checks.length ? "AND " + checks.join(" AND ") : ""}
+         RETURNING ${PAGE_OUT}`, params);
+      if (!r.rowCount) {
+        const p = await pool.query("SELECT enabled FROM agent_pages WHERE agent_id = $1", [agentId]);
+        if (!p.rowCount) return res.status(404).json({ error: "NO_PAGE" });
+        if (set.published === true && !p.rows[0].enabled) return res.status(400).json({ error: "NOT_ENABLED" });
+        return changed(res);
+      }
+      void audit(agentId, null, "wa_page_edit", "/api/internal/wa/page/edit");
+      const after = Object.fromEntries(Object.keys(set).map((k) => [k, r.rows[0][k] ?? null]));
+      res.json({ ok: true, page: r.rows[0], after, undoToken: undoToken("agent_pages", agentId, known, after) });
+    } catch (err) { fail(res, "page edit", err); }
+  });
+
+  app.get("/api/internal/wa/profile", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const r = await pool.query(`SELECT ${PROFILE_OUT} FROM agents WHERE id = $1`, [agentId]);
+      if (!r.rowCount) return res.status(404).json({ error: "Not found" });
+      res.json({ profile: { ...r.rows[0], partnered_companies: r.rows[0].partnered_companies ?? [] } });
+    } catch (err) { fail(res, "profile read", err); }
+  });
+
+  /** Change the profile, the portal's way (name and full_name, city and location together).
+   *  Body: { set, expect, restore?, token? }. */
+  app.post("/api/internal/wa/profile/edit", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const restore = req.body?.restore === true;
+      const { set, errors } = restore ? looseSet(req.body?.set || {}, PROFILE_COLS) : cleanProfileSet(req.body?.set || {});
+      if (Object.keys(errors).length) return bad(res, errors);
+      if (!Object.keys(set).length) return bad(res, { set: "nothing to change" });
+      const expect = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
+      const known = Object.fromEntries(Object.entries(expect).filter(([k]) => PROFILE_COLS.includes(k)));
+      const missing = missingExpect(set, known);
+      if (missing.length) return bad(res, Object.fromEntries(missing.map((k) => [k, "the value seen before is required"])));
+      if (restore && !tokenOk(req.body?.token, undoToken("agents", agentId, set, known))) return bad(res, { token: "undo is only for a change saved here" });
+      const params: unknown[] = [agentId];
+      const sets: string[] = [];
+      const checks: string[] = [];
+      const col = (k: string) => (k === "name" ? "COALESCE(full_name, name)" : k === "city" ? "COALESCE(city, location)" : "COALESCE(partnered_companies, '{}')");
+      for (const [k, v] of Object.entries(set)) {
+        params.push(v);
+        const n = `$${params.length}${castOf(v)}`;
+        if (k === "name") sets.push(`name = ${n}`, `full_name = ${n}`);
+        else if (k === "city") sets.push(`city = ${n}`, `location = ${n}`);
+        else sets.push(`partnered_companies = ${n}`);
+      }
+      for (const [k, v] of Object.entries(known)) {
+        params.push(k === "partnered_companies" ? (Array.isArray(v) ? v : []) : v);
+        checks.push(`${col(k)} IS NOT DISTINCT FROM $${params.length}${castOf(params[params.length - 1])}`);
+      }
+      const r = await pool.query(`UPDATE agents SET ${sets.join(", ")} WHERE id = $1 ${checks.length ? "AND " + checks.join(" AND ") : ""} RETURNING ${PROFILE_OUT}`, params);
+      if (!r.rowCount) return changed(res);
+      void audit(agentId, null, "wa_profile_edit", "/api/internal/wa/profile/edit");
+      const row = { ...r.rows[0], partnered_companies: r.rows[0].partnered_companies ?? [] };
+      const after = Object.fromEntries(Object.keys(set).map((k) => [k, row[k] ?? null]));
+      res.json({ ok: true, profile: row, after, undoToken: undoToken("agents", agentId, known, after) });
+    } catch (err) { fail(res, "profile edit", err); }
+  });
+
+  /** The team, as the portal's Team tab shows it: for an owner the members with checks and data
+   *  entry left; for a member the team and owner names. */
+  app.get("/api/internal/wa/team", async (req, res) => {
+    try {
+      const agentId = await scopedAgent(req, res);
+      if (!agentId) return;
+      const own = await pool.query("SELECT id, name FROM teams WHERE owner_id = $1", [agentId]);
+      if (!own.rowCount) {
+        const m = await pool.query(
+          `SELECT t.name, COALESCE(o.full_name, o.name, o.email) AS owner_name FROM agents a JOIN teams t ON t.id = a.team_id JOIN agents o ON o.id = t.owner_id WHERE a.id = $1`,
+          [agentId]);
+        if (!m.rowCount) return res.json({ role: "none" });
+        const reads = await pool.query("SELECT count(*)::int AS n, max(created_at)::date::text AS last FROM team_access_log WHERE member_id = $1", [agentId]);
+        return res.json({ role: "member", team: m.rows[0].name, owner: m.rows[0].owner_name, reads: reads.rows[0] });
+      }
+      const members = await pool.query(
+        `SELECT a.id, COALESCE(a.full_name, a.name, '') AS name, (a.id = $2) AS is_owner,
+                COALESCE(cr.balance, 0) AS checks_left, COALESCE(ocr.balance, 0) AS entry_left
+           FROM agents a
+           LEFT JOIN agent_credits cr ON cr.agent_id = a.id
+           LEFT JOIN agent_ocr_credits ocr ON ocr.agent_id = a.id
+          WHERE a.team_id = $1
+          ORDER BY (a.id = $2) DESC, name ASC`, [own.rows[0].id, agentId]);
+      res.json({ role: "owner", team: own.rows[0].name, members: members.rows });
+    } catch (err) { fail(res, "team read", err); }
+  });
+
+  /** Move policy checks between the owner and one member, as the portal's checks/move does
+   *  (source locked first). Body: { toId, count } from the owner; undo: { restore, fromId, count, token }
+   *  moves them back to the owner. */
+  app.post("/api/internal/wa/team/checks/move", async (req, res) => {
+    const agentId = await scopedAgent(req, res);
+    if (!agentId) return;
+    const count = Number(req.body?.count);
+    if (!Number.isInteger(count) || count < 1 || count > 10000) return bad(res, { count: "a number of checks" });
+    const restore = req.body?.restore === true;
+    const memberId = String((restore ? req.body?.fromId : req.body?.toId) || "");
+    if (!UUID.test(memberId) || memberId === agentId) return bad(res, { member: "a member of your team" });
+    if (restore && !tokenOk(req.body?.token, undoToken("team_checks", agentId, { to: memberId }, { count }))) return bad(res, { token: "undo is only for a move made here" });
+    const db = await pool.connect();
+    try {
+      const team = await db.query("SELECT id FROM teams WHERE owner_id = $1", [agentId]);
+      if (!team.rowCount) return res.status(403).json({ error: "NOT_OWNER" });
+      const m = await db.query("SELECT COALESCE(full_name, name, '') AS name FROM agents WHERE id = $1 AND team_id = $2", [memberId, team.rows[0].id]);
+      if (!m.rowCount) return res.status(404).json({ error: "NOT_MEMBER" });
+      const [fromId, toId] = restore ? [memberId, agentId] : [agentId, memberId];
+      await db.query("BEGIN");
+      const src = await db.query("SELECT balance FROM agent_credits WHERE agent_id = $1 FOR UPDATE", [fromId]);
+      const available = src.rows[0]?.balance ?? 0;
+      if (available < count) { await db.query("ROLLBACK"); return res.status(409).json({ error: "NOT_ENOUGH", available }); }
+      await db.query("UPDATE agent_credits SET balance = balance - $1 WHERE agent_id = $2", [count, fromId]);
+      await db.query(
+        `INSERT INTO agent_credits (agent_id, balance) VALUES ($1, $2)
+         ON CONFLICT (agent_id) DO UPDATE SET balance = agent_credits.balance + $2`, [toId, count]);
+      await db.query("COMMIT");
+      void audit(agentId, null, restore ? "wa_team_checks_back" : "wa_team_checks_move", "/api/internal/wa/team/checks/move");
+      res.json({ ok: true, member: m.rows[0].name, ownerLeft: restore ? available + 0 : available - count, undoToken: restore ? undefined : undoToken("team_checks", agentId, { to: memberId }, { count }) });
+    } catch (err) {
+      await db.query("ROLLBACK").catch(() => {});
+      fail(res, "team checks move", err);
+    } finally { db.release(); }
+  });
 }
 
 /** Remove a customer only if created in the last 15 minutes and nothing refers to it:
@@ -1134,4 +1296,16 @@ function sendBytes(res: any, buf: Buffer, mime: string, fileName: string) {
   res.setHeader("Content-Type", mime);
   res.setHeader("X-File-Name", encodeURIComponent(fileName));
   res.send(buf);
+}
+
+/** Undo puts back exactly what was there (an empty city or number included); only the shape is
+ *  checked, because the server's token proves the value came from a save made here. */
+function looseSet(raw: Record<string, unknown>, cols: string[]) {
+  const set: Record<string, unknown> = {};
+  const errors: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    const ok = v === null || typeof v === "string" || typeof v === "boolean" || (Array.isArray(v) && v.every((x) => typeof x === "string"));
+    if (!cols.includes(k) || !ok) errors[k] = "cannot be changed from WhatsApp"; else set[k] = v;
+  }
+  return { set, errors };
 }

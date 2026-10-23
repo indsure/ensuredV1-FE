@@ -4,7 +4,7 @@ import {
   cleanCustomerSet, cleanInterests, cleanLeadSet, freshEmptyCustomerDelete, freshUntouchedLeadDelete,
   guardedUpdate, money, norm, registerWaEdits, buildLifeRecord, lifeDueDates, docIdFor, setWaStorageForTests, undoToken,
 } from "../whatsapp/edits";
-import { strictAmount, cleanFixValue, fixFieldsFor, cleanClaimSet } from "../whatsapp/editRules";
+import { strictAmount, cleanFixValue, fixFieldsFor, cleanClaimSet, cleanPageSet, cleanProfileSet } from "../whatsapp/editRules";
 
 const AGENT = "11111111-1111-4111-8111-111111111111";
 const LEAD = "22222222-2222-4222-8222-222222222222";
@@ -639,4 +639,53 @@ test("claim document: the same message on another claim is refused; a lost race 
   assert.equal(r.json.duplicate, true);
   assert.equal(r.json.undoToken, undefined, "no undo for a file this request did not save");
   assert.equal(st.objects.size, 1, "the stored object stays: the winning row points at it");
+});
+
+/* ── Stage 4: My Page, profile, team ── */
+
+test("page rules: the portal's lists and order; slug and enabled are never the advisor's", () => {
+  assert.deepEqual(cleanPageSet({ lines_of_business: ["vehicle", "health"], languages: ["hi", "en"] }).set, { lines_of_business: ["health", "vehicle"], languages: ["en", "hi"] });
+  assert.equal(cleanPageSet({ slug: "x" }).errors.slug, "cannot be changed from WhatsApp");
+  assert.equal(cleanPageSet({ enabled: true }).errors.enabled, "cannot be changed from WhatsApp");
+  assert.equal(cleanPageSet({ lines_of_business: [] }).errors.lines_of_business, "at least one kind of insurance");
+  assert.equal(cleanPageSet({ primary_locale: "mr" }).errors.primary_locale, "English or Hindi");
+  assert.equal(cleanProfileSet({ partnered_companies: ["Some Insurer"] }).errors.partnered_companies, "not in the list");
+  assert.equal(cleanProfileSet({ phone: "9812345678" }).errors.phone, "cannot be changed from WhatsApp");
+});
+
+test("page edit: compare-before with typed arrays; publishing needs a page IndSure enabled", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const page = { id: "p", slug: "x", display_name: "A", city: null, whatsapp_number: null, primary_locale: "en", lines_of_business: ["health"], languages: ["en"], enabled: true, published: false };
+  const h = harness((sql) => (sql.startsWith("UPDATE agent_pages") ? { rows: [{ ...page, lines_of_business: ["health", "vehicle"] }], rowCount: 1 } : { rows: [page] }));
+  const r = await h.call("POST /api/internal/wa/page/edit", {}, { set: { lines_of_business: ["health", "vehicle"] }, expect: { lines_of_business: ["health"] } });
+  assert.equal(r.status, 200);
+  const upd = h.calls.find((c) => c.sql.startsWith("UPDATE agent_pages"))!;
+  assert.match(upd.sql, /lines_of_business = \$2::text\[\]/);
+  assert.match(upd.sql, /lines_of_business IS NOT DISTINCT FROM \$3::text\[\]/);
+  assert.doesNotMatch(upd.sql, /enabled =|slug =/);
+  const off = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 0 } : { rows: [{ enabled: false }], rowCount: 1 }));
+  assert.equal((await off.call("POST /api/internal/wa/page/edit", {}, { set: { published: true }, expect: { published: false } })).json.error, "NOT_ENABLED");
+  const back = harness((sql) => (sql.startsWith("UPDATE agent_pages") ? { rows: [page], rowCount: 1 } : { rows: [] }));
+  assert.equal((await back.call("POST /api/internal/wa/page/edit", {}, { restore: true, set: { lines_of_business: ["health"] }, expect: { lines_of_business: ["health", "vehicle"] }, token: r.json.undoToken })).status, 200);
+});
+
+test("profile edit: name and city written as the portal does; compare-before", async () => {
+  const h = harness((sql) => (sql.startsWith("UPDATE agents") ? { rows: [{ name: "Deep Shah", city: "Pune", phone: "9", partnered_companies: [] }], rowCount: 1 } : { rows: [] }));
+  const r = await h.call("POST /api/internal/wa/profile/edit", {}, { set: { name: "Deep Shah", city: "Pune" }, expect: { name: "Deep", city: "Mumbai" } });
+  assert.equal(r.status, 200);
+  const upd = h.calls.find((c) => c.sql.startsWith("UPDATE agents"))!;
+  for (const re of [/name = \$2::text, full_name = \$2::text/, /city = \$3::text, location = \$3::text/, /COALESCE\(full_name, name\) IS NOT DISTINCT FROM/]) assert.match(upd.sql, re);
+});
+
+test("team: only the owner moves checks, never more than they have; undo moves them back with the token", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const notOwner = harness(() => ({ rows: [], rowCount: 0 }));
+  assert.equal((await notOwner.call("POST /api/internal/wa/team/checks/move", {}, { toId: LEAD, count: 5 })).json.error, "NOT_OWNER");
+  const poor = harness((sql) => (sql.startsWith("SELECT id FROM teams") ? { rows: [{ id: "t" }], rowCount: 1 } : sql.includes("FROM agents WHERE id") ? { rows: [{ name: "Ravi" }], rowCount: 1 } : sql.includes("FOR UPDATE") ? { rows: [{ balance: 2 }] } : { rows: [], rowCount: 1 }));
+  assert.equal((await poor.call("POST /api/internal/wa/team/checks/move", {}, { toId: LEAD, count: 5 })).json.error, "NOT_ENOUGH");
+  const ok = harness((sql) => (sql.startsWith("SELECT id FROM teams") ? { rows: [{ id: "t" }], rowCount: 1 } : sql.includes("FROM agents WHERE id") ? { rows: [{ name: "Ravi" }], rowCount: 1 } : sql.includes("FOR UPDATE") ? { rows: [{ balance: 20 }] } : { rows: [], rowCount: 1 }));
+  const r = await ok.call("POST /api/internal/wa/team/checks/move", {}, { toId: LEAD, count: 5 });
+  assert.deepEqual([r.json.member, r.json.ownerLeft], ["Ravi", 15]);
+  assert.equal((await ok.call("POST /api/internal/wa/team/checks/move", {}, { restore: true, fromId: LEAD, count: 5, token: "f".repeat(64) })).status, 400);
+  assert.equal((await ok.call("POST /api/internal/wa/team/checks/move", {}, { restore: true, fromId: LEAD, count: 5, token: r.json.undoToken })).status, 200);
 });

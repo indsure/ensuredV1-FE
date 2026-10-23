@@ -6,6 +6,7 @@
 import { devanagariToLatin } from "./i18n.js";
 import { parseClaimAsk } from "./claimParse.js";
 import { parseDocSend, parseDocSession, parsePolicyPdf } from "./docParse.js";
+import { parseHowto, parsePageAsk, parseProfileAsk, parseTeamAsk } from "./accountParse.js";
 import { parseLifeAsk } from "./lifeParse.js";
 import { parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare } from "./editParse.js";
 
@@ -27,7 +28,9 @@ export type Intent =
   // Stage 2d: life records (premium paid, loan, insurer figures, status)
   | "liferecord"
   // Stage 3: files (claim documents in and out, the policy PDF back)
-  | "claimdocs" | "docsend" | "policypdf";
+  | "claimdocs" | "docsend" | "policypdf"
+  // Stage 4: My Page, profile, team, help pages
+  | "account";
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
 
@@ -67,6 +70,10 @@ export function ruleIntent(textRaw: string): Intent | null {
   if (/^unlink$/.test(t)) return "unlink";
   // Claim actions before the Hindi rules (which send any "क्लेम" to the read-only claims view) and
   // before lead/customer edits ("edit Sunita's claim" is a claim). Questions never parse as actions.
+  // Help and account first: "how to share a report" is a help question, "who opened my book" is the team's.
+  if (parseHowto(t) || parseProfileAsk(t) || parseTeamAsk(t)) return "account";
+  const pa = parsePageAsk(t);
+  if (pa && !(pa.kind === "share" && !pa.campaign)) return "account";
   if (parseDocSession(t)) return "claimdocs";
   if (parseDocSend(t)) return "docsend";
   if (parsePolicyPdf(t)) return "policypdf";

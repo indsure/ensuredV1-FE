@@ -22,9 +22,10 @@ import {
 } from "./intents.js";
 import { parseClaimAsk, claimKeyOf, type ClaimAsk } from "./claimParse.js";
 import { parseLifeAsk, type LifeAsk } from "./lifeParse.js";
+import { parseHowto, parsePageAsk, parseProfileAsk, parseTeamAsk, type PageAsk, type ProfileAsk, type TeamAsk } from "./accountParse.js";
 import { labelFor, parseDocCaption, parseDocSend, parseDocSession, parsePolicyPdf, showLabel } from "./docParse.js";
 import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, amountWords, anyDate, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
-import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, cleanClaimSet, strictAmount, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
+import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, PAGE_LANG_NAMES, cleanClaimSet, cleanPageSet, cleanProfileSet, strictAmount, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -143,7 +144,10 @@ type Op =
   /* Stage 3 */
   | { kind: "claimDocs"; claimId: string; name: string; labels: string[]; purgeOn: string | null }
   | { kind: "claimDocSession"; claimId: string; name: string; purgeOn: string | null }
-  | { kind: "claimDocSend"; claimId: string; name: string; docIds: string[]; count: number; to: string };
+  | { kind: "claimDocSend"; claimId: string; name: string; docIds: string[]; count: number; to: string }
+  /* Stage 4 */
+  | { kind: "acctEdit"; what: "page" | "profile"; key: string; from: unknown; to: unknown }
+  | { kind: "teamMove"; memberId: string; name: string; count: number; left: number };
 
 type LeadBits = { status: string | null; next_follow_up: string | null; notes: string | null };
 /** What the last saved change was, so UNDO can put things back (15 minutes). */
@@ -167,7 +171,10 @@ type LastChange =
   /* Stage 2d: undo adds a void that supersedes the record (kept in the history) */
   | { kind: "lifeRecord"; clientId: string; name: string; list: string; recordId: string; rev: number; token?: string; at: number }
   /* Stage 3: a file this chat saved; undo removes it within 15 minutes (founder decision 2026-10-22) */
-  | { kind: "claimDoc"; claimId: string; docId: string; name: string; label: string; token?: string; at: number };
+  | { kind: "claimDoc"; claimId: string; docId: string; name: string; label: string; token?: string; at: number }
+  /* Stage 4 */
+  | { kind: "acctEdit"; what: "page" | "profile"; name: string; key: string; from: unknown; to: unknown; token?: string; at: number }
+  | { kind: "teamMove"; memberId: string; name: string; count: number; token?: string; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -176,7 +183,7 @@ const GREETING = /^(?:hi+|hello+|hey+|helo|namaste|namaskar|namaskaar|ram ram|ja
 
 /** Read-only views whose rules match a whole question, at any length. The model's form has
  *  no action for them, so sending these to it (paid plans) would lose the answer. */
-const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit", "liferecord", "claimdocs", "docsend", "policypdf"]);
+const ALWAYS_RULE = new Set(["queue", "status", "book", "portfolio", "values", "insights", "pagestats", "edit", "convert", "addcustomer", "file", "policyfix", "unshare", "claimedit", "liferecord", "claimdocs", "docsend", "policypdf", "account"]);
 
 const FAST_RULE = new Set(["help", "howcheck", "howfind", "leadlist", "queue", "status", "book", "portfolio", "values", "insights", "pagestats", "more", "website", "renewals", "followups", "checks", "views", "claims", "clients", "calc", "compare", "share", "remind", "lookup", "draft", "surrender", "balance", "today", "morning_off", "morning_on"]);
 
@@ -1114,6 +1121,9 @@ export class Bot {
       }
       case "policypdf":
         return this.policyPdfStart(agentId, conv, to, text);
+      /* Stage 4: My Page, profile, team, help pages */
+      case "account":
+        return this.accountStart(agentId, conv, to, text);
       case "lookup": {
         const q = text.replace(/^(find|search|lookup|look up|who is|details (of|for))\s+/i, "").trim();
         const r = await this.d.engine.lookup(agentId, q);
@@ -2070,12 +2080,19 @@ export class Bot {
       if (c.kind === "claimEdit") return `Undo: ${CLAIM_LABELS[c.key]} of ${c.name} back to ${showClaimValue(c.key, c.from)}`;
       if (c.kind === "claimStage") return `Undo: ${c.name} back to "${CLAIM_STAGE[c.from]}"`;
       if (c.kind === "claimAnswered") return `Undo: query round ${c.seq} on ${c.name} open again`;
+      if (c.kind === "acctEdit") return c.key === "published" ? `Undo: make your page ${c.from ? "live" : "offline"} again` : `Undo: ${c.what === "page" ? "your page's" : "your"} ${ACCT_LABEL[c.key]} back to ${showAcct(c.key, c.from)}`;
+      if (c.kind === "teamMove") return `Undo: move the ${c.count} checks back from ${c.name} to you`;
       if (c.kind === "claimDoc") return `Undo: remove ${showLabel(c.label)} from ${c.name}`;
       if (c.kind === "lifeRecord") return `Undo: remove the record just added to ${c.name}. It stays in the policy's history, marked removed`;
       return `Undo: put ${b(c.name)} back as it was`;
     }
     if (op.kind === "edit") return `${b(op.name)} (${op.target}): ${FIELD_LABEL[op.field]} ${showValue(op.field, op.from)} → ${showValue(op.field, op.to)}`;
     if (op.kind === "policyEdit") return `${op.policy}: ${op.label} ${showPolicyValue(op.vkind, op.from)} → ${showPolicyValue(op.vkind, op.to)}`;
+    if (op.kind === "acctEdit") {
+      if (op.key === "published") return op.to ? `Make your page live. Anyone with the link can see it` : `Take your page offline. Visitors see that it is not active`;
+      return `${op.what === "page" ? "Your page" : "Your profile"}: ${ACCT_LABEL[op.key]} ${showAcct(op.key, op.from)} → ${showAcct(op.key, op.to)}`;
+    }
+    if (op.kind === "teamMove") return `Move ${op.count} policy ${op.count === 1 ? "check" : "checks"} from you to ${b(op.name)}. You will have ${op.left} left`;
     if (op.kind === "claimDocs") return `Add ${op.labels.length === 1 ? op.labels[0] : `${op.labels.length} files (${op.labels.join(", ")})`} to ${op.name}.${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from today, then deleted."}`;
     if (op.kind === "claimDocSession") return `Files you send in the next 15 minutes go into ${op.name}. Name each one in its caption, like "final bill". Any other message ends it.${op.purgeOn ? ` Kept until ${prettyDate(op.purgeOn)}, then deleted.` : " Kept 30 days from the first file, then deleted."}`;
     if (op.kind === "claimDocSend") return `Send all ${op.count} documents of ${op.name} here, including identity papers (Aadhaar, PAN, cheque)`;
@@ -2221,6 +2238,10 @@ export class Bot {
       case "claimCreate": return e.claimUndoCreate(agentId, x.claimId, x.created);
       case "claimEdit": return (await e.claimEdit(agentId, x.claimId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
       case "claimStage": return (await e.claimStage(agentId, x.claimId, x.from, x.to, true, x.token)).ok;
+      case "acctEdit": return (x.what === "page"
+        ? await e.pageEdit(agentId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)
+        : await e.profileEdit(agentId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
+      case "teamMove": return (await e.teamMove(agentId, x.memberId, x.count, { token: x.token })).ok;
       case "claimDoc": return e.claimDocUndo(agentId, x.claimId, x.docId, x.token);
       case "lifeRecord": return (await e.lifeVoid(agentId, x.clientId, x.list, x.recordId, x.rev, x.token)).ok;
       case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.status, x.token)).ok;
@@ -2314,6 +2335,7 @@ ${link}` : refused(op.policy, r) });
       };
     }
     if (op.kind.startsWith("claim")) return this.applyClaim(agentId, op, refused, at);
+    if (op.kind === "acctEdit" || op.kind === "teamMove") return this.applyAccount(agentId, op, refused, at);
     if (op.kind === "lifeRecord") {
       const link = `${o}/agent/policies/${op.clientId}`;
       const r = await e.lifeAdd(agentId, op.clientId, op.recKind, op.input, op.rev);
@@ -3290,6 +3312,153 @@ ${link}`
     return false;
   }
 
+  /* ══ Stage 4: My Page, profile, team, help pages ════════════════════════ */
+
+  private async accountStart(agentId: string, conv: Conv, to: string, text: string) {
+    const o = this.d.links.origin;
+    const how = parseHowto(text);
+    if (how) return this.say(to, agentId, `See "${how.title}" in the help pages: ${o}/docs/${how.slug}`, "howto");
+    const team = parseTeamAsk(text);
+    if (team) return this.teamStart(agentId, conv, to, team);
+    const prof = parseProfileAsk(text);
+    if (prof) return this.profileStart(agentId, conv, to, prof);
+    const page = parsePageAsk(text);
+    if (page) return this.pageStart(agentId, conv, to, page);
+    return this.say(to, agentId, "Type it like: my page details, or: my profile", "account");
+  }
+
+  private async pageStart(agentId: string, conv: Conv, to: string, ask: PageAsk) {
+    const o = this.d.links.origin;
+    const p = await this.d.engine.pageGet(agentId);
+    if (!p) return this.say(to, agentId, `You don't have a page yet. Create it in the portal: ${o}/agent/my-page`, "page");
+    const link = `${o}/a/${p.slug}`;
+    if (ask.kind === "view") {
+      const status = !p.enabled ? "Waiting for IndSure to switch it on" : p.published ? "Live" : "Offline";
+      return this.say(to, agentId, [
+        `Your page: ${link}`,
+        `Status: ${status}`,
+        `Name: ${p.display_name}`,
+        `City: ${p.city || "(empty)"}`,
+        `WhatsApp: ${p.whatsapp_number || "(empty)"}`,
+        `Page language: ${p.primary_locale === "hi" ? "Hindi" : "English"}`,
+        `Insurance: ${showAcct("lines_of_business", p.lines_of_business)}`,
+        `Languages spoken: ${showAcct("languages", p.languages)}`,
+        `The photo and QR code are in the portal: ${o}/agent/my-page`,
+      ].join("\n"), "page");
+    }
+    if (ask.kind === "share") return this.say(to, agentId, `Share this link: ${link}?utm_source=${ask.campaign}\nPage stats will show the visits from "${ask.campaign}".`, "page");
+    if (ask.kind === "publish") {
+      if (ask.on && !p.enabled) return this.say(to, agentId, "IndSure switches pages on. Please ask the IndSure team to switch yours on, then you can make it live.", "page");
+      if (p.published === ask.on) return this.say(to, agentId, ask.on ? `Your page is already live: ${link}` : "Your page is already offline.", "page");
+      return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "page", key: "published", from: p.published, to: ask.on }]);
+    }
+    let key: string;
+    let next: unknown;
+    if (ask.kind === "set") {
+      key = ask.field;
+      const c = cleanPageSet({ [key]: ask.value });
+      if (c.errors[key]) return this.say(to, agentId, `That ${ACCT_LABEL[key]} doesn't look right (${c.errors[key]}).`, "page");
+      next = c.set[key];
+    } else {
+      key = ask.kind === "lines" ? "lines_of_business" : "languages";
+      const now = (p as any)[key] as string[];
+      const c = cleanPageSet({ [key]: now.filter((x) => !ask.remove.includes(x)).concat(ask.add.filter((x) => !now.includes(x))) });
+      if (c.errors[key]) return this.say(to, agentId, `Your page needs ${c.errors[key]}.`, "page");
+      next = c.set[key];
+    }
+    const from = (p as any)[key] ?? null;
+    if (JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your page's ${ACCT_LABEL[key]} is already ${showAcct(key, next)}. Nothing to change.`, "page");
+    return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "page", key, from, to: next }]);
+  }
+
+  private async profileStart(agentId: string, conv: Conv, to: string, ask: ProfileAsk) {
+    const p = await this.d.engine.profileGet(agentId);
+    if (!p) return this.say(to, agentId, T.genericError(), "profile");
+    if (ask.kind === "view") {
+      return this.say(to, agentId, [
+        `Name: ${p.name || "(empty)"}`,
+        `City: ${p.city || "(empty)"}`,
+        `Phone: ${p.phone || "(empty)"} (change it in the portal: it is your login)`,
+        `Partner insurers: ${p.partnered_companies.length ? p.partnered_companies.join(", ") : "(none)"}`,
+        `${this.d.links.origin}/agent/profile`,
+      ].join("\n"), "profile");
+    }
+    let key: string;
+    let next: unknown;
+    if (ask.kind === "set") {
+      key = ask.field;
+      const c = cleanProfileSet({ [key]: ask.value });
+      if (c.errors[key]) return this.say(to, agentId, `That ${ACCT_LABEL[key]} doesn't look right (${c.errors[key]}).`, "profile");
+      next = c.set[key];
+    } else {
+      if (ask.unknown.length) return this.say(to, agentId, `I don't know "${ask.unknown.join('", "')}". Partner insurers come from the portal's list, for example: Star, Care, Niva, HDFC Ergo.`, "profile");
+      key = "partnered_companies";
+      const now = p.partnered_companies;
+      const list = ask.mode === "set" ? ask.names : ask.mode === "add" ? now.concat(ask.names.filter((x) => !now.includes(x))) : now.filter((x) => !ask.names.includes(x));
+      next = cleanProfileSet({ partnered_companies: list }).set.partnered_companies;
+    }
+    const from = (p as any)[key] ?? null;
+    if (JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your ${ACCT_LABEL[key]} is already ${showAcct(key, next)}. Nothing to change.`, "profile");
+    return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "profile", key, from, to: next }]);
+  }
+
+  private async teamStart(agentId: string, conv: Conv, to: string, ask: TeamAsk) {
+    const t = await this.d.engine.team(agentId);
+    if (t.role === "none") return this.say(to, agentId, "You are not in a team. Agencies can set one up from the portal.", "team");
+    if (t.role === "member") {
+      const reads = t.reads.n ? `${t.owner} opened your book ${t.reads.n} ${t.reads.n === 1 ? "time" : "times"}${t.reads.last ? `, last on ${prettyDate(t.reads.last)}` : ""}.` : `${t.owner} has not opened your book yet.`;
+      if (ask.kind === "move") return this.say(to, agentId, "Only the team owner can move checks.", "team");
+      return this.say(to, agentId, `You are in ${t.team}, owned by ${t.owner}.\n${reads}`, "team");
+    }
+    if (ask.kind === "reads") return this.say(to, agentId, `As the owner of ${t.team}, you can open members' books. Each member sees when you did.`, "team");
+    const others = t.members.filter((m) => !m.is_owner);
+    if (ask.kind === "view") {
+      const me = t.members.find((m) => m.is_owner);
+      return this.say(to, agentId, [
+        `${t.team}: ${others.length} ${others.length === 1 ? "member" : "members"}`,
+        ...t.members.map((m) => `• ${m.name}${m.is_owner ? " (you)" : ""}: ${m.checks_left} checks, ${m.entry_left} data entry left`),
+        me ? `To move checks: give ${others[0]?.name.split(" ")[0] || "Ravi"} 10 checks` : "",
+      ].filter(Boolean).join("\n"), "team");
+    }
+    const hits = others.filter((m) => nameMatches(ask.who, m.name));
+    if (!hits.length) return this.say(to, agentId, `No one called "${ask.who}" in ${t.team}.`, "team");
+    if (hits.length > 1) return this.say(to, agentId, `More than one member is called "${ask.who}". Use the full name, like: give ${hits[0].name} ${ask.count} checks`, "team");
+    const me = t.members.find((m) => m.is_owner);
+    const have = me?.checks_left ?? 0;
+    if (have < ask.count) return this.say(to, agentId, `You have only ${have} ${have === 1 ? "check" : "checks"} left, so you can't move ${ask.count}.`, "team");
+    return this.confirm(agentId, conv, to, [{ kind: "teamMove", memberId: hits[0].id, name: hits[0].name, count: ask.count, left: have - ask.count }]);
+  }
+
+  private async applyAccount(agentId: string, op: Op, refused: (name: string, r: { reason: string; fields?: Record<string, string> }) => string, at: number): Promise<{ text: string; change?: LastChange }> {
+    const e = this.d.engine;
+    if (op.kind === "acctEdit") {
+      const r = op.what === "page"
+        ? await e.pageEdit(agentId, { [op.key]: op.to }, { [op.key]: op.from })
+        : await e.profileEdit(agentId, { [op.key]: op.to }, { [op.key]: op.from });
+      const whose = op.what === "page" ? "your page" : "your profile";
+      if (!r.ok) {
+        return { text: r.reason === "NOT_ENABLED" ? "Not saved: IndSure has not switched your page on yet."
+          : r.reason === "NO_PAGE" ? "Not saved: you don't have a page yet."
+          : r.reason === "CHANGED" ? `Not saved: ${whose} was changed in the portal a moment ago. Ask again to see the latest.`
+          : refused(whose, r) };
+      }
+      const after = r.after[op.key] ?? op.to;
+      const text = op.key === "published"
+        ? (after ? `✅ Your page is live.` : `✅ Your page is offline. Visitors see that it is not active.`)
+        : `✅ Saved. ${op.what === "page" ? "Your page" : "Your profile"}: ${ACCT_LABEL[op.key]} is now ${showAcct(op.key, after)}.`;
+      return { text, change: { kind: "acctEdit", what: op.what, name: op.what === "page" ? "Your page" : "Your profile", key: op.key, from: op.from, to: after, token: r.undoToken, at } };
+    }
+    if (op.kind === "teamMove") {
+      const r = await e.teamMove(agentId, op.memberId, op.count);
+      if (!r.ok) return { text: r.reason === "NOT_ENOUGH" ? "Not saved: you don't have that many checks left." : r.reason === "NOT_OWNER" ? "Not saved: only the team owner can move checks." : refused(op.name, r) };
+      return {
+        text: `✅ Moved ${op.count} ${op.count === 1 ? "check" : "checks"} to ${op.name}. You have ${r.ownerLeft} left. This lasts until the monthly refill.`,
+        change: { kind: "teamMove", memberId: op.memberId, name: op.name, count: op.count, token: r.undoToken, at },
+      };
+    }
+    return { text: "" };
+  }
+
   private async proposeUndo(agentId: string, conv: Conv, to: string) {
     const c = this.lastChange.get(agentId);
     if (!c || this.now() - c.at > UNDO_WINDOW_MS) {
@@ -3452,4 +3621,22 @@ function foreignName(caption: string, customer: string | null): string | null {
     return w;
   }
   return null;
+}
+
+/* ── Stage 4 helpers ── */
+
+const ACCT_LABEL: Record<string, string> = {
+  display_name: "name", city: "city", whatsapp_number: "WhatsApp number", primary_locale: "page language",
+  lines_of_business: "insurance", languages: "languages spoken", published: "status", name: "name", partnered_companies: "partner insurers",
+};
+const LOB_NAME: Record<string, string> = { term: "Term", health: "Health", life: "Life", vehicle: "Vehicle" };
+
+function showAcct(key: string, v: unknown): string {
+  if (v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length)) return "(empty)";
+  if (key === "lines_of_business") return (v as string[]).map((x) => LOB_NAME[x] ?? x).join(", ");
+  if (key === "languages") return (v as string[]).map((x) => PAGE_LANG_NAMES[x] ?? x).join(", ");
+  if (key === "primary_locale") return v === "hi" ? "Hindi" : "English";
+  if (key === "published") return v ? "live" : "offline";
+  if (Array.isArray(v)) return v.join(", ");
+  return String(v);
 }

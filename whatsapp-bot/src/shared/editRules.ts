@@ -304,3 +304,64 @@ export function cleanClaimSet(raw: Record<string, unknown>): Clean {
   }
   return { set, errors };
 }
+
+/* ── Stage 4: My Page, profile, team ──────────────────────────────────── */
+
+/** My Page fields WhatsApp may change (frontend lib/advisorPage.ts AdvisorPageDraft, minus the photo).
+ *  `enabled` and `slug` are IndSure's, never the advisor's. */
+export const PAGE_COLS = ["display_name", "city", "whatsapp_number", "primary_locale", "lines_of_business", "languages", "published"];
+export const PAGE_LOB = ["term", "health", "life", "vehicle"];
+export const PAGE_LANGS = ["en", "hi", "mr", "gu", "ta", "te", "kn", "bn", "ml", "pa"];
+export const PAGE_LANG_NAMES: Record<string, string> = { en: "English", hi: "Hindi", mr: "Marathi", gu: "Gujarati", ta: "Tamil", te: "Telugu", kn: "Kannada", bn: "Bengali", ml: "Malayalam", pa: "Punjabi" };
+
+/** The partner insurers an advisor can pick (frontend pages/agent/MyProfile.tsx HEALTH_INSURANCE_COMPANIES;
+ *  a bot test compares the two). Stored by these exact names. */
+export const PARTNER_INSURERS = [
+  "Star Health and Allied Insurance", "Niva Bupa Health Insurance", "Care Health Insurance", "Aditya Birla Health Insurance",
+  "ManipalCigna Health Insurance", "Acko Health Insurance", "Galaxy Health Insurance", "HDFC Ergo Health Insurance",
+  "ICICI Lombard Health Insurance", "Bajaj Allianz Health Insurance", "Tata AIG Health Insurance", "Go Digit Health Insurance",
+  "SBI Health Insurance", "Kotak Mahindra Health Insurance", "Royal Sundaram Health Insurance", "Future Generali Health Insurance",
+  "Cholamandalam MS Health Insurance", "Magma HDI Health Insurance", "Liberty General Insurance", "Iffco Tokio Health Insurance",
+  "Universal Sompo Health Insurance", "Raheja QBE Health Insurance", "Reliance Health Insurance", "Zurich Kotak General Insurance",
+  "New India Assurance", "United India Insurance", "Oriental Insurance", "National Insurance Company",
+];
+
+const ordered = (vals: string[], order: string[]) => order.filter((x) => vals.includes(x));
+
+/** A My Page change, checked: arrays kept in the portal's order, nothing outside the lists. */
+export function cleanPageSet(raw: Record<string, unknown>): Clean {
+  const set: Record<string, unknown> = {};
+  const errors: FieldErrors = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (k === "display_name") { const t = String(v ?? "").trim(); if (t.length < 2 || t.length > 80) errors[k] = "a name of 2 to 80 letters"; else set[k] = t; }
+    else if (k === "city") { const t = String(v ?? "").trim(); if (t.length > 60) errors[k] = "too long"; else set[k] = t || null; }
+    else if (k === "whatsapp_number") { const r = cleanLeadSet({ phone: v }); if (r.errors.phone || !r.set.phone) errors[k] = r.errors.phone || "a 10 digit mobile number"; else set[k] = r.set.phone; }
+    else if (k === "primary_locale") { if (v !== "en" && v !== "hi") errors[k] = "English or Hindi"; else set[k] = v; }
+    else if (k === "lines_of_business" || k === "languages") {
+      const list = k === "languages" ? PAGE_LANGS : PAGE_LOB;
+      if (!Array.isArray(v) || v.some((x) => !list.includes(String(x)))) errors[k] = "not in the list";
+      else if (k === "lines_of_business" && !v.length) errors[k] = "at least one kind of insurance";
+      else set[k] = ordered(v.map(String), list);
+    }
+    else if (k === "published") { if (typeof v !== "boolean") errors[k] = "on or off"; else set[k] = v; }
+    else errors[k] = "cannot be changed from WhatsApp";
+  }
+  return { set, errors };
+}
+
+/** A profile change: name, city, partner insurers. The phone is the login, so it stays in the portal. */
+export const PROFILE_COLS = ["name", "city", "partnered_companies"];
+export function cleanProfileSet(raw: Record<string, unknown>): Clean {
+  const set: Record<string, unknown> = {};
+  const errors: FieldErrors = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (k === "name") { const t = String(v ?? "").trim(); if (t.length < 2 || t.length > 80) errors[k] = "a name of 2 to 80 letters"; else set[k] = t; }
+    else if (k === "city") { const t = String(v ?? "").trim(); if (t.length < 2 || t.length > 60) errors[k] = "a city name"; else set[k] = t; }
+    else if (k === "partnered_companies") {
+      if (!Array.isArray(v) || v.some((x) => !PARTNER_INSURERS.includes(String(x)))) errors[k] = "not in the list";
+      else set[k] = ordered(v.map(String), PARTNER_INSURERS);
+    }
+    else errors[k] = "cannot be changed from WhatsApp";
+  }
+  return { set, errors };
+}

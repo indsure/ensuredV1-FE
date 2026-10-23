@@ -174,6 +174,13 @@ export interface Engine {
   claimDocUndo(agentId: string, claimId: string, docId: string, token?: string): Promise<boolean>;
   claimDocFile(agentId: string, claimId: string, docId: string): Promise<FileBytes | null>;
   policyPdf(agentId: string, clientId: string): Promise<FileBytes | { error: string }>;
+  /* Stage 4: My Page, profile, team. */
+  pageGet(agentId: string): Promise<MyPage | null>;
+  pageEdit(agentId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
+  profileGet(agentId: string): Promise<MyProfile | null>;
+  profileEdit(agentId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
+  team(agentId: string): Promise<TeamView>;
+  teamMove(agentId: string, memberId: string, count: number, back?: { token?: string }): Promise<WriteResult<{ member: string; ownerLeft: number; undoToken?: string }>>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
@@ -385,6 +392,21 @@ export class HttpEngine implements Engine {
     const r = await this.bytes(`/api/internal/wa/claims/${claimId}/documents/${docId}/file`, agentId);
     return "error" in r ? null : r;
   }
+  async pageGet(agentId: string) { return ((await this.call("/api/internal/wa/page", { agentId })) as any).page as MyPage | null; }
+  pageEdit(agentId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    return this.write<{ after: Record<string, unknown>; undoToken?: string }>("/api/internal/wa/page/edit", agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
+  }
+  async profileGet(agentId: string) {
+    try { return ((await this.call("/api/internal/wa/profile", { agentId })) as any).profile as MyProfile; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+  }
+  profileEdit(agentId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    return this.write<{ after: Record<string, unknown>; undoToken?: string }>("/api/internal/wa/profile/edit", agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
+  }
+  async team(agentId: string) { return (await this.call("/api/internal/wa/team", { agentId })) as TeamView; }
+  teamMove(agentId: string, memberId: string, count: number, back?: { token?: string }) {
+    return this.write<{ member: string; ownerLeft: number; undoToken?: string }>("/api/internal/wa/team/checks/move", agentId,
+      back ? { restore: true, fromId: memberId, count, token: back.token } : { toId: memberId, count });
+  }
   policyPdf(agentId: string, clientId: string) { return this.bytes(`/api/internal/wa/clients/${clientId}/pdf`, agentId); }
   /** A file's bytes from an internal route, with its type and name. */
   private async bytes(path: string, agentId: string): Promise<FileBytes | { error: string }> {
@@ -454,6 +476,13 @@ export type PolicyFields = {
   client: { policyholder_name: string | null; policy_identifier: string | null; client_email: string | null; client_phone: string | null };
   fields: { key: string; label: string; kind: "money" | "percent" | "date" | "text"; value: unknown }[];
 };
+/** My Page (GET /api/internal/wa/page). */
+export type MyPage = { id: string; slug: string; display_name: string; city: string | null; whatsapp_number: string | null; primary_locale: string; lines_of_business: string[]; languages: string[]; enabled: boolean; published: boolean };
+export type MyProfile = { name: string | null; city: string | null; phone: string | null; partnered_companies: string[] };
+export type TeamView =
+  | { role: "none" }
+  | { role: "member"; team: string; owner: string; reads: { n: number; last: string | null } }
+  | { role: "owner"; team: string; members: { id: string; name: string; is_owner: boolean; checks_left: number; entry_left: number }[] };
 /** A file going in or out. */
 export type FileBytes = { buffer: Buffer; mime: string; fileName: string };
 /** A claim's documents and when they will be deleted (GET /api/internal/wa/claims/:id/documents). */

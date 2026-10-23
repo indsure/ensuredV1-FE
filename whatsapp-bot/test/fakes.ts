@@ -553,6 +553,45 @@ export class FakeEngine implements Engine {
   async policyPdf(_a: string, clientId: string) {
     return this.pdfs.get(clientId) ?? { error: "NO_PDF" };
   }
+  /* Stage 4: My Page, profile, team, with the server's rules (shared editRules). */
+  myPage: any = { id: "pg1", slug: "deep-shah", display_name: "Deep Shah", city: "Mumbai", whatsapp_number: "9800000001", primary_locale: "en", lines_of_business: ["health"], languages: ["en", "hi"], enabled: true, published: false };
+  myProfile: any = { name: "Deep Shah", city: "Mumbai", phone: "9800000001", partnered_companies: ["Care Health Insurance"] };
+  teamData: any = { role: "none" };
+  private acctEdit(row: any, set: Record<string, unknown>, expect: Record<string, unknown>, restore: boolean, token: string | undefined, clean: (r: any) => any) {
+    if (ED.missingExpect(set, expect).length) return { ok: false as const, reason: "INVALID" };
+    const c = restore ? { set, errors: {} } : clean(set);
+    if (Object.keys(c.errors).length) return { ok: false as const, reason: "INVALID", fields: c.errors };
+    if (restore && token !== "fake-token") return { ok: false as const, reason: "INVALID" };
+    if (Object.keys(expect).some((k) => JSON.stringify(row[k] ?? null) !== JSON.stringify(expect[k] ?? null))) return { ok: false as const, reason: "CHANGED" };
+    Object.assign(row, c.set);
+    return { ok: true as const, after: { ...c.set }, undoToken: "fake-token" };
+  }
+  async pageGet() { return this.myPage; }
+  async pageEdit(_a: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    if (!this.myPage) return { ok: false as const, reason: "NO_PAGE" };
+    if (set.published === true && !this.myPage.enabled) return { ok: false as const, reason: "NOT_ENABLED" };
+    const r = this.acctEdit(this.myPage, set, expect, restore, token, ED.cleanPageSet);
+    if (r.ok) this.writes.push({ kind: "pageEdit", id: "page", body: set });
+    return r;
+  }
+  async profileGet() { return this.myProfile; }
+  async profileEdit(_a: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
+    const r = this.acctEdit(this.myProfile, set, expect, restore, token, ED.cleanProfileSet);
+    if (r.ok) this.writes.push({ kind: "profileEdit", id: "profile", body: set });
+    return r;
+  }
+  async team() { return this.teamData; }
+  async teamMove(_a: string, memberId: string, count: number, back?: { token?: string }) {
+    if (this.teamData.role !== "owner") return { ok: false as const, reason: "NOT_OWNER" };
+    const owner = this.teamData.members.find((m: any) => m.is_owner);
+    const member = this.teamData.members.find((m: any) => m.id === memberId);
+    if (back && back.token !== "fake-token") return { ok: false as const, reason: "INVALID" };
+    const [from, to] = back ? [member, owner] : [owner, member];
+    if (from.checks_left < count) return { ok: false as const, reason: "NOT_ENOUGH" };
+    from.checks_left -= count; to.checks_left += count;
+    this.writes.push({ kind: "teamMove", id: memberId, body: { count, back: !!back } });
+    return { ok: true as const, member: member.name, ownerLeft: owner.checks_left, undoToken: back ? undefined : "fake-token" };
+  }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {
     // Same as the backend: only if it still holds exactly what was created.

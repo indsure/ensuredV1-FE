@@ -107,6 +107,7 @@ export const T = {
       "",
       "*Your business*",
       "• How is my book? · Page stats · LINK: your website",
+      "• My page details · Add motor to my page · My profile · My team · How do I add a claim?",
       "• CHECKS · BALANCE · TODAY · MORNING OFF / ON",
       "• HINDI, HINGLISH or ENGLISH: the language I reply in",
     ].join("\n"),
