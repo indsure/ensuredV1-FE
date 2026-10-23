@@ -581,7 +581,7 @@ export class FakeEngine implements Engine {
     return r;
   }
   async team() { return this.teamData; }
-  async teamMove(_a: string, memberId: string, count: number, back?: { token?: string }) {
+  async teamMove(_a: string, memberId: string, count: number, back?: { token?: string; at?: number }) {
     if (this.teamData.role !== "owner") return { ok: false as const, reason: "NOT_OWNER" };
     const owner = this.teamData.members.find((m: any) => m.is_owner);
     const member = this.teamData.members.find((m: any) => m.id === memberId);
@@ -590,7 +590,7 @@ export class FakeEngine implements Engine {
     if (from.checks_left < count) return { ok: false as const, reason: "NOT_ENOUGH" };
     from.checks_left -= count; to.checks_left += count;
     this.writes.push({ kind: "teamMove", id: memberId, body: { count, back: !!back } });
-    return { ok: true as const, member: member.name, ownerLeft: owner.checks_left, undoToken: back ? undefined : "fake-token" };
+    return { ok: true as const, member: member.name, ownerLeft: owner.checks_left, at: 1, undoToken: back ? undefined : "fake-token" };
   }
   undoneCreates: string[] = [];
   async leadUndoCreate(_a: string, id: string, created?: Record<string, unknown>) {

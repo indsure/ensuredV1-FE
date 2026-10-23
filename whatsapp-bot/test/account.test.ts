@@ -49,8 +49,12 @@ test("My Page: publish needs IndSure to have switched it on; a campaign link", a
   const { bot, transport, engine } = makeBot();
   engine.myPage.enabled = false;
   await bot.handle(text("publish my page"));
-  assert.match(transport.last(), /IndSure switches pages on/);
+  assert.match(transport.last(), /Your page is switched off. Switch it on in the portal first/);
   engine.myPage.enabled = true;
+  await bot.handle(text("publish my page"));
+  assert.match(transport.last(), /Before your page can go live it needs at least one kind of insurance|Make your page live/);
+  engine.myPage.lines_of_business = ["health"];
+  await bot.handle(text("cancel"));
   await bot.handle(text("publish my page"));
   assert.match(transport.last(), /Make your page live/);
   await bot.handle(text("yes"));
@@ -73,9 +77,9 @@ test("profile: partners from the portal's list, unknown names refused, UNDO rest
   await bot.handle(text("I work with Acme"));
   assert.match(transport.last(), /I don't know "Acme"/);
   await bot.handle(text("add Niva to my partners"));
-  assert.match(transport.last(), /partner insurers Care Health Insurance → Niva Bupa Health Insurance, Care Health Insurance/);
+  assert.match(transport.last(), /partner insurers Care Health Insurance → Care Health Insurance, Niva Bupa Health Insurance/);
   await bot.handle(text("yes"));
-  assert.deepEqual(engine.myProfile.partnered_companies, ["Niva Bupa Health Insurance", "Care Health Insurance"]);
+  assert.deepEqual(engine.myProfile.partnered_companies, ["Care Health Insurance", "Niva Bupa Health Insurance"]);
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
   assert.deepEqual(engine.myProfile.partnered_companies, ["Care Health Insurance"]);
@@ -105,4 +109,19 @@ test("team: an owner moves checks with one YES and can undo; never more than the
   assert.match(transport.last(), /Only the team owner can move checks/);
   await bot.handle(text("who opened my book"));
   assert.match(transport.last(), /Deep Shah opened your book 3 times/);
+});
+
+test("critic: 'kaise' questions about a person stay where they were; Hinglish account phrasings work", () => {
+  for (const s of ["Ramesh ka renewal kaise hoga", "Sunita ka claim kaise chal raha hai"]) assert.notEqual(ruleIntent(s), "account", s);
+  for (const s of ["claim kaise add karu", "meri team", "mera profile", "Ravi ko 10 checks do", "show my page", "mera page dikhao"]) assert.equal(ruleIntent(s), "account", s);
+});
+
+test("critic: a page name that reads as official is refused; no team means 'who opened my book' shows report views", async () => {
+  const { bot, transport, engine } = makeBot();
+  await bot.handle(text("change my page name to IRDAI Official Helpline"));
+  assert.match(transport.last(), /doesn't look right \(your own name/);
+  assert.equal(engine.writes.length, 0);
+  engine.viewRows = [];
+  await bot.handle(text("who opened my book"));
+  assert.doesNotMatch(transport.last(), /not in a team/);
 });

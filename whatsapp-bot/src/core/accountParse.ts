@@ -24,7 +24,7 @@ const langOf = (s: string) => PAGE_LANGS.filter((c) => new RegExp(`\\b${PAGE_LAN
 
 export function parsePageAsk(textRaw: string): PageAsk | null {
   const t = clean(textRaw);
-  if (new RegExp(`^(?:show\\s+)?${PAGE}\\s+(?:details|settings|info)$|^(?:what'?s|what is) on my page$`, "i").test(t)) return { kind: "view" };
+  if (new RegExp(`^(?:show\\s+)?${PAGE}\\s+(?:details|settings|info)$|^(?:what'?s|what is) on my page$|^show\\s+my\\s+page$|^mera\\s+page\\s+dikhao$|^मेरा\\s+पेज\\s+दिखाओ$`, "i").test(t)) return { kind: "view" };
   if (new RegExp(`^(?:publish|launch|go live with|make live|turn on)\\s+${PAGE}$|^make\\s+${PAGE}\\s+live$|^${PAGE}\\s+(?:live|on|chalu)\\s+(?:karo|kar do)$`, "i").test(t)) return { kind: "publish", on: true };
   if (new RegExp(`^(?:take|put)\\s+${PAGE}\\s+(?:offline|down)$|^(?:unpublish|hide|turn off)\\s+${PAGE}$|^${PAGE}\\s+(?:band|off)\\s+(?:karo|kar do)$`, "i").test(t)) return { kind: "publish", on: false };
   let m = t.match(new RegExp(`^(?:add|remove|drop)\\s+(.+?)\\s+(?:to|from|on)\\s+${PAGE}(?:\\s+languages?)?$`, "i"));
@@ -79,7 +79,7 @@ export function partnersIn(text: string): { names: string[]; unknown: string[] }
 
 export function parseProfileAsk(textRaw: string): ProfileAsk | null {
   const t = clean(textRaw);
-  if (/^(?:my\s+)?(?:profile|account details|my details)$/i.test(t)) return { kind: "view" };
+  if (/^(?:my\s+)?(?:profile|account details|my details)$|^(?:mera|meri)\s+(?:profile|details)(?:\s+dikhao)?$|^मेरी\s+प्रोफ़ाइल/i.test(t)) return { kind: "view" };
   let m = t.match(/^(?:change|update|set)\s+my\s+(name|city)\s+(?:to|as)\s+(.+)$/i) || t.match(/^my\s+(name|city)\s+is\s+(.+)$/i);
   if (m) return { kind: "set", field: m[1].toLowerCase() as "name" | "city", value: clean(m[2]) };
   m = t.match(/^i\s+(?:work|am empanelled|am empaneled|sell)\s+with\s+(.+)$/i) || t.match(/^my\s+partners?(?:\s+insurers?)?\s+(?:are|is)\s+(.+)$/i);
@@ -93,8 +93,10 @@ export function parseProfileAsk(textRaw: string): ProfileAsk | null {
 export type TeamAsk = { kind: "view" } | { kind: "move"; who: string; count: number } | { kind: "reads" };
 export function parseTeamAsk(textRaw: string): TeamAsk | null {
   const t = clean(textRaw);
-  if (/^(?:my\s+)?team(?:\s+members)?$|^(?:show|list)\s+(?:my\s+)?team$/i.test(t)) return { kind: "view" };
+  if (/^(?:my\s+)?team(?:\s+members)?$|^(?:show|list)\s+(?:my\s+)?team$|^meri\s+team(?:\s+dikhao)?$|^मेरी\s+टीम/i.test(t)) return { kind: "view" };
   if (/^who (?:opened|read|saw|viewed) my book$|^(?:mera|meri) book kisne dekhi$/i.test(t)) return { kind: "reads" };
+  const hi = t.match(/^(.+?)\s+ko\s+(\d{1,4})\s+(?:policy\s+)?checks?\s+(?:do|de do|dedo)$/i);
+  if (hi && !/^(?:mujhe|me)$/i.test(hi[1].trim())) return { kind: "move", who: clean(hi[1]), count: Number(hi[2]) };
   const m = t.match(/^(?:give|move|send|transfer)\s+(.+?)\s+(\d{1,4})\s+(?:policy\s+)?checks?$/i)
     || t.match(/^(?:give|move|send|transfer)\s+(\d{1,4})\s+(?:policy\s+)?checks?\s+to\s+(.+)$/i);
   if (m) {
@@ -106,8 +108,8 @@ export function parseTeamAsk(textRaw: string): TeamAsk | null {
 
 /** "how do I add a claim?" -> the help-centre page that answers it (frontend/client/src/docs/content.ts). */
 const HELP: [RegExp, string, string][] = [
-  [/\bclaims?\b/i, "claims", "Claims"],
-  [/\bleads?\b/i, "leads", "Leads"],
+  [/\bclaims?\b|क्लेम/i, "claims", "Claims"],
+  [/\bleads?\b|लीड/i, "leads", "Leads"],
   [/\brenewals?\b/i, "renewals", "Renewals"],
   [/\bcustomers?\b/i, "customers", "Customers"],
   [/\b(?:check|upload|audit)\b.*\bpolic|\bpolicy check/i, "check-a-policy", "Check a policy"],
@@ -125,7 +127,8 @@ const HELP: [RegExp, string, string][] = [
 ];
 export function parseHowto(textRaw: string): { slug: string; title: string } | null {
   const t = clean(textRaw);
-  if (!/^(?:how (?:do|can|to|does) (?:i |we )?|how to |kaise |where (?:do|can) i |help with )/i.test(t) && !/\bkaise\b/i.test(t)) return null;
+  const feature = /^(?:claims?|leads?|customers?|polic(?:y|ies)|reports?|page|website|team|renewals?|calculator|compare|क्लेम|लीड)\s+(?:kaise|कैसे)\b/i;
+  if (!/^(?:how (?:do|can|to|does) (?:i |we )?|how to |where (?:do|can) i |help with )/i.test(t) && !feature.test(t)) return null;
   // Checking a policy and finding someone have their own in-chat answers (menu choices 1 and 5).
   if (/^(?:how (?:do|can) i check (?:a )?polic(?:y|ies)|how to check (?:a )?polic(?:y|ies)|policy kaise check)/i.test(t)) return null;
   const hit = HELP.find(([re]) => re.test(t));

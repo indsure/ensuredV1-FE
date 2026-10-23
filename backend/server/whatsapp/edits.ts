@@ -44,7 +44,7 @@ function tokenOk(given: unknown, want: string): boolean {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet, PAGE_COLS, cleanPageSet, PROFILE_COLS, cleanProfileSet } from "./editRules";
+import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet, PAGE_COLS, cleanPageSet, PROFILE_COLS, cleanProfileSet, pageNotReady } from "./editRules";
 import { saveExtractedData, EVIDENCE_KEY } from "../services/policyValueStore";
 import { readEvidence, activeRecords } from "../../../shared/policyEvidence";
 import { addMonthsIso, parseIsoDate, parseWholeNumber, parseRupees } from "../../../shared/policyNumbers";
@@ -977,7 +977,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
    *  Creating a page, the photo, invites, removing members and the phone stay in the portal. ── */
 
   const PAGE_OUT = "id, slug, display_name, city, whatsapp_number, primary_locale, lines_of_business, languages, enabled, published";
-  const PROFILE_OUT = "COALESCE(full_name, name) AS name, COALESCE(city, location) AS city, phone, partnered_companies";
+  const PROFILE_OUT = "COALESCE(NULLIF(full_name, ''), name) AS name, COALESCE(NULLIF(location, ''), city) AS city, phone, partnered_companies";
   /** A typed equality: arrays as text[], booleans as boolean, the rest as text. */
   const castOf = (v: unknown) => (Array.isArray(v) ? "::text[]" : typeof v === "boolean" ? "::boolean" : "::text");
 
@@ -1008,12 +1008,16 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const sets = Object.entries(set).map(([k, v]) => { params.push(v); return `${k} = $${params.length}${castOf(v)}`; });
       const checks = Object.entries(known).map(([k, v]) => { params.push(v); return `${k} IS NOT DISTINCT FROM $${params.length}${castOf(v)}`; });
       const r = await pool.query(
-        `UPDATE agent_pages SET ${sets.join(", ")} WHERE agent_id = $1 ${set.published === true ? "AND enabled" : ""} ${checks.length ? "AND " + checks.join(" AND ") : ""}
+        `UPDATE agent_pages SET ${sets.join(", ")} WHERE agent_id = $1 AND enabled
+           ${set.published === true ? "AND cardinality(lines_of_business) > 0 AND btrim(COALESCE(whatsapp_number, '')) <> '' AND length(btrim(display_name)) > 1" : ""}
+           ${checks.length ? "AND " + checks.join(" AND ") : ""}
          RETURNING ${PAGE_OUT}`, params);
       if (!r.rowCount) {
-        const p = await pool.query("SELECT enabled FROM agent_pages WHERE agent_id = $1", [agentId]);
+        const p = await pool.query("SELECT enabled, display_name, lines_of_business, whatsapp_number FROM agent_pages WHERE agent_id = $1", [agentId]);
         if (!p.rowCount) return res.status(404).json({ error: "NO_PAGE" });
-        if (set.published === true && !p.rows[0].enabled) return res.status(400).json({ error: "NOT_ENABLED" });
+        if (!p.rows[0].enabled) return res.status(400).json({ error: "NOT_ENABLED" });
+        const missing = set.published === true ? pageNotReady(p.rows[0]) : [];
+        if (missing.length) return res.status(400).json({ error: "NOT_READY", missing });
         return changed(res);
       }
       void audit(agentId, null, "wa_page_edit", "/api/internal/wa/page/edit");
@@ -1050,7 +1054,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const params: unknown[] = [agentId];
       const sets: string[] = [];
       const checks: string[] = [];
-      const col = (k: string) => (k === "name" ? "COALESCE(full_name, name)" : k === "city" ? "COALESCE(city, location)" : "COALESCE(partnered_companies, '{}')");
+      const col = (k: string) => (k === "name" ? "COALESCE(NULLIF(full_name, ''), name)" : k === "city" ? "COALESCE(NULLIF(location, ''), city)" : "COALESCE(partnered_companies, '{}')");
       for (const [k, v] of Object.entries(set)) {
         params.push(v);
         const n = `$${params.length}${castOf(v)}`;
@@ -1080,10 +1084,10 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       const own = await pool.query("SELECT id, name FROM teams WHERE owner_id = $1", [agentId]);
       if (!own.rowCount) {
         const m = await pool.query(
-          `SELECT t.name, COALESCE(o.full_name, o.name, o.email) AS owner_name FROM agents a JOIN teams t ON t.id = a.team_id JOIN agents o ON o.id = t.owner_id WHERE a.id = $1`,
+          `SELECT t.name, t.owner_id, COALESCE(o.full_name, o.name, o.email) AS owner_name FROM agents a JOIN teams t ON t.id = a.team_id JOIN agents o ON o.id = t.owner_id WHERE a.id = $1`,
           [agentId]);
         if (!m.rowCount) return res.json({ role: "none" });
-        const reads = await pool.query("SELECT count(*)::int AS n, max(created_at)::date::text AS last FROM team_access_log WHERE member_id = $1", [agentId]);
+        const reads = await pool.query("SELECT count(*)::int AS n, max(created_at)::date::text AS last FROM team_access_log WHERE member_id = $1 AND owner_id = $2", [agentId, m.rows[0].owner_id]);
         return res.json({ role: "member", team: m.rows[0].name, owner: m.rows[0].owner_name, reads: reads.rows[0] });
       }
       const members = await pool.query(
@@ -1109,7 +1113,9 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
     const restore = req.body?.restore === true;
     const memberId = String((restore ? req.body?.fromId : req.body?.toId) || "");
     if (!UUID.test(memberId) || memberId === agentId) return bad(res, { member: "a member of your team" });
-    if (restore && !tokenOk(req.body?.token, undoToken("team_checks", agentId, { to: memberId }, { count }))) return bad(res, { token: "undo is only for a move made here" });
+    const at = Number(req.body?.at);
+    if (restore && (!Number.isFinite(at) || Date.now() - at > 15 * 60_000 || !tokenOk(req.body?.token, undoToken("team_checks", agentId, { to: memberId }, { count, at }))))
+      return bad(res, { token: "undo is only for a move made here in the last 15 minutes" });
     const db = await pool.connect();
     try {
       const team = await db.query("SELECT id FROM teams WHERE owner_id = $1", [agentId]);
@@ -1127,7 +1133,9 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
          ON CONFLICT (agent_id) DO UPDATE SET balance = agent_credits.balance + $2`, [toId, count]);
       await db.query("COMMIT");
       void audit(agentId, null, restore ? "wa_team_checks_back" : "wa_team_checks_move", "/api/internal/wa/team/checks/move");
-      res.json({ ok: true, member: m.rows[0].name, ownerLeft: restore ? available + 0 : available - count, undoToken: restore ? undefined : undoToken("team_checks", agentId, { to: memberId }, { count }) });
+      const issued = Date.now();
+      const left = restore ? (await pool.query("SELECT balance FROM agent_credits WHERE agent_id = $1", [agentId])).rows[0]?.balance ?? 0 : available - count;
+      res.json({ ok: true, member: m.rows[0].name, ownerLeft: left, at: issued, undoToken: restore ? undefined : undoToken("team_checks", agentId, { to: memberId }, { count, at: issued }) });
     } catch (err) {
       await db.query("ROLLBACK").catch(() => {});
       fail(res, "team checks move", err);

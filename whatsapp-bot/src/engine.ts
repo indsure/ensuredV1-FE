@@ -180,7 +180,7 @@ export interface Engine {
   profileGet(agentId: string): Promise<MyProfile | null>;
   profileEdit(agentId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore?: boolean, token?: string): Promise<WriteResult<{ after: Record<string, unknown>; undoToken?: string }>>;
   team(agentId: string): Promise<TeamView>;
-  teamMove(agentId: string, memberId: string, count: number, back?: { token?: string }): Promise<WriteResult<{ member: string; ownerLeft: number; undoToken?: string }>>;
+  teamMove(agentId: string, memberId: string, count: number, back?: { token?: string; at?: number }): Promise<WriteResult<{ member: string; ownerLeft: number; at?: number; undoToken?: string }>>;
   catalog(agentId: string): Promise<CatalogPlan[]>;
   compare(agentId: string, keys: string[]): Promise<CompareResult>;
   policies(agentId: string, type: string | null): Promise<{ total: number; rows: PolicyRow[] }>;
@@ -403,9 +403,9 @@ export class HttpEngine implements Engine {
     return this.write<{ after: Record<string, unknown>; undoToken?: string }>("/api/internal/wa/profile/edit", agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
   }
   async team(agentId: string) { return (await this.call("/api/internal/wa/team", { agentId })) as TeamView; }
-  teamMove(agentId: string, memberId: string, count: number, back?: { token?: string }) {
-    return this.write<{ member: string; ownerLeft: number; undoToken?: string }>("/api/internal/wa/team/checks/move", agentId,
-      back ? { restore: true, fromId: memberId, count, token: back.token } : { toId: memberId, count });
+  teamMove(agentId: string, memberId: string, count: number, back?: { token?: string; at?: number }) {
+    return this.write<{ member: string; ownerLeft: number; at?: number; undoToken?: string }>("/api/internal/wa/team/checks/move", agentId,
+      back ? { restore: true, fromId: memberId, count, at: back.at, token: back.token } : { toId: memberId, count });
   }
   policyPdf(agentId: string, clientId: string) { return this.bytes(`/api/internal/wa/clients/${clientId}/pdf`, agentId); }
   /** A file's bytes from an internal route, with its type and name. */

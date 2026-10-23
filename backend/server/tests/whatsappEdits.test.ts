@@ -674,7 +674,7 @@ test("profile edit: name and city written as the portal does; compare-before", a
   const r = await h.call("POST /api/internal/wa/profile/edit", {}, { set: { name: "Deep Shah", city: "Pune" }, expect: { name: "Deep", city: "Mumbai" } });
   assert.equal(r.status, 200);
   const upd = h.calls.find((c) => c.sql.startsWith("UPDATE agents"))!;
-  for (const re of [/name = \$2::text, full_name = \$2::text/, /city = \$3::text, location = \$3::text/, /COALESCE\(full_name, name\) IS NOT DISTINCT FROM/]) assert.match(upd.sql, re);
+  for (const re of [/name = \$2::text, full_name = \$2::text/, /city = \$3::text, location = \$3::text/, /COALESCE\(NULLIF\(full_name, ''\), name\) IS NOT DISTINCT FROM/]) assert.match(upd.sql, re);
 });
 
 test("team: only the owner moves checks, never more than they have; undo moves them back with the token", async () => {
@@ -686,6 +686,17 @@ test("team: only the owner moves checks, never more than they have; undo moves t
   const ok = harness((sql) => (sql.startsWith("SELECT id FROM teams") ? { rows: [{ id: "t" }], rowCount: 1 } : sql.includes("FROM agents WHERE id") ? { rows: [{ name: "Ravi" }], rowCount: 1 } : sql.includes("FOR UPDATE") ? { rows: [{ balance: 20 }] } : { rows: [], rowCount: 1 }));
   const r = await ok.call("POST /api/internal/wa/team/checks/move", {}, { toId: LEAD, count: 5 });
   assert.deepEqual([r.json.member, r.json.ownerLeft], ["Ravi", 15]);
-  assert.equal((await ok.call("POST /api/internal/wa/team/checks/move", {}, { restore: true, fromId: LEAD, count: 5, token: "f".repeat(64) })).status, 400);
-  assert.equal((await ok.call("POST /api/internal/wa/team/checks/move", {}, { restore: true, fromId: LEAD, count: 5, token: r.json.undoToken })).status, 200);
+  assert.equal((await ok.call("POST /api/internal/wa/team/checks/move", {}, { restore: true, fromId: LEAD, count: 5, at: r.json.at, token: "f".repeat(64) })).status, 400);
+  assert.equal((await ok.call("POST /api/internal/wa/team/checks/move", {}, { restore: true, fromId: LEAD, count: 5, at: r.json.at, token: r.json.undoToken })).status, 200);
+});
+
+test("page: the portal's name guard; publishing only when ready; nothing changes on a switched-off page", async () => {
+  assert.match(cleanPageSet({ display_name: "IRDAI Official Helpline" }).errors.display_name, /own name/);
+  assert.match(cleanPageSet({ display_name: "Jo" }).errors.display_name, /full name/);
+  const notReady = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 0 } : { rows: [{ enabled: true, display_name: "Deep Shah", lines_of_business: [], whatsapp_number: null }], rowCount: 1 }));
+  const r = await notReady.call("POST /api/internal/wa/page/edit", {}, { set: { published: true }, expect: { published: false } });
+  assert.deepEqual([r.json.error, r.json.missing], ["NOT_READY", ["at least one kind of insurance", "a WhatsApp number"]]);
+  assert.match(notReady.calls.find((c) => c.sql.startsWith("UPDATE"))!.sql, /AND enabled\s+AND cardinality\(lines_of_business\) > 0/);
+  const off = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 0 } : { rows: [{ enabled: false }], rowCount: 1 }));
+  assert.equal((await off.call("POST /api/internal/wa/page/edit", {}, { set: { city: "Pune" }, expect: { city: null } })).json.error, "NOT_ENABLED");
 });

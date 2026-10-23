@@ -328,12 +328,36 @@ export const PARTNER_INSURERS = [
 
 const ordered = (vals: string[], order: string[]) => order.filter((x) => vals.includes(x));
 
+/** The portal's name guard for a public page (frontend lib/advisorPage.ts RESERVED_NAME_TERMS and
+ *  displayNameProblem; a bot test compares the lists): a page on IndSure's domain must never read
+ *  as an official IndSure, LIC or IRDAI page. */
+export const RESERVED_NAME_TERMS = [
+  "indsure", "ind sure", "irdai", "irda", "lic ", " lic", "official",
+  "insurance company", "customer care", "helpline", "govt", "government",
+];
+export function pageNameProblem(name: string): string | null {
+  const n = ` ${name.trim().toLowerCase()} `;
+  if (name.trim().length < 3) return "your full name, please";
+  if (name.trim().length > 60) return "too long";
+  if (RESERVED_NAME_TERMS.some((t) => n.includes(t))) return "your own name: company, regulator and helpline names are not allowed";
+  return null;
+}
+
+/** What a page needs before it can go live (the portal's Publish button: MyPage.tsx canPublish). */
+export function pageNotReady(p: { display_name?: string | null; lines_of_business?: string[] | null; whatsapp_number?: string | null }): string[] {
+  const missing: string[] = [];
+  if (!p.display_name || p.display_name.trim().length <= 1) missing.push("your name");
+  if (!p.lines_of_business?.length) missing.push("at least one kind of insurance");
+  if (!String(p.whatsapp_number || "").replace(/\D/g, "")) missing.push("a WhatsApp number");
+  return missing;
+}
+
 /** A My Page change, checked: arrays kept in the portal's order, nothing outside the lists. */
 export function cleanPageSet(raw: Record<string, unknown>): Clean {
   const set: Record<string, unknown> = {};
   const errors: FieldErrors = {};
   for (const [k, v] of Object.entries(raw || {})) {
-    if (k === "display_name") { const t = String(v ?? "").trim(); if (t.length < 2 || t.length > 80) errors[k] = "a name of 2 to 80 letters"; else set[k] = t; }
+    if (k === "display_name") { const t = String(v ?? "").trim(); const why = pageNameProblem(t); if (why) errors[k] = why; else set[k] = t; }
     else if (k === "city") { const t = String(v ?? "").trim(); if (t.length > 60) errors[k] = "too long"; else set[k] = t || null; }
     else if (k === "whatsapp_number") { const r = cleanLeadSet({ phone: v }); if (r.errors.phone || !r.set.phone) errors[k] = r.errors.phone || "a 10 digit mobile number"; else set[k] = r.set.phone; }
     else if (k === "primary_locale") { if (v !== "en" && v !== "hi") errors[k] = "English or Hindi"; else set[k] = v; }
@@ -358,8 +382,9 @@ export function cleanProfileSet(raw: Record<string, unknown>): Clean {
     if (k === "name") { const t = String(v ?? "").trim(); if (t.length < 2 || t.length > 80) errors[k] = "a name of 2 to 80 letters"; else set[k] = t; }
     else if (k === "city") { const t = String(v ?? "").trim(); if (t.length < 2 || t.length > 60) errors[k] = "a city name"; else set[k] = t; }
     else if (k === "partnered_companies") {
+      // Kept in the advisor's own order, as the portal saves it.
       if (!Array.isArray(v) || v.some((x) => !PARTNER_INSURERS.includes(String(x)))) errors[k] = "not in the list";
-      else set[k] = ordered(v.map(String), PARTNER_INSURERS);
+      else set[k] = [...new Set(v.map(String))];
     }
     else errors[k] = "cannot be changed from WhatsApp";
   }

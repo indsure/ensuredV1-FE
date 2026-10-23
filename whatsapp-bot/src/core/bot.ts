@@ -25,7 +25,7 @@ import { parseLifeAsk, type LifeAsk } from "./lifeParse.js";
 import { parseHowto, parsePageAsk, parseProfileAsk, parseTeamAsk, type PageAsk, type ProfileAsk, type TeamAsk } from "./accountParse.js";
 import { labelFor, parseDocCaption, parseDocSend, parseDocSession, parsePolicyPdf, showLabel } from "./docParse.js";
 import { CUSTOMER_FIELDS, FIELD_LABEL, LEAD_FIELDS, amountWords, anyDate, clientKeyOf, fieldOf, parseAddCustomer, parseConvert, parseEditAsk, parseFile, parsePolicyFix, parseUnshare, policyValueFor, valueFor, type Field, type FileAsk } from "./editParse.js";
-import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, PAGE_LANG_NAMES, cleanClaimSet, cleanPageSet, cleanProfileSet, strictAmount, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
+import { CLAIM_FIELDS, CLAIM_LABELS, CLAIM_TERMINAL, PAGE_LANG_NAMES, PARTNER_INSURERS, cleanClaimSet, cleanPageSet, cleanProfileSet, pageNotReady, strictAmount, cleanClientSet, cleanCustomerSet, cleanFixValue, cleanLeadSet, norm as normValue, policyFieldOf, type FixKind } from "../shared/editRules.js";
 import { bookReply, claimDetailLines, insightsReply, pageStatsReply, portfolioReply, queueReply, statusReply, valuesReply } from "./bookReplies.js";
 import { SWITCH_TOPIC, isPronounName, oneLetterMissing, nameCandidates, rephrase, suggest, suggestReply, withPerson, type Suggestion } from "./converse.js";
 import { basics, ruleAnswer } from "./answers.js";
@@ -174,7 +174,7 @@ type LastChange =
   | { kind: "claimDoc"; claimId: string; docId: string; name: string; label: string; token?: string; at: number }
   /* Stage 4 */
   | { kind: "acctEdit"; what: "page" | "profile"; name: string; key: string; from: unknown; to: unknown; token?: string; at: number }
-  | { kind: "teamMove"; memberId: string; name: string; count: number; token?: string; at: number };
+  | { kind: "teamMove"; memberId: string; name: string; count: number; token?: string; issued?: number; at: number };
 
 const UNDO_WINDOW_MS = 15 * 60_000;
 /** Short, unambiguous read-only commands go straight to the rules (no model call). */
@@ -2241,7 +2241,7 @@ export class Bot {
       case "acctEdit": return (x.what === "page"
         ? await e.pageEdit(agentId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)
         : await e.profileEdit(agentId, { [x.key]: x.from }, { [x.key]: x.to }, true, x.token)).ok;
-      case "teamMove": return (await e.teamMove(agentId, x.memberId, x.count, { token: x.token })).ok;
+      case "teamMove": return (await e.teamMove(agentId, x.memberId, x.count, { token: x.token, at: x.issued })).ok;
       case "claimDoc": return e.claimDocUndo(agentId, x.claimId, x.docId, x.token);
       case "lifeRecord": return (await e.lifeVoid(agentId, x.clientId, x.list, x.recordId, x.rev, x.token)).ok;
       case "claimAnswered": return (await e.claimReopenQuery(agentId, x.claimId, x.seq, x.resolvedOn, x.moved, x.status, x.token)).ok;
@@ -3333,7 +3333,7 @@ ${link}`
     if (!p) return this.say(to, agentId, `You don't have a page yet. Create it in the portal: ${o}/agent/my-page`, "page");
     const link = `${o}/a/${p.slug}`;
     if (ask.kind === "view") {
-      const status = !p.enabled ? "Waiting for IndSure to switch it on" : p.published ? "Live" : "Offline";
+      const status = !p.enabled ? "Switched off (switch it on in the portal)" : p.published ? "Live" : "Offline";
       return this.say(to, agentId, [
         `Your page: ${link}`,
         `Status: ${status}`,
@@ -3347,8 +3347,10 @@ ${link}`
       ].join("\n"), "page");
     }
     if (ask.kind === "share") return this.say(to, agentId, `Share this link: ${link}?utm_source=${ask.campaign}\nPage stats will show the visits from "${ask.campaign}".`, "page");
+    if (!p.enabled) return this.say(to, agentId, `Your page is switched off. Switch it on in the portal first: ${o}/agent/my-page`, "page");
     if (ask.kind === "publish") {
-      if (ask.on && !p.enabled) return this.say(to, agentId, "IndSure switches pages on. Please ask the IndSure team to switch yours on, then you can make it live.", "page");
+      const missing = ask.on ? pageNotReady(p) : [];
+      if (missing.length) return this.say(to, agentId, `Before your page can go live it needs ${missing.join(" and ")}. For example: my page whatsapp number is 98123 45678`, "page");
       if (p.published === ask.on) return this.say(to, agentId, ask.on ? `Your page is already live: ${link}` : "Your page is already offline.", "page");
       return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "page", key: "published", from: p.published, to: ask.on }]);
     }
@@ -3394,16 +3396,19 @@ ${link}`
       if (ask.unknown.length) return this.say(to, agentId, `I don't know "${ask.unknown.join('", "')}". Partner insurers come from the portal's list, for example: Star, Care, Niva, HDFC Ergo.`, "profile");
       key = "partnered_companies";
       const now = p.partnered_companies;
+      if (now.some((x) => !PARTNER_INSURERS.includes(x))) return this.say(to, agentId, `Your partner list has names the portal no longer lists. Please update it in the portal: ${this.d.links.origin}/agent/profile`, "profile");
       const list = ask.mode === "set" ? ask.names : ask.mode === "add" ? now.concat(ask.names.filter((x) => !now.includes(x))) : now.filter((x) => !ask.names.includes(x));
       next = cleanProfileSet({ partnered_companies: list }).set.partnered_companies;
     }
     const from = (p as any)[key] ?? null;
-    if (JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your ${ACCT_LABEL[key]} is already ${showAcct(key, next)}. Nothing to change.`, "profile");
+    const sameSet = Array.isArray(from) && Array.isArray(next) && from.length === next.length && next.every((x) => from.includes(x));
+    if (sameSet || JSON.stringify(from) === JSON.stringify(next)) return this.say(to, agentId, `Your ${ACCT_LABEL[key]} is already ${showAcct(key, next)}. Nothing to change.`, "profile");
     return this.confirm(agentId, conv, to, [{ kind: "acctEdit", what: "profile", key, from, to: next }]);
   }
 
   private async teamStart(agentId: string, conv: Conv, to: string, ask: TeamAsk) {
     const t = await this.d.engine.team(agentId);
+    if (t.role === "none" && ask.kind === "reads") return this.say(to, agentId, viewsReply(await this.d.engine.views(agentId)), "views");
     if (t.role === "none") return this.say(to, agentId, "You are not in a team. Agencies can set one up from the portal.", "team");
     if (t.role === "member") {
       const reads = t.reads.n ? `${t.owner} opened your book ${t.reads.n} ${t.reads.n === 1 ? "time" : "times"}${t.reads.last ? `, last on ${prettyDate(t.reads.last)}` : ""}.` : `${t.owner} has not opened your book yet.`;
@@ -3437,7 +3442,8 @@ ${link}`
         : await e.profileEdit(agentId, { [op.key]: op.to }, { [op.key]: op.from });
       const whose = op.what === "page" ? "your page" : "your profile";
       if (!r.ok) {
-        return { text: r.reason === "NOT_ENABLED" ? "Not saved: IndSure has not switched your page on yet."
+        return { text: r.reason === "NOT_ENABLED" ? `Not saved: your page is switched off. Switch it on in the portal: ${this.d.links.origin}/agent/my-page`
+          : r.reason === "NOT_READY" ? "Not saved: your page needs a name, at least one kind of insurance and a WhatsApp number before it can go live."
           : r.reason === "NO_PAGE" ? "Not saved: you don't have a page yet."
           : r.reason === "CHANGED" ? `Not saved: ${whose} was changed in the portal a moment ago. Ask again to see the latest.`
           : refused(whose, r) };
@@ -3453,7 +3459,7 @@ ${link}`
       if (!r.ok) return { text: r.reason === "NOT_ENOUGH" ? "Not saved: you don't have that many checks left." : r.reason === "NOT_OWNER" ? "Not saved: only the team owner can move checks." : refused(op.name, r) };
       return {
         text: `✅ Moved ${op.count} ${op.count === 1 ? "check" : "checks"} to ${op.name}. You have ${r.ownerLeft} left. This lasts until the monthly refill.`,
-        change: { kind: "teamMove", memberId: op.memberId, name: op.name, count: op.count, token: r.undoToken, at },
+        change: { kind: "teamMove", memberId: op.memberId, name: op.name, count: op.count, token: r.undoToken, issued: r.at, at },
       };
     }
     return { text: "" };
