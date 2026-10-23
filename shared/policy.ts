@@ -270,6 +270,32 @@ export interface DeductibleAnalysis {
   source?: ClauseSource;
 }
 
+/**
+ * Does this room-rent limit actually cut a claim?
+ *
+ * Not the same as "is limit_type anything but none". The model names a room
+ * category ("single private AC room") as a limit even where the wording pays
+ * that room in full with no proportional deduction, and the report then printed
+ * "Room Rent Capping Penalty" over the model's own words "No numeric cap ...
+ * without proportional deductions", next to a "No room rent cap" benefit row.
+ *
+ * So: a stated "no penalty" always wins. A stated proportional deduction always
+ * counts. When the penalty is unclear, only a numeric cap (an amount per day or
+ * a share of the sum insured) counts, because a numeric cap is what the
+ * deduction is measured against. LEGACY reports also carry the prompt's own
+ * spellings ("absolute", "percentage", "category"), so both sets are read.
+ */
+export function roomRentCapCutsClaims(rr: Partial<RoomRentAnalysis> | null | undefined): boolean {
+  if (!rr) return false;
+  const type = String(rr.limit_type ?? "").toLowerCase();
+  if (type === "none" || type === "") return false;
+  const penalty = String(rr.penalty_type ?? "").toLowerCase();
+  if (penalty === "none") return false;
+  if (penalty === "proportional") return true;
+  const perDay = typeof rr.limit_amount_per_day === "number" && rr.limit_amount_per_day > 0;
+  return perDay || ["specific_amount", "percentage_of_si", "absolute", "percentage"].includes(type);
+}
+
 export interface ClaimRiskAnalysis {
   room_rent: RoomRentAnalysis;
   co_payment: CoPaymentAnalysis;
