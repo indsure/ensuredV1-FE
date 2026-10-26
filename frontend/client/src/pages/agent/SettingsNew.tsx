@@ -110,17 +110,21 @@ export default function SettingsNew() {
     if (!agentProfile) return;
     setSaveStatus("saving")
     try {
-      const { error: uErr } = await supabase
+      // .select() so a write that row security filters out comes back as zero
+      // rows instead of a silent "success" over an unchanged row.
+      const { data: saved, error: uErr } = await supabase
         .from("agents")
-        .update({ 
-          name: profileName, 
+        .update({
+          name: profileName,
           full_name: profileName,
           location: profileLocation,
           city: profileLocation
         })
         .eq("id", agentProfile.id)
+        .select("id")
 
       if (uErr) throw new Error(uErr.message)
+      if (!saved?.length) throw new Error(t("settings.profile_failed"))
       toast({ variant: "success", title: t("settings.profile_updated") })
       await refresh()
     } catch (e: unknown) {
