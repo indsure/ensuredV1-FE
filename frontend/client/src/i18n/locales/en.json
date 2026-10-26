@@ -4774,6 +4774,7 @@
     "free_forever": "Free, no end date",
     "checks_left": "Policy checks left",
     "grace": "Your plan ended on {{date}}. It keeps working for 3 days after that. Pay below to keep it.",
+    "pay_off": "Online payment is being switched on. Until then, tap a button below to buy on WhatsApp and we will set up your plan.",
     "load_failed": "We could not load your payment details just now. You can still pay below.",
     "agency_note": "Your Agency plan is set up with our team. To renew it or add seats, message us on WhatsApp.",
     "talk_wa": "Talk to us on WhatsApp",

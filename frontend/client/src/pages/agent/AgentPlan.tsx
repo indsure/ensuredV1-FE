@@ -6,6 +6,7 @@ import { useAgent } from "@/context/AgentContext"
 import { apiFetch } from "@/lib/api"
 import { isPlaygroundMode } from "@/lib/playground/mode"
 import { PayButton } from "@/components/PayButton"
+import { getPayConfig } from "@/lib/payments"
 import { teamWaLink } from "@/components/app/portfolio-utils"
 import { useLanguage } from "@/i18n/LanguageContext"
 
@@ -28,14 +29,16 @@ const btnOutline = "inline-flex h-12 w-full items-center justify-center gap-2 ro
 
 export default function AgentPlan() {
   const { t, locale } = useLanguage()
-  const { creditsRemaining, refresh } = useAgent()
+  const { agent, creditsRemaining, refresh } = useAgent()
   const [billing, setBilling] = useState<Billing | null>(null)
   const [failed, setFailed] = useState(false)
+  const [payOn, setPayOn] = useState<boolean | null>(null)
   const demo = isPlaygroundMode()
 
   useEffect(() => {
     if (demo) return
     let live = true
+    getPayConfig().then((c) => live && setPayOn(c.enabled))
     apiFetch("/api/pay/billing")
       .then(async (r) => {
         if (!live) return
@@ -48,9 +51,15 @@ export default function AgentPlan() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demo])
 
-  const plan = (billing?.plan || "free").toLowerCase()
+  // The server's billing view when it loads; otherwise the advisor's own profile row (what the
+  // rest of the portal shows). Never a guess: a failed load must not show a paid advisor as Free.
+  const plan = (billing?.plan || agent?.plan || "free").toLowerCase()
   const paid = plan !== "free"
-  const until = fmtDate(billing?.activeUntil ?? null, locale)
+  const activeUntil = billing ? billing.activeUntil : agent?.planExpiresAt ?? null
+  const until = fmtDate(activeUntil, locale)
+  const GRACE_MS = 3 * 86400_000
+  const ended = !!activeUntil && new Date(activeUntil).getTime() < Date.now()
+  const inGrace = paid && ended && new Date(activeUntil!).getTime() + GRACE_MS > Date.now()
   const waBuy = teamWaLink("Hi, I would like to buy or renew my IndSure Agent plan.")
 
   return (
@@ -85,14 +94,17 @@ export default function AgentPlan() {
         </CardContent>
       </Card>}
 
-      {billing?.inGrace && (
+      {inGrace && (
         <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-[15px] text-red-800">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <p>{t("agentplan.grace", { date: until })}</p>
         </div>
       )}
 
-      {failed && !demo && (
+      {!demo && payOn === false && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-[15px] text-slate-700">{t("agentplan.pay_off")}</div>
+      )}
+      {!demo && payOn === true && failed && (
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-[15px] text-slate-700">{t("agentplan.load_failed")}</div>
       )}
 
