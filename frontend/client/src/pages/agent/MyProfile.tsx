@@ -208,11 +208,15 @@ export default function MyProfile() {
     if (!profile) return
     setSaving(true)
     try {
-      const { error: uErr } = await supabase
+      // .select() so a write that row security filters out comes back as zero
+      // rows instead of a silent "success" over an unchanged row.
+      const { data: saved, error: uErr } = await supabase
         .from("agents")
         .update({ name, full_name: name, phone, location, city: location })
         .eq("id", profile.id)
+        .select("id")
       if (uErr) throw new Error(uErr.message)
+      if (!saved?.length) throw new Error(t("my_profile.toast_could_not_save"))
       // Save extended fields separately — silently ignore if columns don't exist yet
       await supabase.from("agents").update({ phone_number: phone, firm_name: firm }).eq("id", profile.id)
       await refresh()
@@ -253,11 +257,13 @@ export default function MyProfile() {
     if (!profile) return
     setSavingPartners(true)
     try {
-      const { error: uErr } = await supabase
+      const { data: saved, error: uErr } = await supabase
         .from("agents")
         .update({ partnered_companies: Array.from(partnered) })
         .eq("id", profile.id)
+        .select("id")
       if (uErr) throw new Error(uErr.message)
+      if (!saved?.length) throw new Error(t("my_profile.toast_partners_failed"))
       toast({ variant: "success", title: t("my_profile.toast_partnerships_saved") })
     } catch (e: unknown) {
       toast({ variant: "destructive", title: t("my_profile.toast_save_failed"), description: e instanceof Error ? e.message : t("my_profile.toast_partners_failed") })
