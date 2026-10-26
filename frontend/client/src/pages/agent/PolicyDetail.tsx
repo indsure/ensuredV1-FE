@@ -364,7 +364,7 @@ export default function PolicyDetail() {
       // true for a request that never reached the server, and sharing failed on
       // the JSON parse instead — with no clue as to why. apiFetch also carries
       // the bearer token, so the hand-rolled session read is gone with it.
-      const { shareUrl, shareToken: newToken } = await apiJson<{ shareUrl: string; shareToken: string }>(
+      const { shareToken: newToken } = await apiJson<{ shareToken: string }>(
         apiFetch(`/api/agent/clients/${policy.id}/share/toggle`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -373,8 +373,9 @@ export default function PolicyDetail() {
       );
       setShareToken(newToken);
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(shareUrl);
+      // Not the server's shareUrl: that is built from the API host (api.indsure.in), which serves
+      // no pages, so the customer got a 404. The report page lives on this site's origin.
+      await navigator.clipboard.writeText(`${origin}/shared/report/${newToken}`);
       
       toast({
         variant: "success",

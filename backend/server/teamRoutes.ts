@@ -974,8 +974,13 @@ export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: 
       const member = await requireMember(res, ctx.team, req.params.id);
       if (!member) return;
 
+      // An advisor who bought their own Agent plan (it has an end date still ahead) goes back to
+      // it, not to free: joining set plan = 'agency', and leaving used to wipe a paid year.
       await pool.query(
-        "UPDATE agents SET team_id = NULL, plan = 'free', updated_at = now() WHERE id = $1",
+        `UPDATE agents SET team_id = NULL,
+                plan = CASE WHEN plan_expires_at IS NOT NULL AND plan_expires_at > now() THEN 'agent' ELSE 'free' END,
+                updated_at = now()
+          WHERE id = $1`,
         [member.id]
       );
 
