@@ -40,6 +40,14 @@ if (/[\/]IndSure[\/]/i.test(fs.realpathSync(authDir))) {
 const transport = new BaileysTransport({
   authDir,
   onDownTooLong: (ms) => log.error("ALERT whatsapp down", { downForMs: ms }),
+  // Reconnecting has not worked for a while: exit, and pm2 starts a clean process.
+  onStuck: (ms) => {
+    log.error("ALERT whatsapp still down, restarting the bot process", { downForMs: ms });
+    process.exit(1);
+  },
+  restartAfterMs: Number(process.env.WA_RESTART_AFTER_MS) || undefined,
+  sendGapMs: Number(process.env.WA_SEND_GAP_MS) || undefined,
+  sendJitterMs: Number(process.env.WA_SEND_JITTER_MS) || undefined,
   pairPhone: process.env.WA_PAIR_PHONE,
 });
 const engine = new HttpEngine(process.env.BACKEND_URL || "http://127.0.0.1:5000", key);

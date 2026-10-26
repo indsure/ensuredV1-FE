@@ -93,6 +93,17 @@ so each one waits for Deep's go-ahead.
 | `WA_BOT_ENABLED=true` | bot | Off by default: the process exits at start. |
 | `WA_BOT_KEY` | both | Unset or under 32 chars: the whole bot surface on the backend is off. |
 | `WA_LLM_ENABLED=true` | backend | Off by default: no model calls, rule answers and templates only. |
+| `WA_OPEN_ORIGINS` | backend | Sites where ANY advisor may connect. `_wa-deploy/OPEN TO ALL ADVISORS` sets indsure.in, www and beta; `OPEN BETA OFF` clears it. Sach + morning brief stay paid-only either way. |
+| `WA_SEND_GAP_MS` / `WA_SEND_JITTER_MS` | bot | Pace of outgoing messages (default 700 ms + up to 500 ms random). All sends share one queue. |
+| `WA_RESTART_AFTER_MS` | bot | Down this long (default 5 min): the bot exits and pm2 starts a clean process. |
+
+## Staying connected
+
+See `src/transport/reliability.ts`. Login files are written atomically, and every good
+`creds.json` is also kept as `creds.json.bak` (used automatically if `creds.json` is ever
+unreadable). Each day, on connect, the login folder is copied to `<WA_AUTH_DIR>-backups/<date>/`
+(newest 3 kept). If WhatsApp logs the bot out, the log shows `ALERT whatsapp logged out` and it
+stops trying: pair again with `_wa-deploy/PAIR CODE`.
 
 ## Adding an advisor to the beta
 
