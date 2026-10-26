@@ -39,7 +39,7 @@ test("BALANCE on the free plan: checks, plus where Sach Assistant comes from", a
   engine.sachData = { ...engine.sachData, plan: "free", paid: false };
   await bot.handle(text("balance"));
   assert.match(transport.last(), /\*Policy checks left:\* 5/);
-  assert.match(transport.last(), /comes with the paid plan: https:\/\/indsure\.in\/advisors-pricing/);
+  assert.match(transport.last(), /comes with the paid plan: https:\/\/indsure\.in\/advisors\/pricing/);
   assert.doesNotMatch(transport.last(), /\bAI\b|credits/);
 });
 

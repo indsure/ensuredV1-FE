@@ -689,7 +689,7 @@ export function makeBot(over: { inspect?: (b: Buffer) => Promise<Inspection> } =
     transport, engine,
     links: { origin: "https://indsure.in" },
     tmpDir: path.join(os.tmpdir(), "indsure-wa-test-" + crypto.randomUUID()),
-    teamLink: "https://indsure.in/advisors-pricing",
+    teamLink: "https://indsure.in/advisors/pricing",
     replyDelay: () => 0,
     sleep: async (ms) => { t += ms; },
     now: () => t,

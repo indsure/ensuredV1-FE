@@ -56,7 +56,7 @@ const bot = new Bot({
   engine,
   links: { origin: process.env.WA_PUBLIC_ORIGIN || "https://indsure.in" },
   tmpDir: process.env.WA_TMP_DIR || "/tmp/indsure-wa",
-  teamLink: process.env.WA_TEAM_LINK || "https://indsure.in/advisors-pricing",
+  teamLink: process.env.WA_TEAM_LINK || "https://indsure.in/advisors/pricing",
 });
 
 transport.onMessage((m) => bot.handle(m));

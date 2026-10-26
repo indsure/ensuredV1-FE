@@ -397,7 +397,7 @@ export class HttpEngine implements Engine {
     return this.write<{ after: Record<string, unknown>; undoToken?: string }>("/api/internal/wa/page/edit", agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
   }
   async profileGet(agentId: string) {
-    try { return ((await this.call("/api/internal/wa/profile", { agentId })) as any).profile as MyProfile; } catch (e: any) { if (e?.status === 404) return null; throw e; }
+    try { return ((await this.call("/api/internal/wa/profile/full", { agentId })) as any).profile as MyProfile; } catch (e: any) { if (e?.status === 404) return null; throw e; }
   }
   profileEdit(agentId: string, set: Record<string, unknown>, expect: Record<string, unknown>, restore = false, token?: string) {
     return this.write<{ after: Record<string, unknown>; undoToken?: string }>("/api/internal/wa/profile/edit", agentId, { set, expect, ...(restore ? { restore: true, token } : {}) });
