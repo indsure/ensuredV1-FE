@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Ticket, LogOut, TrendingUp, Activity, UserCheck, User } from "lucide-react";
+import { LayoutDashboard, Users, Ticket, LogOut, TrendingUp, Activity, UserCheck, User, IndianRupee } from "lucide-react";
 import { cn } from "@/components/ui";
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { href: "/leads", label: "Advisor Leads", icon: UserCheck },
   { href: "/agents", label: "Agents", icon: Users },
   { href: "/consumers", label: "Consumers", icon: User },
+  { href: "/payments", label: "Paying users", icon: IndianRupee },
   { href: "/invite-codes", label: "Invite Codes", icon: Ticket },
   { href: "/revenue", label: "Revenue Projector", icon: TrendingUp },
   { href: "/usage", label: "Gemini Usage", icon: Activity },
