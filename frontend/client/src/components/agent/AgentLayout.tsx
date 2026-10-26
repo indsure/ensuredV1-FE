@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { BookOpen, ChevronRight, FileText, HelpCircle, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
+import { isPlaygroundMode } from "@/lib/playground/mode"
 import PlaygroundBanner from "@/components/agent/PlaygroundBanner"
 import PlaygroundTour from "@/components/agent/PlaygroundTour"
 import { Button } from "@/components/ui/button"
@@ -399,6 +400,21 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           <div>
             {!sidebarCollapsed && <div className="px-2 text-xs font-black uppercase tracking-[0.25em] text-white/40 mb-3">{t("layout.account")}</div>}
             <nav className="space-y-1">
+              {!isPlaygroundMode() && (
+                <Link
+                  to="/agent/plan"
+                  {...warm("/agent/plan")}
+                  className={[
+                    "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                    location === "/agent/plan" ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                    sidebarCollapsed ? "justify-center" : ""
+                  ].join(" ")}
+                  title={sidebarCollapsed ? label("layout.plan", "Plan & payments") : undefined}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {!sidebarCollapsed && label("layout.plan", "Plan & payments")}
+                </Link>
+              )}
               <Link
                 to="/agent/help"
                 {...warm("/agent/help")}

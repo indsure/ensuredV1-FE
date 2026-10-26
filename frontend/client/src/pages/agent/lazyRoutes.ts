@@ -26,6 +26,7 @@ export const Claims = lazyWithPreload(() => import("@/pages/agent/Claims"));
 export const ClaimDetail = lazyWithPreload(() => import("@/pages/agent/ClaimDetail"));
 export const MyQueue = lazyWithPreload(() => import("@/pages/agent/MyQueue"));
 export const SettingsNew = lazyWithPreload(() => import("@/pages/agent/SettingsNew"));
+export const AgentPlan = lazyWithPreload(() => import("@/pages/agent/AgentPlan"));
 export const MyProfile = lazyWithPreload(() => import("@/pages/agent/MyProfile"));
 export const AgentMyPage = lazyWithPreload(() => import("@/pages/agent/MyPage"));
 export const AgentTeam = lazyWithPreload(() => import("@/pages/agent/Team"));
@@ -57,6 +58,7 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
   RiderDirectory,
   AgentUploads,
   SettingsNew,
+  AgentPlan,
   MyProfile,
   AgentTeam,
   AgentHelp,
@@ -109,6 +111,7 @@ const ROUTE_BY_PATH: Record<string, PreloadableComponent<any>> = {
   "/agent/compare/catalog": AgentCatalogCompare,
   "/agent/riders": RiderDirectory,
   "/agent/settings": SettingsNew,
+  "/agent/plan": AgentPlan,
   "/agent/profile": MyProfile,
   "/agent/help": AgentHelp,
 };

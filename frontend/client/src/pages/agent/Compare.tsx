@@ -214,7 +214,8 @@ export default function Compare() {
       {shortOfChecks ? (
         <div className="mt-5 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
           <p className="font-bold">
-            {t("compare.short", { cost: COMPARE_COST, have: creditsRemaining })}
+            {t("compare.short", { cost: COMPARE_COST, have: creditsRemaining })}{" "}
+            <Link href="/agent/plan" className="underline">{t("compare.buy_checks")}</Link>
           </p>
           <p className="mt-1">
             <Link href="/agent/compare" className="underline font-semibold">{t("compare.catalog_link")}</Link>{" "}
