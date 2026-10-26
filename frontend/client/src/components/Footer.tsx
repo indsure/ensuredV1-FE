@@ -45,6 +45,7 @@ const columns: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "site.f_terms", href: "/terms" },
       { label: "site.f_cookies", href: "/cookie-policy" },
       { label: "site.f_grievance", href: "/grievance" },
+      { label: "site.f_refunds", href: "/refunds" },
     ],
   },
 ];

@@ -22,6 +22,7 @@ import { containsPersonalData } from "./lib/pii";
 import { parseIntent, answerFromData } from "./services/sachRetrieval";
 import { sendMail } from "./lib/mailer";
 import { isWaBotRequest } from "./whatsapp"; // WHATSAPP-PLUGIN
+import { cashfreeWebhookHandler, checkPaymentsConfig, startPaymentJobs } from "./services/payments";
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
@@ -316,6 +317,16 @@ app.use(
     credentials: true,
   })
 );
+
+/* ---------------- CASHFREE WEBHOOK (before body parsing) ---------------- */
+// The signature covers Cashfree's exact bytes, so this route takes the raw body and must
+// stay ABOVE express.json(). Also above the global limiter: Cashfree retries are not abuse.
+app.post("/api/pay/cashfree/webhook", express.raw({ type: "*/*", limit: "1mb" }), (req, res) => {
+  cashfreeWebhookHandler(req, res).catch((err) => {
+    log.error("[pay] webhook handler crashed", { message: err?.message });
+    if (!res.headersSent) res.status(500).json({ error: "Internal Server Error" });
+  });
+});
 
 /* ---------------- BODY PARSING ---------------- */
 
@@ -808,6 +819,8 @@ function formatSachINR(n: number): string {
 
 async function start() {
   await registerRoutes(server, app);
+  checkPaymentsConfig();
+  startPaymentJobs();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     log.error("unhandled_api_error", { message: err?.message, stack: err?.stack });

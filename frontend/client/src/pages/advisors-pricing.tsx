@@ -4,7 +4,9 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { teamWaLink } from "@/components/app/portfolio-utils";
-import { Check, Minus, Sparkles, ArrowRight } from "lucide-react";
+import { Check, Minus, ArrowRight } from "lucide-react";
+import { PayButton } from "@/components/PayButton";
+import type { PaySku } from "@/lib/payments";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -28,6 +30,8 @@ type Tier = {
   ctaHref: string;
   /** Leaves the site (WhatsApp), so it renders as an anchor, not a router link. */
   ctaExternal?: boolean;
+  /** Sold online (services/payments.ts SKUS). ctaHref stays as the fallback while payments are off. */
+  pay?: { monthly: PaySku; annual: PaySku; label: string };
 };
 
 const tiers: Tier[] = [
@@ -78,6 +82,7 @@ const tiers: Tier[] = [
       "Hi, I would like to put my IndSure account on the Agent plan.",
     ),
     ctaExternal: true,
+    pay: { monthly: "agent_monthly", annual: "agent_yearly", label: "advp.buy_agent" },
   },
   {
     name: "advp.agency",
@@ -132,9 +137,9 @@ function FeatureCell({ value }: { value: string | boolean }) {
   return <span className="text-sm text-[var(--color-text-secondary)]">{t(value)}</span>;
 }
 
-const topUpPacks = [
-  { credits: 5, price: "₹449" },
-  { credits: 15, price: "₹1,199" },
+const topUpPacks: { credits: number; price: string; sku: PaySku }[] = [
+  { credits: 5, price: "₹449", sku: "topup_5" },
+  { credits: 15, price: "₹1,199", sku: "topup_15" },
 ];
 
 const faqs = [
@@ -207,22 +212,6 @@ export default function Pricing() {
             {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
             {t("advp.sub")}
           </p>
-        </section>
-
-        {/* FOUNDING 50 BANNER */}
-        <section className="max-w-3xl mx-auto mb-8">
-          <div className="flex items-center justify-center gap-4 rounded-2xl border border-[var(--lob-motor)]/30 bg-[var(--lob-motor-wash)] px-6 py-5 text-center">
-            <Sparkles className="h-6 w-6 shrink-0 text-[var(--lob-motor)]" aria-hidden="true" />
-            <div>
-              <p className="text-[15px] md:text-base text-[var(--color-text-main)]">
-                <span className="font-semibold">{t("advp.f50_b")}</span>{" "}
-                {t("advp.f50", { price: "₹9,990", old: "₹14,990" })}
-              </p>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                {t("advp.f50_rise")}
-              </p>
-            </div>
-          </div>
         </section>
 
         {/* BILLING TOGGLE */}
@@ -321,7 +310,18 @@ export default function Pricing() {
                     ))}
                   </ul>
 
-                  {tier.ctaExternal ? (
+                  {tier.pay ? (
+                    <PayButton
+                      sku={annual ? tier.pay.annual : tier.pay.monthly}
+                      audience="agent"
+                      className={ctaClass}
+                      fallbackHref={tier.ctaHref}
+                      fallbackLabel={<>{t(tier.cta)}<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
+                    >
+                      {t(tier.pay.label, { price: annual ? tier.priceAnnual : tier.price })}
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </PayButton>
+                  ) : tier.ctaExternal ? (
                     /* wouter's Link pushes onto the router's history, so an
                        off-site href would route to a page that does not exist
                        instead of opening WhatsApp. */
@@ -361,23 +361,26 @@ export default function Pricing() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               {topUpPacks.map((pack) => (
-                <a
+                <div
                   key={pack.credits}
-                  href={teamWaLink(
-                    `Hi, I would like to buy the ${pack.credits}-check pack (${pack.price}) on IndSure.`,
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-8 py-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--color-teal-600)]/40"
+                  className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-border-light)] bg-[var(--color-cream-main)] px-8 py-5"
                 >
                   <div className="font-serif text-3xl font-bold text-[var(--color-navy-900)] tabular">{pack.price}</div>
                   <div className="text-[15px] font-semibold text-[var(--color-text-secondary)]">
                     {t("advp.n_checks", { n: pack.credits })}
                   </div>
-                  <div className="mt-1 text-sm font-semibold text-[var(--color-teal-700)]">
-                    {t("advp.buy_wa")}
-                  </div>
-                </a>
+                  <PayButton
+                    sku={pack.sku}
+                    audience="agent"
+                    className="inline-flex h-11 min-w-[160px] items-center justify-center gap-2 rounded-lg border border-[var(--color-teal-600)] bg-white px-4 text-[15px] font-semibold text-[var(--color-teal-700)] hover:bg-[var(--color-teal-50)]"
+                    fallbackHref={teamWaLink(
+                      `Hi, I would like to buy the ${pack.credits}-check pack (${pack.price}) on IndSure.`,
+                    )}
+                    fallbackLabel={t("advp.buy_wa")}
+                  >
+                    {t("advp.buy_now")}
+                  </PayButton>
+                </div>
               ))}
             </div>
             <p className="mt-4 text-sm text-[var(--color-text-secondary)]">

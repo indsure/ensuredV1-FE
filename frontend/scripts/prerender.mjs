@@ -416,6 +416,7 @@ const STATIC_ROUTES = [
   { path: "/terms", h1: "Terms of Service" },
   { path: "/cookie-policy", h1: "Cookie Policy" },
   { path: "/grievance", h1: "Grievance Officer" },
+  { path: "/refunds", h1: "Refund and Cancellation Policy" },
   {
     path: "/signup",
     h1: "Create your free IndSure account",

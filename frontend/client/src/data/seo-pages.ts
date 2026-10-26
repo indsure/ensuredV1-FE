@@ -158,6 +158,11 @@ export const PAGE_SEO: Record<string, PageSeo> = {
     description: "How to raise a grievance with IndSure and who handles it.",
     noindex: true,
   },
+  "/refunds": {
+    title: "Refund and Cancellation Policy | IndSure",
+    description: "How payments, cancellations and refunds work for IndSure plans and policy check packs.",
+    noindex: true,
+  },
   "/signup": {
     title: "Create a Free IndSure Account | IndSure",
     description:
