@@ -2,6 +2,10 @@ import { AppShell } from "@/components/AppShell";
 import { supabaseAdmin } from "@/lib/supabase";
 import ConsumersClient from "./ConsumersClient";
 
+// Read live on every visit. Without this, `next build` bakes the numbers in at build time and
+// a saved change looks like it failed.
+export const dynamic = "force-dynamic";
+
 // D2C consumers who sign up / log in at indsure.in/login (NOT agents).
 // Identity lives in Supabase Auth (auth.users); the app-level row is
 // public.individual_profiles, keyed 1:1 on the auth user id and created by

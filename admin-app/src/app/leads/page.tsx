@@ -2,6 +2,10 @@ import { AppShell } from "@/components/AppShell";
 import { supabaseAdmin } from "@/lib/supabase";
 import LeadsClient from "./LeadsClient";
 
+// Read live on every visit. Without this, `next build` bakes the numbers in at build time and
+// a saved change looks like it failed.
+export const dynamic = "force-dynamic";
+
 // Consumer "Talk to an advisor" requests, newest first. Service-role read, so
 // this sees every row despite the individuals-own RLS on the table.
 async function getLeads() {

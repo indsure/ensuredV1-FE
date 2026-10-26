@@ -62,17 +62,34 @@ export default function AgentsClient({
 
   async function handleSave() {
     if (!selected) return;
+    // Send only what was changed. Sending every field wrote back the balances as they were when
+    // the page loaded, wiping checks the advisor bought or used since (and "" became 0).
+    const body: Record<string, unknown> = {};
+    for (const [key, raw, before] of [
+      ["credits", value, selected.credits_remaining],
+      ["ocr_balance", ocrValue, selected.ocr_remaining],
+    ] as const) {
+      if (raw.trim() === String(before)) continue;
+      const n = Number(raw);
+      if (raw.trim() === "" || !Number.isInteger(n) || n < 0) {
+        alert("Balances must be whole numbers, 0 or more.");
+        return;
+      }
+      body[key] = n;
+    }
+    if (plan !== (selected.plan || "free")) body.plan = plan;
+    if (billingCycle !== (selected.billing_cycle || "monthly")) body.billing_cycle = billingCycle;
+    if (Object.keys(body).length === 0) {
+      setSelected(null);
+      setModalType(null);
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/agents/${selected.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          credits: Number(value),
-          ocr_balance: Number(ocrValue),
-          plan,
-          billing_cycle: billingCycle,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("Failed to update");
       setSelected(null);

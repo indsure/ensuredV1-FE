@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySession } from "@/lib/session";
 
-export function middleware(request: NextRequest) {
-  const session = request.cookies.get("admin_session");
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isLoginPage = pathname === "/login";
@@ -10,11 +10,17 @@ export function middleware(request: NextRequest) {
 
   if (isApiAuth) return NextResponse.next();
 
-  if (!session && !isLoginPage) {
+  // A signed, unexpired cookie, not just any cookie by that name (see lib/session.ts).
+  const signedIn = await verifySession(request.cookies.get(SESSION_COOKIE)?.value);
+
+  if (!signedIn && !isLoginPage) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (session && isLoginPage) {
+  if (signedIn && isLoginPage) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

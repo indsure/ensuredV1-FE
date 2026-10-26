@@ -16,6 +16,10 @@ import {
   Minus,
 } from "lucide-react";
 
+// Read live on every visit. Without this, `next build` bakes the numbers in at build time and
+// a saved change looks like it failed.
+export const dynamic = "force-dynamic";
+
 async function getStats() {
   const now = new Date();
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
