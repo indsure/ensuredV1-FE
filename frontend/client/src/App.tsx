@@ -54,6 +54,7 @@ import {
   ClaimDetail,
   MyQueue,
   SettingsNew,
+  AgentPlan,
   MyProfile,
   AgentMyPage,
   AgentTeam,
@@ -299,6 +300,9 @@ function App() {
                       </Route>
                       <Route path="/agent/settings">
                         {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/plan">
+                        {() => <AgentProtectedRoute><AgentPlan /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/help">
                         {() => <AgentProtectedRoute><AgentHelp /></AgentProtectedRoute>}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useAgent } from '@/context/AgentContext';
 import { RefreshCw, Play, AlertCircle, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -479,14 +479,12 @@ export default function DashboardNew() {
             <p className="font-semibold text-red-700">{t("dashboard.credits_zero_title")}</p>
             <p className="text-sm text-red-600 mt-0.5">{t("dashboard.credits_zero_desc")}</p>
           </div>
-          <a
-            href="https://wa.me/919987148125?text=Hi%2C%20I%27ve%20run%20out%20of%20policy%20checks%20on%20IndSure.%20Can%20you%20help%20me%20top%20up%20my%20account%3F"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+          <Link
+            href="/agent/plan"
+            className="shrink-0 inline-flex min-h-11 items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
           >
-            {t("dashboard.contact_us")}
-          </a>
+            {t("dashboard.buy_checks")}
+          </Link>
         </div>
       )}
       {creditsRemaining > 0 && creditsRemaining < 3 && (
@@ -496,14 +494,12 @@ export default function DashboardNew() {
             <p className="font-semibold text-amber-700">{creditsRemaining === 1 ? t("dashboard.credits_low_title").replace("{{count}}", "1") : t("dashboard.credits_low_title_plural").replace("{{count}}", String(creditsRemaining))}</p>
             <p className="text-sm text-amber-600 mt-0.5">{t("dashboard.credits_low_desc")}</p>
           </div>
-          <a
-            href="https://wa.me/919987148125?text=Hi%2C%20I%27m%20running%20low%20on%20policy%20checks%20on%20IndSure.%20Can%20you%20help%20me%20top%20up%20my%20account%3F"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+          <Link
+            href="/agent/plan"
+            className="shrink-0 inline-flex min-h-11 items-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
           >
             {t("dashboard.get_credits")}
-          </a>
+          </Link>
         </div>
       )}
 

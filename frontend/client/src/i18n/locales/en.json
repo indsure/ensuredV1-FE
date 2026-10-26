@@ -182,7 +182,8 @@
     "agent_fallback": "Advisor",
     "role_agent": "Advisor",
     "agent_navigation": "Advisor navigation",
-    "help": "Help"
+    "help": "Help",
+    "plan": "Plan & payments"
   },
   "dashboard": {
     "good_morning": "Good morning",
@@ -192,7 +193,7 @@
     "analyze_policies": "Analyze Policies",
     "no_credits": "(No checks left)",
     "credits_zero_title": "You have 0 policy checks left",
-    "credits_zero_desc": "Analysis is paused. Reach out to us to top up your account.",
+    "credits_zero_desc": "Analysis is paused. Buy more checks or renew your plan to continue.",
     "contact_us": "Contact us →",
     "credits_low_title": "Only {{count}} policy check left",
     "credits_low_title_plural": "Only {{count}} policy checks left",
@@ -255,7 +256,8 @@
     "overdue": "overdue",
     "in_days": "in {{days}}d",
     "days_count": "{{days}} days",
-    "report_in_english": "Report findings are shown in English."
+    "report_in_english": "Report findings are shown in English.",
+    "buy_checks": "Buy checks →"
   },
   "uploads": {
     "title": "Upload Policies",
@@ -2010,7 +2012,8 @@
     "saving": "Saving…",
     "save_share": "Save & share with customer",
     "saved_send": "Saved. Send this to your customer.",
-    "copy_link": "Copy link"
+    "copy_link": "Copy link",
+    "buy_checks": "Buy more checks"
   },
   "compare_view": {
     "add_on": "add-on",
@@ -4824,5 +4827,40 @@
     "back_plans": "Back to plans",
     "whatsapp": "WhatsApp us",
     "call": "Call us"
+  },
+  "agentplan": {
+    "title": "Plan and payments",
+    "subtitle": "Your plan, your policy checks, and how to pay.",
+    "demo": "Payments are off in the demo. In your own account you can buy and renew your plan here.",
+    "your_plan": "Your plan",
+    "plan_free": "Free",
+    "plan_agent": "Agent",
+    "plan_agency": "Agency",
+    "active_until": "Active until",
+    "no_end": "No end date",
+    "free_forever": "Free, no end date",
+    "checks_left": "Policy checks left",
+    "grace": "Your plan ended on {{date}}. It keeps working for 3 days after that. Pay below to keep it.",
+    "load_failed": "We could not load your payment details just now. You can still pay below.",
+    "agency_note": "Your Agency plan is set up with our team. To renew it or add seats, message us on WhatsApp.",
+    "talk_wa": "Talk to us on WhatsApp",
+    "upgrade_title": "Get the Agent plan",
+    "upgrade_note": "12 policy checks every month, 50 data-entry policies a month, and every paid feature. Nothing renews by itself.",
+    "renew_title": "Renew your plan",
+    "renew_note": "Paying now adds time after your current plan ends on {{date}}, so you lose no days.",
+    "monthly": "1 month",
+    "monthly_sub": "12 policy checks",
+    "yearly": "1 year",
+    "yearly_sub": "12 policy checks every month, 2 months free",
+    "pay": "Pay {{price}}",
+    "buy": "Buy now",
+    "buy_wa": "Buy on WhatsApp",
+    "topup_title": "Need more policy checks?",
+    "topup_needs_plan": "Extra checks are for paid plans. Get the Agent plan first.",
+    "n_checks": "{{n}} policy checks",
+    "history": "Your payments",
+    "refunded": "Refunded",
+    "footer": "Refunds are possible within 7 days of a payment if no policy check was used.",
+    "refund_link": "Refund policy"
   }
 }
