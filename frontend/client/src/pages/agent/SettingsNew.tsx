@@ -16,6 +16,7 @@ import { useLanguage } from "@/i18n/LanguageContext"
 type AgentProfile = {
   id: string;
   name: string | null;
+  full_name: string | null;
   email: string;
   role: string;
   status: string;
@@ -98,7 +99,7 @@ export default function SettingsNew() {
       if (error) { setError(error.message); setLoading(false); return; }
       const profile = q1 as unknown as AgentProfile;
       setAgentProfile(profile);
-      setProfileName(profile.name ?? '');
+      setProfileName(profile.full_name || profile.name || '');
       setProfileLocation(profile.location ?? '');
       setLoading(false);
     }
