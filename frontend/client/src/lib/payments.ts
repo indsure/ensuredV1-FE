@@ -50,10 +50,11 @@ export class PayError extends Error {
   }
 }
 
-// Creates the order and opens the payment box. Resolves with the order reference once the
-// box closes (paid, failed or dismissed); the caller then shows /pay/status, which asks the
-// server what really happened. In browsers that cannot show the box (in-app browsers),
-// Cashfree navigates to /pay/status itself and this never resolves.
+// Creates the order and opens the payment box. Resolves with the order reference when the box
+// finishes a payment; the caller then shows /pay/status, which asks the server what really
+// happened. Throws PayError("NOT_PAID") when the payment fails or the box is closed. In browsers
+// that cannot show the box (in-app browsers), Cashfree navigates to /pay/status itself and this
+// never resolves.
 export async function startCheckout(sku: PaySku, phone?: string): Promise<string> {
   const res = await apiFetch("/api/pay/order", {
     method: "POST",
@@ -64,10 +65,26 @@ export async function startCheckout(sku: PaySku, phone?: string): Promise<string
   if (!res.ok) {
     throw new PayError(body?.error || "ERROR", body?.message || "Something went wrong. Please try again.");
   }
+  const cashfree = await getCashfree(body.mode === "production" ? "production" : "sandbox");
+  const result = await cashfree.checkout({ paymentSessionId: body.paymentSessionId, redirectTarget: "_modal" });
+  // Three outcomes (pg/web-sdk): an error (failed, or the box was closed) keeps the person on the
+  // page with the message; a redirect means Cashfree is already navigating to /pay/status; payment
+  // details mean the box finished, and /pay/status asks the server whether it was really paid.
+  if (result?.error && !result?.paymentDetails) {
+    throw new PayError("NOT_PAID", result.error.message || "The payment was not completed. You can try again.");
+  }
+  if (result?.redirect) return new Promise<string>(() => { /* the page is navigating away */ });
+  return body.orderRef as string;
+}
+
+// One Cashfree instance per page (Cashfree's rule: initialise once, not on every click).
+let instance: { mode: string; cf: any } | null = null;
+
+async function getCashfree(mode: "sandbox" | "production"): Promise<any> {
+  if (instance?.mode === mode) return instance.cf;
   const Cashfree = await loadSdk().catch(() => {
     throw new PayError("SDK", "The payment window could not load. Check your internet and try again.");
   });
-  const cashfree = Cashfree({ mode: body.mode === "production" ? "production" : "sandbox" });
-  await cashfree.checkout({ paymentSessionId: body.paymentSessionId, redirectTarget: "_modal" });
-  return body.orderRef as string;
+  instance = { mode, cf: Cashfree({ mode }) };
+  return instance.cf;
 }
