@@ -26,7 +26,7 @@ import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage"
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
-import { AGENT_TABLES, INDIVIDUAL_TABLES, selectForTable, type OwnedTable } from "./services/accountData";
+import { AGENT_TABLES, INDIVIDUAL_TABLES, ownsStoragePath, selectForTable, type OwnedTable } from "./services/accountData";
 import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
@@ -86,6 +86,24 @@ const upload = multer({
 // Supabase Storage bucket where original uploaded policy PDFs are kept,
 // so they can be downloaded later (and re-analyzed without re-uploading).
 const PDF_BUCKET = "policy-pdfs";
+
+/* The storage object behind a stored pdf_url, but only if it is the caller's own: in
+   PDF_BUCKET and under "<accountId>/", which is how every upload path is built. pdf_url is
+   a column the account can write (directly or through older routes), and these reads and
+   deletes run on the service role, so trusting it let one account read or remove any file
+   in storage. Returns null for anything else; callers treat that as "no stored document". */
+function ownedStorageObject(pdfUrl: unknown, accountId: string): { bucket: string; path: string } | null {
+  if (typeof pdfUrl !== "string") return null;
+  const m = pdfUrl.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
+  if (!m) return null;
+  const [bucket, ...rest] = m[1].split("/");
+  const path = rest.join("/");
+  if (bucket !== PDF_BUCKET || !ownsStoragePath(path, accountId)) {
+    log.warn("storage_path_refused", { accountId, bucket });
+    return null;
+  }
+  return { bucket, path };
+}
 
 /* The document-rules store needs real transactions (a per-policy lock, then
    inserts). One pooled client per transaction; always released. */
@@ -849,6 +867,14 @@ const verifyJwt = async (req: any, res: any): Promise<string | null> => {
   }
 
   return userId;
+};
+
+/* Upload routes put this before multer, so a request with no valid sign-in is refused before
+   anything is written to disk. Multer used to run first and the 401 paths never deleted the
+   file, so anyone could fill the server's small disk 25 MB at a time (the 2026-10-07 outage
+   was a full disk). The handler's own verifyJwt is then a token-cache hit. */
+const signedInBeforeUpload = async (req: any, res: any, next: () => void) => {
+  if (await verifyJwt(req, res)) next();
 };
 
 /* ---------- D2C CONSUMER ("INDIVIDUAL") AUTH + QUOTA ---------- */
@@ -1739,6 +1765,16 @@ export async function registerRoutes(
     }
   });
 
+  /* ── Retired: the old batch pipeline and switch recommendation ─────────
+     No screen calls these any more, but they stayed live: any signed-in user could run
+     health audits with no check charged, and trigger-batch-process fetched whatever
+     pdf_url it was given from the server. Registered first, so the old handlers below
+     never run. Delete them for good once this has been live a while. */
+  app.post(
+    ["/api/agent/create-batch", "/api/agent/add-client", "/api/agent/trigger-batch-process", "/api/agent/switch-recommendation"],
+    (_req, res) => { res.status(410).json({ error: "This feature has been retired." }); },
+  );
+
   /* ── Agent: Create Batch ─────────────────────────────────────────────── */
 
   app.post("/api/agent/create-batch", async (req, res) => {
@@ -2053,6 +2089,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
    */
   app.post(
     "/api/agent/leads/:leadId/policy",
+    signedInBeforeUpload,
     (req, res, next) => {
       upload.single("file")(req, res, (err: any) => {
         if (err) {
@@ -2833,6 +2870,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
    */
   app.post(
     "/api/agent/claims/:id/documents",
+    signedInBeforeUpload,
     (req, res, next) => {
       upload.single("file")(req, res, (err: any) => {
         if (err) {
@@ -4857,14 +4895,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         });
       }
 
-      const pathMatch = row.pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
-      if (!pathMatch) {
+      const owned = ownedStorageObject(row.pdf_url, userId);
+      if (!owned) {
         return res.status(409).json({ error: "NO_PDF", message: "Stored document URL is not recognized." });
       }
-      const [bucket, ...restPath] = pathMatch[1].split("/");
-      const storagePath = restPath.join("/");
+      const storagePath = owned.path;
 
-      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(owned.bucket).download(storagePath);
       if (dlErr || !blob) {
         return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document." });
       }
@@ -4917,11 +4954,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       let fileDeleted = false;
       if (row.pdf_url) {
-        const pathMatch = String(row.pdf_url).match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
-        if (pathMatch) {
-          const [bucket, ...restPath] = pathMatch[1].split("/");
-          const storagePath = restPath.join("/");
-          const { error: rmErr } = await supabaseAdmin.storage.from(bucket).remove([storagePath]);
+        const owned = ownedStorageObject(row.pdf_url, userId);
+        if (owned) {
+          const { error: rmErr } = await supabaseAdmin.storage.from(owned.bucket).remove([owned.path]);
           if (rmErr) {
             // Stop here rather than delete the row. We promised the file goes.
             log.error("consumer_policy_file_delete_failed", {
@@ -5228,6 +5263,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   app.post(
     "/api/me/analyze",
     analyzeRateLimiter,
+    signedInBeforeUpload,
     (req, res, next) => {
       upload.single("file")(req, res, (err: any) => {
         if (err) {
@@ -5238,9 +5274,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       });
     },
     async (req, res) => {
+      // Every refusal below happens after multer wrote the file; delete it then, not in 24 h.
+      const dropFile = () => {
+        try { if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); } catch { /* sweep is the backstop */ }
+      };
       try {
         const userId = await requireIndividual(req, res);
-        if (!userId) return;
+        if (!userId) return dropFile();
 
         // Same contract as the agent lane: an unrecognised type is refused
         // rather than quietly treated as health. Here the stakes are the free
@@ -5249,6 +5289,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // individual_policies, where the portfolio filters read it back.
         const requestedType = String(req.body.type || "health").toLowerCase();
         if (!isSupportedInsuranceType(requestedType)) {
+          dropFile();
           return res.status(400).json({
             error: "UNSUPPORTED_INSURANCE_TYPE",
             message:
@@ -5261,6 +5302,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // ── THE quota choke point — before any Gemini spend ──
         const quota = await checkIndividualQuota(userId, insuranceType);
         if (!quota.allowed) {
+          dropFile();
           return res.status(403).json({ error: "NEEDS_UPGRADE", reason: quota.reason });
         }
 
@@ -5739,10 +5781,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!c.rows.length) return res.status(404).json({ error: "not_found" });
       const { pdf_url, insurance_type } = c.rows[0];
       if (insurance_type !== "life" && insurance_type !== "term") return res.status(400).json({ error: "not_life_or_term" });
-      const m = typeof pdf_url === "string" ? pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/) : null;
-      if (!m) return res.status(409).json({ error: "NO_PDF", message: "No stored PDF for this policy." });
-      const [bucket, ...rest] = m[1].split("/");
-      const storagePath = rest.join("/");
+      const owned = ownedStorageObject(pdf_url, agentId);
+      if (!owned) return res.status(409).json({ error: "NO_PDF", message: "No stored PDF for this policy." });
+      const { bucket, path: storagePath } = owned;
       if (!/\.pdf$/i.test(storagePath)) return res.status(409).json({ error: "NOT_PDF", message: "The stored file is not a PDF." });
       const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
       if (dlErr || !blob) return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document." });
@@ -5847,15 +5888,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       }
 
       // Resolve the storage object behind pdf_url (signed or public URL).
-      const pathMatch = client.pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
-      if (!pathMatch) {
+      const owned = ownedStorageObject(client.pdf_url, agentId);
+      if (!owned) {
         return res.status(409).json({ error: "NO_PDF", message: "Stored document URL is not recognized. Delete and re-upload the PDF." });
       }
-      const [bucket, ...restPath] = pathMatch[1].split("/");
-      const storagePath = restPath.join("/");
+      const storagePath = owned.path;
 
       const { data: blob, error: dlErr } = await supabaseAdmin.storage
-        .from(bucket)
+        .from(owned.bucket)
         .download(storagePath);
       if (dlErr || !blob) {
         return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document. Delete and re-upload the PDF." });
@@ -6069,14 +6109,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       // Stream the bytes through us. We never hand the browser a storage URL —
       // that would leak the Supabase project/bucket and stay openable for the
       // life of the signature.
-      const pathMatch = pdf_url.match(/\/storage\/v1\/object\/(?:sign|public)\/(.+?)(?:\?|$)/);
-      if (!pathMatch) {
+      const owned = ownedStorageObject(pdf_url, agentId);
+      if (!owned) {
         return res.status(409).json({ error: "Stored document URL is not recognized" });
       }
-      const [bucket, ...rest] = pathMatch[1].split("/");
-      const storagePath = rest.join("/");
+      const storagePath = owned.path;
 
-      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(bucket).download(storagePath);
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from(owned.bucket).download(storagePath);
       if (dlErr || !blob) {
         return res.status(409).json({ error: "Could not fetch the stored document" });
       }
@@ -6756,14 +6795,24 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (agents.length === 0) return res.status(404).json({ error: "Agent not found" });
       const agent = agents[0];
 
-      // Already has a row: switch it back on rather than minting a second slug.
-      // A slug is never moved — advisors print it on visiting cards and society
+      // Already has a row: return it rather than minting a second slug.
+      // A slug is never moved: advisors print it on visiting cards and society
       // standees, so a changed slug is a dead standee.
+      // enabled = false only ever comes from IndSure (scripts/ops/advisor_page_admin.mjs
+      // disable; advisors cannot write the column), so this must not switch it back on.
+      // It used to, and since published stayed true one click put a paused page live again.
       const { rows: existing } = await pool.query(
-        `UPDATE agent_pages SET enabled = true WHERE agent_id = $1 RETURNING slug`,
+        `SELECT slug, enabled FROM agent_pages WHERE agent_id = $1`,
         [agentId]
       );
-      if (existing.length) return res.json({ slug: existing[0].slug, created: false });
+      if (existing.length) {
+        if (!existing[0].enabled) {
+          return res.status(403).json({
+            error: "Your page has been paused by IndSure. Please message us on WhatsApp to switch it back on.",
+          });
+        }
+        return res.json({ slug: existing[0].slug, created: false });
+      }
 
       const display = String(agent.full_name || agent.name || "").trim() || "Insurance Advisor";
       const base = slugFromName(display);

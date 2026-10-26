@@ -46,6 +46,7 @@ function tokenOk(given: unknown, want: string): boolean {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet, PAGE_COLS, cleanPageSet, PROFILE_COLS, cleanProfileSet, pageNotReady } from "./editRules";
 import { saveExtractedData, EVIDENCE_KEY } from "../services/policyValueStore";
+import { ownsStoragePath } from "../services/accountData";
 import { readEvidence, activeRecords } from "../../../shared/policyEvidence";
 import { addMonthsIso, parseIsoDate, parseWholeNumber, parseRupees } from "../../../shared/policyNumbers";
 import { deriveSharedColumns, EXTRACTION_FIELDS } from "../services/extractionFields";
@@ -963,6 +964,9 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       if (!r.rows[0].pdf_url) return res.status(404).json({ error: "NO_PDF" });
       if (!m) return res.status(409).json({ error: "NOT_STORED" });
       const [bucket, ...rest] = m[1].split("/");
+      // Only this advisor's own object in policy-pdfs: pdf_url is browser-writable, and this
+      // read runs on the service role (same guard as routes.ts ownedStorageObject).
+      if (bucket !== "policy-pdfs" || !ownsStoragePath(rest.join("/"), agentId)) return res.status(409).json({ error: "NOT_STORED" });
       const blob = await storageClient().storage.from(bucket).download(rest.join("/"));
       if (blob.error || !blob.data) return res.status(409).json({ error: "NOT_STORED" });
       void audit(agentId, req.params.id, "download_pdf", "/api/internal/wa/clients/:id/pdf", "GET");
@@ -1026,7 +1030,9 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
     } catch (err) { fail(res, "page edit", err); }
   });
 
-  app.get("/api/internal/wa/profile", async (req, res) => {
+  // "/profile/full", not "/profile": routes.ts registers GET /api/internal/wa/profile first (name,
+  // partners, page for Phase 1b), so a second handler on that path never ran and "my profile" failed.
+  app.get("/api/internal/wa/profile/full", async (req, res) => {
     try {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
