@@ -10,6 +10,10 @@ export type AgentProfile = {
   location: string;
   authLevel: string;
   avatarInitials: string;
+  /** agents.plan: 'free' | 'agent' | 'agency'. Display only; the server decides access. */
+  plan: string;
+  /** agents.plan_expires_at (migration 028). null = no end date (set by hand, or not yet migrated). */
+  planExpiresAt: string | null;
 };
 
 /** Agency membership, when there is one. `isOwner` is what gates the Team
@@ -89,6 +93,8 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
         location: profile.location || "",
         authLevel: profile.role || "agent",
         avatarInitials: initials,
+        plan: String(profile.plan || "free").toLowerCase(),
+        planExpiresAt: profile.plan_expires_at ?? null,
       })
 
       const { data: credits } = await supabase
