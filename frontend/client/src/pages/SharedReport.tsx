@@ -246,10 +246,11 @@ export default function SharedReport({ token }: SharedReportProps) {
     );
   }
 
-  // Render the report with hideNav=true to hide agent-only controls
+  // hideNav hides agent-only controls. hideLeadCTA: this is an advisor's report for their own
+  // customer, so no "an IndSure advisor will call you" form pitching IndSure over their head.
   return (
     <PageChrome label={t("shared.report_label")}>
-      <PolicyAuditReport data={data} hideNav={true} pdfMeta={meta} />
+      <PolicyAuditReport data={data} hideNav={true} hideLeadCTA pdfMeta={meta} />
     </PageChrome>
   );
 }

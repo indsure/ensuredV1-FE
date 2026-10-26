@@ -12,9 +12,6 @@ import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 import { Eyebrow } from "@/components/marketing";
 import { DiffRows } from "@/components/marketing/showcase";
-import { LifeInsuranceComparer } from "@/components/LifeInsuranceComparer";
-import { TermInsuranceComparer } from "@/components/TermInsuranceComparer";
-import { VehicleInsuranceComparer } from "@/components/VehicleInsuranceComparer";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { PageFaq } from "@/components/PageFaq";
 
@@ -231,15 +228,57 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function PublicCatalogCompare() {
-  // ?type=life|term|vehicle keep their dedicated comparers (they render their
-  // own full page chrome) — identical behavior to the old /compare.
+  // ?type=life|term|vehicle used to open the old life/term/motor comparers. Those showed
+  // hand-typed star ratings, claim ratios and premiums with no source, and named a "winner"
+  // (go-live audit 2026-10-27), so they now get an honest "coming soon" instead. The old
+  // components are still in components/ if real, sourced data ever backs them.
   // From the router rather than window, so the page can also render at build time.
   const compareType = new URLSearchParams(useSearch()).get("type");
-  if (compareType === "life") return <LifeInsuranceComparer />;
-  if (compareType === "term") return <TermInsuranceComparer />;
-  if (compareType === "vehicle") return <VehicleInsuranceComparer />;
+  if (compareType === "life" || compareType === "term" || compareType === "vehicle") {
+    return <CompareComingSoon type={compareType} />;
+  }
 
   return <HealthCatalogCompare />;
+}
+
+function CompareComingSoon({ type }: { type: "life" | "term" | "vehicle" }) {
+  useSEO(seoFor("/compare"));
+  const { t } = useLanguage();
+  const label = t(`ccmp.soon_type_${type}`);
+
+  return (
+    <div className="min-h-screen bg-[var(--color-cream-main)] flex flex-col font-sans text-[var(--color-navy-900)]">
+      <Header />
+      <main className="flex-grow pt-24 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 max-w-3xl mx-auto w-full">
+        <Breadcrumbs items={[{ label: t("ccmp.crumb") }]} />
+        <div className="mt-6 bg-white rounded-2xl border border-[var(--color-border-light)] p-6 sm:p-8 shadow-sm">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold leading-tight">
+            {t("ccmp.soon_title", { type: label })}
+          </h1>
+          <p className="mt-4 text-lg text-[var(--color-text-secondary)] leading-relaxed">
+            {t("ccmp.soon_body", { type: label })}
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/compare"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-teal-600)] px-5 py-3 text-base font-semibold text-white hover:opacity-90"
+            >
+              <Scale className="h-5 w-5" aria-hidden="true" />
+              {t("ccmp.soon_health")}
+            </Link>
+            <Link
+              href="/policychecker"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border-light)] bg-white px-5 py-3 text-base font-semibold text-[var(--color-navy-900)] hover:bg-[var(--color-cream-main)]"
+            >
+              <FileText className="h-5 w-5" aria-hidden="true" />
+              {t("ccmp.soon_check")}
+            </Link>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 }
 
 function HealthCatalogCompare() {

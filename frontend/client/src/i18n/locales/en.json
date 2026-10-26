@@ -4215,6 +4215,13 @@
     "v_50k": "₹50k of damage sounds manageable, but add the deductible and the NCB you lose over 5 years and it costs ₹70k+. Should you claim? We work it out for you."
   },
   "ccmp": {
+    "soon_title": "Comparing {{type}} plans is coming soon",
+    "soon_body": "We only show comparisons we can back up from the policy wording. For {{type}} plans that is not ready yet. You can compare health plans now, or get a free check of a policy you already have.",
+    "soon_health": "Compare health plans",
+    "soon_check": "Check my policy",
+    "soon_type_life": "life insurance",
+    "soon_type_term": "term insurance",
+    "soon_type_vehicle": "motor insurance",
     "add": "Add a plan",
     "search": "Search insurer or plan…",
     "no_match": "No plans match that.",
