@@ -200,6 +200,10 @@ export function pickNumber(textRaw: string, max: number): number | null {
 
 export const isYes = (t: string) => /^(yes|y|haan|ha|han|ok|okay|sure|yes please|haan ji|ji haan|ha ji|theek hai|thik hai|kar do|हाँ|हां|हाँ जी|जी हाँ|ठीक है|कर दो)[.!।]*$/.test(norm(t));
 export const isNo = (t: string) => /^(no|n|nahi|nahin|na|nope|nahi ji|mat karo|नहीं|ना|मत करो|नहीं चाहिए)[.!।]*$/.test(norm(t));
+/** A thank-you or an "ok" said to the bot, not a request ("thank" once drafted a thank-you
+ *  message for the last customer). */
+export const isCourtesy = (t: string) =>
+  /^(?:ok(?:ay)?[ ,]*)?(?:thanks?|thank ?(?:you|u)|thanku|thanx|thnx|tnx|thx|ty|tq|shukriya|dhanya?wa?a?d|great|done|ok|okay|👍|🙏|धन्यवाद|शुक्रिया)(?: (?:so much|very much|a lot|again|ji|sir|bhai|dear|yaar|जी))*[.!।🙏👍 ]*$/.test(norm(t));
 /** "Check this one by itself / separately", for the super top-up question. */
 export const isAlone = (t: string) =>
   /^(alone|only this( one)?|just this( one)?|this one only|by itself|separate(ly)?|sirf (ye|yeh|yahi|isko|ise)|akele|akela|alag( alag)?|alag se|सिर्फ (यह|ये|यही|इसे)|अकेले|अलग( अलग)?|अलग से)[.!।]*$/.test(norm(t));

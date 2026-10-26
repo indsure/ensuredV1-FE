@@ -205,7 +205,7 @@ const LINES: Line[] = [
     "Naam ya phone number likhiye, jaise: find Ramesh, ya find 98123 45678",
     "नाम या फ़ोन नंबर लिखिए, जैसे: find Ramesh, या find 98123 45678"),
   L("Sorry, I didn't get that. Try saying it another way, or pick a number below.", "Maaf kijiye ji, samajh nahi aaya. Thoda alag tareeke se likhiye, ya neeche se number chuniye.", "माफ़ कीजिए जी, समझ नहीं आया। थोड़ा अलग तरीके से लिखिए, या नीचे से नंबर चुनिए।"),
-  L("You're welcome. Anything else, just type it.", "Koi baat nahi. Aur kuch chahiye toh bas likh dijiye.", "कोई बात नहीं। और कुछ चाहिए तो बस लिख दीजिए।"),
+  L("You're welcome! I'm here whenever you need me.", "Koi baat nahi ji! Jab bhi zaroorat ho, main yahin hoon.", "कोई बात नहीं जी! जब भी ज़रूरत हो, मैं यहीं हूँ।"),
 
   /* Talking like a person (converse.ts): hello, did you mean, who do you mean */
   L("👋 Hi {name}!", "👋 Namaste {name} ji!", "👋 नमस्ते {name} जी!"),

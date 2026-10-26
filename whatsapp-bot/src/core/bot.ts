@@ -18,7 +18,7 @@ import type { Engine, ClaimEditRow, ClientSummary, PolicyFields, RenewalRow } fr
 import type { InboundMessage, Transport } from "../transport/types.js";
 import { MIN_TEXT, inspectPdf, looksLikePdf, POLICY_TYPES, sameInsured, type Inspection, type PolicyType } from "./pdfInspect.js";
 import {
-  bookAsk, isAlone, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
+  bookAsk, isAlone, isCourtesy, isNo, isReportQuestion, isSkip, isYes, langIn, linkCode, namedPerson, parseCaption, parsePair, pickNumber, portfolioName, ruleIntent, statusName,
 } from "./intents.js";
 import { parseClaimAsk, claimKeyOf, type ClaimAsk } from "./claimParse.js";
 import { parseLifeAsk, type LifeAsk } from "./lifeParse.js";
@@ -928,8 +928,8 @@ export class Bot {
       await this.d.engine.unlink(agentId);
       return this.say(to, agentId, T.unlinked(), "unlink");
     }
-    if (/^(ok|okay|thanks|thank you|thx|ty|great|done|👍|🙏)[.! ]*$/i.test(text)) {
-      if (!conv.state.startsWith("AWAITING")) return this.say(to, agentId, "You're welcome. Anything else, just type it.", "thanks");
+    if (isCourtesy(text)) {
+      if (!conv.state.startsWith("AWAITING")) return this.say(to, agentId, "You're welcome! I'm here whenever you need me.", "thanks");
     }
 
     // A change waiting for YES gets the first word. Anything else drops it, unsaved.

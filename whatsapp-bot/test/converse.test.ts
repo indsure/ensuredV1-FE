@@ -211,7 +211,7 @@ test("a city typed for the calculator is never rephrased", async () => {
 
 test("the new replies have Hindi and Hinglish", () => {
   const lines = [
-    "You're welcome. Anything else, just type it.", "👋 Hi Deep!", "👋 Hi!",
+    "You're welcome! I'm here whenever you need me.", "👋 Hi Deep!", "👋 Hi!",
     "You have 3 follow-ups due. Reply FOLLOW UPS to see them.", "You have 1 follow-up due. Reply FOLLOW UPS to see them.",
     "Just to be sure, did you mean:", "Reply with the number, or type HELP to see everything.",
     "1) Everything on Ramesh Kumar", "Who is this for? Just add the name, for example: Ramesh won",
@@ -367,4 +367,17 @@ test("menu: in Hindi the choices are in Hindi, and a number still works", async 
   assert.match(transport.last(), /क्या चाहिए:\n1\) कस्टमर की पॉलिसी चेक करें/);
   await bot.handle(text("2"));
   assert.match(transport.last(), /फॉलो-अप|follow/i);
+});
+
+test("a thank-you to the bot is never read as 'thank you message' for the last person", async () => {
+  for (const said of ["thank", "thanks", "Thank you so much", "thanku", "ok thanks", "thanks ji", "shukriya", "dhanyawad", "धन्यवाद", "🙏"]) {
+    const { bot, transport, engine } = makeBot();
+    engine.leadRows = [lead()];
+    await bot.handle(text("Ramesh won"));
+    await bot.handle(text("yes"));
+    assert.match(transport.last(), /thank you message for Ramesh/, "the next-step offer is shown");
+    await bot.handle(text(said));
+    assert.doesNotMatch(transport.last(), /wa\.me|Here's a message/, said);
+    assert.match(transport.last(), /welcome|Koi baat nahi|कोई बात नहीं/, said);
+  }
 });
