@@ -259,11 +259,11 @@ test("someone else's order is not visible", async () => {
 });
 
 test("too many open orders in 30 minutes is refused", async () => {
-  await q("UPDATE payment_orders SET status = 'expired'");
+  await q("UPDATE payment_orders SET status = 'expired' WHERE status IN ('created','pending')");
   for (let i = 0; i < 3; i++) assert.equal((await call("POST", "/api/pay/order", "a", { sku: "topup_5" })).status, 200);
   const r = await call("POST", "/api/pay/order", "a", { sku: "topup_5" });
   assert.equal(r.status, 429);
-  await q("UPDATE payment_orders SET status = 'expired'");
+  await q("UPDATE payment_orders SET status = 'expired' WHERE status IN ('created','pending')");
 });
 
 test("missing phone: asked for, then saved and used", async () => {
@@ -297,6 +297,25 @@ test("consumer buys a year of Personal", async () => {
   const b = await call("GET", "/api/pay/billing", "c");
   assert.equal(b.body.plan, "paid");
   assert.equal(b.body.payments.length, 1);
+});
+
+test("renewal reminders: once before the end, once at the end, only for the latest period", async () => {
+  // CONSUMER bought a year earlier in this file. Move that period to end in 2 days.
+  await q(`UPDATE payment_orders SET period_end = now() + interval '2 days'
+            WHERE account_id = $1 AND status = 'paid'`, [CONSUMER]);
+  assert.equal(await pay.sendRenewalReminders(), 1, "3 days before: one reminder");
+  assert.equal(await pay.sendRenewalReminders(), 0, "never twice");
+  await q(`UPDATE payment_orders SET period_end = now() - interval '1 day'
+            WHERE account_id = $1 AND status = 'paid'`, [CONSUMER]);
+  assert.equal(await pay.sendRenewalReminders(), 1, "at the end: one more");
+  assert.equal(await pay.sendRenewalReminders(), 0);
+  // AGENT paid two months back to back: only the later period's end counts.
+  const rows = await q(`SELECT id FROM payment_orders WHERE account_id = $1 AND status = 'paid' AND period_end IS NOT NULL
+                         ORDER BY period_end`, [AGENT]);
+  assert.ok(rows.length >= 2);
+  await q(`UPDATE payment_orders SET period_end = now() + interval '1 day' WHERE id = $1`, [rows[0].id]);
+  await q(`UPDATE payment_orders SET period_end = now() + interval '30 days' WHERE id = $1`, [rows[rows.length - 1].id]);
+  assert.equal(await pay.sendRenewalReminders(), 0, "paid ahead: no reminder");
 });
 
 test("housekeeping: 3-day grace, hand-set plans untouched, yearly checks refill once a month", async () => {

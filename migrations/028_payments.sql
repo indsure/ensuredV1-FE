@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS public.payment_orders (
   granted_at        timestamptz,
   paid_at           timestamptz,
   refunded_at       timestamptz,
+  -- Renewal reminder emails sent for this period (3 days before the end, and at the end).
+  reminded_before_at timestamptz,
+  reminded_end_at   timestamptz,
   notes             text,
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now()

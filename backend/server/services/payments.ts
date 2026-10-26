@@ -527,10 +527,69 @@ export async function planHousekeeping(): Promise<void> {
   }
 }
 
+// Nothing renews by itself, so the customer hears from us twice per paid period: 3 days before it
+// ends, and when it ends (with the grace days). Only the latest period of an account counts, so a
+// month that was already paid ahead gets no reminder. The marker is set BEFORE the email goes, so
+// a restart can never send the same reminder twice (a failed send is lost, not repeated).
+export async function sendRenewalReminders(): Promise<number> {
+  let sent = 0;
+  try {
+    const due = await pool.query(
+      `WITH latest AS (
+         SELECT DISTINCT ON (account_id) id, account_id, account_kind, sku, period_end,
+                reminded_before_at, reminded_end_at
+           FROM payment_orders
+          WHERE status = 'paid' AND period_end IS NOT NULL AND account_id IS NOT NULL
+          ORDER BY account_id, period_end DESC)
+       SELECT *, CASE WHEN period_end > now() THEN 'before' ELSE 'end' END AS which
+         FROM latest
+        WHERE (period_end > now() AND period_end <= now() + make_interval(days => $1) AND reminded_before_at IS NULL)
+           OR (period_end <= now() AND period_end > now() - make_interval(days => $1) AND reminded_end_at IS NULL)`,
+      [GRACE_DAYS],
+    );
+    for (const r of due.rows) {
+      const col = r.which === "before" ? "reminded_before_at" : "reminded_end_at";
+      const claimed = await pool.query(
+        `UPDATE payment_orders SET ${col} = now() WHERE id = $1 AND ${col} IS NULL RETURNING id`,
+        [r.id],
+      );
+      if ((claimed.rowCount ?? 0) === 0) continue;
+      const who = await pool.query(
+        r.account_kind === "agent"
+          ? "SELECT email FROM agents WHERE id = $1"
+          : "SELECT email FROM individual_profiles WHERE id = $1",
+        [r.account_id],
+      );
+      const email = who.rows[0]?.email;
+      if (!email) continue;
+      const def = SKUS[r.sku as Sku];
+      const plan = def ? def.label.split(",")[0] : "Your plan";
+      const date = new Date(r.period_end).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "long", year: "numeric" });
+      const site = (process.env.PUBLIC_SITE_URL || "https://indsure.in").replace(/\/+$/, "");
+      const link = `${site}${r.account_kind === "agent" ? "/advisors/pricing" : "/pricing"}`;
+      const text = r.which === "before"
+        ? `Your ${plan} ends on ${date}.\n\nNothing renews by itself. To keep it, pay for another month or year here:\n${link}\n\n` +
+          `If you do nothing, it keeps working for ${GRACE_DAYS} more days after that date, then your account moves to the free plan. Your data stays.\n\nIndSure`
+        : `Your ${plan} ended on ${date}.\n\nIt keeps working for ${GRACE_DAYS} more days. To keep it, pay here:\n${link}\n\n` +
+          `After that your account moves to the free plan. Your policies and customers stay in your account.\n\nIndSure`;
+      await sendMail({
+        to: email,
+        subject: r.which === "before" ? `Your ${plan} ends on ${date}` : `Your ${plan} has ended`,
+        text,
+      });
+      sent++;
+    }
+    if (sent > 0) log.info(`[pay] sent ${sent} renewal reminder(s)`);
+  } catch (err: any) {
+    log.error("[pay] renewal reminders failed", { message: err?.message });
+  }
+  return sent;
+}
+
 export function startPaymentJobs(): void {
-  setTimeout(() => { void reconcileOpenOrders(); void planHousekeeping(); }, 60_000);
+  setTimeout(() => { void reconcileOpenOrders(); void planHousekeeping(); void sendRenewalReminders(); }, 60_000);
   setInterval(() => void reconcileOpenOrders(), 10 * 60 * 1000);
-  setInterval(() => void planHousekeeping(), 60 * 60 * 1000);
+  setInterval(() => { void planHousekeeping(); void sendRenewalReminders(); }, 60 * 60 * 1000);
 }
 
 /* ---------- routes ---------- */
