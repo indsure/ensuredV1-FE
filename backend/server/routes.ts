@@ -39,6 +39,7 @@ import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
 import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
+import { registerPaymentRoutes } from "./services/payments";
 import { log } from "./lib/logger";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
@@ -358,6 +359,10 @@ setInterval(incinerateExpiredClaimDocuments, 24 * 60 * 60 * 1000);
 // which doubles as the signup date.
 const TRIAL_DAYS = 30;
 const FREE_SLOTS_PER_TYPE = 1;
+// Personal (paid) plan: pricing.pf1 "4 health policy checks a year", pricing.pf2 "room for 12
+// more policies across term, life and vehicle" (12 on top of the free plan's one per type).
+const PAID_HEALTH_CHECKS_PER_YEAR = 4;
+const PAID_OTHER_POLICIES = 12 + 3 * FREE_SLOTS_PER_TYPE;
 
 // ── Agent OCR (data-entry) metering ──────────────────────────────────────
 // Non-health lanes (motor/life/term/travel/property) run a paid Gemini OCR
@@ -889,7 +894,28 @@ async function checkIndividualQuota(
   );
   const row = prof.rows[0];
   if (!row) return { allowed: false, reason: "no_profile" };
-  if (row.plan === "paid") return { allowed: true };
+  if (row.plan === "paid") {
+    // Personal plan (founder 2026-10-26, matches pricing.pf1/pf2): 4 health policy checks in any
+    // 12 months, and room for 12 more term/life/vehicle policies on top of the free plan's
+    // one of each. Was unlimited, which let ₹99 buy unbounded analysis spend.
+    if (insuranceType === "health") {
+      const h = await pool.query(
+        `SELECT count(*)::int AS c FROM individual_policies
+          WHERE user_id = $1 AND insurance_type = 'health' AND status <> 'error'
+            AND created_at > now() - interval '365 days'`,
+        [userId]
+      );
+      if ((h.rows[0]?.c ?? 0) >= PAID_HEALTH_CHECKS_PER_YEAR) return { allowed: false, reason: "paid_health_limit" };
+      return { allowed: true };
+    }
+    const o = await pool.query(
+      `SELECT count(*)::int AS c FROM individual_policies
+        WHERE user_id = $1 AND insurance_type <> 'health' AND status <> 'error'`,
+      [userId]
+    );
+    if ((o.rows[0]?.c ?? 0) >= PAID_OTHER_POLICIES) return { allowed: false, reason: "paid_slots_full" };
+    return { allowed: true };
+  }
 
   // Free is forever, not a trial — it is limited by slots, not by time. The
   // trial gate used to sit here and returned "trial_expired" on day 31, which
@@ -6868,6 +6894,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       }
     },
   });
+
+  /* ── Payments (Cashfree one-time orders) ─────────────────────────────────
+     Kept in services/payments.ts with its webhook, which index.ts has to mount
+     before express.json(). Read that file's header before changing anything. */
+  registerPaymentRoutes(app, { getUserIdFromToken });
 
   log.info("routes registered");
   return _httpServer;

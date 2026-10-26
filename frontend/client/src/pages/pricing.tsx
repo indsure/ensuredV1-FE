@@ -10,6 +10,8 @@ import { Section, SectionHeading, Eyebrow, CTA } from "@/components/marketing";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { PayButton } from "@/components/PayButton";
+import type { PaySku } from "@/lib/payments";
 
 // Consumer pricing. The advisor plans (Free / ₹1,499 / ₹1,199 a seat) moved to
 // /advisors/pricing — this URL is the one the portfolio's own upgrade CTAs
@@ -46,6 +48,8 @@ type Tier = {
   /** Leaves the site (WhatsApp), so it renders as an anchor, not a router link. */
   ctaExternal?: boolean;
   highlighted?: boolean;
+  /** Sold online (backend/server/services/payments.ts SKUS); ctaHref is the fallback while payments are off. */
+  pay?: { monthly: PaySku; annual: PaySku; label: string };
 };
 
 const tiers: Tier[] = [
@@ -99,6 +103,7 @@ const tiers: Tier[] = [
       "Hi, I would like to upgrade my IndSure account to the Personal plan.",
     ),
     ctaExternal: true,
+    pay: { monthly: "personal_monthly", annual: "personal_yearly", label: "pricing.buy_personal" },
     highlighted: true,
   },
 ];
@@ -303,7 +308,18 @@ export default function Pricing() {
                           ))}
                         </ul>
 
-                        {tier.ctaExternal ? (
+                        {tier.pay ? (
+                          <PayButton
+                            sku={annual ? tier.pay.annual : tier.pay.monthly}
+                            audience="individual"
+                            className={ctaClass}
+                            fallbackHref={tier.ctaHref}
+                            fallbackLabel={<>{t(tier.cta)}<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}
+                          >
+                            {t(tier.pay.label, { price: annual ? tier.priceAnnual : tier.price })}
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          </PayButton>
+                        ) : tier.ctaExternal ? (
                           /* wouter's Link pushes onto the router's history, so an
                              off-site href would route to a page that does not
                              exist instead of opening WhatsApp. */

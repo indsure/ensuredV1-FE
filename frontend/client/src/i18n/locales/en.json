@@ -2524,7 +2524,8 @@
     "m_nav": "Mobile navigation",
     "m_progress": "View check progress",
     "m_analyzing": "Checking",
-    "f_docs": "Advisor docs"
+    "f_docs": "Advisor docs",
+    "f_refunds": "Refunds"
   },
   "home": {
     "illustrative": "Illustrative",
@@ -2929,6 +2930,8 @@
     "too_large_d": "Maximum size is 25MB.",
     "stage_uploading": "Uploading your PDF…",
     "paywall": "You've used your free {{type}} slot. Upgrade to add more.",
+    "paywall_paid_health": "You have used the 4 health policy checks in your plan for this year.",
+    "paywall_paid_slots": "Your plan has room for 15 term, life and vehicle policies, and it is full.",
     "upload_failed_status": "Upload failed ({{status}})",
     "upload_failed": "Upload failed",
     "cta_first": "Add your first policy",
@@ -3453,7 +3456,7 @@
     "q3": "Is the free plan really free forever?",
     "a3": "Yes. There is no trial clock and no card. You keep one policy of each type, health, term, life and vehicle, with the full health check, renewal reminders and PDF reports, for as long as you want. You move to Personal only when you need more than one policy of a type, or more checks.",
     "q4": "Can I pay monthly instead of yearly?",
-    "a4": "Yes. Personal is ₹99 a month or ₹999 a year. Paying for the year costs ₹189 less than twelve monthly payments, and you can switch between the two whenever you like.",
+    "a4": "Yes. Personal is ₹99 a month or ₹999 a year. Paying for the year costs ₹189 less than twelve monthly payments. Nothing renews by itself, so you choose again each time your plan ends.",
     "q5": "What does asking our team cover?",
     "a5": "Anything in your own portfolio: what a clause means, whether your cover is enough, what to ask your insurer. We reply within two working days. It is meant for your own policies, not for running someone else's advice practice.",
     "q6": "Do you sell insurance or earn commission?",
@@ -3483,7 +3486,8 @@
     "close_d": "Upload it, read what it actually covers, and decide from there. Free, and there is nothing to buy at the end.",
     "check": "Check my policy",
     "selling": "Selling insurance rather than buying it?",
-    "adv_plans": "See advisor plans"
+    "adv_plans": "See advisor plans",
+    "buy_personal": "Pay {{price}}"
   },
   "advp": {
     "free": "Free",
@@ -3551,11 +3555,11 @@
     "q4": "What are live quotes?",
     "a4": "An upcoming feature for Agent and Agency plans: fetch live premium quotes across insurers for every type of insurance, then compare price and wording side by side, so you can show a customer both the cheapest option and the best-value one. Live quotes won't use your policy checks; they come with their own monthly allowance (limits announced at launch).",
     "q5": "Will prices increase later?",
-    "a5": "Yes. When live quotes launch, prices for new signups will go up. Founding 50 members keep their locked rate forever.",
+    "a5": "Prices may change as we add features. Whatever you have already paid for keeps its price until the end of that month or year.",
     "q6": "Do you offer a discount for annual billing?",
     "a6": "Yes. Annual is 2 months free (₹14,990 instead of ₹17,988). Unused checks on the annual plan also roll over until year-end, while monthly-plan checks expire each month.",
     "q7": "Can I switch plans later?",
-    "a7": "Yes. Upgrades apply immediately and your remaining checks carry over. Downgrades take effect from your next billing date.",
+    "a7": "Yes. Pay for the other plan whenever you like. It starts when your current month or year ends, and your remaining checks stay with you.",
     "q8": "What happens to my leads and customers if I cancel?",
     "a8": "They stay yours. You can export everything to Excel anytime, and your data is retained or deleted as per our Privacy Policy and India's DPDP Act. Just ask.",
     "q9": "Do you take a commission on policies I sell?",
@@ -3564,16 +3568,13 @@
     "h_a": "Simple pricing.",
     "h_b": "One policy covers it.",
     "sub": "Your daily tools are free forever. The full plan costs ₹1,499 a month, so closing one policy pays for it. We take no commission, ever.",
-    "f50_b": "Founding 50:",
-    "f50": "the first 50 advisors get a full year at {{price}} instead of {{old}}, a third off, locked in forever.",
-    "f50_rise": "Prices rise when live quotes launch. Founding members keep their rate.",
     "monthly": "Monthly",
     "toggle": "Toggle annual billing",
     "annual": "Annual",
     "two_free": "(2 months free)",
     "our_pick": "Our pick",
     "soon": "Soon",
-    "gst": "All prices in INR, inclusive of GST.",
+    "gst": "All prices in INR. Nothing renews by itself: you pay for each month or year, and we remind you before it ends.",
     "how_checks": "How policy checks work",
     "one_check_b": "One check is one full policy audit, or one side-by-side comparison.",
     "one_check": "That's less than ₹100 to walk into a client meeting with a complete audit in hand. The commission on a single closed policy covers your month many times over.",
@@ -3585,7 +3586,9 @@
     "questions": "Pricing questions",
     "not_sure": "Not sure which plan fits?",
     "talk15": "Talk to us for 15 minutes and we'll tell you honestly if the free plan covers you.",
-    "talk_us_wa": "Talk to Us on WhatsApp"
+    "talk_us_wa": "Talk to Us on WhatsApp",
+    "buy_agent": "Pay {{price}}",
+    "buy_now": "Buy now"
   },
   "how": {
     "s1": "Upload",
@@ -4729,5 +4732,30 @@
     "a6": "Ask the insurer for the reason in writing and file a complaint with its grievance team. If you are not satisfied, you can go to the Insurance Ombudsman, which is free.",
     "q7": "Which riders should I look at?",
     "a7": "Common riders are accidental death, critical illness and waiver of premium. Each adds cost and pays only in its own situation. The IndSure check shows which riders your policy already has and what each one pays."
+  },
+  "pay": {
+    "err_generic": "Something went wrong. Please try again.",
+    "phone_label": "Your 10-digit mobile number (the payment page needs it)",
+    "continue": "Continue to pay",
+    "checking": "Checking your payment",
+    "signin_title": "Please sign in to see this payment",
+    "signin_body": "Your payment is safe. Sign in with the account you paid from and this page will show its status. We also email you as soon as it is confirmed.",
+    "signin_cta": "Sign in as an advisor",
+    "signin_personal": "Sign in to my personal account",
+    "notfound_title": "We could not find this payment",
+    "notfound_body": "If money left your account, message us with the time you paid and we will sort it out.",
+    "paid_title": "Payment received",
+    "paid_body": "Thank you. {{item}} is now active.",
+    "paid_until": "It runs till {{date}}.",
+    "paid_checks": "{{n}} policy checks have been added to your account.",
+    "failed_title": "Payment did not go through",
+    "failed_body": "This payment was not completed. If money left your account, your bank returns it in 3 to 5 working days. You can try again.",
+    "pending_title": "We are confirming your payment",
+    "pending_body": "This can take a few minutes with UPI. You can close this page: we will email you as soon as it is confirmed.",
+    "ref": "Payment reference: {{ref}}",
+    "go_portal": "Go to my account",
+    "back_plans": "Back to plans",
+    "whatsapp": "WhatsApp us",
+    "call": "Call us"
   }
 }

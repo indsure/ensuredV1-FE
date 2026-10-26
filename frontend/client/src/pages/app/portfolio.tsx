@@ -310,11 +310,16 @@ export default function PortfolioPage() {
         const body = await res.json().catch(() => ({}));
         setUploading(false);
         setUploadStage(null);
-        // checkIndividualQuota can only return "no_profile" or "slot_full"
-        // (backend/server/routes.ts:781, :796). The "trial_expired" branch that
-        // used to sit here was unreachable and asserted a 30-day trial the
+        // checkIndividualQuota returns "no_profile", "slot_full" (free plan), or on the
+        // Personal plan "paid_health_limit" / "paid_slots_full". The "trial_expired"
+        // branch that used to sit here was unreachable and asserted a 30-day trial the
         // server stopped enforcing, contradicting /pricing.
-        setPaywall(t("pf.paywall", { type: lobLabel(t, selectedType) }));
+        const reason = (body as { reason?: string }).reason;
+        setPaywall(
+          reason === "paid_health_limit" ? t("pf.paywall_paid_health")
+          : reason === "paid_slots_full" ? t("pf.paywall_paid_slots")
+          : t("pf.paywall", { type: lobLabel(t, selectedType) }),
+        );
         return;
       }
       if (!res.ok) {

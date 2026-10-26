@@ -123,7 +123,11 @@ export default function LoginPublic() {
       setLocation(`/app?job=${claimed.jobId}`);
       return;
     }
-    setLocation("/app");
+    // ?next= brings a buyer back to the pricing page they came from. Same-site paths only,
+    // as in agent/LoginNew.tsx, so the parameter cannot bounce anyone off IndSure.
+    const nextPath = new URLSearchParams(window.location.search).get("next") || "";
+    const safe = nextPath.startsWith("/") && !nextPath.startsWith("//") && !nextPath.startsWith("/\\") && !nextPath.includes("://");
+    setLocation(safe ? nextPath : "/app");
   }
 
   return (
