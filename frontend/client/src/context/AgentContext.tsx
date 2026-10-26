@@ -71,7 +71,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      const name = profile.name || profile.full_name || ""
+      const name = profile.full_name || profile.name || ""
       const initials = name
         ? name
             .split(" ")
