@@ -64,6 +64,8 @@ import {
 const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
 // Lazy: it brings AgentLayout (sidebar, playground tour) that public pages never use.
 const AgentProtectedRoute = lazy(() => import("@/components/agent/ProtectedRoute"));
+// Not in lazyRoutes' background preload: only demo visitors should ever download the bot.
+const WhatsAppDemo = lazy(() => import("@/pages/agent/WhatsAppDemo"));
 
 // --- Advisor landing pages (public, per-agent lead capture) ---
 const AdvisorPage = lazy(() => import("@/pages/advisor-page"));
@@ -235,6 +237,12 @@ function App() {
                         {() => isPlaygroundMode()
                           ? <AgentProtectedRoute><Business /></AgentProtectedRoute>
                           : <Redirect to="/agent/insights" />}
+                      </Route>
+                      {/* WhatsApp demo phone: the real bot on the demo data. Playground only. */}
+                      <Route path="/agent/whatsapp-demo">
+                        {() => isPlaygroundMode()
+                          ? <AgentProtectedRoute><WhatsAppDemo /></AgentProtectedRoute>
+                          : <Redirect to="/agent/dashboard" />}
                       </Route>
                       <Route path="/agent/uploads">
                         {() => <AgentProtectedRoute><AgentUploads /></AgentProtectedRoute>}

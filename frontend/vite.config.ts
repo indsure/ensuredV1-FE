@@ -12,6 +12,16 @@ export default defineConfig(({ isSsrBuild }) => ({
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "..", "shared"),
+      // The WhatsApp demo phone (features/wa-demo) runs the real bot from ../whatsapp-bot in
+      // the browser. The bot imports these Node modules; nothing else in the app does.
+      "node:crypto": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "crypto.ts"),
+      "node:fs/promises": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "fs.ts"),
+      "node:path": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "path.ts"),
+      "node:module": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "nodeModule.ts"),
+      "node:url": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "nodeModule.ts"),
+      // The bot's shared code imports date-fns from outside this package, where Vercel
+      // installs nothing; point it at this package's copy.
+      "date-fns": path.resolve(import.meta.dirname, "node_modules", "date-fns"),
     },
   },
   css: {
@@ -65,7 +75,13 @@ export default defineConfig(({ isSsrBuild }) => ({
       strict: true,
       // shared/ sits above this package, so fs.strict would refuse to
       // serve it in dev even though the build resolves it fine.
-      allow: [path.resolve(import.meta.dirname), path.resolve(import.meta.dirname, "..", "shared")],
+      allow: [
+        path.resolve(import.meta.dirname),
+        path.resolve(import.meta.dirname, "..", "shared"),
+        // The WhatsApp demo phone imports the bot and its backend view rules.
+        path.resolve(import.meta.dirname, "..", "whatsapp-bot", "src"),
+        path.resolve(import.meta.dirname, "..", "backend", "server", "whatsapp"),
+      ],
       deny: ["**/.*"],
     },
   },

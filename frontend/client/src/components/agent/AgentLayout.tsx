@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, IndianRupee, LayoutDashboard, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, IndianRupee, LayoutDashboard, MessageCircle, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -101,6 +101,13 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
             label: label("layout.nav_business", "Business"),
             href: "/agent/business",
             icon: <IndianRupee className="h-4 w-4" />,
+            children: [],
+          }, {
+            // The WhatsApp assistant on a phone screen, answered from the demo data.
+            key: "whatsapp-demo",
+            label: label("layout.nav_whatsapp_demo", "WhatsApp"),
+            href: "/agent/whatsapp-demo",
+            icon: <MessageCircle className="h-4 w-4" />,
             children: [],
           }]
         : []),

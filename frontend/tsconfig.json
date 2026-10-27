@@ -12,6 +12,7 @@
     "tsBuildInfoFile": "./node_modules/.tsbuildinfo",
     "noEmit": true,
     "module": "ESNext",
+    "target": "ES2022",
     "strict": true,
     "lib": [
       "esnext",

@@ -22,7 +22,9 @@ import { playgroundTeamApi } from "./teamSeed";
 import { buildDemoDocumentRules } from "./policyTermsSeed";
 
 let store: Store | null = null;
-function getStore(): Store {
+/** Exported for the WhatsApp demo phone (features/wa-demo), which answers from this same
+ *  store so a lead added in the chat shows up on the Leads page, and the other way round. */
+export function getStore(): Store {
   if (!store) store = buildSeed();
   return store;
 }

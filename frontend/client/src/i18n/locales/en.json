@@ -161,6 +161,7 @@
     "nav_needs_attention": "Needs Attention",
     "nav_insights": "Insights",
     "nav_business": "Business",
+    "nav_whatsapp_demo": "WhatsApp",
     "nav_people": "People",
     "nav_policies": "Policies",
     "type_health": "Health",
@@ -4913,5 +4914,29 @@
     "refunded": "Refunded",
     "footer": "Refunds are possible within 7 days of a payment if no policy check was used.",
     "refund_link": "Refund policy"
+  },
+  "wa_demo": {
+    "title": "IndSure on WhatsApp",
+    "intro": "Advisors run their book from WhatsApp: ask who is due, add a lead, look up a customer, or send a policy PDF for a check. Try it on the phone. These replies come from the same assistant advisors use, answering from this demo's data.",
+    "same_data": "It is the same data as the rest of the demo. Add a lead here, then open Leads: it is there.",
+    "try_these": "Try these",
+    "try_help": "What can you do?",
+    "try_today": "Today's to-do",
+    "try_renewals": "Renewals due",
+    "try_followups": "Follow-ups",
+    "try_add_lead": "Add a lead",
+    "try_find": "Find Suresh Agarwal",
+    "try_claims": "Open claims",
+    "try_undo": "Undo last change",
+    "note": "Demo only: nothing is sent to WhatsApp and nothing is saved. Some edits (claims, My Website, profile) are done in the portal in this demo.",
+    "contact": "IndSure Assistant",
+    "online": "online",
+    "typing": "typing...",
+    "banner": "Demo chat. Type a message or tap a suggestion. Nothing leaves this page.",
+    "attach": "Send a policy PDF",
+    "attach_health": "Send a health policy PDF (demo)",
+    "attach_motor": "Send a motor policy PDF (demo)",
+    "placeholder": "Message",
+    "send": "Send"
   }
 }
