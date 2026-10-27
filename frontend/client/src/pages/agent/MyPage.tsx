@@ -37,6 +37,8 @@ import {
   summariseByApp, summariseByDevice,
   type AdvisorPage, type LineOfBusiness, type PageLocale, type ShareChannel, type ViewStat,
 } from "@/lib/advisorPage";
+import { isPlaygroundMode } from "@/lib/playground/mode";
+import { demoHref } from "@/lib/advisorGuide";
 
 export default function MyPage() {
   const { agent } = useAgent();
@@ -229,7 +231,10 @@ export default function MyPage() {
     );
   }
 
-  const liveUrl = pageUrl(page.slug);
+  // The demo flag lives in sessionStorage, which a new tab does not inherit, so
+  // a plain link would ask the real server for the demo slug and 404. Re-enter
+  // the playground in the new tab first; it then forwards to /a/<slug>.
+  const liveUrl = isPlaygroundMode() ? demoHref(`/a/${page.slug}`) : pageUrl(page.slug);
   const canPublish = displayName.trim().length > 1 && lines.length > 0 && !!whatsapp.replace(/\D/g, "");
 
   return (
