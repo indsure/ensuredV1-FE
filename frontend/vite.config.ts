@@ -19,6 +19,8 @@ export default defineConfig(({ isSsrBuild }) => ({
       "node:path": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "path.ts"),
       "node:module": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "nodeModule.ts"),
       "node:url": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "nodeModule.ts"),
+      // pdfInspect.ts loads pdfjs, which only the bot's own install has. The demo never reads a PDF.
+      "pdfjs-dist/legacy/build/pdf.mjs": path.resolve(import.meta.dirname, "client", "src", "features", "wa-demo", "shims", "pdfjs.ts"),
       // The bot's shared code imports date-fns from outside this package, where Vercel
       // installs nothing; point it at this package's copy.
       "date-fns": path.resolve(import.meta.dirname, "node_modules", "date-fns"),
