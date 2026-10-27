@@ -7,6 +7,7 @@ import { TableRowSkeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { rerunPolicy } from "@/lib/rerun"
 import { supabase } from "@/lib/supabase"
+import { deletePolicyRecord } from "@/lib/policyDelete"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
@@ -104,12 +105,7 @@ export default function MyQueue() {
     if (!agent?.agentId) return
     setDismissingId(id)
     try {
-      const { error: dErr } = await supabase
-        .from("clients")
-        .delete()
-        .eq("id", id)
-        .eq("agent_id", agent.agentId)
-      if (dErr) throw new Error(dErr.message)
+      await deletePolicyRecord(id, agent.agentId)
       setMyPolicies((prev) => prev.filter((p) => p.id !== id))
       toast({ variant: "success", title: t("queue.deleted_title"), description: t("queue.deleted_desc") })
     } catch (e: unknown) {

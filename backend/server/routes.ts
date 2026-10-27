@@ -430,6 +430,47 @@ async function consumeOcr(agentId: string): Promise<void> {
   );
 }
 
+/** Content type for a stored upload, from its extension. Photos of paper
+ *  policies (webp, heic) were read as PDFs on a re-run and failed. */
+function mimeFromExt(ext: string): string {
+  switch (ext.toLowerCase()) {
+    case "png": return "image/png";
+    case "jpg": case "jpeg": return "image/jpeg";
+    case "webp": return "image/webp";
+    case "heic": return "image/heic";
+    case "heif": return "image/heif";
+    case "txt": return "text/plain";
+    default: return "application/pdf";
+  }
+}
+
+// ── Reserve-then-refund metering ─────────────────────────────────────────
+// A check is spent when the job is ACCEPTED, not when it finishes. Charging on
+// success let a batch of 60 uploads all start on a balance of 1, because every
+// one passed the balance check before the first finished. The conditional
+// UPDATE is the check and the spend in one statement, so two uploads can never
+// both take the last check. A job that fails gives its check back.
+type MeterTable = "agent_credits" | "agent_ocr_credits";
+
+async function reserveCheck(table: MeterTable, agentId: string): Promise<boolean> {
+  const touch = table === "agent_ocr_credits" ? ", updated_at = NOW()" : "";
+  const r = await pool.query(
+    `UPDATE ${table} SET balance = balance - 1, total_used = total_used + 1${touch}
+     WHERE agent_id = $1 AND balance >= 1`,
+    [agentId]
+  );
+  return (r.rowCount ?? 0) > 0;
+}
+
+async function refundCheck(table: MeterTable, agentId: string): Promise<void> {
+  const touch = table === "agent_ocr_credits" ? ", updated_at = NOW()" : "";
+  await pool.query(
+    `UPDATE ${table} SET balance = balance + 1, total_used = GREATEST(total_used - 1, 0)${touch}
+     WHERE agent_id = $1`,
+    [agentId]
+  );
+}
+
 const NO_OCR_CREDITS_MSG =
   "You've used all the data-entry policies included in your plan for this period. Upgrade or wait for your monthly refill.";
 
@@ -1644,33 +1685,80 @@ export async function registerRoutes(
       // match the id; if there's no session yet (e.g. email-confirmation mode),
       // verify the id corresponds to an existing auth user before inserting.
       const authHeader = req.headers["authorization"] as string | undefined;
+      let authEmail: string | undefined;
       if (authHeader?.startsWith("Bearer ")) {
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader.slice(7));
         if (error || !user || user.id !== id) {
           return res.status(403).json({ error: "Token does not match the profile being created" });
         }
+        authEmail = user.email ?? undefined;
       } else {
         const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
         if (error || !data?.user) {
           return res.status(403).json({ error: "Unknown user id" });
         }
+        authEmail = data.user.email ?? undefined;
+      }
+      // The stored email is the one the auth user signed up with, never a value
+      // the request body chose.
+      if (authEmail && String(email).trim().toLowerCase() !== authEmail.toLowerCase()) {
+        return res.status(403).json({ error: "Email does not match the account being created" });
       }
 
-      await pool.query(
-        `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at, marketing_consent)
-         VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW(), $8)
-         ON CONFLICT (id) DO NOTHING`,
-        [
-          id,
-          email,
-          full_name,
-          phone || null,
-          city || null,
-          experience_years || 0,
-          invite_code || null,
-          marketing_consent ?? false,
-        ]
-      );
+      // Invite-only signup, enforced here. The browser checks the code too, but
+      // that check is advisory: anyone can call this route directly. The agent
+      // row and the spent code commit together, so a code is never spent on a
+      // failed signup and a signup never lands without a code.
+      const code = String(invite_code || "").trim().toUpperCase();
+      const c = await pool.connect();
+      try {
+        await c.query("BEGIN");
+        const ins = await c.query(
+          `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at, marketing_consent)
+           VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW(), $8)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            id,
+            authEmail ?? email,
+            full_name,
+            phone || null,
+            city || null,
+            experience_years || 0,
+            code || null,
+            marketing_consent ?? false,
+          ]
+        );
+        // rowCount 0 = this profile already exists (a retry); its code was spent
+        // when it was created, so there is nothing to spend again.
+        if (ins.rowCount) {
+          // Same rules the signup page applies: a no-limit code is single-use
+          // (used_by marks it), a counted code spends one of max_uses, and an
+          // expired or switched-off code is refused.
+          const spent = await c.query(
+            `UPDATE invite_codes SET
+               used_by      = CASE WHEN max_uses IS NULL THEN $2 ELSE used_by END,
+               is_active    = CASE WHEN max_uses IS NULL THEN false ELSE is_active END,
+               current_uses = CASE WHEN max_uses IS NULL THEN current_uses ELSE COALESCE(current_uses, 0) + 1 END,
+               used_at      = NOW()
+             WHERE code = $1
+               AND is_active = true
+               AND (expires_at IS NULL OR expires_at > NOW())
+               AND ((max_uses IS NULL AND used_by IS NULL)
+                 OR (max_uses IS NOT NULL AND COALESCE(current_uses, 0) < max_uses))`,
+            [code, id]
+          );
+          if (!code || !spent.rowCount) {
+            await c.query("ROLLBACK");
+            return res.status(400).json({ error: "That invite code is not valid or has already been used." });
+          }
+        }
+        await c.query("COMMIT");
+      } catch (e) {
+        await c.query("ROLLBACK").catch(() => {});
+        throw e;
+      } finally {
+        c.release();
+      }
 
       // Agency signup: record the ask. This does NOT create a team and does not
       // grant a seat — the Agency tier has a five-seat minimum and no self-serve
@@ -3815,6 +3903,78 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: delete a policy, with its stored files ───────────────────── */
+  // The browser used to delete the clients row itself, which left the uploaded
+  // PDF and any attached covers in storage while the screen said the file was
+  // deleted, and wrote nothing to the access log. Objects first, row second,
+  // the same order as claim documents.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  app.delete("/api/agent/policies/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      if (!UUID_RE.test(req.params.id)) return res.status(404).json({ error: "Policy not found" });
+      const row = await pool.query(
+        "SELECT id FROM clients WHERE id = $1 AND agent_id = $2",
+        [req.params.id, agentId]
+      );
+      if (row.rows.length === 0) return res.status(404).json({ error: "Policy not found" });
+      const clientId: string = row.rows[0].id;
+
+      // Every object a policy owns sits in the agent's folder as
+      // "<clientId>.<ext>" (the policy) or "<clientId>-<kind>.<ext>" (each
+      // attached cover); see /api/agent/analyze.
+      const { data: objs, error: listErr } = await supabaseAdmin.storage
+        .from(PDF_BUCKET)
+        .list(agentId, { search: clientId, limit: 100 });
+      if (listErr) log.error("policy_delete_list_failed", { agentId, clientId, message: listErr.message });
+      const paths = (objs ?? [])
+        .map((o) => o.name)
+        .filter((n) => n.startsWith(`${clientId}.`) || n.startsWith(`${clientId}-`))
+        .map((n) => `${agentId}/${n}`);
+      if (paths.length > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(paths);
+        if (error) log.error("policy_delete_remove_failed", { agentId, clientId, message: error.message });
+      }
+
+      await pool.query("DELETE FROM clients WHERE id = $1 AND agent_id = $2", [clientId, agentId]);
+      void recordAccess(req, agentId, clientId, "policy_delete");
+      return res.json({ ok: true, filesRemoved: paths.length });
+    } catch (err: any) {
+      console.error("policy delete error:", err);
+      return res.status(500).json({ error: "Could not delete the policy" });
+    }
+  });
+
+  /* ── Agent: delete a lead policy, with its stored file ───────────────── */
+  // Covers both advisor-uploaded lead policies and files a prospect sent from
+  // the advisor page: both are lead_policies rows with a file_url in the bucket.
+  app.delete("/api/agent/lead-policies/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      if (!UUID_RE.test(req.params.id)) return res.status(404).json({ error: "Policy not found" });
+      const row = await pool.query(
+        "SELECT id, file_url FROM lead_policies WHERE id = $1 AND agent_id = $2",
+        [req.params.id, agentId]
+      );
+      if (row.rows.length === 0) return res.status(404).json({ error: "Policy not found" });
+
+      const owned = ownedStorageObject(row.rows[0].file_url, agentId);
+      if (owned) {
+        const { error } = await supabaseAdmin.storage.from(owned.bucket).remove([owned.path]);
+        if (error) log.error("lead_policy_delete_remove_failed", { agentId, message: error.message });
+      }
+
+      await pool.query("DELETE FROM lead_policies WHERE id = $1 AND agent_id = $2", [row.rows[0].id, agentId]);
+      void recordAccess(req, agentId, null, "lead_policy_delete");
+      return res.json({ ok: true });
+    } catch (err: any) {
+      console.error("lead policy delete error:", err);
+      return res.status(500).json({ error: "Could not delete the policy" });
+    }
+  });
+
   /* ── Agent: Upload & Analyze ─────────────────────────────────────────── */
 
   app.post(
@@ -3851,6 +4011,18 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             if (tmp?.path && fs.existsSync(tmp.path)) fs.unlinkSync(tmp.path);
           } catch { /* best-effort */ }
         }
+      };
+
+      // The check reserved for this upload, if any. giveBack() returns it once,
+      // on any path that ends without a finished result.
+      let charged: { table: MeterTable; agentId: string } | null = null;
+      const giveBack = async () => {
+        if (!charged) return;
+        const { table, agentId: who } = charged;
+        charged = null;
+        await refundCheck(table, who).catch((e: any) =>
+          log.error("check_refund_failed", { agentId: who, table, message: e?.message ?? String(e) })
+        );
       };
 
       try {
@@ -3894,32 +4066,29 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         const insuranceType = requestedType;
         const isDataEntry = isDataEntryType(insuranceType);
 
-        // Metering. Health forensic analysis draws from credits; the OCR /
-        // data-entry lanes (motor/life/term/travel/property) draw from the
-        // separate per-plan OCR allowance. Both are checked up front and
-        // decremented only on success.
-        if (!isDataEntry) {
-          const creditRes = await pool.query(
-            "SELECT balance FROM agent_credits WHERE agent_id = $1",
-            [agentId]
-          );
-          const credits = creditRes.rows[0]?.balance ?? 0;
-          if (credits <= 0) {
-            dropTempFiles();
-            return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
-          }
-        } else {
-          const ocrBalance = await ensureOcrBalance(agentId);
-          if (ocrBalance <= 0) {
-            dropTempFiles();
-            return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
-          }
-        }
-
         const file = uploadedFiles.file?.[0];
         if (!file) {
           dropTempFiles();
           return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        // Metering. Health forensic analysis draws from credits; the OCR /
+        // data-entry lanes (motor/life/term/travel/property) draw from the
+        // separate per-plan OCR allowance. One check is reserved here and
+        // given back if the job does not finish (see reserveCheck).
+        if (!isDataEntry) {
+          if (!(await reserveCheck("agent_credits", agentId))) {
+            dropTempFiles();
+            return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+          }
+          charged = { table: "agent_credits", agentId };
+        } else {
+          await ensureOcrBalance(agentId);
+          if (!(await reserveCheck("agent_ocr_credits", agentId))) {
+            dropTempFiles();
+            return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
+          }
+          charged = { table: "agent_ocr_credits", agentId };
         }
 
         // Companion covers — health lane only. On a data-entry type the extra
@@ -4065,8 +4234,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 job.status = "completed";
                 job.result = extraction.data;
 
-                // Draw down one OCR entry — only on a successful extraction.
-                await consumeOcr(agentId);
+                // The OCR entry reserved at upload is now spent for good.
+                charged = null;
 
                 const shared = deriveSharedColumns(insuranceType, extraction.data);
                 /* Motor now carries a score, so a book of motor policies stops
@@ -4101,6 +4270,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               } else {
                 job.status = "failed";
                 job.error = extraction.error;
+                await giveBack();
                 await pool.query(
                   "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
                   [extraction.error, clientId]
@@ -4197,12 +4367,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               job.status = "completed";
               job.result = result.result;
 
-              // Decrement credits on success
-              await pool.query(
-                "UPDATE agent_credits SET balance = GREATEST(balance - 1, 0), total_used = total_used + 1 WHERE agent_id = $1",
-                [agentId]
-              );
-              
+              // The check reserved at upload is now spent for good.
+              charged = null;
+
               // Extract metadata from result. The score lives at the report's
               // top-level audit_score; insurer/product come from the pipeline's
               // metadata step (extractPolicyMetadata), not the report body.
@@ -4261,7 +4428,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             } else {
               job.status = "failed";
               job.error = result.error;
-              
+              await giveBack();
+
               await pool.query(
                 "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
                 [result.error, clientId]
@@ -4274,6 +4442,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             console.error(`[Job ${jobId}] Processing error:`, err);
             job.status = "failed";
             job.error = err.message || "Unknown error";
+            await giveBack();
             await persistJob(job);
 
             await pool.query(
@@ -4292,6 +4461,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         // The background worker never started, so its finally-block cleanup
         // will not run — drop the temp uploads here instead.
         dropTempFiles();
+        await giveBack();
         res.status(500).json({ error: err.message || "Failed to create analysis job" });
       }
     }
@@ -5837,9 +6007,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   /* ── Agent: Re-run analysis from the stored document ────────────────── */
   // Re-processes an existing client row using the PDF persisted in storage at
-  // upload time. Health re-runs go through the full pipeline (credits checked
-  // up front, decremented on success — failed runs never consumed one);
-  // data-entry types re-run the free OCR extraction.
+  // upload time. Health re-runs go through the full pipeline, with the covers
+  // attached at upload read again. Either lane reserves its check up front and
+  // gives it back if the run fails (see reserveCheck).
 
   app.post("/api/agent/clients/:id/rerun", async (req, res) => {
     try {
@@ -5849,7 +6019,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const { id } = req.params;
 
       const clientRes = await pool.query(
-        "SELECT id, status, pdf_url, filename, insurance_type FROM clients WHERE id = $1 AND agent_id = $2",
+        "SELECT id, status, pdf_url, filename, insurance_type, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
       );
       if (clientRes.rows.length === 0) {
@@ -5870,23 +6040,6 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const insuranceType = (client.insurance_type || "health").toLowerCase();
       const isDataEntry = isDataEntryType(insuranceType);
 
-      if (!isDataEntry) {
-        const creditRes = await pool.query(
-          "SELECT balance FROM agent_credits WHERE agent_id = $1",
-          [agentId]
-        );
-        const credits = creditRes.rows[0]?.balance ?? 0;
-        if (credits <= 0) {
-          return res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
-        }
-      } else {
-        // A re-run re-does the paid OCR call, so it draws an OCR entry too.
-        const ocrBalance = await ensureOcrBalance(agentId);
-        if (ocrBalance <= 0) {
-          return res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG });
-        }
-      }
-
       // Resolve the storage object behind pdf_url (signed or public URL).
       const owned = ownedStorageObject(client.pdf_url, agentId);
       if (!owned) {
@@ -5901,6 +6054,24 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         return res.status(409).json({ error: "NO_PDF", message: "Could not fetch the stored document. Delete and re-upload the PDF." });
       }
 
+      // Reserved after the document is in hand, so a missing file costs nothing.
+      // A re-read re-does the paid OCR call, so it draws an OCR entry too.
+      const meter: MeterTable = isDataEntry ? "agent_ocr_credits" : "agent_credits";
+      if (isDataEntry) await ensureOcrBalance(agentId);
+      if (!(await reserveCheck(meter, agentId))) {
+        return isDataEntry
+          ? res.status(403).json({ error: "NO_OCR_CREDITS", message: NO_OCR_CREDITS_MSG })
+          : res.status(403).json({ error: "NO_CREDITS", message: "You have no credits remaining. Contact your admin to top up." });
+      }
+      let charged = true;
+      const giveBack = async () => {
+        if (!charged) return;
+        charged = false;
+        await refundCheck(meter, agentId).catch((e: any) =>
+          log.error("check_refund_failed", { agentId, table: meter, message: e?.message ?? String(e) })
+        );
+      };
+
       await pool.query(
         "UPDATE clients SET status = 'processing', error_message = NULL WHERE id = $1",
         [id]
@@ -5910,12 +6081,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       // Background processing — mirrors the analyze flow with the stored file.
       (async () => {
         const ext = (storagePath.split(".").pop() || "pdf").toLowerCase();
-        const mimetype =
-          ext === "png" ? "image/png"
-          : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
-          : ext === "txt" ? "text/plain"
-          : "application/pdf";
+        const mimetype = mimeFromExt(ext);
         const tempPath = `uploads/rerun-${id}-${Date.now()}.${ext}`;
+        // Companion temp files, removed in the finally below with the main one.
+        const companionTemps: string[] = [];
         try {
           fs.writeFileSync(tempPath, Buffer.from(await blob.arrayBuffer()));
 
@@ -5942,8 +6111,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               clientId: id,
             });
             if (extraction.status === "completed") {
-              // Draw down one OCR entry — only on a successful re-extraction.
-              await consumeOcr(agentId);
+              // The OCR entry reserved for this re-read is now spent for good.
+              charged = false;
 
               const shared = deriveSharedColumns(insuranceType, extraction.data);
               /* The score has to be rewritten here too, and was not.
@@ -5988,6 +6157,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 ]
               );
             } else {
+              await giveBack();
               await pool.query(
                 "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
                 [extraction.error, id]
@@ -5996,20 +6166,84 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             return;
           }
 
-          const result = await runAnalysisPipeline(policyText, insuranceType, {
-            route: "/api/agent/clients/:id/rerun",
-            sourceType: "agent",
-            actorId: agentId,
-            clientId: id,
-          });
+          // The covers attached at upload. A re-run used to read the policy
+          // alone, so the verdict got worse and the covers dropped out of the
+          // report. They are stored beside the policy as "<id>-<kind>.<ext>".
+          const companions: CompanionDoc[] = [];
+          const companionRecords: {
+            kind: CompanionKind;
+            filename: string | null;
+            declaredOnly: boolean;
+            read: boolean;
+            pdf_url?: string | null;
+          }[] = [];
+          const previous: any[] = Array.isArray(client.companions) ? client.companions : [];
+          const { data: objs } = await supabaseAdmin.storage
+            .from(PDF_BUCKET)
+            .list(agentId, { search: `${id}-`, limit: 20 });
+          for (const o of objs ?? []) {
+            if (!o.name.startsWith(`${id}-`)) continue;
+            const rest = o.name.slice(id.length + 1);
+            const dot = rest.lastIndexOf(".");
+            const kind = (dot > 0 ? rest.slice(0, dot) : rest) as CompanionKind;
+            if (kind !== "super_topup" && kind !== "corporate" && kind !== "ayushman") continue;
+            const cExt = dot > 0 ? rest.slice(dot + 1).toLowerCase() : "pdf";
+            const cPath = `${agentId}/${o.name}`;
+            const before = previous.find((p) => p?.kind === kind);
+            let text = "";
+            try {
+              const { data: cBlob } = await supabaseAdmin.storage.from(PDF_BUCKET).download(cPath);
+              if (cBlob) {
+                const cTemp = `uploads/rerun-${id}-${kind}-${Date.now()}.${cExt}`;
+                companionTemps.push(cTemp);
+                fs.writeFileSync(cTemp, Buffer.from(await cBlob.arrayBuffer()));
+                text = await extractPolicyText(
+                  { path: cTemp, mimetype: mimeFromExt(cExt), originalname: before?.filename || o.name } as Express.Multer.File,
+                  { feature: "image_ocr", route: "/api/agent/clients/:id/rerun", sourceType: "agent", actorId: agentId, clientId: id }
+                );
+              }
+            } catch (cErr: any) {
+              console.warn(`[Rerun ${id}] companion ${kind} read failed:`, cErr?.message);
+            }
+            const { data: cSigned } = await supabaseAdmin.storage.from(PDF_BUCKET).createSignedUrl(cPath, 60 * 60);
+            if (text.trim()) companions.push({ kind, text });
+            companionRecords.push({
+              kind,
+              filename: before?.filename ?? o.name,
+              declaredOnly: false,
+              read: !!text.trim(),
+              pdf_url: cSigned?.signedUrl ?? null,
+            });
+          }
+          // Ayushman Bharat ticked without a document has no file to find.
+          if (
+            previous.some((p) => p?.kind === "ayushman" && p?.declaredOnly) &&
+            !companionRecords.some((c) => c.kind === "ayushman")
+          ) {
+            companions.push({ kind: "ayushman", declaredOnly: true });
+            companionRecords.push({ kind: "ayushman", filename: null, declaredOnly: true, read: false });
+          }
+
+          const result = await runAnalysisPipeline(
+            policyText,
+            insuranceType,
+            {
+              route: "/api/agent/clients/:id/rerun",
+              sourceType: "agent",
+              actorId: agentId,
+              clientId: id,
+            },
+            companions
+          );
 
           if (result.status === "completed") {
-            await pool.query(
-              "UPDATE agent_credits SET balance = GREATEST(balance - 1, 0), total_used = total_used + 1 WHERE agent_id = $1",
-              [agentId]
-            );
+            // The check reserved for this run is now spent for good.
+            charged = false;
 
             const reportData = result.result;
+            if (companionRecords.length > 0) {
+              reportData.__companions = companionRecords;
+            }
             const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
             // clients.score is integer. The engine buckets to 5-point steps, so this
             // round is a no-op; it stays as a guard for any unbucketed path.
@@ -6056,6 +6290,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
             await recordPlanProvenance(id, result.metadata);
           } else {
+            await giveBack();
             await pool.query(
               "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
               [result.error, id]
@@ -6063,6 +6298,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           }
         } catch (err: any) {
           console.error(`[Rerun ${id}] error:`, err);
+          await giveBack();
           await pool
             .query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [
               err.message || "Re-run failed",
@@ -6070,9 +6306,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             ])
             .catch(() => {});
         } finally {
-          try {
-            if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-          } catch {}
+          for (const p of [tempPath, ...companionTemps]) {
+            try {
+              if (fs.existsSync(p)) fs.unlinkSync(p);
+            } catch {}
+          }
         }
       })();
     } catch (err: any) {

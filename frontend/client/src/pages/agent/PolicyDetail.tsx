@@ -30,6 +30,7 @@ import { apiFetch, apiJson } from "@/lib/api";
 import { PlanNameField } from "@/components/agent/PlanNameField";
 import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
+import { deletePolicyRecord } from "@/lib/policyDelete";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
 import { hasShareableContent } from "@shared/dataEntryShare";
 
@@ -426,12 +427,7 @@ export default function PolicyDetail() {
     if (!policy?.id || !agent?.agentId) return;
     setBusy("delete");
     try {
-      const update = await supabase
-        .from("clients")
-        .delete()
-        .eq("id", policy.id)
-        .eq("agent_id", agent.agentId);
-      if (update.error) throw new Error(update.error.message);
+      await deletePolicyRecord(policy.id, agent.agentId);
 
       toast({ variant: "success", title: t("policy_detail.deleted") });
       setLocation("/agent/policies");
@@ -755,6 +751,9 @@ export default function PolicyDetail() {
                     <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
                     {isDataEntry ? t("policy_detail.reread") : t("policy_detail.rerun")}
                   </Button>
+                  <p className="text-xs text-slate-500">
+                    {isDataEntry ? t("policy_detail.reread_cost") : t("policy_detail.rerun_cost")}
+                  </p>
                   <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>{t("policy_detail.edit_client")}</Button>
                   {!isDataEntry && (
                     <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!canShare || busy === "share"}>

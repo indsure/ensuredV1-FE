@@ -5,12 +5,15 @@
  * analysis. A lead can hold several policies.
  *
  * Architecture mirrors leads.ts: CRUD/queries go straight through supabase-js
- * (RLS = auth.uid() = agent_id). Only the file upload + optional OCR needs the
+ * (RLS = auth.uid() = agent_id). Only the file upload + optional OCR, and the
+ * delete (which must remove the stored file too), need the
  * backend (storage-admin + extraction), via uploadLeadPolicy().
  */
 
 import { supabase } from "@/lib/supabase";
 import { getApiBase } from "@/lib/queryClient";
+import { apiFetch, apiOk } from "@/lib/api";
+import { isPlaygroundMode } from "@/lib/playground/mode";
 
 export const LEAD_POLICY_TYPES = ["motor", "health", "life", "travel", "property"] as const;
 export type LeadPolicyType = (typeof LEAD_POLICY_TYPES)[number];
@@ -114,9 +117,15 @@ export async function setLeadPolicySpoken(id: string, spoken: boolean): Promise<
   if (error) throw new Error(error.message);
 }
 
+/** Through the backend, so the stored file goes too (the browser delete left it
+ *  in storage). The playground has no backend and keeps the mock delete. */
 export async function deleteLeadPolicy(id: string): Promise<void> {
-  const { error } = await supabase.from("lead_policies").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (isPlaygroundMode()) {
+    const { error } = await supabase.from("lead_policies").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+  await apiOk(apiFetch(`/api/agent/lead-policies/${encodeURIComponent(id)}`, { method: "DELETE" }));
 }
 
 /** Upload a policy file (+ optional OCR autofill) via the backend. Any typed

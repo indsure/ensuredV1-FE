@@ -234,10 +234,15 @@ export default function AgentUploads() {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("type", insuranceType);
-        if (clientName) formData.append("policyholder_name", clientName);
-        if (clientEmail) formData.append("client_email", clientEmail);
-        if (clientPhone) formData.append("client_phone", clientPhone);
-        if (policyIdentifier) formData.append("policy_identifier", policyIdentifier);
+        // The customer details describe ONE person. In a batch every file may be
+        // a different customer, and stamping one name and phone on all of them
+        // sent WhatsApp drafts to the wrong person, so a batch carries none.
+        if (acceptedFiles.length === 1) {
+          if (clientName) formData.append("policyholder_name", clientName);
+          if (clientEmail) formData.append("client_email", clientEmail);
+          if (clientPhone) formData.append("client_phone", clientPhone);
+          if (policyIdentifier) formData.append("policy_identifier", policyIdentifier);
+        }
 
         // Other cover the same person holds. Read in the same audit call, so
         // the report reflects the whole stack and still costs 1 policy check.
@@ -408,7 +413,9 @@ export default function AgentUploads() {
 
   function handleConsentConfirm() {
     setShowConsentModal(false);
-    void processFiles(stagedFiles);
+    // Health is one file per check, with the attached covers belonging to it.
+    // The type switch trims the list too; this is the last line of defence.
+    void processFiles(insuranceType === "health" ? stagedFiles.slice(0, 1) : stagedFiles);
     setStagedFiles([]);
   }
 
@@ -544,6 +551,15 @@ export default function AgentUploads() {
                   // Companion covers are a health-lane concept — don't let them
                   // linger invisibly after switching to another type.
                   if (tkey !== "health") clearCompanions();
+                  // A batch staged under another type would otherwise all go out
+                  // as health audits, on one check, sharing the same covers.
+                  if (tkey === "health" && stagedFiles.length > 1) {
+                    setStagedFiles([stagedFiles[0]]);
+                    toast({
+                      title: t("uploads.one_health"),
+                      description: t("uploads.one_health_desc", { name: stagedFiles[0].name }),
+                    });
+                  }
                 }}
                 disabled={isProcessing}
                 className={[
@@ -896,8 +912,8 @@ export default function AgentUploads() {
             </div>
 
             <div className="pt-4 border-t border-slate-100">
-              <p className="text-xs text-slate-500 leading-relaxed">
-                {t("uploads.client_details_hint")}
+              <p className={`text-xs leading-relaxed ${stagedFiles.length > 1 ? "font-medium text-amber-700" : "text-slate-500"}`}>
+                {stagedFiles.length > 1 ? t("uploads.client_details_batch") : t("uploads.client_details_hint")}
               </p>
             </div>
           </CardContent>

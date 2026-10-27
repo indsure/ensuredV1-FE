@@ -2,8 +2,99 @@ import { useEffect, useRef, useState } from "react";
 import { Redirect } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-type Gate = "loading" | "ok" | "anon" | "agent";
+type Gate = "loading" | "ok" | "anon" | "agent" | "profile";
+
+/**
+ * The account exists but has no profile row yet: the mobile number given at
+ * signup was already on another account, or none was given (a Google signup).
+ * Letting them in left every /api/me call failing with no message and no way to
+ * retry, so ask for the missing details here and save them.
+ */
+function FinishProfile({ initialName, initialTaken, onDone }: { initialName: string; initialTaken: boolean; onDone: () => void }) {
+  const { t } = useLanguage();
+  const [name, setName] = useState(initialName);
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState<string | null>(initialTaken ? t("cauth.su_err_phone_taken") : null);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const digits = phone.replace(/\D/g, "").slice(-10);
+    if (!name.trim()) { setError(t("cauth.su_err_name")); return; }
+    if (!/^[6-9][0-9]{9}$/.test(digits)) { setError(t("cauth.su_err_phone_bad")); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await apiFetch("/api/me/bootstrap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_name: name.trim(), phone: digits }),
+      });
+      if (res.ok) {
+        await supabase.auth.updateUser({ data: { full_name: name.trim(), phone: digits } }).catch(() => {});
+        onDone();
+        return;
+      }
+      const body = await res.json().catch(() => ({} as any));
+      setError(body?.error === "PHONE_IN_USE" ? t("cauth.su_err_phone_taken") : body?.message || t("cauth.fix_failed"));
+    } catch {
+      setError(t("cauth.fix_failed"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
+      <form
+        className="w-full max-w-md space-y-4"
+        onSubmit={(e) => { e.preventDefault(); void save(); }}
+      >
+        <h1 className="font-serif text-2xl text-[var(--color-navy-900)]">{t("cauth.fix_h")}</h1>
+        <p className="text-base text-[var(--color-text-secondary)]">{t("cauth.fix_body")}</p>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-semibold text-[var(--color-navy-900)]">{t("cauth.su_name")}</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            className="w-full h-[52px] rounded-xl border border-[var(--color-border-light)] bg-white px-4 text-base"
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-semibold text-[var(--color-navy-900)]">{t("cauth.su_mobile")}</span>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            placeholder="9876543210"
+            className="w-full h-[52px] rounded-xl border border-[var(--color-border-light)] bg-white px-4 text-base tracking-wide"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-sm font-medium text-red-700">{error}</p>
+        )}
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full h-[52px] rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] transition-colors disabled:opacity-50"
+        >
+          {saving ? t("cauth.fix_saving") : t("cauth.fix_save")}
+        </button>
+        <button
+          type="button"
+          onClick={() => { void supabase.auth.signOut().then(() => { window.location.href = "/login"; }); }}
+          className="w-full text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)] transition-colors"
+        >
+          {t("cauth.fix_signout")}
+        </button>
+      </form>
+    </div>
+  );
+}
 
 /**
  * Gate for the D2C consumer app (/app/*).
@@ -25,6 +116,7 @@ export default function UserProtectedRoute({ children }: { children: React.React
   // Bootstrap is idempotent, but getSession + auth events can both fire for the
   // same user; don't re-POST for a user we've already settled.
   const settledFor = useRef<string | null>(null);
+  const [profileFix, setProfileFix] = useState<{ name: string; taken: boolean }>({ name: "", taken: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +140,21 @@ export default function UserProtectedRoute({ children }: { children: React.React
           const body = await res.json().catch(() => ({}));
           if (body.error === "WRONG_ACCOUNT_TYPE") {
             setGate("agent");
+            return;
+          }
+        }
+        // No profile row could be made: the signup mobile is taken (409), or
+        // a name or mobile is missing (400). Ask for them instead of letting
+        // them into a portfolio where every call fails.
+        if (res.status === 409 || res.status === 400) {
+          const body = await res.json().catch(() => ({}));
+          if (body.error === "PHONE_IN_USE" || body.error === "PROFILE_INCOMPLETE") {
+            if (cancelled) return;
+            setProfileFix({
+              name: String(session.user.user_metadata?.full_name || ""),
+              taken: body.error === "PHONE_IN_USE",
+            });
+            setGate("profile");
             return;
           }
         }
@@ -118,6 +225,9 @@ export default function UserProtectedRoute({ children }: { children: React.React
     );
   }
   if (gate === "anon") return <Redirect to="/login" />;
+  if (gate === "profile") {
+    return <FinishProfile initialName={profileFix.name} initialTaken={profileFix.taken} onDone={() => setGate("ok")} />;
+  }
 
   return <>{children}</>;
 }

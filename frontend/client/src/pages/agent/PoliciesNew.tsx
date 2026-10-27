@@ -4,6 +4,7 @@ import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadshe
 import React from "react"
 import { formatDistanceToNow, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
+import { deletePolicyRecord } from "@/lib/policyDelete"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
@@ -280,16 +281,9 @@ export default function PoliciesNew() {
     if (!agent?.agentId) return;
     setDeletingId(id);
     try {
-      // supabase-js resolves with { error } instead of throwing, so a bare
-      // try/catch around this never fires. Read the error explicitly, or the
-      // row disappears from the table whether or not the delete succeeded and
-      // reappears on the next refresh.
-      const { error: dErr } = await supabase
-        .from("clients")
-        .delete()
-        .eq("id", id)
-        .eq("agent_id", agent.agentId);
-      if (dErr) throw new Error(dErr.message);
+      // Throws on any failure, so the row only leaves the table once the
+      // backend has deleted it (and its stored files).
+      await deletePolicyRecord(id, agent.agentId);
       setRows(prev => prev.filter(r => r.id !== id));
       toast({ variant: "success", title: t("policies.deleted_title"), description: t("policies.deleted_desc") });
     } catch (e: unknown) {

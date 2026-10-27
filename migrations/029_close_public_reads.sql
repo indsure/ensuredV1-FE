@@ -13,6 +13,12 @@
 --    consumer edit (nickname, renewal date, reminders, delete) goes through /api/me/*. This
 --    leaves consumers read access to their own rows and removes browser writes.
 --
+-- 3. invite_codes: any signed-in browser could UPDATE any code (017 notes the table is
+--    "readable AND updatable by any authenticated user"), so a spent code could be switched
+--    back on and advisor signup reopened. The backend now spends the code itself inside
+--    /api/agent/create-profile, and the admin app writes with the service role, so no
+--    browser write is needed. Reads stay, because the signup page checks a code as it is typed.
+--
 -- Shared Supabase: this lands on beta AND prod the moment it runs. Idempotent; safe to re-run.
 -- Undo: 029_close_public_reads_down.sql.
 
@@ -29,8 +35,13 @@ CREATE POLICY "individuals_read_own_policies" ON public.individual_policies
 
 REVOKE INSERT, UPDATE, DELETE ON public.individual_policies FROM anon, authenticated;
 
+REVOKE INSERT, UPDATE, DELETE ON public.invite_codes FROM anon, authenticated;
+
 COMMIT;
 
 -- Check (read-only), expect no row named public_read_active_reports or individuals_own_policies:
 --   SELECT tablename, policyname, cmd, roles FROM pg_policies
 --    WHERE tablename IN ('public_reports', 'individual_policies');
+-- and expect only SELECT for anon/authenticated on invite_codes:
+--   SELECT grantee, privilege_type FROM information_schema.role_table_grants
+--    WHERE table_name = 'invite_codes' AND grantee IN ('anon', 'authenticated');

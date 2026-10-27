@@ -353,20 +353,8 @@ export default function AgentSignupStep1() {
             return
         }
 
-        if (invite.max_uses === null && invite.used_by === null) {
-            await supabase
-                .from('invite_codes')
-                .update({ used_by: userId, used_at: new Date().toISOString(), is_active: false })
-                .eq('code', form.inviteCode.trim().toUpperCase())
-        } else {
-            await supabase
-                .from('invite_codes')
-                .update({ 
-                    current_uses: (invite.current_uses || 0) + 1,
-                    used_at: new Date().toISOString()
-                })
-                .eq('code', form.inviteCode.trim().toUpperCase())
-        }
+        // The code is spent by the server, inside create-profile, in the same
+        // transaction as the account row. The browser no longer writes it.
 
         setLoading(false)
         

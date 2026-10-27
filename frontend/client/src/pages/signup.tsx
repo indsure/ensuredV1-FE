@@ -52,6 +52,10 @@ export default function SignupPublic() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
+  // Set once the auth account exists but its profile could not be saved (the
+  // mobile number was already taken). The next submit fixes the profile on the
+  // same account instead of trying to create a second one with the same email.
+  const [accountCreated, setAccountCreated] = useState(false);
   // Per-field messages. The single bottom-of-form banner is kept only for
   // failures that belong to no field (a rejected signup from the server).
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
@@ -113,6 +117,13 @@ export default function SignupPublic() {
     // is gone but the address still finds the file. Awaited rather than fired
     // and forgotten, because a fast confirmation could otherwise race it, and it
     // never throws.
+    if (accountCreated) {
+      // Keep the account's own copy in step with the number they just fixed.
+      await supabase.auth.updateUser({ data: { full_name: name, phone: digits } }).catch(() => {});
+      await finishProfile(name, digits);
+      return;
+    }
+
     await attachEmailToPendingUpload(email);
 
     const { data, error } = await supabase.auth.signUp({
@@ -160,13 +171,31 @@ export default function SignupPublic() {
       pending_confirmation: false,
     });
 
+    await finishProfile(name, digits);
+  }
+
+  /** Create the profile row, then move on to the portfolio. A taken mobile
+   *  number is the one failure that must stop here: the account exists but has
+   *  no profile, and the person can only fix it by choosing another number. */
+  async function finishProfile(name: string, digits: string) {
     try {
-      // guard-ok(unchecked-apifetch): idempotent, and retried on /app entry. A failure here must not block signup.
-      await apiFetch("/api/me/bootstrap", {
+      // guard-ok(unchecked-apifetch): only PHONE_IN_USE is handled; anything else is retried on /app entry.
+      const res = await apiFetch("/api/me/bootstrap", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ full_name: name, phone: digits }),
       });
+      if (res.status === 409) {
+        const body = await res.json().catch(() => ({} as any));
+        if (body?.error === "PHONE_IN_USE") {
+          setAccountCreated(true);
+          setFieldErrors({ phone: t("cauth.su_err_phone_taken") });
+          setLoading(false);
+          refs.phone.current?.focus();
+          refs.phone.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
     } catch { /* non-fatal — bootstrap is idempotent and retried on /app entry */ }
 
     // If they uploaded a policy before signing up, redeem it now. Must come
@@ -317,6 +346,7 @@ export default function SignupPublic() {
               aria-required="true"
               aria-invalid={Boolean(fieldErrors.email)}
               aria-describedby={fieldErrors.email ? "su-email-err" : "su-email-hint"}
+              disabled={accountCreated}
               value={email}
               onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }}
               className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.email))} transition-all font-medium px-4 rounded-xl`}
@@ -342,6 +372,7 @@ export default function SignupPublic() {
                 aria-required="true"
                 aria-invalid={Boolean(fieldErrors.password)}
                 aria-describedby={fieldErrors.password ? "su-password-err" : "su-password-hint"}
+                disabled={accountCreated}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }}
                 className={`h-[52px] text-base ${inputStateClass(Boolean(fieldErrors.password))} transition-all font-medium px-4 pr-12 rounded-xl`}
