@@ -308,6 +308,24 @@ function playgroundApiResponse(url: string, init?: any): Response {
   const team = playgroundTeamApi(url, init);
   if (team) return team;
 
+  // Public advisor page (/a/<slug>), opened by My Page's Preview button. Without
+  // this the generic reply below has no `live` field, so the page showed "no
+  // longer active". Answers from the seeded row, so demo edits show up too.
+  const advisorPage = url.match(/\/api\/p\/([^/?#]+)(\/[a-z]+)?/);
+  if (advisorPage) {
+    if (advisorPage[2] === "/lead") return json({ ok: true, files_saved: 0 });
+    if (advisorPage[2]) return new Response(null, { status: 204 });
+    const slug = decodeURIComponent(advisorPage[1]);
+    const row = getStore().agent_pages?.find((p) => p.slug === slug);
+    if (!row) return json({ error: "not_found" }, 404);
+    if (!row.enabled || !row.published) return json({ live: false, display_name: row.display_name });
+    return json({
+      live: true, slug: row.slug, display_name: row.display_name, photo_url: row.photo_url,
+      city: row.city, languages: row.languages, lines_of_business: row.lines_of_business,
+      primary_locale: row.primary_locale, whatsapp_number: row.whatsapp_number,
+    });
+  }
+
   // Analysis status poll — must be tested before /api/agent/analyze itself,
   // which is a prefix of this path.
   if (url.includes("/api/agent/analyze/status/")) {

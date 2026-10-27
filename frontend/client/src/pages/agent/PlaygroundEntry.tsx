@@ -29,7 +29,8 @@ export default function PlaygroundEntry() {
   useEffect(() => {
     const params = new URLSearchParams(search);
     const go = params.get("go");
-    const target = go && DEMO_ROUTES.has(go) ? go : "/agent/dashboard";
+    // /a/<slug> is My Page's Preview button; a bare slug path stays on-site.
+    const target = go && (DEMO_ROUTES.has(go) || /^\/a\/[a-z0-9-]+$/.test(go)) ? go : "/agent/dashboard";
 
     let cancelled = false;
     // The mock must be in memory before the flag goes on, or the dashboard's
