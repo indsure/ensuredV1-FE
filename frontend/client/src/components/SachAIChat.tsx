@@ -335,7 +335,9 @@ export default function SachAIChat() {
   // "your" cover.
   // The docs keep their previous/next links in the bottom corner the bubble
   // sits on, and a reader there wants the page, not a chat.
-  if (location.startsWith("/admin") || location.startsWith("/docs")) {
+  // An advisor's own page (/a/...) and /start are single-purpose pages with the menu
+  // hidden on purpose; the bubble was a way off them.
+  if (location.startsWith("/admin") || location.startsWith("/docs") || location.startsWith("/a/") || location === "/start") {
     return null;
   }
 

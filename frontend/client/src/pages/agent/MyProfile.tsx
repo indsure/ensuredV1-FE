@@ -217,8 +217,11 @@ export default function MyProfile() {
         .select("id")
       if (uErr) throw new Error(uErr.message)
       if (!saved?.length) throw new Error(t("my_profile.toast_could_not_save"))
-      // Save extended fields separately — silently ignore if columns don't exist yet
-      await supabase.from("agents").update({ phone_number: phone, firm_name: firm }).eq("id", profile.id)
+      // firm_name arrived in migration 030. It used to be written with phone_number, a
+      // column that does not exist, so the whole write failed and the firm never saved
+      // while the page said "Profile updated". The phone is already saved above.
+      const { error: fErr } = await supabase.from("agents").update({ firm_name: firm.trim() || null }).eq("id", profile.id)
+      if (fErr) throw new Error(fErr.message)
       await refresh()
       toast({ variant: "success", title: t("my_profile.toast_profile_updated") })
     } catch (e: unknown) {

@@ -8,14 +8,14 @@ import { useEffect } from "react";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
-const LAST_UPDATED = "23 September 2026";
-const EFFECTIVE_DATE = "23 September 2026";
+const LAST_UPDATED = "27 October 2026";
+const EFFECTIVE_DATE = "27 October 2026";
 
 const sections = [
   {
     id: "who-we-are",
     title: "1. Who we are",
-    content: `IndSure (referred to as "IndSure", "we", "our", or "us") is an AI-powered insurance analysis platform operated from India. We help individuals and insurance agents understand, compare, and evaluate insurance policies — including health, life, vehicle, and term insurance.
+    content: `IndSure (referred to as "IndSure", "we", "our", or "us") is an AI-powered insurance analysis platform operated from India. We help individuals and insurance agents understand, compare, and evaluate insurance policies, including health, life, vehicle, and term insurance.
 
 Our registered contact email is tech@indsure.in. For all data-related queries, please see Section 11 (Grievance & Contact) below.`,
   },
@@ -43,6 +43,14 @@ You are never required to provide health information to use IndSure. If you choo
         body: `If you register as an insurance agent on IndSure, we collect: full name, email address, mobile number, city, years of experience, invite code, firm name, and the names of insurers you are empanelled with. This data is used to create and manage your agent profile.`,
       },
       {
+        title: "2.3a Payments",
+        body: `When you buy a plan, you pay on Cashfree Payments' secure page. We send Cashfree your name, email address and mobile number so it can take the payment and send you a receipt. We receive back the order reference, the amount, whether it succeeded, and the kind of method used (for example UPI or card). We never see or store your card number, UPI PIN or bank login.`,
+      },
+      {
+        title: "2.3b WhatsApp assistant (advisors)",
+        body: `If an advisor connects IndSure on WhatsApp, the messages and files they send to our WhatsApp number are read by our server to answer them, and the replies are sent back through WhatsApp. These messages travel through WhatsApp (Meta), under WhatsApp's own terms. Advisors should only send customer details they are allowed to share.`,
+      },
+      {
         title: "2.4 Chat messages (Sach AI)",
         body: `When you interact with our Sach AI chat assistant, your messages and your current analysis report context are processed to generate a response. Chat messages are not stored permanently and are not used to train any AI model.`,
       },
@@ -58,9 +66,9 @@ We do not set cookies. A few preferences and your sign-in are kept in your brows
       },
       {
         title: "2.7 Advisor pages (indsure.in/a/…)",
-        body: `Some licensed advisors have a public page on our site. If you visit one, we record — in aggregate only — which app the link was opened in (for example Instagram or WhatsApp) and whether the device is a phone, tablet or computer. This is derived from information your browser sends with every request. We do not store your IP address, your full browser identifier, or any record that identifies you individually as a visitor.
+        body: `Some licensed advisors have a public page on our site. If you visit one, we record, in aggregate only, which app the link was opened in (for example Instagram or WhatsApp) and whether the device is a phone, tablet or computer. This is derived from information your browser sends with every request. We do not store your IP address, your full browser identifier, or any record that identifies you individually as a visitor.
 
-If you choose to submit the form on an advisor's page, you are asked to tick a consent box that names that specific advisor. The details you provide — your name, phone number, what you need help with, and any policy document you upload — are shared with that named advisor so they can contact you. We also record the app and device you submitted from, and the campaign link you arrived through, so the advisor knows the context of your enquiry.
+If you choose to submit the form on an advisor's page, you are asked to tick a consent box that names that specific advisor. The details you provide (your name, phone number, what you need help with, and any policy document you upload) are shared with that named advisor so they can contact you. We also record the app and device you submitted from, and the campaign link you arrived through, so the advisor knows the context of your enquiry.
 
 We do not request or collect precise GPS location on these pages. IndSure remains responsible for this data: you can ask us to delete it at any time by contacting our Grievance Officer, and we will remove it from the advisor's records as well as our own.`,
       },
@@ -75,7 +83,9 @@ We do not request or collect precise GPS location on these pages. IndSure remain
       { purpose: "Generate personalised insurance recommendations", data: "Age, health info, income, location", basis: "Consent (you voluntarily provide this)" },
       { purpose: "Power Sach AI chat responses", data: "Chat messages, current report", basis: "Performance of service" },
       { purpose: "Create and manage your agent account", data: "Name, email, phone, city, firm, empanelments", basis: "Performance of contract (agent agreement)" },
-      { purpose: "Improve our analysis accuracy", data: "Anonymised, aggregated report data", basis: "Legitimate interest — data is de-identified before use" },
+      { purpose: "Improve our analysis accuracy", data: "Anonymised, aggregated report data", basis: "Legitimate interest: data is de-identified before use" },
+      { purpose: "Take payment for a paid plan and keep billing records", data: "Name, email, mobile number, plan, amount, payment reference", basis: "Performance of contract, and legal obligation to keep accounts" },
+      { purpose: "Run the WhatsApp assistant for advisors who connect it", data: "WhatsApp number, messages and files the advisor sends it", basis: "Performance of service (the advisor turned it on)" },
       { purpose: "Respond to grievances and support queries", data: "Email, query details", basis: "Legal obligation under DPDP Act 2023" },
     ],
   },
@@ -101,12 +111,16 @@ We do not request or collect precise GPS location on these pages. IndSure remain
         body: `Every night we make an encrypted backup of our database and stored documents and keep it with Cloudflare R2, so that your data can be recovered if something fails. The backups are encrypted before they leave our servers. See Section 5 for how long backups are kept.`,
       },
       {
-        title: "4.5 Google Fonts",
-        body: `Our website loads fonts from fonts.googleapis.com. Your browser will make a request to Google's servers to download fonts, which may involve your IP address being sent to Google. You may block this in your browser settings without affecting core functionality.`,
+        title: "4.5 Cashfree Payments (payments)",
+        body: `Cashfree Payments processes every payment made to IndSure. It receives your name, email address, mobile number and the amount, and handles your card, UPI or bank details itself. Cashfree is a payment aggregator regulated by the Reserve Bank of India.`,
       },
       {
-        title: "4.6 Legal or regulatory disclosure",
-        body: `We may disclose your data to law enforcement, courts, or regulators where required by applicable Indian law, including the DPDP Act 2023, provided we have received a lawful request and — where permitted — have notified you.`,
+        title: "4.6 WhatsApp (advisors who connect it)",
+        body: `Messages between an advisor and our WhatsApp number pass through WhatsApp, which is run by Meta. Our website fonts are served from our own servers, so loading a page sends nothing to Google.`,
+      },
+      {
+        title: "4.7 Legal or regulatory disclosure",
+        body: `We may disclose your data to law enforcement, courts, or regulators where required by applicable Indian law, including the DPDP Act 2023, provided we have received a lawful request and, where permitted, have notified you.`,
       },
     ],
   },
@@ -170,7 +184,7 @@ We will notify you and the Data Protection Board of India in the event of a pers
 
 • No cookies.
 • Browser localStorage keeps your sign-in and a few preferences (language, theme).
-• Browser sessionStorage is used temporarily during document uploads and analysis — contents are cleared when you close your browser tab.
+• Browser sessionStorage is used temporarily during document uploads and analysis, and is cleared when you close your browser tab.
 
 We do not use advertising cookies or cross-site tracking cookies.`,
   },

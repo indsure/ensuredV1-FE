@@ -3,6 +3,7 @@ import { Redirect } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { clearSessionKeys } from "@/lib/clearSessionKeys";
 
 type Gate = "loading" | "ok" | "anon" | "agent" | "profile";
 
@@ -86,7 +87,7 @@ function FinishProfile({ initialName, initialTaken, onDone }: { initialName: str
         </button>
         <button
           type="button"
-          onClick={() => { void supabase.auth.signOut().then(() => { window.location.href = "/login"; }); }}
+          onClick={() => { clearSessionKeys(); void supabase.auth.signOut().then(() => { window.location.href = "/login"; }); }}
           className="w-full text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)] transition-colors"
         >
           {t("cauth.fix_signout")}
@@ -112,6 +113,7 @@ function FinishProfile({ initialName, initialTaken, onDone }: { initialName: str
  *     send them to the portal that IS theirs.
  */
 export default function UserProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
   const [gate, setGate] = useState<Gate>("loading");
   // Bootstrap is idempotent, but getSession + auth events can both fire for the
   // same user; don't re-POST for a user we've already settled.
@@ -200,31 +202,34 @@ export default function UserProtectedRoute({ children }: { children: React.React
       <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
         <div className="max-w-md text-center">
           <h1 className="font-serif text-2xl text-[var(--color-navy-900)] mb-3">
-            That is an advisor account
+            {t("cauth.agent_h")}
           </h1>
           <p className="text-base text-[var(--color-text-secondary)] mb-7">
-            My Portfolio is for people tracking their own policies. Your advisor portal has your
-            customers, your policies and your leads in it.
+            {t("cauth.agent_body")}
           </p>
           <div className="flex flex-col gap-3">
             <a
               href="/agent/dashboard"
               className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-[var(--color-cta)] text-white font-bold hover:bg-[var(--color-cta-hover)] transition-colors"
             >
-              Go to the advisor portal
+              {t("cauth.agent_go")}
             </a>
             <button
-              onClick={() => { void supabase.auth.signOut().then(() => { window.location.href = "/login"; }); }}
+              onClick={() => { clearSessionKeys(); void supabase.auth.signOut().then(() => { window.location.href = "/login"; }); }}
               className="text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)] transition-colors"
             >
-              Sign out and use a different account
+              {t("cauth.agent_signout")}
             </button>
           </div>
         </div>
       </div>
     );
   }
-  if (gate === "anon") return <Redirect to="/login" />;
+  if (gate === "anon") {
+    // Back to the page that was asked for after login (login.tsx honours same-site ?next=).
+    const here = window.location.pathname + window.location.search;
+    return <Redirect to={here !== "/app" ? `/login?next=${encodeURIComponent(here)}` : "/login"} />;
+  }
   if (gate === "profile") {
     return <FinishProfile initialName={profileFix.name} initialTaken={profileFix.taken} onDone={() => setGate("ok")} />;
   }

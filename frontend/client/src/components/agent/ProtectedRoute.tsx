@@ -60,6 +60,8 @@ export default function AgentProtectedRoute({ children }: { children: React.Reac
         return <Redirect to="/agent/login" />
     }
 
+    // Signed out: the login page brings them back here afterwards (LoginNew safeNext).
+    const here = typeof window !== "undefined" ? window.location.pathname + window.location.search : ""
     return session ? (
         <AgentProvider>
             <AgentLayout>
@@ -67,6 +69,6 @@ export default function AgentProtectedRoute({ children }: { children: React.Reac
             </AgentLayout>
         </AgentProvider>
     ) : (
-        <Redirect to="/agent/login" />
+        <Redirect to={here && here !== "/agent/dashboard" ? `/agent/login?next=${encodeURIComponent(here)}` : "/agent/login"} />
     )
 }

@@ -265,7 +265,8 @@ export default function AgentUploads() {
         });
 
         if (!uploadRes.ok) {
-          const errorData = await uploadRes.json();
+          // A proxy or server error page is not JSON: show our message, not a parse error.
+          const errorData = await uploadRes.json().catch(() => ({ error: t("uploads.upload_failed_generic") }));
           
           // Handle auth errors specifically
           if (uploadRes.status === 401) {

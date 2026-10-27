@@ -62,6 +62,7 @@ export const AGENT_TABLES: OwnedTable[] = [
 
 /** Consumer-owned tables, in deletion order. */
 export const INDIVIDUAL_TABLES: OwnedTable[] = [
+  { table: "individual_check_log",    key: "user_id", exportable: false, label: "Check history" },
   { table: "individual_policies",     key: "user_id", exportable: true,  label: "Policies" },
   { table: "agent_connect_requests",  key: "user_id", exportable: false, label: "Advisor requests" },
 ];

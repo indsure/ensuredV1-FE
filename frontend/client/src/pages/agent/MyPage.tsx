@@ -230,7 +230,9 @@ export default function MyPage() {
   }
 
   const liveUrl = pageUrl(page.slug);
-  const canPublish = displayName.trim().length > 1 && lines.length > 0 && !!whatsapp.replace(/\D/g, "");
+  // The number is saved as its last 10 digits; publish only a real Indian mobile, or
+  // visitors' "Message on WhatsApp" opens a chat with nobody.
+  const canPublish = displayName.trim().length > 1 && lines.length > 0 && /^[6-9]\d{9}$/.test(whatsapp.replace(/\D/g, "").slice(-10));
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">

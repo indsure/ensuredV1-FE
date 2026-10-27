@@ -5,8 +5,6 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
-  Calculator,
-  Scale,
   ChevronDown,
   DollarSign,
   TrendingUp,
@@ -219,13 +217,6 @@ export default function TermPage() {
             <Button
               variant="link"
               className="text-[#00B4D8] text-sm font-medium p-0 h-auto"
-              onClick={() => setLocation("/calculator?type=term")}
-            >
-              See real scenario breakdown →
-            </Button>
-            <Button
-              variant="link"
-              className="text-[#00B4D8] text-sm font-medium p-0 h-auto"
               onClick={() => setLocation("/compare?type=term")}
             >
               Compare and find better terms →
@@ -256,104 +247,6 @@ export default function TermPage() {
               </details>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Related Tools Section */}
-      <section className="bg-[#FAFBFC] dark:bg-[#111827] py-12 px-6 md:px-14 border-t border-[#E5E7EB] dark:border-gray-700">
-        <div className="max-w-6xl mx-auto">
-          <h3 className="text-2xl font-semibold text-center text-[#0F1419] dark:text-[#FAFBFC] mb-8">
-            Use our tools to maximize coverage per rupee:
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Calculator Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-6 text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">
-                <Calculator className="w-6 h-6 text-[#00B4D8]" />
-              </div>
-              <h4 className="text-lg font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-2">
-                🧮 Coverage Calculator
-              </h4>
-              <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mb-4 leading-relaxed">
-                Calculate exact sum assured needed
-              </p>
-              <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mb-4 leading-relaxed">
-                Enter your income, dependents, loans. We'll calculate exact sum assured needed
-                for maximum coverage per rupee—pure protection, 20–30 year terms.
-              </p>
-              <div className="bg-[#F3F4F6] dark:bg-gray-700 rounded-lg p-3 mb-4 text-left text-xs text-[#6B7280] dark:text-[#9CA3AF]">
-                <div>Example:</div>
-                <div>Income: ₹12L</div>
-                <div>Dependents: 2 kids + spouse</div>
-                <div>Loans: ₹50L home + ₹10L car</div>
-                <div className="font-semibold text-[#00B4D8] mt-1">→ Recommended: ₹1.5cr–₹1.8cr</div>
-              </div>
-              <Button
-                onClick={() => setLocation("/calculator?type=term")}
-                className="w-full bg-[#00B4D8] hover:bg-[#0099B4] text-white h-11"
-              >
-                Calculate My Need
-              </Button>
-            </div>
-
-            {/* Comparer Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E5E7EB] dark:border-gray-700 p-6 text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">
-                <Scale className="w-6 h-6 text-[#00B4D8]" />
-              </div>
-              <h4 className="text-lg font-semibold text-[#0F1419] dark:text-[#FAFBFC] mb-2">
-                ↔️ Policy Comparer
-              </h4>
-              <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mb-4 leading-relaxed">
-                Find the best term plan for maximum coverage per rupee
-              </p>
-              <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF] mb-4 leading-relaxed">
-                Compare HDFC vs ICICI vs Religare term plans. See premiums, claim settlement
-                ratios, riders, terms. We recommend the best unbiased winner—maximum protection, minimum cost.
-              </p>
-              <div className="bg-[#F3F4F6] dark:bg-gray-700 rounded-lg p-3 mb-4 text-left text-xs text-[#6B7280] dark:text-[#9CA3AF]">
-                <div className="font-medium mb-1">Compare by:</div>
-                <div>• Lowest premium (maximum coverage per rupee)</div>
-                <div>• Best claim settlement ratio</div>
-                <div>• Riders included</div>
-                <div>• Customer reviews</div>
-              </div>
-              <Button
-                onClick={() => setLocation("/compare?type=term")}
-                className="w-full bg-[#00B4D8] hover:bg-[#0099B4] text-white h-11"
-              >
-                Compare Policies
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA Section */}
-      <section className="bg-gradient-to-br from-[#00B4D8] to-[#0F1419] py-16 px-6 md:px-14 my-16 rounded-2xl max-w-[600px] mx-auto text-center text-white">
-        <h3 className="text-3xl font-semibold mb-4">
-          Ready to maximize your coverage per rupee?
-        </h3>
-        <p className="text-base text-white/90 mb-6 leading-relaxed">
-          Get the right amount of pure protection based on your actual needs.
-          Our calculator shows exactly what you need—and our comparer finds
-          the best term plan for maximum coverage, minimum cost.
-        </p>
-        <Button
-          onClick={() => setLocation("/calculator?type=term")}
-          className="bg-[#0F1419] hover:bg-[#1A3A52] text-white h-12 px-8 text-base font-semibold mb-4"
-        >
-          Start Coverage Calculator
-        </Button>
-        <div>
-          <Button
-            variant="link"
-            onClick={() => setLocation("/compare?type=term")}
-            className="text-white text-sm underline-offset-4 hover:underline"
-          >
-            Or compare policies directly
-          </Button>
         </div>
       </section>
 

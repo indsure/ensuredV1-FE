@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Loader2, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { clearSessionKeys } from "@/lib/clearSessionKeys";
 
 // The server only deletes when it receives this exact phrase (accountData.ts).
 const CONFIRM_PHRASE = "DELETE MY ACCOUNT";
@@ -95,7 +96,7 @@ export default function Account() {
           <p className="text-base text-[var(--color-text-secondary)]">{t("cflow.ac_deleted_body")}</p>
           <button
             type="button"
-            onClick={() => { void supabase.auth.signOut().catch(() => {}).finally(() => setLocation("/")); }}
+            onClick={() => { clearSessionKeys(); void supabase.auth.signOut().catch(() => {}).finally(() => setLocation("/")); }}
             className="inline-flex h-12 items-center justify-center rounded-xl bg-[var(--color-cta)] px-6 text-base font-bold text-white hover:bg-[var(--color-cta-hover)]"
           >
             {t("cflow.ac_home")}

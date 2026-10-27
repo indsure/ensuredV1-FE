@@ -462,6 +462,20 @@ export async function cashfreeWebhookHandler(req: Request, res: Response): Promi
     if (type === "REFUND_STATUS_WEBHOOK") {
       const st = String(body?.data?.refund?.refund_status || "").toUpperCase();
       if (st === "SUCCESS") {
+        // A partial refund leaves the order paid (and counted as paid in admin): only a
+        // refund of the full amount marks it refunded. Amounts are rupees in the webhook.
+        const refundPaise = Math.round(Number(body?.data?.refund?.refund_amount) * 100);
+        const row = (await pool.query("SELECT amount_paise FROM payment_orders WHERE order_ref = $1", [orderRef])).rows[0];
+        if (row && Number.isFinite(refundPaise) && refundPaise > 0 && refundPaise < row.amount_paise) {
+          await pool.query(
+            `UPDATE payment_orders
+                SET notes = coalesce(notes || ' | ', '') || $2, updated_at = now()
+              WHERE order_ref = $1`,
+            [orderRef, `partial refund Rs ${(refundPaise / 100).toFixed(2)}: adjust by hand if needed`],
+          );
+          log.warn("[pay] partial refund recorded", { orderRef, refundPaise });
+          return;
+        }
         // Refunds are issued by hand from the Cashfree dashboard for now; the plan is not taken
         // back automatically. Flag it so the founder adjusts access in the admin app.
         await pool.query(
@@ -607,15 +621,15 @@ export async function sendRenewalReminders(): Promise<number> {
   try {
     const due = await pool.query(
       `WITH latest AS (
-         SELECT DISTINCT ON (account_id) id, account_id, account_kind, sku, period_end,
+         SELECT DISTINCT ON (account_id) id, account_id, account_kind, sku, period_end, status,
                 reminded_before_at, reminded_end_at
            FROM payment_orders
-          WHERE status = 'paid' AND period_end IS NOT NULL AND account_id IS NOT NULL
+          WHERE status IN ('paid', 'refunded') AND period_end IS NOT NULL AND account_id IS NOT NULL
           ORDER BY account_id, period_end DESC)
        SELECT *, CASE WHEN period_end > now() THEN 'before' ELSE 'end' END AS which
          FROM latest
-        WHERE (period_end > now() AND period_end <= now() + make_interval(days => $1) AND reminded_before_at IS NULL)
-           OR (period_end <= now() AND period_end > now() - make_interval(days => $1) AND reminded_end_at IS NULL)`,
+        WHERE status = 'paid' AND ((period_end > now() AND period_end <= now() + make_interval(days => $1) AND reminded_before_at IS NULL)
+           OR (period_end <= now() AND period_end > now() - make_interval(days => $1) AND reminded_end_at IS NULL))`,
       [GRACE_DAYS],
     );
     for (const r of due.rows) {
@@ -642,7 +656,7 @@ export async function sendRenewalReminders(): Promise<number> {
         ? `Your ${plan} ends on ${date}.\n\nNothing renews by itself. To keep it, pay for another month or year here:\n${link}\n\n` +
           `If you do nothing, it keeps working for ${GRACE_DAYS} more days after that date, then your account moves to the free plan. Your data stays.\n\nIndSure`
         : `Your ${plan} ended on ${date}.\n\nIt keeps working for ${GRACE_DAYS} more days. To keep it, pay here:\n${link}\n\n` +
-          `After that your account moves to the free plan. Your policies and customers stay in your account.\n\nIndSure`;
+          `After that your account moves to the free plan. ${r.account_kind === "agent" ? "Your policies and customers stay" : "Your policies stay"} in your account.\n\nIndSure`;
       await sendMail({
         to: email,
         subject: r.which === "before" ? `Your ${plan} ends on ${date}` : `Your ${plan} has ended`,
@@ -702,6 +716,7 @@ export function registerPaymentRoutes(app: Express, deps: PaymentDeps): void {
   app.post("/api/pay/order", async (req, res) => {
     const userId = await authedUser(req, res, deps);
     if (!userId) return;
+    let insertedRef: string | null = null;
     try {
       if (!cfConfig()) throw new PayError(503, "PAYMENTS_OFF", "Payments are not switched on yet.");
       const sku = req.body?.sku;
@@ -749,6 +764,7 @@ export function registerPaymentRoutes(app: Express, deps: PaymentDeps): void {
          VALUES ($1, $2, $3, $4, $5)`,
         [orderRef, acc.kind, acc.id, sku, def.amountPaise],
       );
+      insertedRef = orderRef;
 
       const notify = process.env.PAYMENTS_WEBHOOK_URL?.trim();
       const order = await cf("POST", "/orders", {
@@ -776,6 +792,14 @@ export function registerPaymentRoutes(app: Express, deps: PaymentDeps): void {
       );
       res.json({ orderRef, paymentSessionId: order.payment_session_id, mode: cfConfig()!.production ? "production" : "sandbox" });
     } catch (err) {
+      // Cashfree never took this order: close our row, or three gateway errors in a row
+      // would lock the person out of paying for 30 minutes (the open-order cap).
+      if (insertedRef) {
+        await pool.query(
+          "UPDATE payment_orders SET status = 'expired', notes = 'order create failed', updated_at = now() WHERE order_ref = $1 AND status = 'created'",
+          [insertedRef],
+        ).catch(() => {});
+      }
       sendPayError(res, err, "create order");
     }
   });

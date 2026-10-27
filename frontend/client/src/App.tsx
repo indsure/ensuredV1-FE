@@ -214,6 +214,8 @@ function App() {
                       <Route path="/agent/login" component={AgentLoginNew} />
                       <Route path="/agent/forgot-password" component={AgentForgotPassword} />
                       <Route path="/agent/reset-password" component={AgentResetPassword} />
+                      {/* Bare /agent/signup did not match ":rest*" and fell to the agent catch-all. */}
+                      <Route path="/agent/signup" component={AgentSignupFlow} />
                       <Route path="/agent/signup/:rest*" component={AgentSignupFlow} />
                       {/* Reachable signed-out on purpose: an invited advisor
                           usually has no IndSure account yet. The page itself

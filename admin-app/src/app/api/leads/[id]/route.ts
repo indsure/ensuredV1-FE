@@ -28,7 +28,7 @@ type ConnectRequest = {
 function leadNotes(r: ConnectRequest): string {
   const want = r.topic ? (TOPIC_INTEREST[r.topic] ?? r.topic) : null;
   const lines = [
-    "From IndSure — consumer asked to talk to an advisor (consented).",
+    "From IndSure: consumer asked to talk to an advisor (consented).",
     want ? `Wants: ${want}.` : null,
     r.message ? `\n"${r.message}"` : null,
   ].filter(Boolean);

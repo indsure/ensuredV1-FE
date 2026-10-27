@@ -49,12 +49,12 @@ function previewCopy(row: AdvisorRow) {
   const where = row.city ? ` · ${row.city}` : "";
   if (row.primary_locale === "hi") {
     return {
-      title: `${row.display_name} — बीमा सलाहकार${where}`,
+      title: `${row.display_name}, बीमा सलाहकार${where}`,
       description: `अपनी पॉलिसी ${row.display_name} को भेजिए, या बीमा से जुड़ा कोई भी सवाल पूछिए। आसान भाषा में जवाब।`,
     };
   }
   return {
-    title: `${row.display_name} — Insurance Advisor${where}`,
+    title: `${row.display_name}, Insurance Advisor${where}`,
     description: `Send your policy to ${row.display_name} for a plain-language review, or ask any question about your cover.`,
   };
 }

@@ -71,7 +71,7 @@ export const mockReportCareSupreme: ForensicAuditReport = {
         remarks: "Comprehensive check-up including Lipid Profile, Echo, TMT."
       },
       {
-        name: "Safeguard Rider (Niva Bupa equivalent)",
+        name: "Safeguard Rider",
         coverage_amount: null,
         is_material: true,
         remarks: "Covers non-payable items (gloves, masks) + Inflation protection."
@@ -343,7 +343,7 @@ export const mockReportLife: ForensicAuditReport = {
     major_hospitals_included: [],
     reimbursement_allowed: true,
     risk_level: "low",
-    remarks: "Excellent settlement record. HDFC Life typically settles claims within 30 days."
+    remarks: "Excellent settlement record. This insurer usually settles claims within 30 days."
   },
   benefit_evaluation: {
     what_actually_works: [
@@ -375,7 +375,7 @@ export const mockReportLife: ForensicAuditReport = {
     medium_priority: [{ action: "Add Critical Illness", reason: "Cover income loss during serious illness." }],
     low_priority: []
   },
-  confidence_notes: ["Standard HDFC wording."],
+  confidence_notes: ["Standard policy wording."],
   data_quality: {
     overall: "high",
     missing_critical_fields: [],

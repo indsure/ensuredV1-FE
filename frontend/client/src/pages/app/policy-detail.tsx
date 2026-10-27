@@ -10,6 +10,7 @@ import { isDataEntryType } from "@/lib/insuranceTypes";
 import { validateForensicAuditReport } from "@shared/policy";
 import { ArrowLeft, AlertCircle, Loader2, ShieldCheck, Download, PhoneCall } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useToast } from "@/hooks/use-toast";
 
 type PolicyRow = {
   id: string;
@@ -39,6 +40,7 @@ export default function PolicyDetail({ id }: { id: string }) {
   const [row, setRow] = useState<PolicyRow | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error" | "notfound">("loading");
   const [downloading, setDownloading] = useState(false);
+  const { toast } = useToast();
   const [connectOpen, setConnectOpen] = useState(false);
 
   async function downloadFile() {
@@ -59,7 +61,10 @@ export default function PolicyDetail({ id }: { id: string }) {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch { /* best-effort */ } finally {
+    } catch (e: any) {
+      // Same message as the portfolio list: a silent failure looked like a dead button.
+      toast({ title: t("pf.download_failed"), description: t("pf.download_failed_d"), variant: "destructive" });
+    } finally {
       setDownloading(false);
     }
   }

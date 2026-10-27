@@ -43,6 +43,7 @@ import {
 type LoadState =
   | { kind: "loading" }
   | { kind: "notfound" }
+  | { kind: "error" }
   | { kind: "inactive"; name: string | null }
   | { kind: "live"; page: PublicAdvisorPage };
 
@@ -77,7 +78,8 @@ export default function AdvisorPage() {
         switchLocale(res.primary_locale);
         recordView(slug, utm.source);
       })
-      .catch(() => alive && setState({ kind: "notfound" }));
+      // A network or server failure is not a missing page: say so, and let them retry.
+      .catch(() => alive && setState({ kind: "error" }));
     return () => {
       alive = false;
     };
@@ -86,7 +88,7 @@ export default function AdvisorPage() {
   const advisorName = state.kind === "live" ? state.page.display_name : "";
 
   useSEO({
-    title: advisorName ? `${advisorName} — Insurance Advisor | IndSure` : "Insurance Advisor | IndSure",
+    title: advisorName ? `${advisorName}, Insurance Advisor | IndSure` : "Insurance Advisor | IndSure",
     description: advisorName
       ? `Talk to ${advisorName} about your insurance, or send a policy for a plain-language review.`
       : "Talk to a licensed insurance advisor.",
@@ -116,14 +118,24 @@ export default function AdvisorPage() {
     );
   }
 
-  if (state.kind === "notfound") return <SimpleNotice title="Page not found" body="This link doesn't lead anywhere. Please check it with the person who shared it." />;
+  if (state.kind === "notfound") return <SimpleNotice title={t("advisor_page.nf_title")} body={t("advisor_page.nf_body")} />;
+
+  if (state.kind === "error") {
+    return (
+      <SimpleNotice
+        title={t("advisor_page.load_err_title")}
+        body={t("advisor_page.load_err_body")}
+        cta={{ label: t("advisor_page.load_err_retry"), href: window.location.pathname + window.location.search }}
+      />
+    );
+  }
 
   if (state.kind === "inactive") {
     return (
       <SimpleNotice
-        title={state.name ? `${state.name}'s page is no longer active` : "This page is no longer active"}
-        body="This advisor is not taking enquiries through IndSure right now. If you need help with a policy, you can still check yours on IndSure."
-        cta={{ label: "Go to IndSure", href: "/" }}
+        title={state.name ? t("advisor_page.inactive_title_named", { name: state.name }) : t("advisor_page.inactive_title")}
+        body={t("advisor_page.inactive_body")}
+        cta={{ label: t("advisor_page.go_indsure"), href: "/" }}
       />
     );
   }
@@ -379,7 +391,7 @@ function LeadForm({
 
     setBusy(true);
     try {
-      await submitAdvisorLead(slug, {
+      const result = await submitAdvisorLead(slug, {
         name: name.trim(),
         phone: digits,
         intent,
@@ -401,6 +413,13 @@ function LeadForm({
         utm_medium: utm.medium,
         utm_campaign: utm.campaign,
       });
+      // The details reached the advisor, but a file that did not store must not be
+      // reported as sent: keep the form open and say which part to send again.
+      if (files.length > 0 && (result?.files_saved ?? files.length) < files.length) {
+        setError(t("advisor_page.files_failed"));
+        setFiles([]);
+        return;
+      }
       onSent(name.trim(), lob);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("advisor_page.err_generic"));

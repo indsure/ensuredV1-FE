@@ -137,7 +137,9 @@ function startPolicyDocumentRead(agentId: string, clientId: string, insuranceTyp
   } catch {
     return;
   }
-  void ingestPolicyDocument(docDb, agentId, clientId, bytes, `${PDF_BUCKET}/${agentId}/${clientId}.pdf`).catch(() => {});
+  void ingestPolicyDocument(docDb, agentId, clientId, bytes, `${PDF_BUCKET}/${agentId}/${clientId}.pdf`).catch((e: any) =>
+    log.warn("policy_document_read_failed", { clientId, message: e?.message })
+  );
 }
 
 /**
@@ -381,6 +383,23 @@ const FREE_SLOTS_PER_TYPE = 1;
 // more policies across term, life and vehicle" (12 on top of the free plan's one per type).
 const PAID_HEALTH_CHECKS_PER_YEAR = 4;
 const PAID_OTHER_POLICIES = 12 + 3 * FREE_SLOTS_PER_TYPE;
+// Checks RUN in the last 12 months, from individual_check_log (migration 030). The slot
+// counts above read the policies a person still has, so deleting one and uploading again
+// used to buy another paid read for free, without end. These caps cannot be reset that way.
+// Free: one check per type a year (enough to re-check the renewed policy each year).
+// Personal: the same 15 other-type checks a year as it has slots.
+const FREE_CHECKS_PER_TYPE_PER_YEAR = 1;
+const PAID_OTHER_CHECKS_PER_YEAR = PAID_OTHER_POLICIES;
+
+async function checksRunThisYear(userId: string, where: "type" | "not_health", insuranceType: string): Promise<number> {
+  const r = await pool.query(
+    `SELECT count(*)::int AS c FROM individual_check_log
+      WHERE user_id = $1 AND created_at > now() - interval '365 days'
+        AND ${where === "type" ? "insurance_type = $2" : "insurance_type <> 'health' AND $2::text IS NOT NULL"}`,
+    [userId, insuranceType]
+  );
+  return r.rows[0]?.c ?? 0;
+}
 
 // ── Agent OCR (data-entry) metering ──────────────────────────────────────
 // Non-health lanes (motor/life/term/travel/property) run a paid Gemini OCR
@@ -451,6 +470,13 @@ function mimeFromExt(ext: string): string {
 // UPDATE is the check and the spend in one statement, so two uploads can never
 // both take the last check. A job that fails gives its check back.
 type MeterTable = "agent_credits" | "agent_ocr_credits";
+
+/** The extension of an uploaded file name, safe to put in a storage path: lower-case
+ *  letters and digits, at most 5, else "pdf". A name like "a.pdf/../x" gives "pdf". */
+function safeExt(name: string | null | undefined): string {
+  const raw = String(name || "").includes(".") ? String(name).split(".").pop()!.toLowerCase() : "";
+  return /^[a-z0-9]{1,5}$/.test(raw) ? raw : "pdf";
+}
 
 async function reserveCheck(table: MeterTable, agentId: string): Promise<boolean> {
   const touch = table === "agent_ocr_credits" ? ", updated_at = NOW()" : "";
@@ -568,9 +594,15 @@ export async function sweepInterruptedJobs(): Promise<void> {
     );
   }
   const consumer = await pool.query(
-    "UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE status = 'processing'",
+    "UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE status = 'processing' RETURNING id",
     [msg]
   );
+  if (consumer.rows.length) {
+    // Their yearly check count gets the check back too.
+    await pool
+      .query("DELETE FROM individual_check_log WHERE policy_id = ANY($1::uuid[])", [consumer.rows.map((r: any) => r.id)])
+      .catch((e: any) => log.error("consumer_check_refund_failed", { message: e?.message }));
+  }
   if (swept.rowCount || consumer.rowCount) {
     log.warn("interrupted_jobs_swept", { advisor: swept.rowCount ?? 0, consumer: consumer.rowCount ?? 0 });
   }
@@ -692,7 +724,7 @@ const PDF_FAILURE_MESSAGE: Record<PdfFailureReason, string> = {
   password_protected:
     "This PDF is locked with a password, so we could not open it. Please remove the password and upload it again, or send it to our team and we will do it for you.",
   scanned_unreadable:
-    "This looks like a scanned or photographed copy, and we could not read any text from it. We need the original PDF from your insurer — the one that came by email, where you can select the text. If you only have this copy, send it to our team and we will read it for you.",
+    "This looks like a scanned or photographed copy, and we could not read any text from it. We need the original PDF from your insurer: the one that came by email, where you can select the text. If you only have this copy, send it to our team and we will read it for you.",
   corrupt:
     "This file is damaged or is not a readable PDF. Please download a fresh copy from your insurer and upload it again, or send it to our team.",
 };
@@ -999,13 +1031,9 @@ async function checkIndividualQuota(
     // 12 months, and room for 12 more term/life/vehicle policies on top of the free plan's
     // one of each. Was unlimited, which let ₹99 buy unbounded analysis spend.
     if (insuranceType === "health") {
-      const h = await pool.query(
-        `SELECT count(*)::int AS c FROM individual_policies
-          WHERE user_id = $1 AND insurance_type = 'health' AND status <> 'error'
-            AND created_at > now() - interval '365 days'`,
-        [userId]
-      );
-      if ((h.rows[0]?.c ?? 0) >= PAID_HEALTH_CHECKS_PER_YEAR) return { allowed: false, reason: "paid_health_limit" };
+      if ((await checksRunThisYear(userId, "type", "health")) >= PAID_HEALTH_CHECKS_PER_YEAR) {
+        return { allowed: false, reason: "paid_health_limit" };
+      }
       return { allowed: true };
     }
     const o = await pool.query(
@@ -1014,6 +1042,9 @@ async function checkIndividualQuota(
       [userId]
     );
     if ((o.rows[0]?.c ?? 0) >= PAID_OTHER_POLICIES) return { allowed: false, reason: "paid_slots_full" };
+    if ((await checksRunThisYear(userId, "not_health", insuranceType)) >= PAID_OTHER_CHECKS_PER_YEAR) {
+      return { allowed: false, reason: "paid_checks_year" };
+    }
     return { allowed: true };
   }
 
@@ -1028,6 +1059,11 @@ async function checkIndividualQuota(
     "SELECT count(*)::int AS c FROM individual_policies WHERE user_id = $1 AND insurance_type = $2 AND status <> 'error'",
     [userId, insuranceType]
   );
+  // A full slot says so first; the yearly cap only speaks when a slot is free (they deleted).
+  if ((cnt.rows[0]?.c ?? 0) < FREE_SLOTS_PER_TYPE &&
+      (await checksRunThisYear(userId, "type", insuranceType)) >= FREE_CHECKS_PER_TYPE_PER_YEAR) {
+    return { allowed: false, reason: "free_checks_year" };
+  }
   if ((cnt.rows[0]?.c ?? 0) >= FREE_SLOTS_PER_TYPE) {
     return { allowed: false, reason: "slot_full" };
   }
@@ -1263,7 +1299,6 @@ export async function registerRoutes(
       console.error("[Hospital Samples] Error:", error);
       res.status(500).json({
         error: "Failed to get hospital samples",
-        details: error.message,
       });
     }
   });
@@ -1285,7 +1320,6 @@ export async function registerRoutes(
       console.error("[Hospital Filter] Error:", error);
       res.status(500).json({
         error: "Failed to filter hospital network data",
-        details: error.message,
       });
     }
   });
@@ -1294,6 +1328,10 @@ export async function registerRoutes(
 
   app.get("/api/public-report/:uuid", async (req, res) => {
     const uuid = req.params.uuid;
+    // A malformed id is a link that does not exist, not a server error.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
+      return res.status(404).json({ error: "Report not found or inactive" });
+    }
 
     try {
       const reportRes = await pool.query(
@@ -1323,7 +1361,7 @@ export async function registerRoutes(
       });
     } catch (err: any) {
       console.error("PUBLIC REPORT ERROR:", err.message, err.stack);
-      res.status(500).json({ error: "Internal Server Error", details: err.message });
+      res.status(500).json({ error: "Internal Server Error" });
     }
   });
 
@@ -2305,7 +2343,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
           try {
             const fileBuffer = fs.readFileSync(file.path);
-            const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+            const ext = safeExt(file.originalname);
             const storagePath = `${agentId}/lead-policies/${policyId}.${ext}`;
             const { error: upErr } = await supabaseAdmin.storage
               .from(PDF_BUCKET)
@@ -3049,7 +3087,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
 
         const docId = crypto.randomUUID();
-        const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+        const ext = safeExt(file.originalname);
         const storagePath = `${agentId}/claims/${claim.id}/${category}/${docId}.${ext}`;
 
         const fileBuffer = fs.readFileSync(file.path);
@@ -3064,6 +3102,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           return res.status(502).json({ error: "Could not store the file. Try again." });
         }
 
+        // A query id from the browser must be one of THIS claim's rounds.
+        const askedQuery = String(req.body?.query_id || "");
+        const queryId = /^[0-9a-f-]{36}$/i.test(askedQuery)
+          ? (await pool.query("SELECT id FROM claim_queries WHERE id = $1 AND claim_id = $2", [askedQuery, claim.id])).rows[0]?.id ?? null
+          : null;
+
         const ins = await pool.query(
           `INSERT INTO claim_documents
              (id, claim_id, agent_id, query_id, category, doc_type,
@@ -3072,7 +3116,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
            RETURNING id, claim_id, query_id, category, doc_type, filename,
                      file_size, mime_type, uploaded_at`,
           [
-            docId, claim.id, agentId, req.body?.query_id || null, category,
+            docId, claim.id, agentId, queryId, category,
             req.body?.doc_type || null, storagePath, file.originalname,
             file.size ?? null, file.mimetype ?? null,
           ]
@@ -3636,10 +3680,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   app.patch("/api/admin/agents/:id", isAdmin, async (req, res) => {
     const { id } = req.params;
     const { upload_limit } = req.body;
+    const limit = Number(upload_limit);
+    if (!Number.isInteger(limit) || limit < 0 || limit > 100000) {
+      return res.status(400).json({ error: "upload_limit must be a whole number from 0 to 100000" });
+    }
     try {
       await pool.query(
         "UPDATE agents SET upload_limit = $1 WHERE id = $2",
-        [upload_limit, id]
+        [limit, id]
       );
       res.json({ success: true });
     } catch (err) {
@@ -4248,7 +4296,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             // and re-analyzed without re-uploading. Best-effort — never blocks analysis.
             try {
               const fileBuffer = fs.readFileSync(file.path);
-              const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+              const ext = safeExt(file.originalname);
               const storagePath = `${agentId}/${clientId}.${ext}`;
               const { error: upErr } = await supabaseAdmin.storage
                 .from(PDF_BUCKET)
@@ -4651,9 +4699,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           "",
           "The link can be used once and expires in about an hour.",
           "",
-          "If this wasn't you, ignore this email — nothing has changed and your current password still works.",
+          "If this wasn't you, ignore this email. Nothing has changed and your current password still works.",
           "",
-          "— Team IndSure",
+          "Team IndSure",
         ].join("\n"),
         html: `
           <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#0f2233;max-width:520px">
@@ -4663,8 +4711,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               <a href="${link}" style="background:#0e7c6b;color:#fff;text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:600;display:inline-block">Set a new password</a>
             </p>
             <p style="color:#5b6b7a;font-size:13px">The link can be used once and expires in about an hour.</p>
-            <p style="color:#5b6b7a;font-size:13px">If this wasn't you, ignore this email — nothing has changed and your current password still works.</p>
-            <p style="margin-top:26px">— Team IndSure</p>
+            <p style="color:#5b6b7a;font-size:13px">If this wasn't you, ignore this email. Nothing has changed and your current password still works.</p>
+            <p style="margin-top:26px">Team IndSure</p>
           </div>`.trim(),
       });
       if (!sent) console.warn("forgot-password: SMTP not configured or send failed");
@@ -5330,6 +5378,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         );
         const policyId = policyResult.rows[0].id;
 
+        // The check is counted when it starts and given back if it fails, so the
+        // yearly caps in checkIndividualQuota count only checks that produced a result.
+        const logged = await pool.query(
+          "INSERT INTO individual_check_log (user_id, insurance_type, policy_id) VALUES ($1, $2, $3) RETURNING id",
+          [userId, insuranceType, policyId]
+        );
+        const logId = logged.rows[0]?.id;
+        const giveBackCheck = () =>
+          pool.query("DELETE FROM individual_check_log WHERE id = $1", [logId]).catch((e: any) =>
+            log.error("consumer_check_refund_failed", { message: e?.message })
+          );
 
         // ── background processing ──
         (async () => {
@@ -5352,7 +5411,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             // Persist original PDF to storage (best-effort; never blocks analysis).
             try {
               const fileBuffer = fs.readFileSync(file.path);
-              const ext = file.originalname.includes(".") ? file.originalname.split(".").pop() : "pdf";
+              const ext = safeExt(file.originalname);
               const storagePath = `${userId}/${policyId}.${ext}`;
               const { error: upErr } = await supabaseAdmin.storage
                 .from(PDF_BUCKET)
@@ -5410,6 +5469,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 );
               } else {
                 job.status = "failed";
+                await giveBackCheck();
                 job.error = extraction.error;
                 await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(extraction.error), policyId]);
               }
@@ -5459,6 +5519,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               );
             } else {
               job.status = "failed";
+              await giveBackCheck();
               job.error = result.error;
               await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(result.error), policyId]);
             }
@@ -5467,6 +5528,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           } catch (err: any) {
             console.error(`[Job ${jobId}] Processing error:`, err);
             job.status = "failed";
+            await giveBackCheck();
             // job.error keeps the raw message — analysis_jobs is our ledger, and
             // it is what we read when someone reports a failure. Only the
             // consumer-facing column gets the plain-language version.
@@ -6897,7 +6959,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           `[${stamp}] via ${slug} page`,
           intent === "policy" ? "sent a policy for review" : "asked to talk",
           lob ? `(${lob})` : "",
-          message ? `— "${message}"` : "",
+          message ? `: "${message}"` : "",
         ].filter(Boolean).join(" ");
 
         if (isFollowUp) {
@@ -6905,7 +6967,6 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           await pool.query(
             `UPDATE agent_leads
                 SET notes = coalesce(notes || E'\\n', '') || $2,
-                    status = CASE WHEN status IN ('won','lost') THEN status ELSE 'new' END,
                     updated_at = now()
               WHERE id = $1`,
             [leadId, noteLine]
@@ -6987,8 +7048,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           void sendMail({
             to: advisorEmail,
             subject: isFollowUp
-              ? `${name} sent you something else — ${phone}`
-              : `New lead: ${name} — ${phone}`,
+              ? `${name} sent you something else (${phone})`
+              : `New lead: ${name}, ${phone}`,
             text: [
               isFollowUp
                 ? `${name} came back to your IndSure page and ${wants}${lobLabel}.`
@@ -7001,7 +7062,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               "",
               `Open the lead: ${portalLink}`,
               "",
-              "Call them today if you can — they are usually asking more than one advisor.",
+              "Call them today if you can. They are usually asking more than one advisor.",
             ].filter(Boolean).join("\n"),
             html: [
               `<p>${esc(name)} ${isFollowUp ? "came back to" : "filled"} your IndSure page and ${wants}${esc(lobLabel)}.</p>`,
@@ -7010,7 +7071,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               stored > 0 ? `<p>${stored} file(s) attached to the lead in your portal.</p>` : "",
               message ? `<p>What they wrote:<br><i>"${esc(message)}"</i></p>` : "",
               `<p><a href="${portalLink}">Open the lead</a></p>`,
-              `<p style="color:#666">Call them today if you can — they are usually asking more than one advisor.</p>`,
+              `<p style="color:#666">Call them today if you can. They are usually asking more than one advisor.</p>`,
             ].filter(Boolean).join(""),
           });
         } else {

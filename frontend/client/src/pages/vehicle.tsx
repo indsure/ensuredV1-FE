@@ -480,25 +480,7 @@ export default function VehiclePage() {
             {t("lobp.now_what")}
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Calculate Costs */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#00B4D8]/10 flex items-center justify-center mx-auto mb-4">
-                <Calculator className="w-6 h-6 text-[#00B4D8]" />
-              </div>
-              <h3 className="text-lg font-bold text-[#0F1419] dark:text-[#FAFBFC] mb-3">{t("lobp.v_see")}</h3>
-              <p className="text-sm text-[#6B7280] dark:text-[#D1D5DB] mb-4 leading-relaxed">
-                {t("lobp.v_gaps")}
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/calculator?type=vehicle")}
-                className="border-gray-300 dark:border-gray-600"
-              >
-                {t("lobp.v_calc")}
-              </Button>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Compare Policies */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 text-center hover:shadow-lg transition-shadow duration-200">
               <div className="w-12 h-12 rounded-xl bg-[#10B981]/10 flex items-center justify-center mx-auto mb-4">

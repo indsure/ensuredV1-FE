@@ -15,6 +15,7 @@ import {
   parseSumInsured, renewalPhrase, scoreClasses, scoreMeaning, scoreVerdict,
 } from "@/components/app/portfolio-utils";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { clearSessionKeys } from "@/lib/clearSessionKeys";
 import {
   Upload, FileText, ShieldCheck, LogOut, AlertCircle, Loader2, Lock, Pencil, Bell,
   CalendarClock, PhoneCall, Sparkles, Check, Plus, ArrowRight, MessageCircle,
@@ -105,6 +106,7 @@ export default function PortfolioPage() {
   }, [data?.policies.length]);
 
   async function signOut() {
+    clearSessionKeys();
     await supabase.auth.signOut();
     setLocation("/login");
   }
@@ -308,6 +310,11 @@ export default function PortfolioPage() {
       const res = await apiFetch("/api/me/analyze", { method: "POST", body: form });
       if (res.status === 403) {
         const body = await res.json().catch(() => ({}));
+        // Only NEEDS_UPGRADE is the paywall. An advisor account or a missing profile is
+        // a different problem, and showing "upgrade" for it sent people to pay for nothing.
+        if ((body as { error?: string }).error !== "NEEDS_UPGRADE") {
+          throw new Error((body as { message?: string }).message || t("pf.upload_failed"));
+        }
         setUploading(false);
         setUploadStage(null);
         // checkIndividualQuota returns "no_profile", "slot_full" (free plan), or on the
@@ -318,6 +325,8 @@ export default function PortfolioPage() {
         setPaywall(
           reason === "paid_health_limit" ? t("pf.paywall_paid_health")
           : reason === "paid_slots_full" ? t("pf.paywall_paid_slots")
+          : reason === "paid_checks_year" ? t("pf.paywall_paid_checks_year")
+          : reason === "free_checks_year" ? t("pf.paywall_free_year", { type: lobLabel(t, selectedType) })
           : t("pf.paywall", { type: lobLabel(t, selectedType) }),
         );
         return;

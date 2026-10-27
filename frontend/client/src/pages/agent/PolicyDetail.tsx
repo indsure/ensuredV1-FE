@@ -58,6 +58,7 @@ type PolicyRow = {
 type FileRow = {
   file_path: string | null;
   uploaded_at: string | null;
+  file_size: number | null;
 };
 type ClientMeta = { email: string; phone: string };
 
@@ -248,7 +249,8 @@ export default function PolicyDetail() {
       // Set file metadata
       setFileMeta({
         file_path: clientData.filename,
-        uploaded_at: clientData.created_at
+        uploaded_at: clientData.created_at,
+        file_size: (clientData as any).file_size ?? null,
       });
       
       // Set share token
@@ -738,7 +740,7 @@ export default function PolicyDetail() {
                 <CardContent className="space-y-4">
                   <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.filename")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.file_path?.split("/").pop() || t("policy_detail.unavailable")}</div></div>
                   <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.upload_date")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.uploaded_at ? new Date(fileMeta.uploaded_at).toLocaleString(intlLocale(locale)) : t("policy_detail.unavailable")}</div></div>
-                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.file_size")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{t("policy_detail.unavailable")}</div></div>
+                  <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.file_size")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{fileMeta?.file_size ? (fileMeta.file_size >= 1048576 ? `${(fileMeta.file_size / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(fileMeta.file_size / 1024))} KB`) : t("policy_detail.unavailable")}</div></div>
                   <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.current_status")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{tOr(t, `common.status_${policy.status || "pending"}`, policy.status?.replaceAll("_", " ") || "pending")}</div></div>
                   <div><div className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{t("policy_detail.last_analyzed")}</div><div className="mt-1 text-sm font-semibold text-slate-900">{policy.last_analyzed_at ? new Date(policy.last_analyzed_at).toLocaleString(intlLocale(locale)) : t("policy_detail.not_recorded")}</div></div>
                 </CardContent>

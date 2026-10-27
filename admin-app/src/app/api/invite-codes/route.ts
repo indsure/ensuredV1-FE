@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 
+// Invite codes are the only gate on advisor signup, so they come from the crypto source,
+// not Math.random.
 function generateCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "INDSURE-";
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[randomInt(chars.length)];
   }
   return code;
 }
@@ -24,7 +27,7 @@ export async function POST() {
 
   if (error) {
     console.error("[invite-codes] Supabase error:", error);
-    return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+    return NextResponse.json({ error: "Could not create the invite code. Try again." }, { status: 500 });
   }
 
   return NextResponse.json({ code: data });

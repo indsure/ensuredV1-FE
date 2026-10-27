@@ -36,7 +36,11 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
     { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
   ]
 
-  const isActive = (href: string) => location === href || location.startsWith(href + "/")
+  // People is the parent of Leads and Renewals in the rail, so it lights for them too.
+  const PEOPLE_CHILDREN = ["/agent/leads", "/agent/renewals"]
+  const under = (href: string) => location === href || location.startsWith(href + "/")
+  const isActive = (href: string) =>
+    under(href) || (href === "/agent/customers" && PEOPLE_CHILDREN.some(under))
 
   return (
     <nav

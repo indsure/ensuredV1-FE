@@ -367,7 +367,17 @@ export function registerWhatsappRoutes(app: Express, verifyJwt: VerifyJwt): void
 
   async function scopedAgent(req: any, res: any): Promise<string | null> {
     const agentId = String(req.headers["x-wa-agent-id"] || "");
-    if (!(await agentServable(agentId))) {
+    // Never throws: some routes call this before their own try, and a DB error there
+    // became an unhandled rejection and a request that never answered.
+    let ok = false;
+    try {
+      ok = await agentServable(agentId);
+    } catch (err: any) {
+      log.error("wa_scope_failed", { message: err?.message });
+      res.status(503).json({ error: "UNAVAILABLE" });
+      return null;
+    }
+    if (!ok) {
       res.status(403).json({ error: "NOT_LINKED" });
       return null;
     }

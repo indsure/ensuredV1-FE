@@ -681,11 +681,19 @@ export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: 
       const upd = await pool.query(
         `UPDATE team_invites SET status = 'revoked', updated_at = now()
           WHERE id = $1 AND team_id = $2 AND status = 'pending'
-        RETURNING email`,
+        RETURNING email, signup_code`,
         [req.params.id, ctx.team.id]
       );
       if (upd.rowCount === 0) {
         return res.status(404).json({ error: "NO_SUCH_INVITE", message: "That invite is no longer pending." });
+      }
+      // The signup code bundled with the invite stops working too; otherwise it could
+      // still open an advisor account until it expired. An unused one only.
+      if (upd.rows[0].signup_code) {
+        await pool.query(
+          "UPDATE invite_codes SET is_active = false WHERE code = $1 AND used_by IS NULL AND COALESCE(current_uses, 0) = 0",
+          [upd.rows[0].signup_code]
+        );
       }
       return res.json({ message: `The invite to ${upd.rows[0].email} will not work any more. The seat is free.` });
     } catch (err: any) {
@@ -985,7 +993,7 @@ export function registerTeamRoutes(app: Express, verifyJwt: VerifyJwt, isAdmin: 
       );
 
       return res.json({
-        message: `${member.name || "They"} are off the team and the seat is free. Their customers and policies stay theirs — you can no longer see them.`,
+        message: `${member.name || "They"} are off the team and the seat is free. Their customers and policies stay theirs, and you can no longer see them.`,
       });
     } catch (err: any) {
       log.error("team_member_remove_failed", { message: err?.message ?? String(err) });
@@ -1229,11 +1237,11 @@ async function sendInviteEmail(opts: {
       "",
       `Your seat carries ${CHECKS_PER_SEAT} policy checks and 50 data-entry policies every month.`,
       "",
-      `As team owner, ${opts.ownerName} will be able to read the customers, policies, leads and claims you add — not change them — and you will see each time they do.`,
+      `As team owner, ${opts.ownerName} will be able to read the customers, policies, leads and claims you add (not change them), and you will see each time they do.`,
       "",
       "If you were not expecting this, ignore this email. Nothing is created until you accept.",
       "",
-      "— Team IndSure",
+      "Team IndSure",
     ].join("\n"),
     html: `
       <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#0f2233;max-width:520px">
@@ -1243,11 +1251,11 @@ async function sendInviteEmail(opts: {
           <a href="${link}" style="background:#0D9488;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;display:inline-block">Accept the invite</a>
         </p>
         <p style="color:#64748B;font-size:14px">The link works only for ${h.to}, can be used once, and expires on ${opts.expiresAt.toDateString()}.</p>
-        <p style="color:#64748B;font-size:14px">No IndSure account yet? The link sets one up — your signup code is <strong style="color:#0f2233;letter-spacing:0.08em">${h.signupCode}</strong>.</p>
+        <p style="color:#64748B;font-size:14px">No IndSure account yet? The link sets one up. Your signup code is <strong style="color:#0f2233;letter-spacing:0.08em">${h.signupCode}</strong>.</p>
         <p>Your seat carries <strong>${CHECKS_PER_SEAT} policy checks</strong> and <strong>50 data-entry policies</strong> every month.</p>
-        <p style="color:#64748B;font-size:14px">As team owner, ${h.ownerName} will be able to read the customers, policies, leads and claims you add — not change them — and you will see each time they do.</p>
+        <p style="color:#64748B;font-size:14px">As team owner, ${h.ownerName} will be able to read the customers, policies, leads and claims you add (not change them), and you will see each time they do.</p>
         <p style="color:#94A3B8;font-size:13px">If you were not expecting this, ignore this email. Nothing is created until you accept.</p>
-        <p>— Team IndSure</p>
+        <p>Team IndSure</p>
       </div>
     `,
   });

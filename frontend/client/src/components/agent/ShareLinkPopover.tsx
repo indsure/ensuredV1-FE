@@ -60,7 +60,7 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
       <PopoverContent align="end" className="w-80 space-y-3">
         <div className="space-y-1">
           <div className="text-sm font-semibold">{t("share_popover.title")}</div>
-          <div className="text-xs text-muted-foreground">{t("share_popover.desc")}</div>
+          <div className="text-xs text-slate-600">{t("share_popover.desc")}</div>
         </div>
 
         <div className="flex gap-2">
@@ -73,7 +73,7 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
         <div className="flex items-center justify-between gap-3 rounded-md border p-3">
           <div className="space-y-0.5">
             <div className="text-sm font-medium">{t("share_popover.disable")}</div>
-            <div className="text-xs text-muted-foreground">{t("share_popover.disable_desc")}</div>
+            <div className="text-xs text-slate-600">{t("share_popover.disable_desc")}</div>
           </div>
           <Switch checked={!canShare} onCheckedChange={() => void disable()} disabled={busy || disabled} />
         </div>

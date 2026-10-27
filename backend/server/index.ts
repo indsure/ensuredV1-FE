@@ -22,7 +22,8 @@ import { containsPersonalData } from "./lib/pii";
 import { parseIntent, answerFromData } from "./services/sachRetrieval";
 import { sendMail } from "./lib/mailer";
 import { isWaBotRequest } from "./whatsapp"; // WHATSAPP-PLUGIN
-import { cashfreeWebhookHandler, checkPaymentsConfig, startPaymentJobs } from "./services/payments";
+import { cashfreeWebhookHandler, checkPaymentsConfig, istMonth, startPaymentJobs } from "./services/payments";
+import { CHECKS_PER_SEAT } from "./teamRoutes";
 
 /* ---------------- UPLOAD DIRECTORY CLEANUP ---------------- */
 
@@ -263,9 +264,36 @@ async function refillOcrAllowance() {
   }
 }
 
+// Agency seats: the invite email and the Team page promise CHECKS_PER_SEAT policy checks
+// every month, but nothing refilled them. Once per India-time month (agents.checks_period,
+// the same marker yearly Agent plans use) each seat is brought UP to CHECKS_PER_SEAT. Never
+// down: checks the owner moved over or the advisor bought are kept.
+async function refillAgencySeatChecks() {
+  try {
+    const month = istMonth(new Date());
+    const r = await pool.query(
+      `WITH due AS (
+         UPDATE agents SET checks_period = $1
+          WHERE lower(plan) = 'agency' AND team_id IS NOT NULL
+            AND checks_period IS DISTINCT FROM $1
+          RETURNING id)
+       INSERT INTO agent_credits (agent_id, balance)
+       SELECT id, $2 FROM due
+       ON CONFLICT (agent_id) DO UPDATE SET balance = GREATEST(agent_credits.balance, EXCLUDED.balance)
+       RETURNING agent_id`,
+      [month, CHECKS_PER_SEAT]
+    );
+    if ((r.rowCount ?? 0) > 0) log.info(`[team] seat checks refilled for ${month}: ${r.rowCount} seat(s)`);
+  } catch (err: any) {
+    console.error("Failed to refill agency seat checks:", err?.message ?? err);
+  }
+}
+
 // Run on boot + every 6h. The period guard makes both safe/idempotent.
 refillOcrAllowance();
 setInterval(refillOcrAllowance, 6 * 60 * 60 * 1000);
+refillAgencySeatChecks();
+setInterval(refillAgencySeatChecks, 6 * 60 * 60 * 1000);
 
 
 /* ---------------- SERVER SETUP ---------------- */
@@ -346,7 +374,8 @@ const globalApiLimiter = rateLimit({
   // WHATSAPP-PLUGIN: the WhatsApp bot (valid shared key, loopback, no proxy headers) is
   // exempt, since every advisor's traffic arrives from one local address. To unplug, put
   // this back to: skip: (req) => req.path === "/api/health",
-  skip: (req) => req.path === "/api/health" || isWaBotRequest(req),
+  // Mounted on "/api", so req.path here is "/health" (the old "/api/health" never matched).
+  skip: (req) => req.path === "/health" || isWaBotRequest(req),
   message: { error: "rate_limited", message: "Too many requests, please slow down." },
 });
 app.use("/api", globalApiLimiter);
