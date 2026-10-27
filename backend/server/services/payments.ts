@@ -277,6 +277,22 @@ export async function syncOrder(orderRef: string): Promise<string> {
   return row.status;
 }
 
+// What the pay screen should say about an order Cashfree still has open. "failed": every
+// attempt failed, was dropped or cancelled. "unpaid": no attempt at all (the box was closed).
+// "pending": an attempt is still in flight (UPI can take minutes). Never used to grant.
+async function openOrderState(orderRef: string): Promise<"pending" | "failed" | "unpaid"> {
+  try {
+    const pays = await cf("GET", `/orders/${encodeURIComponent(orderRef)}/payments`);
+    if (!Array.isArray(pays) || pays.length === 0) return "unpaid";
+    const states = pays.map((p: any) => String(p?.payment_status || "").toUpperCase());
+    if (states.some((s) => s === "SUCCESS" || s === "PENDING" || s === "")) return "pending";
+    if (states.every((s) => s === "NOT_ATTEMPTED")) return "unpaid";
+    return "failed";
+  } catch {
+    return "pending"; // could not ask: say the honest default, keep polling
+  }
+}
+
 // Turns a PAID order into access. One transaction; the order row lock plus granted_at make a
 // second call (webhook + poll + job racing) a no-op.
 async function grantOrder(orderId: string, paymentId: string | null, method: string | null): Promise<void> {
@@ -484,10 +500,22 @@ export async function reconcileOpenOrders(): Promise<void> {
   }
 }
 
+// Which refills a multi-month plan order has earned by `now`: its checks come once at purchase
+// and then on the same day of each later month (India time), so a year gives exactly 12.
+// Returns the total that should have been granted so far.
+export function checksEarned(sku: Sku, periodStart: Date, now: Date): number {
+  const def = SKUS[sku];
+  let k = 0;
+  while (k < def.months - 1 && addMonthsIst(periodStart, k + 1) <= now) k++;
+  return (k + 1) * def.checks;
+}
+
 // End of grace: plans bought here (they have an end date) drop to free 3 days after it.
-// Plans with no end date (set by hand earlier) are never touched. Yearly Agent plans get their
-// 12 checks each new India-time month.
-export async function planHousekeeping(): Promise<void> {
+// Plans with no end date (set by hand earlier) are never touched. Yearly Agent plans bought
+// here refill on their own order's schedule (see checksEarned), so a monthly renewal bought
+// in the middle of a paid year neither stops nor doubles them. An annual plan set by hand
+// (no paid plan order) keeps the old rule: 12 checks each new India-time month.
+export async function planHousekeeping(now = new Date()): Promise<void> {
   try {
     const a = await pool.query(
       `UPDATE agents SET plan = 'free', billing_cycle = 'monthly'
@@ -507,13 +535,56 @@ export async function planHousekeeping(): Promise<void> {
       log.info(`[pay] plans ended after grace: ${a.rowCount} advisor(s), ${p.rowCount} consumer(s)`);
     }
 
-    const month = istMonth(new Date());
+    const multiMonth = (Object.keys(SKUS) as Sku[]).filter((s) => SKUS[s].kind === "agent" && SKUS[s].months > 1 && SKUS[s].checks > 0);
+    const orders = await pool.query(
+      `SELECT id, sku, period_start, checks_granted FROM payment_orders
+        WHERE status = 'paid' AND granted_at IS NOT NULL AND sku = ANY($1::text[])
+          AND period_start IS NOT NULL AND period_start <= $2
+          AND period_end > $2::timestamptz - interval '35 days'`,
+      [multiMonth, now],
+    );
+    let orderRefills = 0;
+    for (const o of orders.rows) {
+      const owed = checksEarned(o.sku as Sku, new Date(o.period_start), now);
+      if (owed <= o.checks_granted) continue;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        // Only from the count we read, so two runs at once cannot both add.
+        const upd = await client.query(
+          `UPDATE payment_orders SET checks_granted = $2, updated_at = now()
+            WHERE id = $1 AND checks_granted = $3 RETURNING account_id`,
+          [o.id, owed, o.checks_granted],
+        );
+        if (upd.rows[0]) {
+          await client.query(
+            `INSERT INTO agent_credits (agent_id, balance) VALUES ($1, $2)
+             ON CONFLICT (agent_id) DO UPDATE SET balance = agent_credits.balance + EXCLUDED.balance`,
+            [upd.rows[0].account_id, owed - o.checks_granted],
+          );
+          orderRefills++;
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw e;
+      } finally {
+        client.release();
+      }
+    }
+    if (orderRefills > 0) log.info(`[pay] yearly check refill: ${orderRefills} order(s)`);
+
+    const month = istMonth(now);
     const refill = await pool.query(
       `WITH due AS (
          UPDATE agents SET checks_period = $1
           WHERE lower(plan) = 'agent' AND billing_cycle = 'annual'
             AND plan_expires_at IS NOT NULL AND plan_expires_at > now()
             AND checks_period IS DISTINCT FROM $1
+            AND NOT EXISTS (
+              SELECT 1 FROM payment_orders po
+               WHERE po.account_id = agents.id AND po.status = 'paid'
+                 AND po.sku IN ('agent_monthly', 'agent_yearly'))
           RETURNING id)
        INSERT INTO agent_credits (agent_id, balance)
        SELECT id, $2 FROM due
@@ -723,9 +794,14 @@ export function registerPaymentRoutes(app: Express, deps: PaymentDeps): void {
       const fresh = (await pool.query(
         "SELECT sku, amount_paise, status, period_end, checks_granted FROM payment_orders WHERE order_ref = $1", [ref],
       )).rows[0];
+      // Still open at Cashfree. Its payment attempts say whether anything is on the way:
+      // without this, a declined or abandoned payment showed "we are confirming, we will
+      // email you", and no email ever came. Display only: nothing is stored or granted here.
+      let shown = fresh.status as string;
+      if (shown === "created" || shown === "pending") shown = await openOrderState(ref);
       res.json({
         orderRef: ref,
-        status: fresh.status,
+        status: shown,
         sku: fresh.sku,
         label: SKUS[fresh.sku as Sku]?.label ?? fresh.sku,
         amount: fresh.amount_paise / 100,

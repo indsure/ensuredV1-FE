@@ -4851,6 +4851,8 @@
     "failed_body": "This payment was not completed. If money left your account, your bank returns it in 3 to 5 working days. You can try again.",
     "pending_title": "We are confirming your payment",
     "pending_body": "This can take a few minutes with UPI. You can close this page: we will email you as soon as it is confirmed.",
+    "unpaid_title": "No payment was made",
+    "unpaid_body": "The payment window was closed before paying, so no money was taken. You can try again whenever you like.",
     "ref": "Payment reference: {{ref}}",
     "go_portal": "Go to my account",
     "back_plans": "Back to plans",

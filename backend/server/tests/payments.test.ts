@@ -36,7 +36,7 @@ let apiServer: http.Server;
 let cfServer: http.Server;
 
 // Fake Cashfree: remembers orders, lets a test decide what Get Order says.
-const cfOrders = new Map<string, { amount: number; status: string; body: any }>();
+const cfOrders = new Map<string, { amount: number; status: string; body: any; payments?: any[] }>();
 
 async function q(sql: string, params: unknown[] = []) {
   return (await db.query(sql, params)).rows as any[];
@@ -92,7 +92,7 @@ before(async () => {
       if (req.method === "GET" && m) {
         const o = cfOrders.get(decodeURIComponent(m[1]));
         if (!o) { res.statusCode = 404; return res.end("{}"); }
-        if (m[2]) return res.end(JSON.stringify(o.status === "PAID" ? [{ cf_payment_id: 555, payment_status: "SUCCESS", payment_group: "upi" }] : []));
+        if (m[2]) return res.end(JSON.stringify(o.status === "PAID" ? [{ cf_payment_id: 555, payment_status: "SUCCESS", payment_group: "upi" }] : (o.payments ?? [])));
         return res.end(JSON.stringify({ order_id: m[1], order_status: o.status, order_amount: o.amount, order_currency: "INR" }));
       }
       res.statusCode = 404;
@@ -184,10 +184,22 @@ test("agent buys a month: server price, nothing granted until Cashfree says PAID
   assert.equal(cfOrders.get(ref)!.amount, 1499, "the client's amount is ignored");
   assert.equal(cfOrders.get(ref)!.body.customer_details.customer_phone, "9876543210");
 
-  // Box closed but not paid: still pending, nothing granted.
+  // Box closed before paying: no attempt, nothing granted.
   let s = await call("GET", `/api/pay/status/${ref}`, "a");
-  assert.equal(s.body.status, "pending");
+  assert.equal(s.body.status, "unpaid");
   assert.equal((await agent(AGENT)).plan, "free");
+
+  // A UPI attempt in flight: still being confirmed.
+  cfOrders.get(ref)!.payments = [{ payment_status: "PENDING" }];
+  s = await call("GET", `/api/pay/status/${ref}`, "a");
+  assert.equal(s.body.status, "pending");
+
+  // The bank declined it: say so, instead of "we will email you".
+  cfOrders.get(ref)!.payments = [{ payment_status: "FAILED" }, { payment_status: "USER_DROPPED" }];
+  s = await call("GET", `/api/pay/status/${ref}`, "a");
+  assert.equal(s.body.status, "failed");
+  assert.equal((await agent(AGENT)).plan, "free");
+  cfOrders.get(ref)!.payments = [];
 
   // A forged webhook does nothing.
   cfOrders.get(ref)!.status = "ACTIVE";
@@ -342,4 +354,37 @@ test("housekeeping: 3-day grace, hand-set plans untouched, yearly checks refill 
   assert.equal((await agent(HAND)).plan, "agent", "no end date: never touched");
   assert.equal(await credits(YEARLY), 15, "3 + 12, once");
   assert.equal((await agent(YEARLY)).checks_period, pay.istMonth(new Date()));
+});
+
+test("a yearly plan refills on its own schedule: 12 times, never 13, and a monthly renewal does not stop it", async () => {
+  await q("UPDATE payment_orders SET status = 'expired' WHERE status IN ('created','pending')");
+  const r = await call("POST", "/api/pay/order", "n", { sku: "agent_yearly" });
+  cfOrders.get(r.body.orderRef)!.status = "PAID";
+  await call("GET", `/api/pay/status/${r.body.orderRef}`, "n");
+  const start = await credits(AGENT_NOPHONE);
+
+  // Five months and a day into the paid year: 5 refills are owed on top of the first 12.
+  await q("UPDATE payment_orders SET period_start = now() - interval '5 months 1 day' WHERE order_ref = $1", [r.body.orderRef]);
+  // A one-month renewal bought now must not stop the yearly refills.
+  const m = await call("POST", "/api/pay/order", "n", { sku: "agent_monthly" });
+  cfOrders.get(m.body.orderRef)!.status = "PAID";
+  await call("GET", `/api/pay/status/${m.body.orderRef}`, "n");
+  assert.equal((await agent(AGENT_NOPHONE)).billing_cycle, "monthly");
+
+  await pay.planHousekeeping();
+  await pay.planHousekeeping(); // twice: never twice
+  assert.equal(await credits(AGENT_NOPHONE), start + 12 + 5 * 12, "monthly 12 + five yearly refills");
+
+  // Past the end of the year: the total stops at 12 x 12.
+  await q("UPDATE payment_orders SET period_start = now() - interval '12 months 10 days', period_end = now() - interval '10 days' WHERE order_ref = $1", [r.body.orderRef]);
+  await pay.planHousekeeping();
+  const row = (await q("SELECT checks_granted FROM payment_orders WHERE order_ref = $1", [r.body.orderRef]))[0];
+  assert.equal(row.checks_granted, 144, "12 refills in a year, not 13");
+});
+
+test("checksEarned counts month days in India time", () => {
+  const start = new Date("2026-01-31T05:00:00Z");
+  assert.equal(pay.checksEarned("agent_yearly", start, new Date("2026-02-27T05:00:00Z")), 12);
+  assert.equal(pay.checksEarned("agent_yearly", start, new Date("2026-02-28T05:00:00Z")), 24, "31 Jan + 1 month = 28 Feb");
+  assert.equal(pay.checksEarned("agent_yearly", start, new Date("2030-01-01T00:00:00Z")), 144);
 });

@@ -10,7 +10,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 type Status = {
   orderRef: string;
-  status: "created" | "pending" | "paid" | "expired" | "refunded";
+  // "failed" and "unpaid" are what the server reads off Cashfree's payment attempts for an
+  // order that is still open: every attempt failed, or none was made.
+  status: "created" | "pending" | "paid" | "expired" | "refunded" | "failed" | "unpaid";
   label: string;
   amount: number;
   periodEnd: string | null;
@@ -61,7 +63,7 @@ export default function PayStatus() {
           if (stop) return;
           setData(s);
           setPhase("ok");
-          if (s.status === "paid" || s.status === "expired" || s.status === "refunded") return;
+          if (s.status === "paid" || s.status === "expired" || s.status === "refunded" || s.status === "failed") return;
         }
       } catch { /* network blip: keep polling */ }
       if (Date.now() - started.current > POLL_FOR_MS) {
@@ -103,10 +105,14 @@ export default function PayStatus() {
       until ? t("pay.paid_until", { date: until }) : null,
       data.checksAdded > 0 ? t("pay.paid_checks", { n: data.checksAdded }) : null,
     ].filter(Boolean).join(" ");
-  } else if (data?.status === "expired") {
+  } else if (data?.status === "expired" || data?.status === "failed") {
     icon = <XCircle className="h-12 w-12 text-[#B91C1C]" aria-hidden="true" />;
     title = t("pay.failed_title");
     body = t("pay.failed_body");
+  } else if (data?.status === "unpaid") {
+    icon = <XCircle className="h-12 w-12 text-[var(--color-text-secondary)]" aria-hidden="true" />;
+    title = t("pay.unpaid_title");
+    body = t("pay.unpaid_body");
   } else if (phase === "gaveup" || data?.status === "pending" || data?.status === "created") {
     icon = <Clock className="h-12 w-12 text-[var(--color-teal-600)]" aria-hidden="true" />;
     title = t("pay.pending_title");
