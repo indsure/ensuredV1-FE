@@ -156,19 +156,19 @@ class QueryBuilder {
   }
 
   private sortAndLimit(rows: any[]): any[] {
-    let out = rows;
-    for (const o of this.orders) {
-      out = [...out].sort((a, b) => {
+    // Like PostgREST: the first .order() decides, later ones only break ties.
+    let out = this.orders.length === 0 ? rows : [...rows].sort((a, b) => {
+      for (const o of this.orders) {
         const av = a[o.col];
         const bv = b[o.col];
-        if (av == null && bv == null) return 0;
+        if (av == null && bv == null) continue;
         if (av == null) return o.nullsFirst ? -1 : 1;
         if (bv == null) return o.nullsFirst ? 1 : -1;
         if (av < bv) return o.ascending ? -1 : 1;
         if (av > bv) return o.ascending ? 1 : -1;
-        return 0;
-      });
-    }
+      }
+      return 0;
+    });
     if (this.limitN != null) out = out.slice(0, this.limitN);
     return out;
   }

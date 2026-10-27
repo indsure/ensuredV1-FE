@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { RefreshCw, TrendingUp } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { TYPE_META, typeLabel, type InsuranceType } from "@/lib/insuranceTypes";
@@ -69,13 +70,16 @@ export default function Insights() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: qErr } = await supabase
-        .from("clients")
-        .select("id, insurance_type, expiry_date, created_at, score, customer_id")
-        .eq("agent_id", agent.agentId)
-        .eq("status", "done");
-      if (qErr) throw new Error(qErr.message);
-      setRows((data ?? []) as InsightRow[]);
+      const data = await fetchAllRows((from, to) =>
+        supabase
+          .from("clients")
+          .select("id, insurance_type, expiry_date, created_at, score, customer_id")
+          .eq("agent_id", agent.agentId!)
+          .eq("status", "done")
+          .order("id")
+          .range(from, to)
+      );
+      setRows(data as unknown as InsightRow[]);
 
       // Non-fatal: the people tile just stays blank if this fails.
       try {

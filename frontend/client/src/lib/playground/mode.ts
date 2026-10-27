@@ -14,7 +14,29 @@
 
 const PLAYGROUND_KEY = "indsure_playground";
 
+/**
+ * Pages where the demo must never answer. The flag lives in sessionStorage, so
+ * a visitor who presses Back out of the demo and then signs up would otherwise
+ * be "signed up" by the mock: a success screen and no account. On these paths
+ * the real client always runs; the flag is kept, so Forward into the portal
+ * still shows the demo.
+ */
+const REAL_ONLY = /^\/(login|signup|forgot-password|reset-password|app|account)(\/|$)|^\/agent\/(login|signup|forgot-password|reset-password|join)(\/|$)/;
+
 export function isPlaygroundMode(): boolean {
+  try {
+    return (
+      typeof window !== "undefined" &&
+      window.sessionStorage.getItem(PLAYGROUND_KEY) === "1" &&
+      !REAL_ONLY.test(window.location.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** The raw flag, ignoring the page. Only for deciding whether to load the mock. */
+export function playgroundFlagSet(): boolean {
   try {
     return typeof window !== "undefined" && window.sessionStorage.getItem(PLAYGROUND_KEY) === "1";
   } catch {

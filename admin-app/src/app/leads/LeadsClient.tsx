@@ -72,7 +72,9 @@ export default function LeadsClient({ leads, agents }: { leads: Lead[]; agents: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Failed");
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || "Failed");
+      if (out.kept) alert("The advisor had already worked this lead (status, follow-up or notes), so it stays in their list.");
       router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Update failed. Try again.");
@@ -157,7 +159,16 @@ export default function LeadsClient({ leads, agents }: { leads: Lead[]; agents: 
                     <select
                       value={l.assigned_agent_id ?? ""}
                       disabled={busyId === l.id}
-                      onChange={(e) => patch(l.id, { assigned_agent_id: e.target.value || null })}
+                      onChange={(e) => {
+                        const next = e.target.value || null;
+                        if (l.assigned_agent_id && !window.confirm(next
+                          ? "Move this lead to the new advisor? If the current advisor has not touched it yet, it leaves their list."
+                          : "Take this lead back from the advisor? If they have not touched it yet, it leaves their list.")) {
+                          e.target.value = l.assigned_agent_id;
+                          return;
+                        }
+                        void patch(l.id, { assigned_agent_id: next });
+                      }}
                       className="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-slate-400 disabled:opacity-50"
                     >
                       <option value="">— Unassigned —</option>

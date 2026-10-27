@@ -334,7 +334,9 @@ function App() {
 
                       {/* --- Support & Account --- */}
                       <Route path="/help" component={Help} />
-                      <Route path="/account" component={Account} />
+                      <Route path="/account">
+                        {() => <UserProtectedRoute><Account /></UserProtectedRoute>}
+                      </Route>
 
                       {/* --- Consumer (D2C individual) auth + portfolio --- */}
                       <Route path="/login" component={LoginPublic} />

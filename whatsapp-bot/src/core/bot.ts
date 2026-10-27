@@ -276,7 +276,8 @@ export class Bot {
   /* ══ Sending ══════════════════════════════════════════════════════════ */
 
   /** The ONLY way the bot sends anything. `to` is always the advisor's own chat. */
-  private async say(to: string, agentId: string | null, textEn: string, intent: string | null = null) {
+  /** Resolves true once WhatsApp took the message, false when the send failed. */
+  private async say(to: string, agentId: string | null, textEn: string, intent: string | null = null): Promise<boolean> {
     const tr = this.d.transport;
     // Written in English; shown in the advisor's language (fixed wording only, see i18n.ts),
     // then in the house style (style.ts). A customer's message inside is left exactly as is.
@@ -289,11 +290,12 @@ export class Bot {
       await tr.sendTyping(to, false);
     } catch (e: any) {
       log.error("send failed", { error: e?.message });
-      return;
+      return false;
     }
     await this.d.engine
       .logMessage({ agentId, direction: "out", type: "text", bodyRedacted: redact(text).slice(0, 2000), intent })
       .catch(() => {});
+    return true;
   }
 
   /* ══ Entry point ══════════════════════════════════════════════════════ */
@@ -320,7 +322,7 @@ export class Bot {
     if (!who.agentId || !who.servable) return this.unknownOnce(msg);
 
     const agentId = who.agentId;
-    return this.withLock(agentId, async () => {
+    await this.withLock(agentId, async () => {
       try {
         const conv = await this.loadConv(agentId, msg.replyTo);
         const lapsed = this.lapsed.get(agentId) ?? conv.pending?.lapsed;
@@ -1268,6 +1270,7 @@ export class Bot {
     if (this.morningDoneDay === day) return 0;
     this.morningRunning = true;
     let sent = 0;
+    let undelivered = false;
     try {
       const list = await this.d.engine.morningRecipients();
       for (const r of list) {
@@ -1278,10 +1281,16 @@ export class Bot {
         if (!brief) continue;
         await this.langOf(r.agentId);
         if (sent > 0) await this.sleep(20_000 + Math.floor(Math.random() * 20_000));
-        await this.say(`${r.waNumber}@s.whatsapp.net`, r.agentId, brief, "morning_brief");
+        if (!(await this.say(`${r.waNumber}@s.whatsapp.net`, r.agentId, brief, "morning_brief"))) {
+          // WhatsApp is not taking messages. Stop, and try the rest on a later tick
+          // while the morning window is open: an unsent brief is not logged, so the
+          // backend still lists that advisor.
+          undelivered = true;
+          break;
+        }
         sent++;
       }
-      this.morningDoneDay = day;
+      if (!undelivered) this.morningDoneDay = day;
     } catch (e: any) {
       log.error("morning run failed", { error: e?.message });
     } finally {
@@ -2135,39 +2144,55 @@ export class Bot {
     await this.rest(agentId, to, conv.currentClientId);
     const out: string[] = [];
     const changes: LastChange[] = [];
-    for (const op of ops) {
-      if (op.kind === "create") {
-        const r = await this.d.engine.createLead(agentId, { name: op.name, phone: op.phone, interest: op.interest, status: op.status, nextFollowUp: op.nextFollowUp, note: op.note });
-        if (!r.duplicateOf) changes.push({ kind: "create", leadId: r.id, name: op.name, created: r.created, at: this.now() });
-        this.lastPerson.set(agentId, r.duplicateOf ?? op.name);
-        out.push(leadSavedReply(this.d.links, r, { name: op.name, phone: op.phone, interest: op.interest }));
-      } else if (op.kind === "update") {
-        const r = await this.d.engine.leadUpdate(agentId, op.leadId, { status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined });
-        changes.push({
-          kind: "update", leadId: op.leadId, name: r.lead.name,
-          before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes },
-          after: { status: r.lead.status, next_follow_up: r.lead.next_follow_up, notes: r.lead.notes }, at: this.now(),
-        });
-        this.lastPerson.set(agentId, r.lead.name);
-        out.push(leadUpdatedReply(this.d.links, r.lead, { name: op.name, status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined }));
-      } else if (op.kind === "undo") {
-        const c = op.change;
-        const ok = await this.undoOne(agentId, c);
-        this.lastChange.delete(agentId);
-        out.push(!ok ? "I can't undo that from here any more, because it has been changed or added to since. Please fix it in the portal."
-          : c.kind === "bulk" ? `Undone: ${c.items.length} ${allLeads(c) ? "leads" : "changes"} are back as they were.`
-          : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
-          : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
-          : c.kind === "claimCreate" ? `Undone: removed the claim for ${b(c.name)}.`
-          : c.kind === "claimDoc" ? `Undone: removed ${showLabel(c.label)} from ${c.name}.`
-          : c.kind === "lifeRecord" ? `Undone: the record on ${c.name} is removed. The policy's history keeps it, marked removed.`
-          : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.${this.takeUndoNote(agentId)}`
-          : `Undone: ${b(c.name)} is back as it was.`);
-      } else {
-        const r = await this.applyEdit(agentId, op);
-        out.push(r.text);
-        if (r.change) changes.push(r.change);
+    // A batch that fails part way must say what was saved and what was not, so
+    // the advisor does not redo the saved ones or trust the unsaved ones.
+    let failedAt = -1;
+    for (const [i, op] of ops.entries()) {
+      try {
+        if (op.kind === "create") {
+          const r = await this.d.engine.createLead(agentId, { name: op.name, phone: op.phone, interest: op.interest, status: op.status, nextFollowUp: op.nextFollowUp, note: op.note });
+          if (!r.duplicateOf) changes.push({ kind: "create", leadId: r.id, name: op.name, created: r.created, at: this.now() });
+          this.lastPerson.set(agentId, r.duplicateOf ?? op.name);
+          out.push(leadSavedReply(this.d.links, r, { name: op.name, phone: op.phone, interest: op.interest }));
+        } else if (op.kind === "update") {
+          const r = await this.d.engine.leadUpdate(agentId, op.leadId, { status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined });
+          changes.push({
+            kind: "update", leadId: op.leadId, name: r.lead.name,
+            before: { status: r.before.status, next_follow_up: r.before.next_follow_up, notes: r.before.notes },
+            after: { status: r.lead.status, next_follow_up: r.lead.next_follow_up, notes: r.lead.notes }, at: this.now(),
+          });
+          this.lastPerson.set(agentId, r.lead.name);
+          out.push(leadUpdatedReply(this.d.links, r.lead, { name: op.name, status: op.status ?? undefined, nextFollowUp: op.nextFollowUp ?? undefined, note: op.note ?? undefined }));
+        } else if (op.kind === "undo") {
+          const c = op.change;
+          const ok = await this.undoOne(agentId, c);
+          this.lastChange.delete(agentId);
+          out.push(!ok ? "I can't undo that from here any more, because it has been changed or added to since. Please fix it in the portal."
+            : c.kind === "bulk" ? `Undone: ${c.items.length} ${allLeads(c) ? "leads" : "changes"} are back as they were.`
+            : c.kind === "create" ? `Undone: removed the lead ${b(c.name)}.`
+            : c.kind === "customerCreate" ? `Undone: removed the customer ${b(c.name)}.`
+            : c.kind === "claimCreate" ? `Undone: removed the claim for ${b(c.name)}.`
+            : c.kind === "claimDoc" ? `Undone: removed ${showLabel(c.label)} from ${c.name}.`
+            : c.kind === "lifeRecord" ? `Undone: the record on ${c.name} is removed. The policy's history keeps it, marked removed.`
+            : c.kind === "convert" ? `Undone: ${b(c.name)} is a lead again.${this.takeUndoNote(agentId)}`
+            : `Undone: ${b(c.name)} is back as it was.`);
+        } else {
+          const r = await this.applyEdit(agentId, op);
+          out.push(r.text);
+          if (r.change) changes.push(r.change);
+        }
+      } catch (e: any) {
+        log.error("confirmed change failed", { kind: op.kind, error: e?.message });
+        failedAt = i;
+        break;
       }
+    }
+    if (failedAt >= 0) {
+      const left = ops.slice(failedAt);
+      out.push(
+        `Something went wrong, so I stopped. ${failedAt ? `The ${failedAt === 1 ? "change above was" : `${failedAt} changes above were`} saved. ` : ""}` +
+        `These were NOT saved, please send them again:\n${left.map((o) => `• ${this.describe(o)}`).join("\n")}`
+      );
     }
     // A change with no undo (a logged query, an extension) is now the latest: UNDO must not reach past it.
     if (ops.some((o) => ["claimQuery", "claimExtend", "claimDocSession", "claimDocSend"].includes(o.kind))) this.lastChange.delete(agentId);

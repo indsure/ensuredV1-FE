@@ -49,6 +49,13 @@ export type LeadPolicy = {
   updated_at: string;
 };
 
+/** What the upload route adds to the saved row: the parts that did not happen. */
+export type UploadedLeadPolicy = LeadPolicy & {
+  ocr_skipped?: boolean;
+  ocr_failed?: boolean;
+  file_stored?: boolean;
+};
+
 /** A lead policy joined with its parent lead's name/phone, for the expiring view. */
 export type LeadPolicyWithLead = LeadPolicy & {
   agent_leads: { id: string; name: string; phone: string | null } | null;
@@ -133,7 +140,7 @@ export async function deleteLeadPolicy(id: string): Promise<void> {
 export async function uploadLeadPolicy(
   leadId: string,
   params: { file: File; type: LeadPolicyType; ocr: boolean; overrides?: LeadPolicyDraft }
-): Promise<LeadPolicy> {
+): Promise<UploadedLeadPolicy> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Please sign in again");
   const fd = new FormData();
@@ -155,7 +162,7 @@ export async function uploadLeadPolicy(
     const e = await res.json().catch(() => ({}));
     throw new Error(e.error || "Could not upload the policy. Please try again.");
   }
-  return (await res.json()) as LeadPolicy;
+  return (await res.json()) as UploadedLeadPolicy;
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */

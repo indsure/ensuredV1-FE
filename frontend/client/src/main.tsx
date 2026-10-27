@@ -10,7 +10,7 @@ import "./fonts.css";
 import "./index.css";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { getSavedLocale, loadLocale } from "./i18n";
-import { isPlaygroundMode } from "./lib/playground/mode";
+import { playgroundFlagSet } from "./lib/playground/mode";
 import { loadPlayground } from "./lib/playground/registry";
 import { enableStaticFirstPaint } from "./lib/staticFirstPaint";
 
@@ -95,7 +95,8 @@ if (getSavedLocale() === "hi") {
   // on a change, but a returning Hindi visitor arrives with "en" from the HTML.
   document.documentElement.lang = "hi";
 }
-if (isPlaygroundMode()) ready.push(loadPlayground());
+// The raw flag: a demo tab reloaded on /signup still needs the mock when it goes Forward.
+if (playgroundFlagSet()) ready.push(loadPlayground());
 
 // The main public pages ship as real HTML (scripts/prerender.mjs marks them
 // with data-prerendered), so they are already on screen. Hydrating keeps that

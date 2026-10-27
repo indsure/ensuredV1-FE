@@ -3,11 +3,12 @@
  * number can never reach pm2 logs in clear (brief §10).
  */
 
-const PHONE = /(?<!\d)(?:91)?[6-9]\d{9}(?!\d)/g;
+// Also catches the ways people write one: "+91 98123 45678", "98123-45678".
+const PHONE = /(?<![\d+])(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}(?!\d)/g;
 
 export function redact(text: string): string {
   return String(text)
-    .replace(PHONE, (m) => "…" + m.slice(-4))
+    .replace(PHONE, (m) => "…" + m.replace(/\D/g, "").slice(-4))
     // Aadhaar-like 12-digit numbers (an advisor may type one into a document caption).
     .replace(/(?<!\d)\d{4}[\s-]?\d{4}[\s-]?\d{4}(?!\d)/g, "[id]")
     // Policy-number-ish tokens: long runs mixing letters, digits and slashes.

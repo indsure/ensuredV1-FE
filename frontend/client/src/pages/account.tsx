@@ -1,194 +1,179 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { motion, useInView } from "motion/react";
-import { useRef } from "react";
-import {
-  ArrowLeft,
-  Shield,
-  FileText,
-  ArrowRight,
-} from "lucide-react";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { ArrowLeft, Download, Loader2, Trash2, UserRound } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageContext";
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" as const },
-  },
-};
+// The server only deletes when it receives this exact phrase (accountData.ts).
+const CONFIRM_PHRASE = "DELETE MY ACCOUNT";
 
+/**
+ * The consumer's own account page: who they are signed in as, a copy of
+ * everything we hold, and a way to delete it all. The Privacy Policy promises
+ * both, and the server routes (/api/me/export, DELETE /api/me/account) exist;
+ * this is the button for them. Rendered inside UserProtectedRoute.
+ */
 export default function Account() {
-  // Public user accounts are not enabled in this build.
-  const user = null as any;
-  const isLoading = false;
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
-  const { t, locale } = useLanguage();
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(sectionRef as React.RefObject<Element>, { once: true });
+  const [who, setWho] = useState<{ email: string; name: string; phone: string } | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportErr, setExportErr] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      const meta = session?.user.user_metadata ?? {};
+      setWho({
+        email: session?.user.email ?? "",
+        name: String(meta.full_name || ""),
+        phone: String(meta.phone || ""),
+      });
+    });
+  }, []);
+
+  /* Fetched rather than linked, because the route needs the auth header and a
+     plain anchor cannot carry one. */
+  async function downloadData() {
+    setExporting(true);
+    setExportErr(null);
+    try {
+      const res = await apiFetch("/api/me/export");
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportErr(t("cflow.ac_export_failed"));
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (confirmText.trim() !== CONFIRM_PHRASE) return;
+    setDeleting(true);
+    setDeleteErr(null);
+    try {
+      const res = await apiFetch("/api/me/account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: CONFIRM_PHRASE }),
+      });
+      const body = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        setDeleteErr(body?.message || t("cflow.ac_delete_failed"));
+        return;
+      }
+      // Signed out only when they leave: the route gate listens for sign-out
+      // and would swap this page for the login screen before it is read.
+      setDeleted(true);
+    } catch {
+      setDeleteErr(t("cflow.ac_delete_failed"));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const ready = confirmText.trim() === CONFIRM_PHRASE;
+
+  if (deleted) {
     return (
-      <div className="bg-[var(--color-cream-main)] min-h-screen flex items-center justify-center">
-        <div className="text-[var(--color-text-muted)] font-sans">{t("cflow.loading")}</div>
+      <div className="min-h-screen bg-[var(--color-cream-main)] flex items-center justify-center px-6">
+        <div className="max-w-md text-center space-y-4" role="status">
+          <h1 className="font-serif text-3xl text-[var(--color-navy-900)]">{t("cflow.ac_deleted_h")}</h1>
+          <p className="text-base text-[var(--color-text-secondary)]">{t("cflow.ac_deleted_body")}</p>
+          <button
+            type="button"
+            onClick={() => { void supabase.auth.signOut().catch(() => {}).finally(() => setLocation("/")); }}
+            className="inline-flex h-12 items-center justify-center rounded-xl bg-[var(--color-cta)] px-6 text-base font-bold text-white hover:bg-[var(--color-cta-hover)]"
+          >
+            {t("cflow.ac_home")}
+          </button>
+        </div>
       </div>
     );
   }
 
-  const memberSince = user?.created_at
-    ? new Date(user.created_at).toLocaleDateString(locale === "hi" ? "hi-IN" : "en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "—";
-
   return (
-    <div className="bg-[var(--color-navy-900)] text-white font-sans min-h-screen flex flex-col">
-      <Header />
+    <div className="min-h-screen bg-[var(--color-cream-main)] text-[var(--color-text-main)]">
+      <main className="max-w-xl mx-auto px-5 sm:px-6 py-8 space-y-6">
+        <Link href="/app">
+          <span className="inline-flex items-center gap-1.5 text-base font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-navy-900)] cursor-pointer">
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" /> {t("cflow.ac_back")}
+          </span>
+        </Link>
+        <h1 className="font-serif text-3xl text-[var(--color-navy-900)]">{t("cflow.ac_title")}</h1>
 
-      <main className="flex-grow pt-32 pb-14 sm:pb-20 lg:pb-24">
-        <section className="pb-16">
-          <div className="container-editorial px-6">
-            <Link href="/">
-              <span className="inline-flex items-center gap-1 text-sm text-[var(--color-white-muted)] hover:text-white transition-colors cursor-pointer mb-6">
-                <ArrowLeft className="w-4 h-4" /> {t("cflow.back")}
-              </span>
-            </Link>
-            <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-3xl sm:text-5xl md:text-7xl font-serif font-bold tracking-tight leading-[1.1] mb-4 text-white"
-            >
-              {t("cflow.acc_your")} <span className="text-[var(--color-teal-400)]">{t("cflow.acc_profile")}</span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="text-lg text-[var(--color-white-muted)]"
-            >
-              {t("cflow.acc_welcome")} <span className="font-medium text-white">{user?.username}</span>
-            </motion.p>
-          </div>
+        <section className="rounded-2xl border border-[var(--color-border-light)] bg-white p-6 space-y-3">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-navy-900)]">
+            <UserRound className="w-5 h-5 text-[var(--color-teal-600)]" aria-hidden="true" /> {t("cflow.ac_signed_in")}
+          </h2>
+          <dl className="space-y-2 text-base">
+            {who?.name && (
+              <div><dt className="text-sm text-[var(--color-text-muted)]">{t("cauth.su_name")}</dt><dd className="font-semibold">{who.name}</dd></div>
+            )}
+            <div><dt className="text-sm text-[var(--color-text-muted)]">{t("cflow.ac_email")}</dt><dd className="font-semibold break-all">{who?.email || "..."}</dd></div>
+            {who?.phone && (
+              <div><dt className="text-sm text-[var(--color-text-muted)]">{t("cauth.su_mobile")}</dt><dd className="font-semibold">{who.phone}</dd></div>
+            )}
+          </dl>
         </section>
 
-        <div
-          ref={sectionRef}
-          className="bg-[var(--color-cream-main)] text-[var(--color-text-main)] py-16 border-t border-[var(--color-border-light)]"
-        >
-          <div className="container-editorial px-6">
-            <div className="max-w-2xl mx-auto space-y-8">
+        <section className="rounded-2xl border border-[var(--color-border-light)] bg-white p-6 space-y-3">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-navy-900)]">
+            <Download className="w-5 h-5 text-[var(--color-teal-600)]" aria-hidden="true" /> {t("cflow.ac_export_h")}
+          </h2>
+          <p className="text-base text-[var(--color-text-secondary)]">{t("cflow.ac_export_body")}</p>
+          <button
+            type="button"
+            onClick={() => void downloadData()}
+            disabled={exporting}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--color-cta)] px-6 text-base font-bold text-white hover:bg-[var(--color-cta-hover)] disabled:opacity-50"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Download className="w-4 h-4" aria-hidden="true" />}
+            {exporting ? t("cflow.ac_exporting") : t("cflow.ac_export_cta")}
+          </button>
+          {exportErr && <p role="alert" className="text-sm font-medium text-red-700">{exportErr}</p>}
+        </section>
 
-              <motion.div
-                variants={fadeInUp}
-                initial="hidden"
-                animate={isInView ? "visible" : "hidden"}
-                className="bg-white rounded-2xl border border-[var(--color-border-light)] p-8 shadow-2xl shadow-[rgba(0,0,0,0.05)] border-t-4 border-t-[var(--color-teal-600)]"
-              >
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 bg-[var(--color-navy-900)] rounded-md flex items-center justify-center text-[var(--color-teal-400)]">
-                    <Shield className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">{t("cflow.acc_details")}</h2>
-                    <p className="text-sm text-[var(--color-text-muted)]">{t("cflow.acc_info")}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 rounded-lg bg-[var(--color-cream-main)] border border-[var(--color-border-light)]">
-                    <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{t("cflow.acc_username")}</span>
-                    <div className="text-lg font-bold text-[var(--color-navy-900)] mt-1">{user?.username}</div>
-                  </div>
-                  <div className="p-4 rounded-lg bg-[var(--color-cream-main)] border border-[var(--color-border-light)]">
-                    <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{t("cflow.acc_role")}</span>
-                    <div className="text-lg font-bold text-[var(--color-navy-900)] mt-1 capitalize">{user?.role}</div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-[var(--color-cream-main)] border border-[var(--color-border-light)]">
-                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--color-text-muted)]">{t("cflow.acc_since")}</span>
-                  <div className="text-lg font-bold text-[var(--color-navy-900)] mt-1">{memberSince}</div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                variants={fadeInUp}
-                initial="hidden"
-                animate={isInView ? "visible" : "hidden"}
-                transition={{ delay: 0.15 }}
-                className="bg-white rounded-2xl border border-[var(--color-border-light)] p-8 shadow-lg shadow-[rgba(0,0,0,0.03)]"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-[var(--color-cream-main)] border border-[var(--color-border-light)] rounded-md flex items-center justify-center text-[var(--color-teal-600)]">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-serif font-bold text-[var(--color-navy-900)]">{t("cflow.acc_history")}</h2>
-                    <p className="text-sm text-[var(--color-text-muted)]">{t("cflow.acc_past")}</p>
-                  </div>
-                </div>
-
-                <div className="text-center py-10">
-                  <div className="w-16 h-16 bg-[var(--color-cream-main)] rounded-full flex items-center justify-center mx-auto mb-4 border border-[var(--color-border-light)]">
-                    <FileText className="w-7 h-7 text-[var(--color-text-muted)] opacity-50" />
-                  </div>
-                  <p className="font-serif font-bold text-lg text-[var(--color-navy-900)]">{t("cflow.acc_agent_only")}</p>
-                  <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-xs mx-auto">
-                    {t("cflow.acc_not_connected")}
-                  </p>
-                  <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setLocation("/agent/login")}
-                      className="px-6 py-3 rounded-lg font-medium bg-[var(--color-cta)] text-white hover:bg-[var(--color-cta-hover)] transition-colors"
-                    >
-                      {t("cflow.acc_agent_login")}
-                    </button>
-                    <Link href="/policychecker">
-                      <button
-                        type="button"
-                        className="px-6 py-3 rounded-lg font-medium border border-[var(--color-border-light)] text-[var(--color-text-main)] hover:bg-[var(--color-cream-main)] transition-colors"
-                      >
-                        {t("cflow.acc_analyze")}
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                variants={fadeInUp}
-                initial="hidden"
-                animate={isInView ? "visible" : "hidden"}
-                transition={{ delay: 0.3 }}
-                className="flex flex-col sm:flex-row gap-4 justify-between items-center"
-              >
-                <Link href="/policychecker">
-                  <button className="bg-[var(--color-cta)] text-white px-8 py-4 rounded-lg font-medium hover:bg-[var(--color-cta-hover)] transition-colors flex items-center gap-2 shadow-lg shadow-teal-900/20">
-                    {t("cflow.acc_analyze")} <ArrowRight className="w-4 h-4" />
-                  </button>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setLocation("/agent/login")}
-                  className="px-8 py-4 rounded-lg font-medium border border-[var(--color-border-light)] text-white/90 hover:bg-white/10 transition-colors flex items-center gap-2"
-                >
-                  <Shield className="w-4 h-4" />
-                  {t("cflow.acc_agent_portal")}
-                </button>
-              </motion.div>
-
-            </div>
-          </div>
-        </div>
+        <section className="rounded-2xl border border-red-200 bg-white p-6 space-y-3">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-red-700">
+            <Trash2 className="w-5 h-5" aria-hidden="true" /> {t("cflow.ac_delete_h")}
+          </h2>
+          <p className="text-base text-[var(--color-text-secondary)]">{t("cflow.ac_delete_body")}</p>
+          <label className="block space-y-1.5">
+            <span className="text-sm font-semibold text-[var(--color-navy-900)]">{t("cflow.ac_delete_type", { phrase: CONFIRM_PHRASE })}</span>
+            <input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+              className="w-full h-12 rounded-xl border border-[var(--color-border-light)] bg-white px-4 text-base tracking-wide"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => void deleteAccount()}
+            disabled={!ready || deleting}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-red-700 px-6 text-base font-bold text-white hover:bg-red-800 disabled:opacity-40"
+          >
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Trash2 className="w-4 h-4" aria-hidden="true" />}
+            {deleting ? t("cflow.ac_deleting") : t("cflow.ac_delete_cta")}
+          </button>
+          {deleteErr && <p role="alert" className="text-sm font-medium text-red-700">{deleteErr}</p>}
+        </section>
       </main>
-
-      <Footer />
     </div>
   );
 }

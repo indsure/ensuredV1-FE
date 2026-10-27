@@ -1185,6 +1185,10 @@ async function ownerDisplayName(ownerId: string): Promise<string> {
   return r.rows[0]?.n ?? "Your team owner";
 }
 
+function escapeHtml(v: unknown): string {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
 async function sendInviteEmail(opts: {
   to: string;
   toName: string | null;
@@ -1196,6 +1200,15 @@ async function sendInviteEmail(opts: {
 }): Promise<boolean> {
   const link = `${appOrigin()}/agent/join/${opts.token}`;
   const greeting = opts.toName ? `Hello ${opts.toName},` : "Hello,";
+  // Names and the team name are typed by the owner, so they are escaped before
+  // they go into the HTML part. The plain-text part needs no escaping.
+  const h = {
+    greeting: escapeHtml(greeting),
+    ownerName: escapeHtml(opts.ownerName),
+    teamName: escapeHtml(opts.teamName),
+    to: escapeHtml(opts.to),
+    signupCode: escapeHtml(opts.signupCode),
+  };
 
   // The two facts that stop this reading like a phishing mail: it names who
   // invited them, and it says plainly what the owner will be able to see.
@@ -1224,15 +1237,15 @@ async function sendInviteEmail(opts: {
     ].join("\n"),
     html: `
       <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#0f2233;max-width:520px">
-        <p>${greeting}</p>
-        <p><strong>${opts.ownerName}</strong> has invited you to join <strong>${opts.teamName}</strong> on IndSure, with your own advisor account.</p>
+        <p>${h.greeting}</p>
+        <p><strong>${h.ownerName}</strong> has invited you to join <strong>${h.teamName}</strong> on IndSure, with your own advisor account.</p>
         <p style="margin:24px 0">
           <a href="${link}" style="background:#0D9488;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;display:inline-block">Accept the invite</a>
         </p>
-        <p style="color:#64748B;font-size:14px">The link works only for ${opts.to}, can be used once, and expires on ${opts.expiresAt.toDateString()}.</p>
-        <p style="color:#64748B;font-size:14px">No IndSure account yet? The link sets one up — your signup code is <strong style="color:#0f2233;letter-spacing:0.08em">${opts.signupCode}</strong>.</p>
+        <p style="color:#64748B;font-size:14px">The link works only for ${h.to}, can be used once, and expires on ${opts.expiresAt.toDateString()}.</p>
+        <p style="color:#64748B;font-size:14px">No IndSure account yet? The link sets one up — your signup code is <strong style="color:#0f2233;letter-spacing:0.08em">${h.signupCode}</strong>.</p>
         <p>Your seat carries <strong>${CHECKS_PER_SEAT} policy checks</strong> and <strong>50 data-entry policies</strong> every month.</p>
-        <p style="color:#64748B;font-size:14px">As team owner, ${opts.ownerName} will be able to read the customers, policies, leads and claims you add — not change them — and you will see each time they do.</p>
+        <p style="color:#64748B;font-size:14px">As team owner, ${h.ownerName} will be able to read the customers, policies, leads and claims you add — not change them — and you will see each time they do.</p>
         <p style="color:#94A3B8;font-size:13px">If you were not expecting this, ignore this email. Nothing is created until you accept.</p>
         <p>— Team IndSure</p>
       </div>

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Loader2, Plus, RefreshCw, Users, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { toast } from "@/hooks/use-toast";
@@ -45,16 +46,16 @@ export default function CustomersNew() {
     try {
       const [custs, pols] = await Promise.all([
         fetchCustomers(agent.agentId),
-        supabase
-          .from("clients")
-          .select(PORTFOLIO_POLICY_COLUMNS)
-          .eq("agent_id", agent.agentId)
-          .eq("status", "done")
-          .not("customer_id", "is", null)
-          .then(({ data, error: qErr }) => {
-            if (qErr) throw new Error(qErr.message);
-            return (data ?? []) as PortfolioPolicy[];
-          }),
+        fetchAllRows((from, to) =>
+          supabase
+            .from("clients")
+            .select(PORTFOLIO_POLICY_COLUMNS)
+            .eq("agent_id", agent.agentId!)
+            .eq("status", "done")
+            .not("customer_id", "is", null)
+            .order("id")
+            .range(from, to)
+        ).then((rows) => rows as unknown as PortfolioPolicy[]),
       ]);
       setCustomers(custs);
       setPolicies(pols);

@@ -54,7 +54,7 @@ You are never required to provide health information to use IndSure. If you choo
         title: "2.6 Automatically collected data",
         body: `We do not use third-party analytics, advertising pixels, or tracking scripts. Our servers log standard API request metadata (request path, response time) for performance monitoring. These logs do not include personal identifiers and are not shared with third parties.
 
-We set one first-party cookie named sidebar_state (max age 7 days) to remember your dashboard sidebar preference. See our Cookie Policy for details.`,
+We do not set cookies. A few preferences and your sign-in are kept in your browser's storage. See our Cookie Policy for details.`,
       },
       {
         title: "2.7 Advisor pages (indsure.in/a/…)",
@@ -168,8 +168,8 @@ We will notify you and the Data Protection Board of India in the event of a pers
     title: "9. Cookies and local storage",
     content: `We use minimal browser storage. Full details are available in our Cookie Policy. In summary:
 
-• One first-party cookie (sidebar_state) to remember your dashboard layout preference.
-• Browser localStorage is used to save your calculator form progress (ea-theme, IndSure_vehicle_calculator_form, etc.) so you don't lose your inputs if you navigate away.
+• No cookies.
+• Browser localStorage keeps your sign-in and a few preferences (language, theme).
 • Browser sessionStorage is used temporarily during document uploads and analysis — contents are cleared when you close your browser tab.
 
 We do not use advertising cookies or cross-site tracking cookies.`,

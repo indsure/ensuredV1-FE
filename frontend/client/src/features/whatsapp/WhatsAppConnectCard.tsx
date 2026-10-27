@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react"
+import { Link } from "wouter"
 import { BookOpen, Check, Lock, MessageCircle, ShieldCheck, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -214,12 +215,15 @@ export default function WhatsAppConnectCard() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:pl-[52px]">
-                <a href={teamWaLink(t("whatsapp_connect.upgrade_wa_text"))} target="_blank" rel="noopener noreferrer" className={WA_BTN}>
-                  <MessageCircle className="h-5 w-5" aria-hidden />
+                {/* Plan & payments has the live checkout, and falls back to WhatsApp
+                    on its own when payments are switched off. */}
+                <Link href="/agent/plan" className={WA_BTN}>
+                  <Sparkles className="h-5 w-5" aria-hidden />
                   {t("whatsapp_connect.upgrade_cta")}
-                </a>
-                <a href="/advisors/pricing" target="_blank" rel="noopener noreferrer" className="min-h-[44px] inline-flex items-center text-base font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-900">
-                  {t("whatsapp_connect.upgrade_plans")}
+                </Link>
+                <a href={teamWaLink(t("whatsapp_connect.upgrade_wa_text"))} target="_blank" rel="noopener noreferrer" className="min-h-[44px] inline-flex items-center gap-1.5 text-base font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-900">
+                  <MessageCircle className="h-4 w-4" aria-hidden />
+                  {t("whatsapp_connect.upgrade_ask")}
                 </a>
               </div>
             </div>

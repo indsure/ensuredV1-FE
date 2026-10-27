@@ -10,6 +10,7 @@ import { Check, ExternalLink, FileText, Loader2, Plus, Trash2, Upload, X } from 
 import { format } from "date-fns";
 
 import { toast } from "@/hooks/use-toast";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { dateLocale, tOr } from "@/i18n";
 import { formatAmount } from "@/lib/customers";
@@ -36,6 +37,7 @@ export function LeadPoliciesSection({ leadId, agentId }: { leadId: string; agent
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<LeadPolicy | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,11 +115,20 @@ export function LeadPoliciesSection({ leadId, agentId }: { leadId: string; agent
               policy={p}
               busy={busyId === p.id}
               onToggleSpoken={() => toggleSpoken(p)}
-              onDelete={() => remove(p)}
+              onDelete={() => setConfirmDelete(p)}
             />
           ))}
         </div>
       )}
+      <ConfirmationDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+        onConfirm={() => { const p = confirmDelete; setConfirmDelete(null); if (p) void remove(p); }}
+        title={t("lead_policies.delete_policy")}
+        description={t("lead_policies.delete_confirm")}
+        confirmText={t("lead_policies.delete_policy")}
+        variant="destructive"
+      />
     </div>
   );
 }
@@ -234,11 +245,24 @@ function AddPolicyForm({ leadId, agentId, onCancel, onAdded }: {
     }
     setSaving(true);
     try {
-      const row = file
-        ? await uploadLeadPolicy(leadId, { file, type, ocr: ocr && ocrAvailable, overrides })
-        : await createLeadPolicy(leadId, agentId, { insurance_type: type, ...overrides });
-      toast({ variant: "success", title: t("lead_policies.saved") });
-      onAdded(row);
+      if (file) {
+        const row = await uploadLeadPolicy(leadId, { file, type, ocr: ocr && ocrAvailable, overrides });
+        // Saved, but say plainly what did not happen, so nobody trusts a file
+        // or an autofill that is not there.
+        const notes = [
+          row.file_stored === false ? t("lead_policies.file_not_stored") : null,
+          row.ocr_skipped ? t("lead_policies.autofill_skipped_quota") : null,
+          row.ocr_failed ? t("lead_policies.autofill_failed") : null,
+        ].filter(Boolean).join(" ");
+        toast(notes
+          ? { variant: "destructive", title: t("lead_policies.saved_partly"), description: notes }
+          : { variant: "success", title: t("lead_policies.saved") });
+        onAdded(row);
+      } else {
+        const row = await createLeadPolicy(leadId, agentId, { insurance_type: type, ...overrides });
+        toast({ variant: "success", title: t("lead_policies.saved") });
+        onAdded(row);
+      }
     } catch (e) {
       toast({ variant: "destructive", title: t("lead_policies.save_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {

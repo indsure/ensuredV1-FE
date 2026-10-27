@@ -14,7 +14,7 @@ globalThis.Headers = NodeFetchHeaders as any;
 globalThis.Request = NodeFetchRequest as any;
 globalThis.Response = NodeFetchResponse as any;
 
-import { registerRoutes, analysisJobs, getUserIdFromToken } from "./routes";
+import { registerRoutes, analysisJobs, getUserIdFromToken, sweepInterruptedJobs } from "./routes";
 import { serveStatic } from "./static";
 import { pool } from "./lib/db";
 import { log } from "./lib/logger";
@@ -820,6 +820,11 @@ function formatSachINR(n: number): string {
 
 async function start() {
   await registerRoutes(server, app);
+  // Only the live API owns the shared database's in-flight jobs. A local dev
+  // server pointed at the same database must not mark live checks as failed.
+  if (process.env.NODE_ENV === "production") {
+    await sweepInterruptedJobs().catch((e) => console.error("[jobs] interrupted-job sweep failed:", e?.message ?? e));
+  }
   checkPaymentsConfig();
   startPaymentJobs();
 

@@ -4,6 +4,7 @@ import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadshe
 import React from "react"
 import { formatDistanceToNow, format } from "date-fns"
 import { supabase } from "@/lib/supabase"
+import { fetchAllRows } from "@/lib/fetchAllRows"
 import { deletePolicyRecord } from "@/lib/policyDelete"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
@@ -255,14 +256,17 @@ export default function PoliciesNew() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: qErr } = await supabase
-        .from("clients")
-        .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone")
-        .eq("agent_id", agent.agentId)
-        .eq("status", "done")
-        .order("created_at", { ascending: false });
-      if (qErr) throw new Error(qErr.message);
-      setRows(data ?? []);
+      const data = await fetchAllRows((from, to) =>
+        supabase
+          .from("clients")
+          .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone")
+          .eq("agent_id", agent.agentId!)
+          .eq("status", "done")
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(from, to)
+      );
+      setRows(data);
       // Customer names for the tag chips — non-fatal if it fails.
       try {
         const customers = await fetchCustomers(agent.agentId);

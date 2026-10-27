@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { getNextPremiumDate, isDataEntryType } from "@/lib/insuranceTypes";
 import { deriveCoverView } from "@shared/policy";
 import type { ForensicAuditReport } from "@shared/policy";
@@ -61,13 +62,15 @@ export const PORTFOLIO_POLICY_COLUMNS =
 /* ── CRUD ──────────────────────────────────────────────────────────────── */
 
 export async function fetchCustomers(agentId: string): Promise<Customer[]> {
-  const { data, error } = await supabase
-    .from("customers")
-    .select("*")
-    .eq("agent_id", agentId)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  return fetchAllRows<Customer>((from, to) =>
+    supabase
+      .from("customers")
+      .select("*")
+      .eq("agent_id", agentId)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, to)
+  );
 }
 
 export async function fetchCustomer(agentId: string, id: string): Promise<Customer | null> {

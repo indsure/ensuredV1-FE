@@ -18,7 +18,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import {
   Upload, FileText, ShieldCheck, LogOut, AlertCircle, Loader2, Lock, Pencil, Bell,
   CalendarClock, PhoneCall, Sparkles, Check, Plus, ArrowRight, MessageCircle,
-  ChevronDown, Heart, Zap, TrendingUp, X,
+  ChevronDown, Heart, Zap, TrendingUp, X, UserRound,
 } from "lucide-react";
 
 type SortKey = "recent" | "score" | "renewal";
@@ -432,6 +432,12 @@ export default function PortfolioPage() {
             >
               {data?.advisor ? <ShieldCheck className="w-4 h-4" /> : <PhoneCall className="w-4 h-4" />}
               <span className="hidden sm:inline">{data?.advisor ? t("pf.your_advisor") : t("pf.talk_advisor")}</span>
+            </button>
+            <button
+              onClick={() => setLocation("/account")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] hover:bg-black/5 transition-colors"
+            >
+              <UserRound className="w-4 h-4" /> <span className="hidden sm:inline">{t("cflow.ac_link")}</span>
             </button>
             <button
               onClick={signOut}

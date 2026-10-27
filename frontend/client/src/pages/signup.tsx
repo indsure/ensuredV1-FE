@@ -421,6 +421,14 @@ export default function SignupPublic() {
           {loading ? t("cauth.su_creating") : <>{t("cauth.su_cta")} <ArrowRight className="w-4 h-4" /></>}
         </Button>
 
+        <p className="text-sm text-center text-[var(--color-text-secondary)] leading-relaxed">
+          {t("cauth.su_agree_1")}{" "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-teal-600)] underline">{t("signup.terms")}</a>{" "}
+          {t("cauth.su_agree_and")}{" "}
+          <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--color-teal-600)] underline">{t("signup.privacy")}</a>
+          {t("cauth.su_agree_2") === "." ? "." : ` ${t("cauth.su_agree_2")}`}
+        </p>
+
         {/* Low-commitment escape hatch — warms up browsers instead of losing them. */}
         <button
           type="button"

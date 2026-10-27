@@ -543,6 +543,39 @@ interface AnalysisJob {
 // In-memory cache for fast status lookups — DB is source of truth
 export const analysisJobs = new Map<string, AnalysisJob>();
 
+/**
+ * Analyses run inside this process, so after a restart nothing is still working
+ * on a row marked 'processing'. Left alone it stays "processing" for ever and
+ * Check Again stays disabled. Call once at boot, before any upload is accepted.
+ * A non-batch policy reserved a check when it started, so that check goes back
+ * (batch rows were never charged).
+ */
+export async function sweepInterruptedJobs(): Promise<void> {
+  const msg = "The check was interrupted by a server restart. Please use Check Again.";
+  const swept = await pool.query(
+    `UPDATE clients SET status = 'error', error_message = $1
+       WHERE status = 'processing'
+     RETURNING agent_id, insurance_type, batch_id`,
+    [msg]
+  );
+  for (const row of swept.rows) {
+    if (row.batch_id || !row.agent_id) continue;
+    const table: MeterTable = isDataEntryType(String(row.insurance_type || "health").toLowerCase())
+      ? "agent_ocr_credits"
+      : "agent_credits";
+    await refundCheck(table, row.agent_id).catch((e: any) =>
+      log.error("check_refund_failed", { agentId: row.agent_id, table, message: e?.message ?? String(e) })
+    );
+  }
+  const consumer = await pool.query(
+    "UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE status = 'processing'",
+    [msg]
+  );
+  if (swept.rowCount || consumer.rowCount) {
+    log.warn("interrupted_jobs_swept", { advisor: swept.rowCount ?? 0, consumer: consumer.rowCount ?? 0 });
+  }
+}
+
 async function persistJob(job: AnalysisJob): Promise<void> {
   try {
     await pool.query(
@@ -1591,54 +1624,47 @@ export async function registerRoutes(
       const grievanceOfficerEmail =
         process.env.GRIEVANCE_OFFICER_EMAIL ?? "nikhil@indsure.in";
 
-      // Best-effort acknowledgement email: if SMTP env vars are not set, we store the request and respond.
+      /* The request is saved above, so from here nothing may fail the response:
+         a mail error used to return 500 after saving, and people submitted the
+         same grievance again. Mail goes through the dedicated GRIEVANCE_SMTP_*
+         settings when all are set, otherwise through the site's normal mailer
+         (lib/mailer), so a missing second set of settings no longer means no
+         email at all. The officer is told first: that is the statutory part. */
+      const refId = insertRes.rows[0]?.id ?? "-";
       const smtpHost = process.env.GRIEVANCE_SMTP_HOST;
       const smtpPort = process.env.GRIEVANCE_SMTP_PORT ? Number(process.env.GRIEVANCE_SMTP_PORT) : undefined;
       const smtpUser = process.env.GRIEVANCE_SMTP_USER;
       const smtpPass = process.env.GRIEVANCE_SMTP_PASS;
       const fromEmail = process.env.GRIEVANCE_FROM_EMAIL ?? smtpUser ?? grievanceOfficerEmail;
+      const dedicated =
+        smtpHost && smtpPort && smtpUser && smtpPass
+          ? nodemailer.createTransport({
+              host: smtpHost,
+              port: smtpPort,
+              secure: smtpPort === 465,
+              auth: { user: smtpUser, pass: smtpPass },
+            })
+          : null;
+      const deliver = async (m: { to: string; subject: string; text: string; replyTo?: string }): Promise<boolean> => {
+        if (!dedicated) return sendMail(m);
+        try {
+          await dedicated.sendMail({ from: fromEmail, ...m });
+          return true;
+        } catch (mailErr: any) {
+          log.error("grievance_mail_failed", { message: mailErr?.message });
+          return false;
+        }
+      };
 
-      if (smtpHost && smtpPort && smtpUser && smtpPass && fromEmail) {
-        const transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: { user: smtpUser, pass: smtpPass },
-        });
-
-        const ackSubject =
-          process.env.GRIEVANCE_ACK_SUBJECT ??
-          "Acknowledgement — IndSure DPDP Grievance Request";
-
-        const ackText = [
-          "Thank you for contacting IndSure.",
-          "",
-          "We have received your DPDP grievance/request and will respond within 30 days as required.",
-          "",
-          `Reference ID: ${insertRes.rows[0]?.id ?? "-"}`,
-          `Request type: ${requestType}`,
-          "",
-          "If you have additional information, please reply to this email.",
-        ].join("\n");
-
-        // Send acknowledgement to the user; optionally also notify the grievance mailbox.
-        await transporter.sendMail({
-          from: fromEmail,
-          to: email.trim(),
-          subject: ackSubject,
-          text: ackText,
-          replyTo: grievanceOfficerEmail,
-        });
-
-        if (grievanceOfficerEmail && grievanceOfficerEmail !== email.trim()) {
-          await transporter.sendMail({
-            from: fromEmail,
+      const officerSent = grievanceOfficerEmail && grievanceOfficerEmail !== email.trim()
+        ? await deliver({
             to: grievanceOfficerEmail,
             subject: `New DPDP grievance request: ${requestType}`,
+            replyTo: email.trim(),
             text: [
               "A new grievance request was submitted through IndSure.",
               "",
-              `Reference ID: ${insertRes.rows[0]?.id ?? "-"}`,
+              `Reference ID: ${refId}`,
               `From: ${name.trim()} <${email.trim()}>`,
               `Phone: ${phone ?? "-"}`,
               `Request type: ${requestType}`,
@@ -1646,10 +1672,26 @@ export async function registerRoutes(
               "Details:",
               details.trim(),
             ].join("\n"),
-          });
-        }
-      } else {
-        log.warn("grievance acknowledgement email skipped: SMTP not configured");
+          })
+        : true;
+      const ackSent = await deliver({
+        to: email.trim(),
+        subject: process.env.GRIEVANCE_ACK_SUBJECT ?? "Acknowledgement: IndSure DPDP Grievance Request",
+        replyTo: grievanceOfficerEmail,
+        text: [
+          "Thank you for contacting IndSure.",
+          "",
+          "We have received your DPDP grievance/request and will respond within 30 days as required.",
+          "",
+          `Reference ID: ${refId}`,
+          `Request type: ${requestType}`,
+          "",
+          "If you have additional information, please reply to this email.",
+        ].join("\n"),
+      });
+      if (!officerSent || !ackSent) {
+        // Saved but not mailed: the officer must find it in grievance_requests.
+        log.error("grievance_saved_not_mailed", { id: refId, officerSent, ackSent });
       }
 
       return res.status(200).json({ success: true, id: insertRes.rows[0]?.id });
@@ -2216,6 +2258,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         let fileName: string | null = null;
         let extracted: any = null;
         let ocrSkipped = false; // OCR asked for but no allowance left
+        let ocrFailed = false; // OCR ran but could not read the file
         const ocr: Record<string, any> = {};
 
         if (req.file) {
@@ -2242,6 +2285,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   sourceType: "agent",
                   actorId: agentId,
                 });
+                if (extraction.status !== "completed") ocrFailed = true;
                 if (extraction.status === "completed") {
                   await consumeOcr(agentId);
                   extracted = extraction.data;
@@ -2253,6 +2297,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   ocr.due_date = shared.expiry_date ?? null;
                 }
               } catch (ocrErr: any) {
+                ocrFailed = true;
                 console.warn(`[lead-policy ${policyId}] OCR failed:`, ocrErr?.message);
               }
             }
@@ -2294,7 +2339,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             extracted ? JSON.stringify(extracted) : null,
           ]
         );
-        return res.json({ ...ins.rows[0], ocr_skipped: ocrSkipped });
+        // The row is saved either way; these tell the advisor what did not happen.
+        return res.json({
+          ...ins.rows[0],
+          ocr_skipped: ocrSkipped,
+          ocr_failed: ocrFailed,
+          file_stored: !req.file || !!fileUrl,
+        });
       } catch (err: any) {
         console.error("create lead policy error:", err);
         return res.status(500).json({ error: "Could not save the policy" });
@@ -2911,7 +2962,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       // The claim leaves query_raised only when the LAST open round closes.
       const stillOpen = await openQueryCount(claim.id);
-      if (stillOpen === 0 && !CLAIM_TERMINAL.includes(claim.status)) {
+      // Only a claim waiting on a query moves on. Editing or deleting a round on a
+      // claim that is already submitted (or anywhere else) must not change its status.
+      if (stillOpen === 0 && claim.status === "query_raised") {
         await pool.query(
           `UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1`,
           [claim.id]
@@ -2939,7 +2992,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         [req.params.queryId, claim.id]
       );
       const stillOpen = await openQueryCount(claim.id);
-      if (stillOpen === 0 && !CLAIM_TERMINAL.includes(claim.status)) {
+      // Only a claim waiting on a query moves on. Editing or deleting a round on a
+      // claim that is already submitted (or anywhere else) must not change its status.
+      if (stillOpen === 0 && claim.status === "query_raised") {
         await pool.query(
           `UPDATE claims SET status = 'under_process', updated_at = now() WHERE id = $1`,
           [claim.id]
@@ -4445,10 +4500,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             await giveBack();
             await persistJob(job);
 
-            await pool.query(
-              "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
-              [err.message, clientId]
-            );
+            await pool
+              .query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [err.message, clientId])
+              .catch((e: any) => console.error(`[Job ${jobId}] could not record the failure:`, e?.message));
           } finally {
             // Guarantee the temp upload is removed even if extraction/storage
             // threw before the success-path unlink above. Guarded by existsSync
@@ -5418,7 +5472,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             // consumer-facing column gets the plain-language version.
             job.error = err.message || "Unknown error";
             await persistJob(job);
-            await pool.query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(err), policyId]);
+            await pool
+              .query("UPDATE individual_policies SET status = 'error', error_message = $1, updated_at = now() WHERE id = $2", [readableFailure(err), policyId])
+              .catch((e: any) => console.error(`[Job ${jobId}] could not record the failure:`, e?.message));
           } finally {
             try {
               if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
