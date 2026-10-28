@@ -79,6 +79,13 @@ export interface AddOnScan {
   applicable: number;
   /** Declared tokens that matched nothing we know. Grows the catalog. */
   unrecognisedDeclared: string[];
+  /** Covers on the policy that are real but outside the scored catalog. Shown
+   *  on the card, never counted in the score. Optional: rows scanned before
+   *  this field existed simply have none. */
+  otherCovers?: AddOnFinding[];
+  /** The add-on premium total the insurer prints (Tata's "Total Add on
+   *  Premium (C)"), when it prints one. */
+  addOnTotal?: number | null;
 }
 
 /* ── Catalog ──────────────────────────────────────────────────────────────
@@ -140,6 +147,24 @@ export const ADD_ON_CATALOG: Record<VehicleClass, AddOnCatalogEntry[]> = {
   ],
 };
 
+/* Real add-ons that sit OUTSIDE the scored catalog. Recognising them matters
+   for two reasons. The card can show the agent what the customer actually
+   bought, and a declared list made only of these is still a list we READ: a
+   real Tata AIG policy opted "Repair of Glass, Rubber & Plastic Parts,
+   Emergency Medical Expenses, Misfuelling", none of which is in the catalog,
+   so the scan concluded it could not read the list and published nine "Not
+   found" rows and no score for a policy that plainly holds none of the nine.
+   Never scored: which covers count toward the number is the catalog's job. */
+export const OTHER_COVERS: AddOnCatalogEntry[] = [
+  {
+    id: "glass_rubber_plastic",
+    label: "Repair of glass, rubber and plastic parts",
+    aliases: ["repair of glass", "rubber plastic parts", "glass rubber plastic"],
+  },
+  { id: "emergency_medical", label: "Emergency medical expenses", aliases: ["emergency medical expenses"] },
+  { id: "misfuelling", label: "Misfuelling", aliases: ["misfuelling", "misfueling", "wrong fuel"] },
+];
+
 /* ── Normalisation ────────────────────────────────────────────────────────
    Squashing every non-alphanumeric character makes "DepreciationWaiverPremium",
    "Depreciation Waiver" and "depreciation-waiver" the same string, so a single
@@ -167,9 +192,11 @@ const DECLARED_LIST_HEADING =
   /(?:add[\s-]?ons?\s+(?:covers?\s+)?(?:opted|selected|chosen|availed|included)|optional\s+cover(?:s|age)?(?:\s+details)?)/i;
 
 /* WHERE IT STOPS. The page-break form catches schedules whose list is the last
-   thing on the page. */
+   thing on the page. Tata AIG follows its list with "7. PUC Certificate Number"
+   and then the NCB declaration; without those two the window ran 1,200
+   characters into anti-money-laundering prose. */
 const DECLARED_LIST_END =
-  /what'?s\s+not\s+covered|exclusions?\b|premium\s+break|total\s+premium|your\s+vehicle\b|nominee\s+details|--\s*\d+\s+of\s+\d+\s*--/i;
+  /what'?s\s+not\s+covered|exclusions?\b|premium\s+break|total\s+premium|your\s+vehicle\b|nominee\s+details|--\s*\d+\s+of\s+\d+\s*--|\bpuc\b|declaration\s+for\s+no\s+claim/i;
 
 /* HOW FAR WE READ. The old code took 600 characters and then kept only the
    first 300 whenever no terminator matched. Digit's four cover lines carry a
@@ -218,6 +245,13 @@ const OD_BLOCK_START = /a\s*-\s*own\s*damage|own\s*damage\s*\(\s*a\s*\)|own\s*da
 const OD_BLOCK_END = /total\s*(?:own\s*damage|od)\s*premium/i;
 const UIN = /\(?\s*(IRDAN[A-Z0-9/]+)[^)]*\)/g;
 
+/* Tata AIG prices add-ons in a section of their own, not inside the own-damage
+   block, and tags each with its own cover code rather than a UIN:
+     "(Add) Misfuelling (TA24)  ₹ 85 ... Total Add on Premium (C)  ₹ 285" */
+const ADDON_SECTION_START = /add[\s-]?on\s+covers\s*\(add\)/i;
+const ADDON_SECTION_END = /total\s+add[\s-]?on\s+premium[^₹\d]{0,12}₹?\s*([\d,]+(?:\.\d+)?)/i;
+const ADDON_SECTION_LINE = /\(add\)\s*([^()₹]+?)\s*\(([A-Z]{1,4}\d{1,4})\)[^₹(]{0,40}₹\s*(-?[\d,]+(?:\.\d+)?)/gi;
+
 export function detectMotorAddOns(policyText: string): AddOnScan | null {
   if (!policyText || policyText.trim().length < 200) return null;
 
@@ -237,6 +271,12 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     if (!q) return [];
     return normalised.filter((n) => n.keys.some((k) => q.includes(k))).map((n) => n.entry);
   };
+  const otherNormalised = OTHER_COVERS.map((c) => ({ entry: c, keys: c.aliases.map(squash) }));
+  const matchOther = (s: string): AddOnCatalogEntry[] => {
+    const q = squash(s);
+    if (!q) return [];
+    return otherNormalised.filter((n) => n.keys.some((k) => q.includes(k))).map((n) => n.entry);
+  };
 
   const masked = maskVehicleFields(policyText);
 
@@ -245,6 +285,7 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
      label follows it. No terminator is needed: only tokens matching a catalog
      alias count, and the rest are reported for review. */
   const declared = new Map<string, string>();
+  const declaredOther = new Map<string, string>();
   const unrecognisedDeclared: string[] = [];
   /* Insurers head this list differently, and matching only one spelling was
      silently costing us whole policies. Royal Sundaram writes "Add-on Covers
@@ -275,10 +316,14 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     let lastHitEnd = 0;
     for (const piece of window.split(/([,\n]|\s{3,})/)) {
       const t = piece.trim();
-      if (t) {
+      // The separators come back as pieces of their own; a bare comma is not
+      // an unrecognised cover.
+      if (/[a-z0-9]/i.test(t)) {
         const hits = matchEntries(t);
-        if (hits.length) {
+        const others = matchOther(t);
+        if (hits.length || others.length) {
           for (const hit of hits) declared.set(hit.id, t.slice(0, 70));
+          for (const o of others) if (!declaredOther.has(o.id)) declaredOther.set(o.id, t.slice(0, 70));
           lastHitEnd = cursor + piece.length;
         } else {
           unrecognisedDeclared.push(t.slice(0, 50));
@@ -331,6 +376,26 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     }
   }
 
+  /* Channel 2b: an add-on section of its own (Tata AIG). Bounded by the
+     insurer's own total, so nothing past it is read as a cover. */
+  let addOnTotal: number | null = null;
+  const sectionStart = ADDON_SECTION_START.exec(masked);
+  if (sectionStart) {
+    const after = masked.slice(sectionStart.index);
+    const endHit = ADDON_SECTION_END.exec(after);
+    if (endHit) {
+      addOnTotal = toNumber(endHit[1]);
+      const section = after.slice(0, endHit.index);
+      ADDON_SECTION_LINE.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = ADDON_SECTION_LINE.exec(section)) !== null) {
+        const name = m[1].replace(/\s+/g, " ").trim();
+        // A cover code (TA24), not an IRDAI UIN, so it is not stored as one.
+        if (name) pricedLines.push({ name, uin: null, amount: toNumber(m[3]) });
+      }
+    }
+  }
+
   /* Channel 3: arithmetic. Total own-damage premium minus basic own-damage
      premium is what was spent on add-ons. Zero is a PROOF that none exist,
      which is a different and much stronger statement than "not found". */
@@ -379,7 +444,30 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
      matched but yielded nothing we recognised means we never read the list; a
      list whose end we could not see means we may have read only part of it.
      Absence may be claimed from neither. */
-  const declaredListProves = !!label && declared.size > 0 && declaredListBounded;
+  /* A list made only of known covers outside the catalog was still READ: every
+     name in it was recognised, so what it leaves out was not bought. */
+  const declaredListProves = !!label && declared.size + declaredOther.size > 0 && declaredListBounded;
+
+  /* Outside-catalog covers, from the declared list or a priced line. A priced
+     line wins for evidence because it carries the amount; a cover priced at
+     zero is still shown when the insurer lists it as opted (Tata includes glass
+     repair at ₹0), and dropped when nothing but a zero line names it. */
+  const otherCovers: AddOnFinding[] = [];
+  for (const entry of OTHER_COVERS) {
+    const priced = pricedLines.find((p) => matchOther(p.name).some((e) => e.id === entry.id)) ?? null;
+    const declaredAs = declaredOther.get(entry.id) ?? null;
+    const paid = !!priced && priced.amount > 0;
+    if (!paid && !declaredAs) continue;
+    otherCovers.push({
+      id: entry.id,
+      label: entry.label,
+      state: "present",
+      evidence: priced
+        ? priced.uin ? `${priced.name} (${priced.uin})` : priced.name
+        : `Listed by the insurer as opted: "${declaredAs}"`,
+      amount: priced ? priced.amount : null,
+    });
+  }
 
   const findings: AddOnFinding[] = catalog.map((entry) => {
     const declaredAs = declared.get(entry.id) ?? null;
@@ -464,5 +552,7 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     present: findings.filter((f) => f.state === "present").length,
     applicable: catalog.length,
     unrecognisedDeclared,
+    otherCovers,
+    addOnTotal,
   };
 }

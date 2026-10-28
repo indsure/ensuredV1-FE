@@ -113,9 +113,17 @@ export default function AddOnChecklist({ data }: Props) {
   const found = scan.findings.filter((f) => f.state === "present");
   // Priced lines we did not put in the checklist, so the card never looks like
   // it is hiding something an agent can see in the PDF.
+  const others = scan.otherCovers ?? [];
   const uncounted = scan.pricedLines.filter(
-    (p) => !found.some((f) => f.evidence?.includes(p.name))
+    (p) => ![...found, ...others].some((f) => f.evidence?.includes(p.name))
   );
+  // The insurer's own add-on total, shown only when the named lines add up to
+  // it exactly, so the sentence is a check and not a guess.
+  const othersSum = others.reduce((sum, f) => sum + (f.amount ?? 0), 0);
+  const totalCloses =
+    typeof scan.addOnTotal === "number" &&
+    found.length === 0 &&
+    Math.abs(othersSum - scan.addOnTotal) < 1;
   const unexplained = scan.reconciliation ? Math.abs(scan.reconciliation.unexplained) : 0;
 
   return (
@@ -149,6 +157,25 @@ export default function AddOnChecklist({ data }: Props) {
           <Row key={f.id} f={f} />
         ))}
       </div>
+
+      {/* Real covers outside the checklist. Shown so the agent sees what the
+          customer bought; never counted, so the number above is unchanged. */}
+      {others.length > 0 && (
+        <div className="border-t border-slate-100">
+          <div className="px-6 pt-4">
+            <h4 className="text-base font-bold text-slate-800">{t("addon.also_title")}</h4>
+            <p className="mt-1 text-sm text-slate-500">
+              {t("addon.also_note", { count: scan.applicable })}
+              {totalCloses && <> {t("addon.also_total", { amount: formatINRFull(scan.addOnTotal as number) })}</>}
+            </p>
+          </div>
+          <div className="flex flex-col">
+            {others.map((f) => (
+              <Row key={f.id} f={f} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {scan.arithmetic && (
         <div className="rounded-b-xl border-t border-slate-100 bg-slate-50/60 px-6 py-4">

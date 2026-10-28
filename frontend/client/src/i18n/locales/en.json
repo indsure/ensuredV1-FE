@@ -2433,7 +2433,13 @@
     "zero_note": "A cover priced at or below zero was not bought at that price, so it is not counted.",
     "class_car": "car",
     "class_bike": "two-wheeler",
-    "checked_against": "Checked against the {{cls}} list of {{count}} add-ons on {{date}}. Read from this document only, so cover added by a separate endorsement will not appear here."
+    "checked_against": "Checked against the {{cls}} list of {{count}} add-ons on {{date}}. Read from this document only, so cover added by a separate endorsement will not appear here.",
+    "a_glass_rubber_plastic": "Repair of glass, rubber and plastic parts",
+    "a_emergency_medical": "Emergency medical expenses",
+    "a_misfuelling": "Misfuelling",
+    "also_title": "Also on this policy",
+    "also_note": "These covers are not in the list of {{count}} above, so they do not change the count or the score.",
+    "also_total": "Add-on premium {{amount}}, every rupee of it named here."
   },
   "xform": {
     "f_add_on_covers": "Add-on covers",

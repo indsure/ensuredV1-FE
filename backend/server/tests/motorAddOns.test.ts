@@ -357,3 +357,57 @@ describe("a flattened list loses no cover", () => {
         );
     });
 });
+
+/* Tata AIG: every add-on on the policy sits outside the catalog, the list is
+ * followed by "7. PUC Certificate" and anti-money-laundering prose, and the
+ * covers are priced in an add-on section of their own, tagged with cover codes
+ * (TA08) instead of UINs. Before this, the scan read none of it: nine "Not
+ * found" rows, no score, and a junk list built from the AML declaration.
+ * The fixture is two real pages with the NUL ligatures already stripped, which
+ * is why it reads "Certi  cate": that is the text the server now sees.
+ */
+describe("Tata AIG: a list made only of covers outside the catalog", () => {
+    const TATA = fixture("motor_car_tata_aig_schedule.txt");
+    const s = scan(TATA);
+
+    test("reads the list and proves the nine absent", () => {
+        assert.equal(s.declaredListFound, true);
+        assert.equal(s.present, 0);
+        for (const f of s.findings) {
+            assert.equal(f.state, "absent_proven", `${f.id} is not in the list Tata prints`);
+        }
+    });
+
+    test("stops at the PUC line instead of reading the AML declaration", () => {
+        assert.deepEqual(s.unrecognisedDeclared, [], "nothing after the list may be read as a cover");
+    });
+
+    test("reads the priced add-on section, and it adds up to Tata's own total", () => {
+        assert.deepEqual(
+            s.pricedLines.map((p) => [p.name, p.amount]),
+            [
+                ["Repair of Glass, Rubber & Plastic Parts", 0],
+                ["Emergency Medical Expenses", 200],
+                ["Misfuelling", 85],
+            ],
+        );
+        assert.equal(s.addOnTotal, 285);
+        assert.equal(s.pricedLines.reduce((t, p) => t + p.amount, 0), s.addOnTotal);
+        assert.equal(s.pricedLines.some((p) => p.uin !== null), false, "a cover code is not a UIN");
+    });
+
+    test("shows all three real covers, outside the score", () => {
+        assert.deepEqual(
+            (s.otherCovers ?? []).map((f) => [f.id, f.amount]),
+            [["glass_rubber_plastic", 0], ["emergency_medical", 200], ["misfuelling", 85]],
+        );
+        assert.equal(s.applicable, 9, "the extra covers never join the scored list");
+    });
+
+    test("the cover printed at ₹0 is shown only because the insurer lists it as opted", () => {
+        const noList = TATA.replace(/Add-On Covers Opted:[^7]*/, "");
+        const ids = (scan(noList).otherCovers ?? []).map((f) => f.id);
+        assert.equal(ids.includes("glass_rubber_plastic"), false, "a ₹0 line alone proves no purchase");
+        assert.equal(ids.includes("misfuelling"), true);
+    });
+});
