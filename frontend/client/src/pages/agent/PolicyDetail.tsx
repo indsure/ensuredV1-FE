@@ -10,6 +10,7 @@ import PolicyValueChart from "@/components/agent/PolicyValueChart";
 import DocumentTerms from "@/components/agent/policyValue/DocumentTerms";
 import PolicySummary from "@/components/agent/policyValue/PolicySummary";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
+import ScanNotice, { isReadFromScan } from "@/components/ScanNotice";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
@@ -148,6 +149,7 @@ export default function PolicyDetail() {
   // Other cover uploaded alongside this policy and read in the same audit.
   const [companions, setCompanions] = useState<CompanionRecord[]>([]);
   const [extractedData, setExtractedData] = useState<Record<string, any> | null>(null);
+  const [readFromScan, setReadFromScan] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [fileMeta, setFileMeta] = useState<FileRow | null>(null);
@@ -243,6 +245,7 @@ export default function PolicyDetail() {
           ? clientData.report_data
           : null
       );
+      setReadFromScan(isReadFromScan(clientData.report_data, (clientData as any).extracted_data));
       const rawCompanions = (clientData.report_data as any)?.__companions;
       setCompanions(Array.isArray(rawCompanions) ? rawCompanions : []);
       
@@ -475,6 +478,7 @@ export default function PolicyDetail() {
 
       {!loading && policy && (
         <>
+          {readFromScan && <ScanNotice />}
           <Card className="border-slate-100 shadow-sm">
             <CardContent className="p-6">
               <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">

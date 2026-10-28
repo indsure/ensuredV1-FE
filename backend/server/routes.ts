@@ -788,7 +788,7 @@ const OCR_MAX_PAGES = 15;
  * badly: dense premium tables. A scan it still cannot read (a blurred phone
  * photo) falls through to the same "scanned copy" rejection as before.
  */
-export async function extractTextFromPDF(filePath: string): Promise<string> {
+export async function extractTextFromPDF(filePath: string, source?: TextSource): Promise<string> {
   const fileData = fs.readFileSync(filePath);
   const data = new Uint8Array(fileData);
 
@@ -840,7 +840,10 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
         chars: ocrText.trim().length,
         seconds: Math.round((Date.now() - startedAt) / 1000),
       });
-      if (ocrText.trim().length >= MIN_USABLE_TEXT_CHARS) return ocrText;
+      if (ocrText.trim().length >= MIN_USABLE_TEXT_CHARS) {
+        if (source) source.fromScan = true;
+        return ocrText;
+      }
     } catch (ocrErr: any) {
       // "empty" is Tesseract finding nothing usable on any page: a real scan
       // we cannot read, which is the rejection below. Anything else is logged.
@@ -932,15 +935,30 @@ async function extractTextFromImage(
   return ocrWithGemini(buffer, file.mimetype || "image/png", apiKey, usageMeta);
 }
 
+/**
+ * Where the text came from. `fromScan` is set when it was read by OCR (a
+ * photo, or a PDF with no text layer) rather than taken from the document's
+ * own text. OCR misreads digits, so a policy read this way is labelled on its
+ * page, and the add-on card claims nothing absent from it.
+ */
+export type TextSource = { fromScan: boolean };
+
+/** Stored on report_data / extracted_data; read by the policy pages. */
+const READ_FROM_SCAN_KEY = "read_from_scan";
+
 async function extractPolicyText(
   file: PolicyFile,
-  usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
+  usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>,
+  source?: TextSource
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path);
-  if (file.mimetype.startsWith("image/")) return extractTextFromImage(file, apiKey, usageMeta);
+  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path, source);
+  if (file.mimetype.startsWith("image/")) {
+    if (source) source.fromScan = true;
+    return extractTextFromImage(file, apiKey, usageMeta);
+  }
   if (file.mimetype === "text/plain") return extractTextFromPlain(file.path);
 
   throw new Error(`Unsupported file type: ${file.mimetype}`);
@@ -2110,10 +2128,11 @@ export async function registerRoutes(
               fs.mkdirSync("uploads", { recursive: true });
             const tempFilePath = `uploads/temp-${client.id}.pdf`;
             fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+            const batchSource: TextSource = { fromScan: false };
             const policyText = await extractPolicyText({
               path: tempFilePath,
               mimetype: "application/pdf",
-            } as any);
+            } as any, undefined, batchSource);
             fs.unlinkSync(tempFilePath);
 
             const analysisResult = await runAnalysisPipeline(policyText, "health", {
@@ -2141,7 +2160,7 @@ export async function registerRoutes(
                   client.id,
                   r.audit_score?.score || 0,
                   JSON.stringify(r.final_verdict?.key_failure_points || []),
-                  JSON.stringify(r),
+                  JSON.stringify(batchSource.fromScan ? { ...r, [READ_FROM_SCAN_KEY]: true } : r),
                   r.identity?.insured_names?.[0] || null,
                   meta.insurer || null,
                   r.coverage_structure?.base_sum_insured || null,
@@ -2349,17 +2368,18 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               ocrSkipped = true;
             } else {
               try {
+                const leadSource: TextSource = { fromScan: false };
                 const text = await extractPolicyText(file, {
                   feature: "image_ocr",
                   route: "/api/agent/data-entry",
                   sourceType: "agent",
                   actorId: agentId,
-                });
+                }, leadSource);
                 const extraction = await extractStructuredData(text, type, {
                   route: "/api/agent/data-entry",
                   sourceType: "agent",
                   actorId: agentId,
-                });
+                }, { fromScan: leadSource.fromScan });
                 if (extraction.status !== "completed") ocrFailed = true;
                 if (extraction.status === "completed") {
                   await consumeOcr(agentId);
@@ -4319,6 +4339,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
             startPolicyDocumentRead(agentId, clientId, insuranceType, file.mimetype, file.path);
 
+            const textSource: TextSource = { fromScan: false };
             const uploadedPolicyText = await extractPolicyText(file, {
               feature: "image_ocr",
               route: "/api/agent/analyze",
@@ -4326,7 +4347,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               actorId: agentId,
               jobId,
               clientId,
-            });
+            }, textSource);
             job.extractionEndedAt = Date.now();
             
             // Persist the original file to storage so it can be downloaded later
@@ -4368,7 +4389,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 actorId: agentId,
                 jobId,
                 clientId,
-              });
+              }, { fromScan: textSource.fromScan });
 
               if (extraction.status === "completed") {
                 job.status = "completed";
@@ -4519,6 +4540,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               if (companionRecords.length > 0) {
                 reportData.__companions = companionRecords;
               }
+              if (textSource.fromScan) reportData[READ_FROM_SCAN_KEY] = true;
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               // clients.score is integer. The engine buckets to 5-point steps, so this
               // round is a no-op; it stays as a guard for any unbucketed path.
@@ -5435,6 +5457,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             await persistJob(job);
             await pool.query("UPDATE individual_policies SET status = 'processing', updated_at = now() WHERE id = $1", [policyId]);
 
+            const textSource: TextSource = { fromScan: false };
             const uploadedPolicyText = await extractPolicyText(file, {
               feature: "image_ocr",
               route: "/api/me/analyze",
@@ -5442,7 +5465,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               actorId: userId,
               jobId,
               clientId: policyId,
-            });
+            }, textSource);
             job.extractionEndedAt = Date.now();
 
             // Persist original PDF to storage (best-effort; never blocks analysis).
@@ -5475,7 +5498,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 actorId: userId,
                 jobId,
                 clientId: policyId,
-              });
+              }, { fromScan: textSource.fromScan });
               if (extraction.status === "completed") {
                 job.status = "completed";
                 job.result = extraction.data;
@@ -5528,6 +5551,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               job.status = "completed";
               job.result = result.result;
               const reportData = result.result;
+              if (textSource.fromScan) reportData[READ_FROM_SCAN_KEY] = true;
               const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
               const score = rawScore == null ? null : Math.round(Number(rawScore));
               // The model's reading first. `metadata.insurer` is a regex pre-pass over
@@ -6250,13 +6274,14 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           } as Express.Multer.File;
           startPolicyDocumentRead(agentId, id, insuranceType, mimetype, tempPath);
 
+          const textSource: TextSource = { fromScan: false };
           const policyText = await extractPolicyText(fileLike, {
             feature: "image_ocr",
             route: "/api/agent/clients/:id/rerun",
             sourceType: "agent",
             actorId: agentId,
             clientId: id,
-          });
+          }, textSource);
 
           if (isDataEntry) {
             const extraction = await extractStructuredData(policyText, insuranceType, {
@@ -6264,7 +6289,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               sourceType: "agent",
               actorId: agentId,
               clientId: id,
-            });
+            }, { fromScan: textSource.fromScan });
             if (extraction.status === "completed") {
               // The OCR entry reserved for this re-read is now spent for good.
               charged = false;
@@ -6399,6 +6424,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
             if (companionRecords.length > 0) {
               reportData.__companions = companionRecords;
             }
+            if (textSource.fromScan) reportData[READ_FROM_SCAN_KEY] = true;
             const rawScore = reportData?.audit_score?.score ?? reportData?.final_verdict?.audit_score?.score ?? null;
             // clients.score is integer. The engine buckets to 5-point steps, so this
             // round is a no-op; it stays as a guard for any unbucketed path.

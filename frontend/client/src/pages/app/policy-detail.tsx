@@ -6,6 +6,7 @@ import { getApiBase } from "@/lib/queryClient";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
 import PolicyFactsheet from "@/components/app/PolicyFactsheet";
+import ScanNotice, { isReadFromScan } from "@/components/ScanNotice";
 import { isDataEntryType } from "@/lib/insuranceTypes";
 import { validateForensicAuditReport } from "@shared/policy";
 import { ArrowLeft, AlertCircle, Loader2, ShieldCheck, Download, PhoneCall } from "lucide-react";
@@ -86,6 +87,7 @@ export default function PolicyDetail({ id }: { id: string }) {
   }, [id]);
 
   const report = row?.report_data;
+  const fromScan = isReadFromScan(row?.report_data, row?.extracted_data);
   const hasValidReport = report && validateForensicAuditReport(report);
   /* A data-entry policy has no audit to validate. It is ready when the document
      was read and produced at least one field, and it is shown instead of the
@@ -160,6 +162,7 @@ export default function PolicyDetail({ id }: { id: string }) {
               change, policy_name holds a name actually read from the document,
               and a guess must not be printed as the policy's name in a record
               somebody keeps. */}
+          {fromScan && <ScanNotice className="mb-4" />}
           <PolicyAuditReport
             data={report as any}
             hideNav
@@ -182,6 +185,7 @@ export default function PolicyDetail({ id }: { id: string }) {
               {row.nickname}
             </span>
           )}
+          {fromScan && <ScanNotice className="mb-4" />}
           <PolicyFactsheet insuranceType={row!.insurance_type} data={row!.extracted_data} />
         </div>
       )}

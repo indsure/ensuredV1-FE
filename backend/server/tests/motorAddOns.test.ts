@@ -411,3 +411,33 @@ describe("Tata AIG: a list made only of covers outside the catalog", () => {
         assert.equal(ids.includes("misfuelling"), true);
     });
 });
+
+/* A policy read by OCR (a photo, or a PDF with no text layer) proves nothing
+ * absent. One misread digit turns a real add-on headroom into zero, and a
+ * dropped line shortens a declared list; either would publish "Not on this
+ * policy" for a cover the customer paid for. Presence still counts.
+ */
+describe("text read from a scanned copy", () => {
+    test("a declared list proves nothing absent", () => {
+        const s = detectMotorAddOns(fixture("motor_car_tata_aig_schedule.txt"), { fromScan: true })!;
+        assert.equal(s.readFromScan, true);
+        assert.equal(s.findings.some((f) => f.state === "absent_proven"), false);
+        assert.equal((s.otherCovers ?? []).length, 3, "covers read by name are still shown");
+    });
+
+    test("a zero headroom proves nothing absent", () => {
+        const plain = scan(BIKE);
+        assert.equal(plain.findings.every((f) => f.state === "absent_proven"), true, "baseline: arithmetic proves it");
+        const s = detectMotorAddOns(BIKE, { fromScan: true })!;
+        assert.equal(s.findings.some((f) => f.state === "absent_proven"), false);
+    });
+
+    test("a cover found by name is still present", () => {
+        const s = detectMotorAddOns(CAR, { fromScan: true })!;
+        assert.equal(s.present, scan(CAR).present);
+    });
+
+    test("text from the document itself is not marked", () => {
+        assert.equal(scan(CAR).readFromScan, undefined);
+    });
+});

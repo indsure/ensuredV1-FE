@@ -86,6 +86,8 @@ export interface AddOnScan {
   /** The add-on premium total the insurer prints (Tata's "Total Add on
    *  Premium (C)"), when it prints one. */
   addOnTotal?: number | null;
+  /** The text came from OCR. Absence is never proven from it. */
+  readFromScan?: boolean;
 }
 
 /* ── Catalog ──────────────────────────────────────────────────────────────
@@ -252,7 +254,7 @@ const ADDON_SECTION_START = /add[\s-]?on\s+covers\s*\(add\)/i;
 const ADDON_SECTION_END = /total\s+add[\s-]?on\s+premium[^₹\d]{0,12}₹?\s*([\d,]+(?:\.\d+)?)/i;
 const ADDON_SECTION_LINE = /\(add\)\s*([^()₹]+?)\s*\(([A-Z]{1,4}\d{1,4})\)[^₹(]{0,40}₹\s*(-?[\d,]+(?:\.\d+)?)/gi;
 
-export function detectMotorAddOns(policyText: string): AddOnScan | null {
+export function detectMotorAddOns(policyText: string, opts: { fromScan?: boolean } = {}): AddOnScan | null {
   if (!policyText || policyText.trim().length < 200) return null;
 
   const vehicleClass = detectVehicleClass(policyText);
@@ -422,7 +424,13 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     reconciliation = { named, ncb, unexplained: round(arithmetic.headroom - named - ncb) };
   }
 
-  const provenEmpty = arithmetic !== null && arithmetic.headroom === 0;
+  /* OCR text proves nothing absent. One misread digit in the premium table
+     turns a real headroom into zero, and a dropped line shortens a declared
+     list, and either would publish "Not on this policy" for a cover the
+     customer paid for. Presence still counts: a cover OCR read by name is
+     there. */
+  const fromScan = !!opts.fromScan;
+  const provenEmpty = !fromScan && arithmetic !== null && arithmetic.headroom === 0;
 
   /* A declared list is an ENUMERATION, not a hint.
      When the insurer prints its own heading ("Add-on Covers Opted", "Addons
@@ -446,7 +454,7 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
      Absence may be claimed from neither. */
   /* A list made only of known covers outside the catalog was still READ: every
      name in it was recognised, so what it leaves out was not bought. */
-  const declaredListProves = !!label && declared.size + declaredOther.size > 0 && declaredListBounded;
+  const declaredListProves = !fromScan && !!label && declared.size + declaredOther.size > 0 && declaredListBounded;
 
   /* Outside-catalog covers, from the declared list or a priced line. A priced
      line wins for evidence because it carries the amount; a cover priced at
@@ -554,5 +562,6 @@ export function detectMotorAddOns(policyText: string): AddOnScan | null {
     unrecognisedDeclared,
     otherCovers,
     addOnTotal,
+    ...(fromScan ? { readFromScan: true } : {}),
   };
 }

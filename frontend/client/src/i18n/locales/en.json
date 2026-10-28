@@ -2439,7 +2439,8 @@
     "a_misfuelling": "Misfuelling",
     "also_title": "Also on this policy",
     "also_note": "These covers are not in the list of {{count}} above, so they do not change the count or the score.",
-    "also_total": "Add-on premium {{amount}}, every rupee of it named here."
+    "also_total": "Add-on premium {{amount}}, every rupee of it named here.",
+    "from_scan": "Read from a scanned copy, so a cover we did not find may still be on the policy. Only what we could read is ticked."
   },
   "xform": {
     "f_add_on_covers": "Add-on covers",
@@ -4944,5 +4945,9 @@
     "attach_motor": "Send a motor policy PDF (demo)",
     "placeholder": "Message",
     "send": "Send"
+  },
+  "scan_notice": {
+    "title": "Read from a scanned copy",
+    "body": "This policy was read from a scan or photo, not the insurer’s original PDF, so some numbers may be misread. Check the key figures against the document before you rely on them or share them."
   }
 }

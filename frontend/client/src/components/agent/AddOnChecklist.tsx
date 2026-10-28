@@ -134,6 +134,8 @@ export default function AddOnChecklist({ data }: Props) {
           <p className="mt-1 max-w-[52ch] text-sm text-slate-500">
             {provenEmpty
               ? t("addon.proven_empty")
+              : scan.readFromScan
+              ? t("addon.from_scan")
               : t("addon.read_from")}
           </p>
         </div>

@@ -27,7 +27,10 @@ export interface ExtractionResult {
 export async function extractStructuredData(
   policyText: string,
   type: string,
-  usageMeta?: Partial<GeminiCallMeta>
+  usageMeta?: Partial<GeminiCallMeta>,
+  /** fromScan: the text came from OCR. Labelled on the record, and the add-on
+   *  checklist proves nothing absent from it. */
+  opts?: { fromScan?: boolean }
 ): Promise<ExtractionResult> {
   if (!policyText.trim()) {
     return { status: "failed", error: "No text extracted from file" };
@@ -90,12 +93,14 @@ export async function extractStructuredData(
      that failed to import. */
   if (type === "motor") {
     try {
-      const scan = detectMotorAddOns(policyText);
+      const scan = detectMotorAddOns(policyText, { fromScan: !!opts?.fromScan });
       if (scan) data[ADD_ON_FINDINGS_KEY] = scan;
     } catch (err: any) {
       console.warn("[add-ons] detection failed, continuing without it:", err?.message);
     }
   }
+
+  if (opts?.fromScan) data.read_from_scan = true;
 
   return { status: "completed", data };
 }
