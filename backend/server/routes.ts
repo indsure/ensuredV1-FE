@@ -33,6 +33,8 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { pool } from "./lib/db";
 import { ingestPolicyDocument } from "./services/policyDocs/ingest";
+import { acquireText } from "./services/policyDocs/textLayer";
+import { tesseractOcr } from "./services/policyDocs/ocr";
 import { confirmMany, getDocumentRules, resolveFlag, reviewFact, StoreError, type DbTx } from "./services/policyDocStore";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
@@ -766,24 +768,36 @@ function readableFailure(err: unknown): string {
 const MIN_USABLE_TEXT_CHARS = 200;
 
 /**
- * Text-layer extraction only. A PDF we cannot read is rejected, never OCR'd.
+ * Longest scanned PDF we will OCR. Tesseract takes about 9 seconds a page on
+ * the EC2 box and shares one worker with the life/term document reader, so a
+ * 60-page scanned wording would hold that queue for ten minutes. Longer scans
+ * are rejected exactly as before.
+ */
+const OCR_MAX_PAGES = 15;
+
+/**
+ * Text layer first; local OCR (Tesseract) only when there is no text layer.
  *
- * DELIBERATE: no OCR path exists here. Insurer-issued PDFs are machine-readable
- * by definition, so a policy with no text layer is a phone photo or a desk-scan
- * of a printout — and running those through a model costs money on every upload
- * to produce a transcription nobody has verified. We would rather ask for the
- * original PDF, which the person almost always has in their email, and offer to
- * do it by hand when they genuinely do not. If you are about to add an OCR
- * fallback, that is the tradeoff you are reversing.
+ * DECISION REVERSED 2026-10-28 (founder): PDFs used to be rejected outright
+ * when they had no text layer, never OCR'd, because the only OCR on offer was
+ * a paid model. A paying advisor's policy was then refused because it had been
+ * run through "Microsoft Print To PDF", which turns every page into an image.
+ * Tesseract runs on our own server, costs nothing per page and sends no image
+ * anywhere, so a scan now gets read instead of refused. What it reads well:
+ * names, policy numbers, dates, registration and vehicle details. What it reads
+ * badly: dense premium tables. A scan it still cannot read (a blurred phone
+ * photo) falls through to the same "scanned copy" rejection as before.
  */
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   const fileData = fs.readFileSync(filePath);
   const data = new Uint8Array(fileData);
 
   let text = "";
+  let pageCount = 0;
   try {
     const loadingTask = pdfjs.getDocument({ data, disableFontFace: true });
     const pdf = await loadingTask.promise;
+    pageCount = pdf.numPages;
 
     for (let i = 1; i <= pdf.numPages; i++) {
       try {
@@ -815,8 +829,27 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
 
   if (text.trim().length >= MIN_USABLE_TEXT_CHARS) return text;
 
+  if (pageCount > 0 && pageCount <= OCR_MAX_PAGES) {
+    const startedAt = Date.now();
+    try {
+      // Re-read the file: pdf.js may have taken ownership of the first buffer.
+      const doc = await acquireText(new Uint8Array(fs.readFileSync(filePath)), { ocr: tesseractOcr });
+      const ocrText = doc.pages.map((p) => p.text).join("\n").replace(/\u0000/g, "");
+      log.info("pdf_ocr_fallback", {
+        pages: pageCount,
+        chars: ocrText.trim().length,
+        seconds: Math.round((Date.now() - startedAt) / 1000),
+      });
+      if (ocrText.trim().length >= MIN_USABLE_TEXT_CHARS) return ocrText;
+    } catch (ocrErr: any) {
+      // "empty" is Tesseract finding nothing usable on any page: a real scan
+      // we cannot read, which is the rejection below. Anything else is logged.
+      if (ocrErr?.code !== "empty") log.warn("pdf_ocr_fallback_failed", { message: ocrErr?.message });
+    }
+  }
+
   console.warn(
-    `[PDF Extraction] text layer yielded ${text.trim().length} chars — treating as a scan, not analysing`
+    `[PDF Extraction] text layer yielded ${text.trim().length} chars (${pageCount} pages), OCR could not read it either`
   );
   throw new PdfExtractionError("scanned_unreadable", PDF_FAILURE_MESSAGE.scanned_unreadable);
 }
