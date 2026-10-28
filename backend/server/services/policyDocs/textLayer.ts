@@ -191,7 +191,7 @@ export async function acquireText(buf: Uint8Array, opts: { ocr?: PageOcr | null 
       const tc = await page.getTextContent();
       items = tc.items
         .filter((it: any) => typeof it.str === "string")
-        .map((it: any) => ({ s: it.str, x: it.transform[4], y: it.transform[5], w: it.width, h: it.height || Math.abs(it.transform[3]) }));
+        .map((it: any) => ({ s: it.str.replace(/\u0000/g, ""), x: it.transform[4], y: it.transform[5], w: it.width, h: it.height || Math.abs(it.transform[3]) }));
     } catch {
       items = [];
     }

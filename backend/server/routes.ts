@@ -789,7 +789,11 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
       try {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        const pageText = content.items.map((it: any) => it.str).join(" ");
+        // Some insurer PDFs have broken font maps that emit NUL characters.
+        // Postgres rejects \u0000 inside jsonb ("unsupported Unicode escape
+        // sequence"), so one stray NUL fails the whole save. Strip them here,
+        // before the length check, so every downstream lane gets clean text.
+        const pageText = content.items.map((it: any) => it.str).join(" ").replace(/\u0000/g, "");
         text += pageText + "\n";
       } catch (pageErr: any) {
         console.warn(`[PDF Extraction] Page ${i} failed: ${pageErr.message} — skipping`);
@@ -818,7 +822,7 @@ export async function extractTextFromPDF(filePath: string): Promise<string> {
 }
 
 async function extractTextFromPlain(filePath: string): Promise<string> {
-  return fs.readFileSync(filePath, "utf-8");
+  return fs.readFileSync(filePath, "utf-8").replace(/\u0000/g, "");
 }
 
 // The subset of a multer upload that the extraction path actually uses. The
