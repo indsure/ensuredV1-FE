@@ -4,7 +4,7 @@ import multer from "multer";
 import fs from "fs";
 import crypto from "crypto";
 import dns from "dns";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MASTER_AUDIT_PROMPT, PROMPT_VERSION } from "./promptTemplate";
@@ -214,14 +214,38 @@ const pdfRateLimiter = rateLimit({
   message: { error: "Too many PDF requests. Please wait a few minutes and try again." },
 });
 
-// Strict limiter for the anonymous Gemini-backed analyzer: 10 analyses / hour /
-// IP. Prevents an anonymous caller from running up unbounded AI cost.
-const analyzeRateLimiter = rateLimit({
+// Consumer uploads (/api/me/analyze). Runs AFTER the sign-in check, so it counts per
+// account: one IP is often shared by a whole family, an office, or every Jio phone
+// behind the same carrier NAT, and a per-IP cap let strangers use up each other's
+// uploads. Gemini spend is already capped per account by checkIndividualQuota; this
+// only stops one account from hammering the queue. Refusals (quota used, bad file,
+// errors) are not counted, so a retry never locks the person out.
+const consumerAnalyzeRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipFailedRequests: true,
+  keyGenerator: (req: any) => (req.authUserId ? `user:${req.authUserId}` : ipKeyGenerator(req.ip || "")),
+  message: { error: "You have uploaded a lot in a short time. Please wait 15 minutes and try again." },
+});
+
+// The two signup-handoff routes each get their own per-IP counter, so the signup
+// steps never eat into the upload allowance. Failed tries still count here on
+// purpose: both routes take an upload token, and a free retry is a free guess.
+const attachEmailRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many analysis requests. Please try again in an hour." },
+  message: { error: "Too many tries. Please wait a few minutes and try again." },
+});
+const claimUploadRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many tries. Please wait a few minutes and try again." },
 });
 
 // Pre-signup uploads. Tighter than the authenticated limiter because there is
@@ -1035,7 +1059,10 @@ const verifyJwt = async (req: any, res: any): Promise<string | null> => {
    file, so anyone could fill the server's small disk 25 MB at a time (the 2026-10-07 outage
    was a full disk). The handler's own verifyJwt is then a token-cache hit. */
 const signedInBeforeUpload = async (req: any, res: any, next: () => void) => {
-  if (await verifyJwt(req, res)) next();
+  const userId = await verifyJwt(req, res);
+  if (!userId) return;
+  req.authUserId = userId; // per-account rate limit key, see consumerAnalyzeRateLimiter
+  next();
 };
 
 /* ---------- D2C CONSUMER ("INDIVIDUAL") AUTH + QUOTA ---------- */
@@ -5611,8 +5638,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
   app.post(
     "/api/me/analyze",
-    analyzeRateLimiter,
     signedInBeforeUpload,
+    consumerAnalyzeRateLimiter,
     (req, res, next) => {
       upload.single("file")(req, res, (err: any) => {
         if (err) {
@@ -5801,7 +5828,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      Only ever sets the address on an unclaimed, unexpired row, and never
      overwrites one that is already set, so a token cannot be re-pointed at a
      different address after the fact. */
-  app.post("/api/pending-upload/attach-email", analyzeRateLimiter, async (req, res) => {
+  app.post("/api/pending-upload/attach-email", attachEmailRateLimiter, async (req, res) => {
     try {
       const token = String(req.body?.token || "").trim();
       const email = String(req.body?.email || "").trim().toLowerCase();
@@ -5832,7 +5859,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   // Claim: the authenticated half. This is where the account, the quota and the
   // spend all enter. A token can only be claimed once — claimed_by is set at the
   // end and checked at the start.
-  app.post("/api/me/claim-upload", analyzeRateLimiter, async (req, res) => {
+  app.post("/api/me/claim-upload", claimUploadRateLimiter, async (req, res) => {
     let tempPath: string | null = null;
     try {
       const userId = await requireIndividual(req, res);
