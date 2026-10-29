@@ -47,7 +47,7 @@ export type PageStatsData = {
 
 const TYPE: Record<string, string> = {
   health: "Health", motor: "Motor", life: "Life", term: "Term", travel: "Travel", property: "Property",
-  fire: "Fire", marine: "Marine", contractor_all_risk: "Contractor all risk",
+  fire: "Fire", marine: "Marine", contractor_all_risk: "Contractor all risk", other: "Other",
 };
 const typeName = (t: string) => TYPE[t] ?? t;
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

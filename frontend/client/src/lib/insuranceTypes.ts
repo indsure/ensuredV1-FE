@@ -36,6 +36,7 @@ export const DATA_ENTRY_TYPES = [
   "fire",
   "marine",
   "contractor_all_risk",
+  "other",
 ] as const;
 export type DataEntryType = (typeof DATA_ENTRY_TYPES)[number];
 export type InsuranceType = "health" | DataEntryType;
@@ -55,6 +56,7 @@ export const TYPE_META: Record<InsuranceType, { label: string; emoji: string }> 
   fire: { label: "Fire", emoji: "🔥" },
   marine: { label: "Marine", emoji: "🚢" },
   contractor_all_risk: { label: "Contractor's All Risk", emoji: "🏗️" },
+  other: { label: "Other", emoji: "📄" },
 };
 
 export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
@@ -238,6 +240,17 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "project_start_date", label: "Project start date", type: "date" },
     { key: "project_completion_date", label: "Project completion date", type: "date", shared: "expiry_date" },
     { key: "maintenance_period_months", label: "Maintenance period (months)", type: "number" },
+  ],
+  other: [
+    { key: "policyholder_name", label: "Policyholder / insured name", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy number", type: "text" },
+    { key: "policy_type_stated", label: "Type of insurance (as written)", type: "text" },
+    { key: "plan_name", label: "Plan / product name", type: "text", shared: "policy_name" },
+    { key: "sum_insured", label: "Sum insured", type: "number", shared: "sum_insured" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "policy_start_date", label: "Policy start date", type: "date" },
+    { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
   ],
 };
 

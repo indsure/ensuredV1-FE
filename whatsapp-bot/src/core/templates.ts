@@ -135,7 +135,7 @@ export const T = {
   locked: () => T.couldNotRead("the PDF is password-protected", "Remove the password and send it again").replace(" It's waiting in Needs Attention in the portal.", " No policy check was used."),
   hindiPolicy: () => "This policy is written in Hindi. I can only read English policies for now, so no policy check was used.",
   pickType: () =>
-    "What kind of policy is this? Reply with a number:\n1) Health\n2) Motor\n3) Life\n4) Term\n5) Travel\n6) Property\n7) Fire\n8) Marine\n9) Contractor all risk",
+    "What kind of policy is this? Reply with a number:\n1) Health\n2) Motor\n3) Life\n4) Term\n5) Travel\n6) Property\n7) Fire\n8) Marine\n9) Contractor all risk\n10) Other",
   duplicate: (url: string) =>
     `You've already checked this exact file. Here's the report: ${url}\nRun a fresh check? It uses 1 policy check. Reply YES or NO.`,
   dupNo: () => "Okay, no new check. Ask me anything about it, or reply SHARE.",

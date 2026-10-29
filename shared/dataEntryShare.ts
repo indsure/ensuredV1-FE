@@ -64,6 +64,7 @@ export const SHAREABLE_TYPES = [
   "fire",
   "marine",
   "contractor_all_risk",
+  "other",
 ] as const;
 export type ShareableType = (typeof SHAREABLE_TYPES)[number];
 
@@ -200,6 +201,16 @@ export const SHAREABLE_FIELDS: Record<ShareableType, ShareableField[]> = {
     { key: "project_start_date", label: "Project starts", format: "date" },
     { key: "project_completion_date", label: "Project completes", format: "date" },
     { key: "maintenance_period_months", label: "Maintenance period (months)", format: "number" },
+  ],
+  other: [
+    { key: "policyholder_name", label: "Policyholder", format: "text" },
+    { key: "insurer", label: "Insurer", format: "text" },
+    { key: "policy_type_stated", label: "Type of insurance", format: "text" },
+    { key: "plan_name", label: "Plan", format: "text" },
+    { key: "sum_insured", label: "Sum insured", format: "money" },
+    { key: "premium", label: "Premium", format: "money" },
+    { key: "policy_start_date", label: "Cover starts", format: "date" },
+    { key: "policy_expiry_date", label: "Cover ends", format: "date" },
   ],
 };
 

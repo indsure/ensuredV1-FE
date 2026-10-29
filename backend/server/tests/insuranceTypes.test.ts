@@ -29,6 +29,7 @@ import {
     isSupportedInsuranceType,
     isDataEntryType,
     EXTRACTION_FIELDS,
+    buildExtractionPrompt,
 } from "../services/extractionFields";
 import { AI_CONFIG } from "../config/ai_config";
 
@@ -111,6 +112,17 @@ describe("SUPPORTED_INSURANCE_TYPES", () => {
         for (const type of DATA_ENTRY_TYPES) {
             assert.ok(EXTRACTION_FIELDS[type]?.length > 0, `${type} has no extraction fields`);
         }
+    });
+
+    test("other is data entry, and reads the type of insurance from the document", () => {
+        // "Other" is where an advisor puts a policy they cannot place. It must
+        // never fall into the health audit, and its prompt must ask for the
+        // document's own name for the cover rather than a guess.
+        assert.ok(isSupportedInsuranceType("other"));
+        assert.ok(isDataEntryType("other"));
+        assert.ok(EXTRACTION_FIELDS.other.some((f) => f.key === "policy_type_stated"));
+        assert.match(buildExtractionPrompt("other"), /"policy_type_stated": the kind of insurance exactly as the document names it/);
+        assert.doesNotMatch(buildExtractionPrompt("fire"), /policy_type_stated/);
     });
 });
 

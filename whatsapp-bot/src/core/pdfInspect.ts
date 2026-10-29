@@ -13,7 +13,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const POLICY_TYPES = [
-  "health", "motor", "life", "term", "travel", "property", "fire", "marine", "contractor_all_risk",
+  "health", "motor", "life", "term", "travel", "property", "fire", "marine", "contractor_all_risk", "other",
 ] as const;
 export type PolicyType = (typeof POLICY_TYPES)[number];
 
@@ -27,6 +27,7 @@ export const TYPE_LABEL: Record<PolicyType, string> = {
   fire: "fire",
   marine: "marine",
   contractor_all_risk: "contractor all risk",
+  other: "other",
 };
 
 export type Inspection =
@@ -67,6 +68,8 @@ const FAMILIES: Record<PolicyType, RegExp[]> = {
   fire: [/standard fire|fire and special perils|sfsp/, /bharat (sookshma|laghu|griha) udyam/, /\bstfi\b/],
   marine: [/marine (cargo|hull|open cover|policy)/, /bill of lading|\bb\/l\b/, /institute cargo clauses/, /\bvoyage\b/],
   contractor_all_risk: [/contractor'?s? all risk|\bcar policy\b/, /erection all risk|\bear\b/, /contract (works|value)/],
+  // Never guessed: "other" is the advisor's answer when nothing else fits.
+  other: [],
 };
 
 /** Under this many letters a PDF is a scan: no type guess, no names, and a super top-up

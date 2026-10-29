@@ -1853,6 +1853,7 @@ export function buildUploadedPolicy(
     fire: "Standard Fire & Special Perils",
     marine: "Marine Cargo Open",
     contractor_all_risk: "Contractor's All Risk",
+    other: "Personal Accident",
   };
   const plan = UPLOAD_PLAN[type] ?? "Uploaded policy";
   // Life and term are written by life companies; everything else here is general.

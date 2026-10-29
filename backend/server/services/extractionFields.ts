@@ -39,6 +39,9 @@ export const DATA_ENTRY_TYPES = [
   "fire",
   "marine",
   "contractor_all_risk",
+  // Anything that fits none of the above, or a policy the advisor cannot place.
+  // Same flat read, plus the kind of insurance as the document names it.
+  "other",
 ] as const;
 export type DataEntryType = (typeof DATA_ENTRY_TYPES)[number];
 
@@ -254,6 +257,16 @@ export const EXTRACTION_FIELDS: Record<DataEntryType, ExtractionField[]> = {
     { key: "project_start_date", label: "Project start date", type: "date" },
     { key: "project_completion_date", label: "Project completion date", type: "date", shared: "expiry_date" },
     { key: "maintenance_period_months", label: "Maintenance period (months)", type: "number" },
+  ],  other: [
+    { key: "policyholder_name", label: "Policyholder / insured name", type: "text", shared: "policyholder_name" },
+    { key: "insurer", label: "Insurer", type: "text", shared: "insurer" },
+    { key: "policy_number", label: "Policy number", type: "text" },
+    { key: "policy_type_stated", label: "Type of insurance (as written)", type: "text" },
+    { key: "plan_name", label: "Plan / product name", type: "text", shared: "policy_name" },
+    { key: "sum_insured", label: "Sum insured", type: "number", shared: "sum_insured" },
+    { key: "premium", label: "Premium", type: "number" },
+    { key: "policy_start_date", label: "Policy start date", type: "date" },
+    { key: "policy_expiry_date", label: "Policy expiry date", type: "date", shared: "expiry_date" },
   ],
 };
 
@@ -268,6 +281,7 @@ const TYPE_PROMPT_NAME: Record<DataEntryType, string> = {
   fire: "fire (standard fire & special perils / Bharat commercial fire)",
   marine: "marine cargo",
   contractor_all_risk: "contractor's all risk (CAR)",
+  other: "general (the advisor did not say which kind; it can be any kind of)",
 };
 
 /** Build the strict, type-specific OCR/extraction prompt. */
@@ -314,6 +328,12 @@ export function buildExtractionPrompt(type: DataEntryType): string {
 - "field_sources": an object. For each of premium, premium_excluding_taxes, sum_assured, basic_sum_assured, maturity_amount, policy_term_years, premium_paying_term_years, start_date, uin, vested_bonus, loan_outstanding, stated_paid_to_date and policy_status_stated that you filled, add "<key>": {"excerpt": "<the exact words from the document the value was read from, at most 200 characters>", "page": <page number if printed, else null>}. Copy the words exactly; do not paraphrase.`
     : "";
 
+  const otherRule =
+    type === "other"
+      ? `
+- "policy_type_stated": the kind of insurance exactly as the document names it (for example "Personal Accident", "Shopkeeper's Package", "Public Liability"). Copy the document's own words. If the document does not name it, use null; do not work it out from the cover.`
+      : "";
+
   return `You are an insurance policy data-entry assistant for ${TYPE_PROMPT_NAME[type]} insurance.
 Read the provided policy document text and extract ONLY the fields below.
 Return STRICTLY a single JSON object with EXACTLY these keys and nothing else:
@@ -325,7 +345,7 @@ ${lines}
 Rules:
 - Use null for any field not clearly stated in the document. Do NOT guess or infer.
 - Dates must be formatted as YYYY-MM-DD.
-- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${odTpRule}${nextPremiumRule}${evidenceRule}
+- Numeric fields must contain a plain number (e.g. 500000), no currency symbols, commas, or words.${odTpRule}${nextPremiumRule}${evidenceRule}${otherRule}
 - Do NOT add extra keys, comments, or markdown. Return only the raw JSON object.`;
 }
 

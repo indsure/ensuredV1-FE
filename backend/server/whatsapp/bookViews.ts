@@ -68,7 +68,7 @@ export function parseAmount(value: string | number | null | undefined): number |
 
 const typeOf = (r: { insurance_type?: string | null }) => r.insurance_type || "health";
 const isHealth = (r: { insurance_type?: string | null }) => typeOf(r) === "health";
-const DATA_ENTRY = new Set(["motor", "life", "term", "travel", "property", "fire", "marine", "contractor_all_risk"]);
+const DATA_ENTRY = new Set(["motor", "life", "term", "travel", "property", "fire", "marine", "contractor_all_risk", "other"]);
 
 /* ── My Queue (MyQueue.tsx): checks that failed or are still running ───────── */
 

@@ -534,6 +534,7 @@
     "type_fire": "Fire",
     "type_marine": "Marine",
     "type_contractor_all_risk": "Contractor's All Risk",
+    "type_other": "Other",
     "all_types": "All types",
     "others": "Others",
     "overdue": "overdue",

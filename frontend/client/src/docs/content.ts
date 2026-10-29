@@ -442,7 +442,7 @@ export const DOC_SECTIONS: DocSection[] = [
             t: "steps",
             items: [
               "Press **Check a Policy** at the top of the menu.",
-              "Choose the type of policy: **Health**, **Motor**, **Life**, **Term**, **Travel**, **Property**, **Fire**, **Marine** or **Contractor's All Risk**.",
+              "Choose the type of policy: **Health**, **Motor**, **Life**, **Term**, **Travel**, **Property**, **Fire**, **Marine**, **Contractor's All Risk** or **Other**. Not sure which? Pick **Other** and we will read the type of insurance from the document.",
               "Drop the PDF onto the page, or press the box to choose a file. PDF files only, up to 25MB each.",
               "Add the customer's name, email, phone and policy number on the right if you like. It is optional, but it puts the policy under the right customer.",
               "Press **Check**. Nothing is read until you do.",
