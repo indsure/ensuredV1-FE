@@ -109,7 +109,10 @@ export default function AddOnChecklist({ data }: Props) {
   // a lie, so the card simply does not appear.
   if (!isScan(scan)) return null;
 
-  const provenEmpty = scan.arithmetic?.headroom === 0;
+  // Proven empty by either route: a zero headroom in the own-damage
+  // arithmetic, or the insurer's own add-on total printed as 0. Both leave
+  // every row "absent_proven", which no other proof does.
+  const provenEmpty = scan.findings.length > 0 && scan.findings.every((f) => f.state === "absent_proven");
   const found = scan.findings.filter((f) => f.state === "present");
   // Priced lines we did not put in the checklist, so the card never looks like
   // it is hiding something an agent can see in the PDF.

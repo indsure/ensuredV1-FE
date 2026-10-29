@@ -441,3 +441,36 @@ describe("text read from a scanned copy", () => {
         assert.equal(scan(CAR).readFromScan, undefined);
     });
 });
+
+/* Universal Sompo prints no add-on section and no "Total OD premium" row. Its
+ * only statement about add-ons is "Add: TOTAL ADD-ON PREMIUM (C) | 0", so
+ * without reading that row the policy proved nothing and was never scored.
+ * The fixture is the premium table as a clean read gives it (Gemini's page
+ * copy of a scanned policy, 2026-10-29), with the identifiers blanked.
+ */
+describe("Universal Sompo: the insurer's own add-on total of 0", () => {
+    const SOMPO = fixture("motor_car_universal_sompo_scan_vision.txt");
+
+    test("proves every cover absent", () => {
+        const s = scan(SOMPO);
+        assert.equal(s.addOnTotal, 0);
+        assert.equal(s.findings.every((f) => f.state === "absent_proven"), true);
+        assert.match(find(s, "zero_depreciation").evidence ?? "", /total add-on premium of 0/);
+    });
+
+    test("not when the text came from plain OCR", () => {
+        const s = detectMotorAddOns(SOMPO, { fromScan: true })!;
+        assert.equal(s.findings.some((f) => f.state === "absent_proven"), false);
+    });
+
+    test("a non-zero total proves nothing", () => {
+        const s = scan(SOMPO.replace("TOTAL ADD-ON PREMIUM (C) | 0", "TOTAL ADD-ON PREMIUM (C) | 1240"));
+        assert.equal(s.addOnTotal, 1240);
+        assert.equal(s.findings.some((f) => f.state === "absent_proven"), false);
+    });
+
+    test("a zero total next to a priced add-on line proves nothing", () => {
+        const s = scan(CAR + "\nTotal Add-on Premium | 0\n");
+        assert.equal(s.findings.every((f) => f.state === "absent_proven"), false);
+    });
+});

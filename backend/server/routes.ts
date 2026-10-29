@@ -35,6 +35,7 @@ import { pool } from "./lib/db";
 import { ingestPolicyDocument } from "./services/policyDocs/ingest";
 import { acquireText } from "./services/policyDocs/textLayer";
 import { tesseractOcr } from "./services/policyDocs/ocr";
+import { isMotorText, pickVisionPages, transcribePages } from "./services/policyDocs/scanVision";
 import { confirmMany, getDocumentRules, resolveFlag, reviewFact, StoreError, type DbTx } from "./services/policyDocStore";
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
@@ -812,7 +813,11 @@ const OCR_MAX_PAGES = 15;
  * badly: dense premium tables. A scan it still cannot read (a blurred phone
  * photo) falls through to the same "scanned copy" rejection as before.
  */
-export async function extractTextFromPDF(filePath: string, source?: TextSource): Promise<string> {
+export async function extractTextFromPDF(
+  filePath: string,
+  source?: TextSource,
+  usageMeta?: Partial<import("./services/geminiUsage").GeminiCallMeta>
+): Promise<string> {
   const fileData = fs.readFileSync(filePath);
   const data = new Uint8Array(fileData);
 
@@ -857,8 +862,27 @@ export async function extractTextFromPDF(filePath: string, source?: TextSource):
     const startedAt = Date.now();
     try {
       // Re-read the file: pdf.js may have taken ownership of the first buffer.
-      const doc = await acquireText(new Uint8Array(fs.readFileSync(filePath)), { ocr: tesseractOcr });
-      const ocrText = doc.pages.map((p) => p.text).join("\n").replace(/\u0000/g, "");
+      const bytes = new Uint8Array(fs.readFileSync(filePath));
+      const doc = await acquireText(bytes, { ocr: tesseractOcr });
+      let ocrText = doc.pages.map((p) => p.text).join("\n").replace(/\u0000/g, "");
+      // A car or bike scan: Tesseract garbles the add-on and premium tables
+      // the add-on card is built from, so those pages (at most three) are
+      // copied out by Gemini instead. See services/policyDocs/scanVision.
+      if (isMotorText(ocrText)) {
+        const want = pickVisionPages(doc.pages);
+        const vision = await transcribePages(bytes, want, usageMeta);
+        if (vision) {
+          ocrText = doc.pages.map((p) => vision.pages.get(p.index) ?? p.text).join("\n").replace(/\u0000/g, "");
+          if (source) source.visionPages = [...vision.pages.keys()];
+        }
+        log.info("pdf_scan_vision", {
+          pages: want,
+          read: vision ? [...vision.pages.keys()] : [],
+          promptTokens: vision?.tokens.promptTokens ?? null,
+          outputTokens: vision?.tokens.outputTokens ?? null,
+          thoughtsTokens: vision?.tokens.thoughtsTokens ?? null,
+        });
+      }
       log.info("pdf_ocr_fallback", {
         pages: pageCount,
         chars: ocrText.trim().length,
@@ -964,8 +988,12 @@ async function extractTextFromImage(
  * photo, or a PDF with no text layer) rather than taken from the document's
  * own text. OCR misreads digits, so a policy read this way is labelled on its
  * page, and the add-on card claims nothing absent from it.
+ *
+ * `visionPages` lists the pages of a scanned car policy that Gemini copied out
+ * in place of Tesseract (its add-on and premium pages). Those are read as
+ * reliably as a text PDF, so the add-on card may prove covers absent again.
  */
-export type TextSource = { fromScan: boolean };
+export type TextSource = { fromScan: boolean; visionPages?: number[] };
 
 /** Stored on report_data / extracted_data; read by the policy pages. */
 const READ_FROM_SCAN_KEY = "read_from_scan";
@@ -978,7 +1006,7 @@ async function extractPolicyText(
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
-  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path, source);
+  if (file.mimetype.includes("pdf")) return extractTextFromPDF(file.path, source, usageMeta);
   if (file.mimetype.startsWith("image/")) {
     if (source) source.fromScan = true;
     return extractTextFromImage(file, apiKey, usageMeta);
@@ -2406,7 +2434,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   route: "/api/agent/data-entry",
                   sourceType: "agent",
                   actorId: agentId,
-                }, { fromScan: leadSource.fromScan });
+                }, leadSource);
                 if (extraction.status !== "completed") ocrFailed = true;
                 if (extraction.status === "completed") {
                   await consumeOcr(agentId);
@@ -4416,7 +4444,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 actorId: agentId,
                 jobId,
                 clientId,
-              }, { fromScan: textSource.fromScan });
+              }, textSource);
 
               if (extraction.status === "completed") {
                 job.status = "completed";
@@ -5525,7 +5553,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 actorId: userId,
                 jobId,
                 clientId: policyId,
-              }, { fromScan: textSource.fromScan });
+              }, textSource);
               if (extraction.status === "completed") {
                 job.status = "completed";
                 job.result = extraction.data;
@@ -6316,7 +6344,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
               sourceType: "agent",
               actorId: agentId,
               clientId: id,
-            }, { fromScan: textSource.fromScan });
+            }, textSource);
             if (extraction.status === "completed") {
               // The OCR entry reserved for this re-read is now spent for good.
               charged = false;

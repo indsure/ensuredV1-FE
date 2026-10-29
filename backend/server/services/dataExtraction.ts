@@ -29,8 +29,9 @@ export async function extractStructuredData(
   type: string,
   usageMeta?: Partial<GeminiCallMeta>,
   /** fromScan: the text came from OCR. Labelled on the record, and the add-on
-   *  checklist proves nothing absent from it. */
-  opts?: { fromScan?: boolean }
+   *  checklist proves nothing absent from it, unless visionPages says Gemini
+   *  copied out the add-on and premium pages (see policyDocs/scanVision). */
+  opts?: { fromScan?: boolean; visionPages?: number[] }
 ): Promise<ExtractionResult> {
   if (!policyText.trim()) {
     return { status: "failed", error: "No text extracted from file" };
@@ -93,7 +94,7 @@ export async function extractStructuredData(
      that failed to import. */
   if (type === "motor") {
     try {
-      const scan = detectMotorAddOns(policyText, { fromScan: !!opts?.fromScan });
+      const scan = detectMotorAddOns(policyText, { fromScan: !!opts?.fromScan && !opts?.visionPages?.length });
       if (scan) data[ADD_ON_FINDINGS_KEY] = scan;
     } catch (err: any) {
       console.warn("[add-ons] detection failed, continuing without it:", err?.message);

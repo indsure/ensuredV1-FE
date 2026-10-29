@@ -1,0 +1,28 @@
+PRODUCT NAME : MOTOR - PRIVATE CAR PACKAGE POLICY ; POLICY NUMBER: AVO/0000/00000000
+VEHICLE DETAILS
+REGISTRATION NUMBER | ENGINE NUMBER | CHASSIS NUMBER | MAKE | MODEL | CUBIC CAPACITY/KW/GVW | MFG. YEAR / REGISTRATION DATE | FUEL TYPE | BODY TYPE | SEATING CAPACITY
+XX00X0000 | XX00000 | XXX0XXXXX0XX00000 | FORD | FIGO 1.2 EXI | 1196 | 2013/01-01-2013 | Petrol | Saloon | 5
+INSURED DECLARED VALUE (IDV) (Amount in Rs.)
+VEHICLE IDV | TRAILER IDV/SIDE CAR | ELECTRICAL ACCESSORIES | NON-ELECTRICAL ACCESSORIES | Bi-fuel/CNG/LPG KIT | Total VALUE
+99900 | 0 | 0 | 0 | 0 | 99900
+SCHEDULE OF PREMIUM (Amount in Rs.)
+SECTION I - OWN DAMAGE (A) | SECTION II - LIABILITY (B)
+Basic Own Damage | 171 | Basic TP Premium | 3416
+Add: Extension of Geographical area (IMT1) | 0 | Add: Extension of Geographical area (IMT1) | 0
+Add: % for Vehicles imported without custom duty (IMT19) | 0 | Add: Bi-fuel/CNG/LPG Kit (IMT25) | 0
+Add: Electrical / Non-Electrical Accessories (IMT24) | 0 | Less: Premium for TPPD (IMT20) | 0
+Add: Bi-fuel/CNG/LPG Kit (IMT25) | 0 | TOTAL BASIC THIRD-PARTY PREMIUM (A) | 3416
+Add: % for OD premium for Driving Tution | 0 | ADD: PA BENEFITS | 0
+TOTAL BASIC OD PREMIUM | 171 | Compulsory PA Cover for Owner Driver under Section III, SI Rs.15 Lacs | 225
+Less: DETARIFF DISCOUNT | 0 | PA Cover to named passengers (IMT15) | 0
+OWN DAMAGE PREMIUM (A) | 171 | PA cover to unnamed passengers (IMT 16) No. of Passengers : 5 CSI per passenger: 120000 | 300
+Less: No Claim Bonus (%) | 60 | PA cover to Paid Driver, Cleaners, Conductors (IMT17) | 0
+Less: Automobile Association Discount (IMT8) | 0 | Legal Liablity to paid driver (IMT28) | 50
+Less: Discount on Anti-theft devices (IMT10) | 0 | Legal Liablity Employees other than paid Driver (IMT29) | 0
+Less: Discount on specially designed vehicles for blind, handicapped and mentally retarded persons (IMT12) | 0 | TOTAL LIABILITY PREMIUM (B) | 575
+Less: Discount on Voluntary deductible (IMT22A) | 0 | NET LIABILITY PREMIUM (A+B) = II | 3991
+OWN DAMAGE PREMIUM (B) | 111 | TOTAL PACKAGE PREMIUM (I+II) | 4102
+Add: TOTAL ADD-ON PREMIUM (C) | 0 | GST 18% : CGST (9%) "" ; SGST (9%) "" ; IGST (18%) "" | 738
+NET OWN DAMAGE PREMIUM (B+C) = I | 111 | TOTAL POLICY PREMIUM | 4840
+GEOGRAPHICAL AREA | | COMPULSORY DEDUCTIBLE (IMT22) | Compulsory Deductible Rs 1000 | VOLUNTARY DEDUCTIBLE (IMT22A) | 0
+EXPIRING NCB | 25 | NCB % | 35

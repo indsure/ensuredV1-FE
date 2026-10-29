@@ -254,6 +254,14 @@ const ADDON_SECTION_START = /add[\s-]?on\s+covers\s*\(add\)/i;
 const ADDON_SECTION_END = /total\s+add[\s-]?on\s+premium[^₹\d]{0,12}₹?\s*([\d,]+(?:\.\d+)?)/i;
 const ADDON_SECTION_LINE = /\(add\)\s*([^()₹]+?)\s*\(([A-Z]{1,4}\d{1,4})\)[^₹(]{0,40}₹\s*(-?[\d,]+(?:\.\d+)?)/gi;
 
+/* The insurer's own add-on total, printed as a premium-table row with no
+   add-on section around it. Universal Sompo:
+     "Add: TOTAL ADD-ON PREMIUM (C) | 0"
+   Its own-damage rows are "OWN DAMAGE PREMIUM (A)" and "NET OWN DAMAGE
+   PREMIUM (B+C)", neither of which TOTAL_OD reads, so without this row the
+   policy proved nothing and could not be scored. */
+const STATED_ADDON_TOTAL = /total\s*add[\s-]*on\s*premium\s*(?:\(\s*[a-z]\s*\))?[^₹\d\n]{0,12}₹?\s*([\d,]+(?:\.\d+)?)/i;
+
 export function detectMotorAddOns(policyText: string, opts: { fromScan?: boolean } = {}): AddOnScan | null {
   if (!policyText || policyText.trim().length < 200) return null;
 
@@ -430,7 +438,15 @@ export function detectMotorAddOns(policyText: string, opts: { fromScan?: boolean
      customer paid for. Presence still counts: a cover OCR read by name is
      there. */
   const fromScan = !!opts.fromScan;
-  const provenEmpty = !fromScan && arithmetic !== null && arithmetic.headroom === 0;
+  if (addOnTotal === null) {
+    const stated = STATED_ADDON_TOTAL.exec(masked);
+    if (stated) addOnTotal = toNumber(stated[1]);
+  }
+  /* A printed add-on total of zero is the same proof as a zero headroom, with
+     the same limit (an add-on bundled at zero rupees leaves no trace), so it
+     is only taken when no priced add-on line was read either. */
+  const statedZero = addOnTotal === 0 && pricedLines.length === 0;
+  const provenEmpty = !fromScan && ((arithmetic !== null && arithmetic.headroom === 0) || statedZero);
 
   /* A declared list is an ENUMERATION, not a hint.
      When the insurer prints its own heading ("Add-on Covers Opted", "Addons
@@ -527,12 +543,15 @@ export function detectMotorAddOns(policyText: string, opts: { fromScan?: boolean
 
        Declared list: the insurer enumerated what was opted and this is not in
        it. */
-    if (provenEmpty && arithmetic) {
+    if (provenEmpty) {
       return {
         id: entry.id,
         label: entry.label,
         state: "absent_proven",
-        evidence: `Own damage premium is ${arithmetic.totalOd} against a basic of ${arithmetic.basicOd}, so no add-on premium was paid`,
+        evidence:
+          arithmetic && arithmetic.headroom === 0
+            ? `Own damage premium is ${arithmetic.totalOd} against a basic of ${arithmetic.basicOd}, so no add-on premium was paid`
+            : "The insurer prints a total add-on premium of 0, so no add-on premium was paid",
         amount: null,
       };
     }
