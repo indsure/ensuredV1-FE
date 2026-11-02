@@ -123,7 +123,12 @@
     "no_account": "New to IndSure?",
     "create_account": "Create an account",
     "error_empty": "Please enter your email and password.",
-    "footer": "Your data is private and secure."
+    "footer": "Your data is private and secure.",
+    "personal_account": "This is a personal IndSure account, not an advisor account. Go to your personal account, or use a different email for advisor work.",
+    "personal_title": "You are signed in to a personal account",
+    "go_personal": "Go to my personal account",
+    "sign_out": "Sign out",
+    "check_failed": "We could not check your account just now. Check your internet connection and try again."
   },
   "layout": {
     "agent_portal": "Agent Portal",
@@ -1595,7 +1600,12 @@
     "side_sub": "Check a policy, see every renewal coming up, and message a client on WhatsApp, from one screen.",
     "side_point_1": "A plain-language report for every health policy you check",
     "side_point_2": "Every renewal and premium date in one list",
-    "side_point_3": "Call or WhatsApp any client in one tap"
+    "side_point_3": "Call or WhatsApp any client in one tap",
+    "email_taken": "This email already has an IndSure account. Sign in, or reset your password if you have forgotten it.",
+    "email_personal": "This email is already used for a personal IndSure account. Please use a different email for your advisor account.",
+    "email_unconfirmed": "This email is waiting to be confirmed. Open the confirmation link we emailed you, then sign in.",
+    "rate_limited": "Too many attempts just now. Please wait a few minutes and try again.",
+    "account_check_failed": "We could not check this email just now. Check your internet connection and try again."
   },
   "signup2": {
     "select_one": "Please select at least one insurer to continue",
@@ -4950,5 +4960,18 @@
   "scan_notice": {
     "title": "Read from a scanned copy",
     "body": "This policy was read from a scan or photo, not the insurer’s original PDF, so some numbers may be misread. Check the key figures against the document before you rely on them or share them."
+  },
+  "finish_setup": {
+    "title": "Finish setting up your advisor account",
+    "body": "Your login works, but your advisor account is not set up yet. Check the details below and tap Finish setup. Nothing has been charged.",
+    "email_label": "Email (your login)",
+    "submit": "Finish setup",
+    "saving": "Setting up your account...",
+    "use_another": "Use a different account",
+    "help": "Stuck? WhatsApp us",
+    "code_invalid": "That invite code is not valid or has already been used. Check the code, or WhatsApp us for a new one.",
+    "mismatch": "This login does not match the details sent. Tap Use a different account, sign in again and retry.",
+    "save_failed": "We could not finish setting up your account. Please try again, or WhatsApp us.",
+    "no_email": "This login has no email address, so it cannot be set up as an advisor account here. Please WhatsApp us and we will sort it out."
   }
 }
