@@ -703,8 +703,8 @@ export default function CoverCalculator({
       }
 
       if (saveResult.success) {
-        // Clear progress since we successfully saved
-        clearProgress();
+        // Progress is cleared by the report page once the report has loaded,
+        // so a save that cannot be read back keeps the visitor's answers.
         // Set timestamp for success banner on report page
         sessionStorage.setItem("calculator_saved_timestamp", Date.now().toString());
         setIsAnalyzing(false);

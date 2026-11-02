@@ -15,20 +15,23 @@
 const PLAYGROUND_KEY = "indsure_playground";
 
 /**
- * Pages where the demo must never answer. The flag lives in sessionStorage, so
- * a visitor who presses Back out of the demo and then signs up would otherwise
- * be "signed up" by the mock: a success screen and no account. On these paths
- * the real client always runs; the flag is kept, so Forward into the portal
- * still shows the demo.
+ * The only pages the demo may answer: the advisor portal itself. The flag lives
+ * in sessionStorage for the whole tab, so a visitor who leaves the demo for the
+ * public site would otherwise be served by the mock everywhere: signups with no
+ * account, and a public calculator whose "saved" report was never saved (the
+ * report page then read the mock's generic reply and showed "Report data
+ * missing"). An allowlist, not a denylist, so a new public page is real by
+ * default. The flag is kept, so going back into the portal still shows the demo.
+ * The advisor landing (/agent) and the auth pages are real.
  */
-const REAL_ONLY = /^\/(login|signup|forgot-password|reset-password|app|account)(\/|$)|^\/agent\/(login|signup|forgot-password|reset-password|join)(\/|$)/;
+const DEMO_PAGES = /^\/agent\/(?!(login|signup|forgot-password|reset-password|join)(\/|$))/;
 
 export function isPlaygroundMode(): boolean {
   try {
     return (
       typeof window !== "undefined" &&
       window.sessionStorage.getItem(PLAYGROUND_KEY) === "1" &&
-      !REAL_ONLY.test(window.location.pathname)
+      DEMO_PAGES.test(window.location.pathname)
     );
   } catch {
     return false;
