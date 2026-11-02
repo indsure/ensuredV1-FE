@@ -17,7 +17,7 @@ import {
   buildSeed, buildCatalogComparison, buildUploadedPolicy,
   DEMO_CATALOG, DEMO_COMPARE_RESPONSE, type Store,
 } from "./seed";
-import { DEMO_AGENT_ID, DEMO_EMAIL, exitPlayground } from "./mode";
+import { DEMO_AGENT_ID, DEMO_EMAIL, exitPlayground, isPlaygroundMode } from "./mode";
 import { playgroundTeamApi } from "./teamSeed";
 import { buildDemoDocumentRules } from "./policyTermsSeed";
 
@@ -493,7 +493,9 @@ export function installPlaygroundFetch(): void {
   const orig = window.fetch.bind(window);
   window.fetch = async (input: any, init?: any) => {
     const url = typeof input === "string" ? input : input?.url ?? "";
-    if (url && url.includes("/api/")) {
+    // Asked per call, not once at install: the patch outlives the portal page
+    // that installed it, and off the portal every request must be real.
+    if (url && url.includes("/api/") && isPlaygroundMode()) {
       // Small delay so the "reading both wordings…" spinner reads as real work.
       if (url.includes("/api/compare/") || url.includes("/api/agent/compare")) {
         await new Promise((r) => setTimeout(r, 900));

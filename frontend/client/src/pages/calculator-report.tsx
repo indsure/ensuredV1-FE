@@ -10,6 +10,7 @@ import { EngineResult, UserInputs } from "@/lib/health-engine-logic";
 import { SeparatePolicyCard } from "@/components/calculator/SeparatePolicyCard";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
+import { clearProgress } from "@/lib/calculator-storage";
 import { pdf } from "@react-pdf/renderer";
 import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
@@ -245,7 +246,9 @@ export default function CalculatorReportPage() {
     const { t, locale } = useLanguage();
     const [result, setResult] = useState<EngineResult | null>(null);
     const [inputs, setInputs] = useState<UserInputs | null>(null);
-    const [loading, setLoading] = useState(isUuidRoute);
+    // True on both routes: the session-copy route used to start false, so its
+    // first paint was the "Report data missing" screen until the effect ran.
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
 
@@ -292,12 +295,24 @@ export default function CalculatorReportPage() {
                     const res = await apiFetch(`/api/calculator/report/${matchUuid}`);
                     if (!res.ok) throw new Error("Report not found");
                     const data = await res.json();
-                    setInputs(typeof data.inputs === "string" ? JSON.parse(data.inputs) : data.inputs);
-                    setResult(typeof data.result_data === "string" ? JSON.parse(data.result_data) : data.result_data);
-                    
+                    const loadedInputs = typeof data.inputs === "string" ? JSON.parse(data.inputs) : data.inputs;
+                    const loadedResult = typeof data.result_data === "string" ? JSON.parse(data.result_data) : data.result_data;
+                    // A 200 without the report in it is not a report.
+                    if (!loadedInputs || typeof loadedInputs !== "object" || !loadedResult || typeof loadedResult !== "object") {
+                        throw new Error("Report has no data");
+                    }
+                    setInputs(loadedInputs);
+                    setResult(loadedResult);
+
                     // Check if this is a fresh save (within last 5 seconds)
                     const savedTimestamp = sessionStorage.getItem("calculator_saved_timestamp");
                     if (savedTimestamp) {
+                        // The wizard keeps its answers until the report has
+                        // actually loaded, so a save that cannot be read back
+                        // does not cost the visitor their answers. Only on a
+                        // fresh save: a shared link opened in another tab must
+                        // not wipe that tab's own run.
+                        clearProgress();
                         const timeDiff = Date.now() - parseInt(savedTimestamp);
                         if (timeDiff < 5000) {
                             setShowSavedBanner(true);
@@ -312,15 +327,24 @@ export default function CalculatorReportPage() {
                     setLoading(false);
                 }
             } else {
-                const savedResult = sessionStorage.getItem("calculator_result");
-                const savedInputs = sessionStorage.getItem("calculator_inputs");
-                if (savedResult && savedInputs) {
-                    setResult(JSON.parse(savedResult));
-                    setInputs(JSON.parse(savedInputs));
-                    setLoading(false);
-                } else {
-                    setLocation("/calculator");
+                // Unreadable storage or a corrupt copy lands on the "missing"
+                // screen with its way back, instead of an effect that throws
+                // and leaves the page stuck.
+                try {
+                    const savedResult = sessionStorage.getItem("calculator_result");
+                    const savedInputs = sessionStorage.getItem("calculator_inputs");
+                    if (savedResult && savedInputs) {
+                        setResult(JSON.parse(savedResult));
+                        setInputs(JSON.parse(savedInputs));
+                    } else {
+                        setLocation("/calculator");
+                        return;
+                    }
+                } catch {
+                    setResult(null);
+                    setInputs(null);
                 }
+                setLoading(false);
             }
         };
 
