@@ -25,6 +25,7 @@ import type { Express } from "express";
 import crypto from "crypto";
 import { pool } from "../lib/db";
 import { log } from "../lib/logger";
+import { isLimitedFree } from "../lib/entitlement";
 import { AIService } from "../services/aiService";
 import { AI_CONFIG } from "../config/ai_config";
 import { checkAnswerNumbers, parseIntent } from "./answerGuard";
@@ -75,6 +76,9 @@ function botKeyOk(req: any): boolean {
 /** Linked AND allow-listed. The only two things that make an advisor servable. */
 async function agentServable(agentId: string): Promise<boolean> {
   if (!UUID_RE.test(agentId)) return false;
+  // Limited Free (2026-11-02) overrides the allowlist: an account that paid, connected and
+  // then lapsed must not keep the bot, which serves paid features (leads, renewals, Sach).
+  if (await isLimitedFree(agentId)) return false;
   const r = await pool.query(
     `SELECT 1 FROM whatsapp_link l
        JOIN wa_allowlist w ON w.agent_id = l.agent_id
@@ -264,6 +268,8 @@ async function connectAccess(agentId: string, req: any): Promise<{ allowed: bool
   );
   const allowed = !!r.rows[0]?.allowed;
   const paid = !!r.rows[0]?.paid;
+  // Limited Free (2026-11-02) never connects, not even from an open-beta site or the allowlist.
+  if (await isLimitedFree(agentId)) return { allowed: false, paid: false, canConnect: false };
   return { allowed, paid, canConnect: allowed || paid || openOrigin(req) };
 }
 

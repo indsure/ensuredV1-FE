@@ -37,7 +37,7 @@ type Tier = {
 const tiers: Tier[] = [
   {
     name: "advp.free",
-    // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
+    // claim-source: limited Free plan, founder 2026-11-02 (docs/plans/2026-11-02-free-tier-paywall.md): 3 health checks seeded in create-profile, 20 scans = OCR_MONTHLY_ALLOWANCE.free, catalogue compare and share links free; everything else paid (backend lib/entitlement.ts).
     tagline: "advp.free_tag",
     price: "₹0",
     priceAnnual: "₹0",
@@ -48,7 +48,6 @@ const tiers: Tier[] = [
       { label: "advp.ff2" },
       { label: "advp.ff3" },
       { label: "advp.ff4" },
-      { label: "advp.ff5" },
       { label: "advp.ff6" },
     ],
     cta: "advp.start_free",
@@ -113,15 +112,15 @@ const tiers: Tier[] = [
 ];
 
 const featureRows: { label: string; free: string | boolean; agent: string | boolean; agency: string | boolean }[] = [
-  { label: "advp.r1", free: true, agent: true, agency: true },
-  { label: "advp.r2", free: true, agent: true, agency: true },
-  { label: "advp.r3", free: true, agent: true, agency: true },
-  { label: "advp.r4", free: true, agent: true, agency: true },
-  { label: "advp.r5", free: true, agent: true, agency: true },
-  { label: "advp.r6", free: true, agent: true, agency: true },
+  { label: "advp.r1", free: false, agent: true, agency: true },
+  { label: "advp.r2", free: false, agent: true, agency: true },
+  { label: "advp.r3", free: false, agent: true, agency: true },
+  { label: "advp.r4", free: false, agent: true, agency: true },
+  { label: "advp.r5", free: false, agent: true, agency: true },
+  { label: "advp.r6", free: false, agent: true, agency: true },
   { label: "advp.r7", free: "advp.v_20_total", agent: "advp.v_50_month", agency: "advp.v_50_seat" },
   { label: "advp.r8", free: "advp.v_3_once", agent: "advp.v_12_month", agency: "advp.v_10_seat" },
-  { label: "advp.r9", free: true, agent: true, agency: true },
+  { label: "advp.r9", free: "advp.v_catalog_only", agent: true, agency: true },
   { label: "advp.r10", free: false, agent: "advp.v_monthly_allow", agency: "advp.v_shared_allow" },
   { label: "advp.r11", free: false, agent: true, agency: true },
   { label: "advp.r12", free: false, agent: "advp.v_fair", agency: "advp.v_fair" },
@@ -148,7 +147,7 @@ const faqs = [
     a: "advp.a1",
   },
   {
-    // claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07.
+    // claim-source: limited Free plan, founder 2026-11-02 (docs/plans/2026-11-02-free-tier-paywall.md): 3 health checks seeded in create-profile, 20 scans = OCR_MONTHLY_ALLOWANCE.free, catalogue compare and share links free; everything else paid (backend lib/entitlement.ts).
     q: "advp.q2",
     a: "advp.a2",
   },
@@ -209,7 +208,7 @@ export default function Pricing() {
             {t("advp.h_a")} <span className="italic text-[var(--color-green-primary)]">{t("advp.h_b")}</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-text-secondary)] font-light leading-relaxed max-w-2xl mx-auto">
-            {/* claim-source: backend/server/routes.ts:772-798 (FREE_SLOTS_PER_TYPE is the only gate; the 30-day trial gate was removed). Verified 2026-09-07. */}
+            {/* claim-source: limited Free plan, founder 2026-11-02 (docs/plans/2026-11-02-free-tier-paywall.md): 3 health checks seeded in create-profile, 20 scans = OCR_MONTHLY_ALLOWANCE.free, catalogue compare and share links free; everything else paid (backend lib/entitlement.ts). */}
             {t("advp.sub")}
           </p>
         </section>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter"
-import { Home, FileText, Users, TrendingUp, MoreHorizontal } from "lucide-react"
+import { Home, FileText, Users, TrendingUp, MoreHorizontal, Upload, CreditCard } from "lucide-react"
 import { useLanguage } from "@/i18n/LanguageContext"
 import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
 
@@ -13,7 +13,7 @@ import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
  *
  * Rendered only under `md` — the desktop sidebar is unchanged.
  */
-export function AgentTabBar({ onMore }: { onMore: () => void }) {
+export function AgentTabBar({ onMore, limited = false }: { onMore: () => void; limited?: boolean }) {
   const [location] = useLocation()
   const { t } = useLanguage()
 
@@ -29,12 +29,21 @@ export function AgentTabBar({ onMore }: { onMore: () => void }) {
   // the bar offered Customers and Claims as top-level while the rail filed them
   // under People and Services — the same app teaching two different maps.
   // Everything else, Services and My Agency included, is one tap away in More.
-  const tabs = [
-    { href: "/agent/dashboard", label: label("layout.tab_home", "Home"), icon: Home },
-    { href: "/agent/insights", label: label("layout.nav_insights", "Insights"), icon: TrendingUp },
-    { href: "/agent/customers", label: label("layout.nav_people", "People"), icon: Users },
-    { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
-  ]
+  // The limited Free plan (2026-11-02) gets the four screens it can actually use, so the
+  // phone bar is never half locked.
+  const tabs = limited
+    ? [
+        { href: "/agent/dashboard", label: label("layout.tab_home", "Home"), icon: Home },
+        { href: "/agent/uploads", label: label("paywall.tab_upload", "Upload"), icon: Upload },
+        { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
+        { href: "/agent/plan", label: label("paywall.tab_plan", "Plan"), icon: CreditCard },
+      ]
+    : [
+        { href: "/agent/dashboard", label: label("layout.tab_home", "Home"), icon: Home },
+        { href: "/agent/insights", label: label("layout.nav_insights", "Insights"), icon: TrendingUp },
+        { href: "/agent/customers", label: label("layout.nav_people", "People"), icon: Users },
+        { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
+      ]
 
   // People is the parent of Leads and Renewals in the rail, so it lights for them too.
   const PEOPLE_CHILDREN = ["/agent/leads", "/agent/renewals"]

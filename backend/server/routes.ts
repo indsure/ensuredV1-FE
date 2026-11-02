@@ -44,6 +44,7 @@ import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { registerPaymentRoutes } from "./services/payments";
 import { log } from "./lib/logger";
+import { isLimitedFree, NEEDS_UPGRADE } from "./lib/entitlement";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -1876,18 +1877,21 @@ export async function registerRoutes(
       // verify the id corresponds to an existing auth user before inserting.
       const authHeader = req.headers["authorization"] as string | undefined;
       let authEmail: string | undefined;
+      let authCreatedAt: string | undefined;
       if (authHeader?.startsWith("Bearer ")) {
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader.slice(7));
         if (error || !user || user.id !== id) {
           return res.status(403).json({ error: "Token does not match the profile being created" });
         }
         authEmail = user.email ?? undefined;
+        authCreatedAt = user.created_at;
       } else {
         const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
         if (error || !data?.user) {
           return res.status(403).json({ error: "Unknown user id" });
         }
         authEmail = data.user.email ?? undefined;
+        authCreatedAt = data.user.created_at;
       }
       // The stored email is the one the auth user signed up with, never a value
       // the request body chose.
@@ -1914,6 +1918,7 @@ export async function registerRoutes(
       // same transaction as the agent row. A code that is stale or used up never
       // costs anyone their signup: the account is created without it.
       const code = String(invite_code || "").trim().toUpperCase();
+      let codeSpent = false;
       const c = await pool.connect();
       try {
         await c.query("BEGIN");
@@ -1951,6 +1956,30 @@ export async function registerRoutes(
           );
           if (spent.rowCount) {
             await c.query("UPDATE agents SET invite_code = $2 WHERE id = $1", [id, code]);
+            codeSpent = true;
+          }
+        }
+        if (ins.rowCount) {
+          // Free plan: 3 health policy checks (founder, 2026-11-02). Nothing else in the app
+          // grants them; DO NOTHING keeps any seed a database trigger already made.
+          await c.query(
+            `INSERT INTO agent_credits (agent_id, balance) VALUES ($1, 3) ON CONFLICT (agent_id) DO NOTHING`,
+            [id]
+          );
+          // Invite-era rules keep today's full Free: anyone who joined with a valid code, and
+          // any login made before the cutover (a signup that failed and is finished later).
+          // In a savepoint so a database without migration 032 still completes the signup.
+          const cutoff = Date.parse(process.env.FREE_TIER_CUTOFF || "");
+          const predates = !!authCreatedAt && Number.isFinite(cutoff) && Date.parse(authCreatedAt) < cutoff;
+          if (codeSpent || predates) {
+            await c.query("SAVEPOINT free_access");
+            try {
+              await c.query("UPDATE agents SET free_full_access = true WHERE id = $1", [id]);
+              await c.query("RELEASE SAVEPOINT free_access");
+            } catch (e: any) {
+              await c.query("ROLLBACK TO SAVEPOINT free_access");
+              log.error("free_full_access_not_set", { agentId: id, message: e?.message ?? String(e) });
+            }
           }
         }
         await c.query("COMMIT");
@@ -2393,6 +2422,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
 
+      if (await isLimitedFree(agentId)) {
+        try { if (req.file?.path) fs.unlinkSync(req.file.path); } catch { /* best effort */ }
+        return res.status(403).json(NEEDS_UPGRADE);
+      }
+
       const { leadId } = req.params;
       try {
         const leadRes = await pool.query(
@@ -2720,6 +2754,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   app.post("/api/agent/claims", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
+    if (await isLimitedFree(agentId)) return res.status(403).json(NEEDS_UPGRADE);
 
     const {
       customer_id, new_customer_name, new_customer_phone,
@@ -3188,6 +3223,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const agentId = await verifyJwt(req, res);
       if (!agentId) return;
       if (!req.file) return res.status(400).json({ error: "No file received" });
+      if (await isLimitedFree(agentId)) {
+        try { if (req.file.path) fs.unlinkSync(req.file.path); } catch { /* best effort */ }
+        return res.status(403).json(NEEDS_UPGRADE);
+      }
 
       const category = String(req.body?.category || "").toLowerCase();
       if (!["personal", "case", "outcome"].includes(category)) {
@@ -3903,6 +3942,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       try {
         const agentId = await verifyJwt(req, res);
         if (!agentId) { cleanup(); return; }
+        if (await isLimitedFree(agentId)) { cleanup(); return res.status(403).json(NEEDS_UPGRADE); }
 
         if (!fileA || !fileB) {
           cleanup();
@@ -6915,7 +6955,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
     try {
       const { rows } = await pool.query(
-        `SELECT id, slug, display_name, photo_url, city, languages,
+        `SELECT id, agent_id, slug, display_name, photo_url, city, languages,
                 lines_of_business, primary_locale, whatsapp_number,
                 (enabled AND published) AS live
            FROM agent_pages
@@ -6925,7 +6965,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (rows.length === 0) return res.status(404).json({ error: "Not found" });
 
       const page = rows[0];
-      if (!page.live) return res.json({ live: false, display_name: page.display_name });
+      // An advisor on the limited Free plan has no public page (2026-11-02). Same answer as a
+      // pulled page, never a bare 404: a QR code printed while they were paid must say so.
+      if (!page.live || (await isLimitedFree(page.agent_id))) return res.json({ live: false, display_name: page.display_name });
 
       return res.json({
         live: true,
@@ -7056,6 +7098,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         }
         const page = pageRes.rows[0];
         const agentId: string = page.agent_id;
+        if (await isLimitedFree(agentId)) {
+          cleanup();
+          return res.status(404).json({ error: "This advisor's page is no longer active." });
+        }
 
         const utm = {
           source: String(req.body?.utm_source || "").slice(0, 60) || null,
@@ -7270,6 +7316,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   app.post("/api/agent/my-page", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
+    if (await isLimitedFree(agentId)) return res.status(403).json(NEEDS_UPGRADE);
 
     try {
       const { rows: agents } = await pool.query(
