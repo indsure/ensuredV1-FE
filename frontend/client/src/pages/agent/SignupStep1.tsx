@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { supabase } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api';
+import { getAccountKind } from '@/lib/agentAccount';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, MessageCircle, Check } from 'lucide-react'
 
@@ -245,6 +246,44 @@ export default function AgentSignupStep1() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.inviteCode])
 
+    // The login this page made on an earlier Continue, so a retry after a failed
+    // create-profile does not call signUp again. Memory only: rules.md keeps
+    // signup data out of web storage, and after a refresh the already-registered
+    // path below covers it.
+    const createdLogin = useRef<{ email: string; id: string } | null>(null)
+
+    // The email already has a login. Sign in with the password just typed and
+    // decide from what that login is. Returns the id to finish, or null when it
+    // has handled the outcome itself (error shown, or sent elsewhere).
+    const recoverExistingLogin = async (): Promise<string | null> => {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            email: form.email,
+            password: form.password,
+        })
+        if (signInError || !data.user) {
+            setError(signInError?.code === 'email_not_confirmed' ? t('signup.email_unconfirmed') : t('signup.email_taken'))
+            setLoading(false)
+            return null
+        }
+        const kind = await getAccountKind(data.user.id)
+        if (kind === 'unfinished') return data.user.id
+        if (kind === 'agent') {
+            // Already a complete advisor who typed their own password: just let them in.
+            try {
+                sessionStorage.removeItem('indsure_signup_draft')
+                sessionStorage.removeItem('indsure_signup_checkboxes')
+            } catch {}
+            setLocation('/agent/dashboard')
+            return null
+        }
+        // A personal account must not be turned into an advisor one: create-profile
+        // does not check for it, and an agents row locks the personal portal.
+        await supabase.auth.signOut()
+        setError(kind === 'personal' ? t('signup.email_personal') : t('signup.account_check_failed'))
+        setLoading(false)
+        return null
+    }
+
     const handleNext = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
@@ -279,25 +318,72 @@ export default function AgentSignupStep1() {
             return
         }
 
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: form.email,
-            password: form.password,
-            options: {
-                // Same reasoning as the consumer signup: without this the
-                // confirmation link falls back to the project's single global
-                // Site URL, so an agent signing up on indsure.in was sent to
-                // beta. Derive it from where they actually are.
-                emailRedirectTo: `${window.location.origin}/agent/login`,
-            },
-        })
+        // The login is made first and the advisor profile second, so a failed
+        // create-profile used to leave a login with no profile, and a second
+        // Continue then failed on signUp with "User already registered". Now a
+        // retry reuses the login this page already made (in memory only, never
+        // web storage), and an email that already has a login is signed in with
+        // the password just typed and finished if it has no profile yet.
+        const typedEmail = form.email.trim().toLowerCase()
+        let userId: string
+        const earlierLogin = createdLogin.current
+        if (earlierLogin && earlierLogin.email === typedEmail) {
+            userId = earlierLogin.id
+        } else {
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: form.email,
+                password: form.password,
+                options: {
+                    // Same reasoning as the consumer signup: without this the
+                    // confirmation link falls back to the project's single global
+                    // Site URL, so an agent signing up on indsure.in was sent to
+                    // beta. Derive it from where they actually are.
+                    emailRedirectTo: `${window.location.origin}/agent/login`,
+                    // Kept on the login so a signup that fails after this point
+                    // can be finished from the sign-in page without retyping.
+                    // Nested (see agentSignupFromMetadata): top-level full_name /
+                    // phone would let /app bootstrap a personal account from it.
+                    data: {
+                        agent_signup: {
+                            full_name: form.fullName.trim(),
+                            phone: form.phone.replace(/\D/g, '').slice(-10),
+                            city: form.city.trim(),
+                            invite_code: form.inviteCode.trim().toUpperCase(),
+                            marketing_consent: marketingConsent,
+                            account_type: form.accountType,
+                            agency_name: form.accountType === 'agency' ? form.agencyName.trim() : null,
+                            seats_wanted: form.accountType === 'agency' && form.seatsWanted ? Number(form.seatsWanted) : null,
+                        },
+                    },
+                },
+            })
 
-        if (authError || !authData.user) {
-            setError(authError?.message || t('signup.signup_failed'))
-            setLoading(false)
-            return
+            // Confirmation off: an existing email is an error. Confirmation on:
+            // Supabase pretends it worked and returns a user with no identities,
+            // whose id is not the real one, so it must never be used.
+            const alreadyRegistered =
+                authError?.code === 'user_already_exists' ||
+                /already registered/i.test(authError?.message ?? '') ||
+                (!authError && authData.user && authData.user.identities?.length === 0)
+
+            if (authError?.code === 'over_email_send_rate_limit' || authError?.status === 429) {
+                setError(t('signup.rate_limited'))
+                setLoading(false)
+                return
+            }
+            if (alreadyRegistered) {
+                const recovered = await recoverExistingLogin()
+                if (!recovered) return
+                userId = recovered
+            } else if (authError || !authData.user) {
+                setError(authError?.message || t('signup.signup_failed'))
+                setLoading(false)
+                return
+            } else {
+                userId = authData.user.id
+            }
+            createdLogin.current = { email: typedEmail, id: userId }
         }
-
-        const userId = authData.user.id
 
         const profileRes = await apiFetch('/api/agent/create-profile', {
             method: 'POST',

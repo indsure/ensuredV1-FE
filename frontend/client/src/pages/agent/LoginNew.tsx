@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
 import { ShieldCheck, Eye, EyeOff, FolderKanban, MessageCircle, Scale } from 'lucide-react';
 import { preloadAgentRoutes } from '@/pages/agent/lazyRoutes';
+import type { User } from '@supabase/supabase-js';
+import { getAccountKind } from '@/lib/agentAccount';
+import FinishAgentSetup from '@/components/agent/FinishAgentSetup';
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
@@ -54,6 +57,40 @@ export default function LoginNew() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 'finish' = signed in with no advisor and no personal profile (a signup that
+  // failed half way); 'personal' = arrived already signed in to a personal account.
+  const [mode, setMode] = useState<'form' | 'finish' | 'personal'>('form');
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+
+  // Arriving already signed in: ProtectedRoute sends a login with no advisor
+  // profile here, and so does the email-confirmation link. Without this check
+  // they saw a blank login form and, after signing in again, the old dead end.
+  //
+  // Nobody is signed out here. A personal-account user who tapped an advisor
+  // link only gets told, with an explicit Sign out. A read error just shows the
+  // normal form; signing in re-runs the check.
+  useEffect(() => {
+    let live = true;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const user = session?.user;
+      if (!live || !user) return;
+      const kind = await getAccountKind(user.id);
+      if (!live) return;
+      if (kind === 'agent') setLocation(safeNext(search));
+      else if (kind === 'unfinished') { setSessionUser(user); setMode('finish'); }
+      else if (kind === 'personal') setMode('personal');
+    });
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function signOutToForm() {
+    await supabase.auth.signOut();
+    setSessionUser(null);
+    setMode('form');
+    setError(null);
+    setPassword('');
+  }
 
   async function handleSignIn() {
     if (!email || !password) {
@@ -72,21 +109,26 @@ export default function LoginNew() {
     // Gate the advisor portal to advisor accounts only. Consumer/retail
     // accounts share the same Supabase auth pool, so a valid client login
     // would otherwise land here. Require a matching row in `agents`.
-    const userId = data.user?.id;
-    const { data: agentProfile } = await supabase
-      .from('agents')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
+    //
+    // A login with NO profile of either kind is a signup that failed after the
+    // login was made. It used to get the client-account message too, which was
+    // false and left them locked out; it now gets the finish-setup form.
+    const user = data.user;
+    const kind = user ? await getAccountKind(user.id) : 'unknown';
 
-    if (!agentProfile) {
-      await supabase.auth.signOut();
-      setError('This is a client account, not an advisor account. Please sign in at the client portal.');
+    if (kind === 'agent') {
+      setLocation(safeNext(search));
+      return;
+    }
+    if (kind === 'unfinished' && user) {
+      setSessionUser(user);
+      setMode('finish');
       setLoading(false);
       return;
     }
-
-    setLocation(safeNext(search));
+    await supabase.auth.signOut();
+    setError(kind === 'personal' ? t('agent_login.personal_account') : t('agent_login.check_failed'));
+    setLoading(false);
   }
 
   const benefits = [
@@ -154,6 +196,33 @@ export default function LoginNew() {
             <img src="/logo.png" width={784} height={599} alt="IndSure" className="lg:hidden h-9 w-auto mx-auto cursor-pointer" />
           </Link>
 
+          {mode === 'finish' && sessionUser ? (
+            <FinishAgentSetup
+              user={sessionUser}
+              onDone={(path) => setLocation(path)}
+              onUseAnother={() => { void signOutToForm(); }}
+            />
+          ) : mode === 'personal' ? (
+            <div className="space-y-6">
+              <div className="space-y-3 text-center">
+                <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t('agent_login.personal_title')}</h1>
+                <p className="text-base text-slate-600 leading-relaxed">{t('agent_login.personal_account')}</p>
+              </div>
+              <Button
+                onClick={() => setLocation('/app')}
+                className="w-full h-12 bg-[#0D9488] hover:bg-[#0f766e] text-white rounded-xl text-base font-bold"
+              >
+                {t('agent_login.go_personal')}
+              </Button>
+              <button
+                type="button"
+                onClick={() => { void signOutToForm(); }}
+                className="w-full min-h-11 text-base font-semibold text-slate-600 hover:text-slate-900"
+              >
+                {t('agent_login.sign_out')}
+              </button>
+            </div>
+          ) : (<>
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 font-['Playfair_Display']">{t('agent_login.welcome_title')}</h1>
             <p className="mt-3 text-slate-500 font-medium">{t('agent_login.welcome_subtitle')}</p>
@@ -236,6 +305,7 @@ export default function LoginNew() {
               </Link>
             </p>
           </div>
+          </>)}
         </div>
       </div>
     </div>
