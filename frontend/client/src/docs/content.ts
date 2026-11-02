@@ -90,26 +90,23 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         slug: "create-account",
         title: "Create your account",
-        description: "How to sign up for the IndSure advisor portal: the invite code, your details, choosing your insurers, and what happens next.",
+        description: "How to sign up for the IndSure advisor portal: your details, choosing your insurers, and what happens next.",
         lead: "Signing up takes a few minutes and two short screens.",
         blocks: [
           { t: "h2", text: "What you need", id: "what-you-need" },
           {
             t: "list",
             items: [
-              "An **invite code**. Sign-up asks for one. If you do not have one, see [below](#no-invite-code).",
               "Your full name, email address, 10-digit mobile number and city.",
               "A password of at least 8 characters, with one capital letter and one number.",
             ],
           },
           { t: "h2", text: "Step 1: Your details", id: "step-1" },
-          { t: "img", name: "signup-step1", alt: "The sign-up screen asking whether you are an individual advisor or an agency, then for an invite code and your details.", caption: "Step 1 of sign-up." },
           {
             t: "steps",
             items: [
               "Go to [indsure.in/agent](/agent) and press **Start free**.",
               "Choose **Individual advisor** if it is just you, or **Agency / Enterprise** if other advisors work under you.",
-              "Paste your invite code. It is checked as soon as you enter it, and a message tells you if there is a problem with it.",
               "Fill in your name, email, phone number and city, and choose a password.",
               "Tick the box to agree to the Terms of Service and Privacy Policy. The box for product updates is your choice.",
               "Press **Continue to Empanelment**.",
@@ -130,11 +127,6 @@ export const DOC_SECTIONS: DocSection[] = [
           {
             t: "p",
             text: "If you chose **Agency / Enterprise**, your account works straight away as well. Our team sets up your agency and confirms the number of seats with you.",
-          },
-          { t: "h2", text: "No invite code?", id: "no-invite-code" },
-          {
-            t: "p",
-            text: "Press **Don't have an invite code? Request access** on the sign-up screen, or message us on WhatsApp to ask for one.",
           },
           { t: "h2", text: "Joining an agency's team", id: "joining-a-team" },
           {
@@ -976,7 +968,6 @@ export const DOC_SECTIONS: DocSection[] = [
               { q: "Can my team share one login?", a: "No. Each advisor has their own login. For a team, use an agency account. See [Team, for agencies](/docs/team)." },
               { q: "What happens to my customers if I stop using IndSure?", a: "They stay yours. You can export everything to Excel or download your data at any time. Your data is kept or deleted as our Privacy Policy and India's DPDP Act require. Just ask us." },
               { q: "How do I upgrade?", a: "Message our team on WhatsApp from the [pricing page](/advisors/pricing). There is no card payment inside the portal." },
-              { q: "I lost my invite code.", a: "Message us on WhatsApp to ask for a new one. See [Get help](/docs/get-help)." },
             ],
           },
         ],
@@ -984,18 +975,9 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         slug: "troubleshooting",
         title: "Troubleshooting",
-        description: "Fix common problems in the IndSure advisor portal: invite code errors, session expired, failed uploads, empty renewals and WhatsApp not opening.",
+        description: "Fix common problems in the IndSure advisor portal: session expired, failed uploads, empty renewals and WhatsApp not opening.",
         lead: "Something not working? Start here.",
         blocks: [
-          { t: "h2", text: "Invite code problems", id: "invite-code" },
-          {
-            t: "list",
-            items: [
-              "**Invite code not found**: check the code in your email or WhatsApp. Copy and paste it rather than typing it.",
-              "**This invite code is no longer valid**, **has already been used**, or **has reached its usage limit**: ask us for a new one.",
-              "**Could not check the code right now**: check your internet connection and try again.",
-            ],
-          },
           { t: "h2", text: "Session expired", id: "session" },
           { t: "p", text: "For your safety you are logged out after a while. Log in again at [indsure.in/agent/login](/agent/login). Anything you saved is still there." },
           { t: "h2", text: "A policy will not upload or check", id: "upload" },

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { apiFetch } from '@/lib/api';
 import { getAccountKind } from '@/lib/agentAccount';
 import { useLanguage, LanguageToggle } from '@/i18n/LanguageContext';
-import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, MessageCircle, Check } from 'lucide-react'
+import { Eye, EyeOff, CheckCircle2, MessageCircle, Check } from 'lucide-react'
 
 const TOP_INDIAN_CITIES = [
     'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Pune', 
@@ -67,9 +67,10 @@ export default function AgentSignupStep1() {
     const [form, setForm] = useState(getSavedFormData())
 
     // Arriving from a team invite (/agent/join/<token> → "Create my account").
-    // The invite already knows the address it is bound to and carries its own
-    // single-use signup code, so both are filled in rather than asked for — a
-    // typo in either is a dead end the person cannot diagnose.
+    // The invite already knows the address it is bound to, so it is filled in.
+    // Signup no longer needs a code (open since 2026-11-02), but one that comes
+    // in the link is still kept, unseen, and sent along: the server spends it
+    // for attribution when it is still valid and ignores it when it is not.
     //
     // Read once, on mount, and only into EMPTY fields: a saved draft is the
     // person's own half-finished work and must win over a URL.
@@ -88,9 +89,7 @@ export default function AgentSignupStep1() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
-    const [inviteCodeStatus, setInviteCodeStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid' | 'expired'>('idle')
-    const [inviteCodeError, setInviteCodeError] = useState('')
-    
+
     // Load saved checkbox states
     const getSavedCheckboxes = () => {
         try {
@@ -112,15 +111,6 @@ export default function AgentSignupStep1() {
 
     // Save form data to sessionStorage whenever it changes
     const update = (field: string, value: string) => {
-        if (field === 'inviteCode') {
-            value = value.toUpperCase().trim()
-            // A changed code is an unchecked code. Without this, editing a code
-            // that had already passed kept the green tick and a live button.
-            if (value !== form.inviteCode) {
-                setInviteCodeStatus('idle')
-                setInviteCodeError('')
-            }
-        }
         if (field === 'city') {
             setCitySearch(value)
         }
@@ -181,71 +171,6 @@ export default function AgentSignupStep1() {
     // already do.
     const phoneValid = form.phone === '' || /^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, '').slice(-10))
 
-    // The code used to be checked only on blur. A code that arrived already
-    // filled in (a team invite link, or a draft restored after a refresh) was
-    // never checked at all, so Continue stayed grey with nothing saying why.
-    // Now it is checked on mount and shortly after every change, and a slow
-    // answer for an old code can never overwrite the answer for the current one.
-    const latestCheck = useRef(0)
-
-    const validateInviteCode = async (raw: string = form.inviteCode) => {
-        const code = raw.trim().toUpperCase()
-        const checkId = ++latestCheck.current
-        if (!code) {
-            setInviteCodeStatus('idle')
-            setInviteCodeError('')
-            return
-        }
-
-        setInviteCodeStatus('checking')
-        setInviteCodeError('')
-
-        const { data: invite, error: inviteError } = await supabase
-            .from('invite_codes')
-            .select('*')
-            .eq('code', code)
-            .eq('is_active', true)
-            .maybeSingle()
-
-        if (checkId !== latestCheck.current) return
-
-        if (inviteError) {
-            // A network or server failure is not a wrong code; say which it is.
-            setInviteCodeStatus('invalid')
-            setInviteCodeError(t('signup.code_check_failed'))
-            return
-        }
-
-        if (!invite) {
-            setInviteCodeStatus('invalid')
-            setInviteCodeError(t('signup.code_not_found'))
-            return
-        }
-
-        const isMultiUse = invite.max_uses === null || invite.max_uses > (invite.current_uses || 0)
-
-        if (!isMultiUse && invite.used_by !== null) {
-            setInviteCodeStatus('expired')
-            setInviteCodeError(t('signup.code_expired'))
-            return
-        }
-
-        if (invite.max_uses !== null && invite.current_uses >= invite.max_uses) {
-            setInviteCodeStatus('expired')
-            setInviteCodeError(t('signup.code_expired'))
-            return
-        }
-
-        setInviteCodeStatus('valid')
-    }
-
-    useEffect(() => {
-        if (!form.inviteCode) return
-        const timer = setTimeout(() => { void validateInviteCode(form.inviteCode) }, 400)
-        return () => clearTimeout(timer)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.inviteCode])
-
     // The login this page made on an earlier Continue, so a retry after a failed
     // create-profile does not call signUp again. Memory only: rules.md keeps
     // signup data out of web storage, and after a refresh the already-registered
@@ -276,8 +201,9 @@ export default function AgentSignupStep1() {
             setLocation('/agent/dashboard')
             return null
         }
-        // A personal account must not be turned into an advisor one: create-profile
-        // does not check for it, and an agents row locks the personal portal.
+        // A personal account must not be turned into an advisor one: an agents row
+        // locks the personal portal. create-profile refuses it too (409); this
+        // says so before any request is made.
         await supabase.auth.signOut()
         setError(kind === 'personal' ? t('signup.email_personal') : t('signup.account_check_failed'))
         setLoading(false)
@@ -290,34 +216,6 @@ export default function AgentSignupStep1() {
         setError('')
 
         try {
-        const { data: invite, error: inviteError } = await supabase
-            .from('invite_codes')
-            .select('*')
-            .eq('code', form.inviteCode.trim().toUpperCase())
-            .eq('is_active', true)
-            .single()
-
-        if (inviteError || !invite) {
-            setError(t('signup.code_invalid'))
-            setLoading(false)
-            return
-        }
-
-        const isMultiUse = invite.max_uses === null || invite.max_uses > (invite.current_uses || 0)
-        const isSingleUse = invite.max_uses === null && invite.used_by === null
-
-        if (!isMultiUse && invite.used_by !== null) {
-            setError(t('signup.code_used'))
-            setLoading(false)
-            return
-        }
-
-        if (invite.max_uses !== null && invite.current_uses >= invite.max_uses) {
-            setError(t('signup.code_limit'))
-            setLoading(false)
-            return
-        }
-
         // The login is made first and the advisor profile second, so a failed
         // create-profile used to leave a login with no profile, and a second
         // Continue then failed on signUp with "User already registered". Now a
@@ -422,7 +320,13 @@ export default function AgentSignupStep1() {
         if (!profileRes.ok) {
             let errMsg = t('signup.profile_failed')
             const contentType = profileRes.headers.get('content-type') || ''
-            if (contentType.includes('application/json')) {
+            if (profileRes.status === 429) {
+                // The global API limiter answers {error:"rate_limited"}: never
+                // show that word, and never in English only.
+                errMsg = t('signup.rate_limited')
+            } else if (profileRes.status === 409 && profileBody?.error === 'PERSONAL_ACCOUNT') {
+                errMsg = t('signup.email_personal')
+            } else if (contentType.includes('application/json')) {
                 // Read from the body parsed above — a Response can only be
                 // consumed once, and re-reading it here would throw and lose
                 // the server's actual message.
@@ -482,7 +386,6 @@ export default function AgentSignupStep1() {
     ).slice(0, 10)
 
     const isFormValid =
-        inviteCodeStatus === 'valid' &&
         // An agency that has not named itself would create a request with
         // nothing to act on, so the name is required on that branch only.
         (form.accountType !== 'agency' || form.agencyName.trim() !== '') &&
@@ -497,8 +400,6 @@ export default function AgentSignupStep1() {
     // Continue is disabled until the form is complete, so say what is missing
     // right under it. A grey button with no reason was a dead end.
     const stillNeeded: string[] = []
-    if (inviteCodeStatus === 'checking') stillNeeded.push(t('signup.need_code_checking'))
-    else if (inviteCodeStatus !== 'valid') stillNeeded.push(t('signup.need_code'))
     if (form.accountType === 'agency' && form.agencyName.trim() === '') stillNeeded.push(t('signup.need_agency'))
     if (form.fullName.trim() === '') stillNeeded.push(t('signup.need_name'))
     if (form.email.trim() === '') stillNeeded.push(t('signup.need_email'))
@@ -554,7 +455,7 @@ export default function AgentSignupStep1() {
                                 </span>
                             )}
                         </div>
-                        <p className="text-slate-600">{t('signup.need_invite')}</p>
+                        <p className="text-slate-600">{t('signup.free_to_start')}</p>
                     </div>
 
                     {/* Form */}
@@ -649,49 +550,6 @@ export default function AgentSignupStep1() {
                                 </div>
                             )}
                         </fieldset>
-
-                        {/* Invite Code */}
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                {t('signup.invite_code')} <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={form.inviteCode}
-                                    onChange={(e) => update('inviteCode', e.target.value)}
-                                    onBlur={() => { void validateInviteCode(form.inviteCode) }}
-                                    required
-                                    placeholder={t('signup.invite_ph')}
-                                    className={`${inputClass} font-mono tracking-widest uppercase pr-10 ${
-                                        inviteCodeStatus === 'valid' ? 'border-green-500 ring-2 ring-green-500/20' : 
-                                        inviteCodeStatus === 'invalid' || inviteCodeStatus === 'expired' ? 'border-red-500 ring-2 ring-red-500/20' : ''
-                                    }`}
-                                />
-                                {inviteCodeStatus === 'checking' && (
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                                        <div className="w-4 h-4 border-2 border-[#0D9488] border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                )}
-                                {inviteCodeStatus === 'valid' && (
-                                    <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
-                                )}
-                                {(inviteCodeStatus === 'invalid' || inviteCodeStatus === 'expired') && (
-                                    <XCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-                                )}
-                            </div>
-                            {inviteCodeError && (
-                                <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {inviteCodeError}
-                                </p>
-                            )}
-                            <Link href="/agent">
-                                <p className="mt-2 text-xs text-[#0D9488] hover:underline cursor-pointer font-medium">
-                                    {t('signup.no_code')}
-                                </p>
-                            </Link>
-                        </div>
 
                         {/* Full Name */}
                         <div>
