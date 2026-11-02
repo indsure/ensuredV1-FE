@@ -96,7 +96,7 @@ export const PAGE_SEO: Record<string, PageSeo> = {
     title: "IndSure Advisor Pricing: Free Plan, or ₹1,499 a Month",
     // claim-source: pages/advisors-pricing.tsx plans (Free: 3 health checks + 20 scans; Agent ₹1,499/month, ₹14,990/year, 12 checks a month).
     description:
-      "Start IndSure free with 3 health policy checks and 20 policy scans, no card needed. The Agent plan is ₹1,499 a month or ₹14,990 a year, with 12 policy checks every month.",
+      "Start IndSure free with 3 health policy checks and 20 policy scans. The Agent plan is ₹1,499 a month or ₹14,990 a year with 12 checks a month.",
   },
   "/advisors/features": {
     title: "Features for Insurance Advisors | IndSure",
