@@ -64,6 +64,8 @@ import {
 const JoinTeam = lazy(() => import("@/pages/agent/JoinTeam"));
 // Lazy: it brings AgentLayout (sidebar, playground tour) that public pages never use.
 const AgentProtectedRoute = lazy(() => import("@/components/agent/ProtectedRoute"));
+const PaidOnly = lazy(() => import("@/components/agent/PaidOnly").then((m) => ({ default: m.PaidOnly })));
+const CrmReadOnly = lazy(() => import("@/components/agent/PaidOnly").then((m) => ({ default: m.CrmReadOnly })));
 // Not in lazyRoutes' background preload: only demo visitors should ever download the bot.
 const WhatsAppDemo = lazy(() => import("@/pages/agent/WhatsAppDemo"));
 
@@ -229,7 +231,7 @@ function App() {
                         {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/insights">
-                        {() => <AgentProtectedRoute><Insights /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_insights"><Insights /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       {/* Business: playground only until the founder signs it off.
                           A real agent who types the URL lands on Insights. */}
@@ -251,53 +253,53 @@ function App() {
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/values">
-                        {() => <AgentProtectedRoute><PolicyValues /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_values"><PolicyValues /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies/:id">
                         {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/customers">
-                        {() => <AgentProtectedRoute><CustomersNew /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><CrmReadOnly><CustomersNew /></CrmReadOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/customers/:id">
-                        {() => <AgentProtectedRoute><CustomerDetail /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><CrmReadOnly><CustomerDetail /></CrmReadOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/team">
-                        {() => <AgentProtectedRoute><AgentTeam /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_team"><AgentTeam /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/team/:id">
-                        {() => <AgentProtectedRoute><AgentTeamMember /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_team"><AgentTeamMember /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/claims">
-                        {() => <AgentProtectedRoute><Claims /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_claims"><Claims /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/claims/:id">
-                        {() => <AgentProtectedRoute><ClaimDetail /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_claims"><ClaimDetail /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/leads">
-                        {() => <AgentProtectedRoute><LeadsNew /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><CrmReadOnly><LeadsNew /></CrmReadOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/leads/:id">
-                        {() => <AgentProtectedRoute><LeadDetail /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><CrmReadOnly><LeadDetail /></CrmReadOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/renewals">
-                        {() => <AgentProtectedRoute><LeadRenewals /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><CrmReadOnly><LeadRenewals /></CrmReadOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/my-page">
-                        {() => <AgentProtectedRoute><AgentMyPage /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_my_page"><AgentMyPage /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/my-queue">
-                        {() => <AgentProtectedRoute><MyQueue /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_queue"><MyQueue /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/calculator">
-                        {() => <AgentProtectedRoute><AgentCalculator /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_calculator"><AgentCalculator /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       {/* Compare defaults to the catalog: instant, and it costs the
                           agent nothing. Uploading two wordings is the paid lane and
                           lives one click deeper, at /agent/compare/quotes.
                           /agent/compare/catalog stays alive for older links. */}
                       <Route path="/agent/compare/quotes">
-                        {() => <AgentProtectedRoute><AgentCompare /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_compare_quotes"><AgentCompare /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/compare/catalog">
                         {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
@@ -306,7 +308,7 @@ function App() {
                         {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/riders">
-                        {() => <AgentProtectedRoute><RiderDirectory /></AgentProtectedRoute>}
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_riders"><RiderDirectory /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/settings">
                         {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}

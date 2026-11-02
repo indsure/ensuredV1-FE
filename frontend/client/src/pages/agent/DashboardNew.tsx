@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { Link, useLocation } from 'wouter';
 import { useAgent } from '@/context/AgentContext';
+import { FreePlanBanner } from '@/components/agent/PaidOnly';
 import { RefreshCw, Play, AlertCircle, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { startOfWeek, subWeeks, subDays, format, isAfter } from 'date-fns';
@@ -437,6 +438,8 @@ export default function DashboardNew() {
       p => (p.insurance_type || 'health') === 'health' && p.score !== null && p.score < 70,
     );
     return (
+      <>
+      <div className="px-4 pt-4"><FreePlanBanner /></div>
       <DashboardMobile
         agentName={agent.name.split(' ')[0] || t("dashboard.agent_fallback")}
         loading={loading}
@@ -446,6 +449,7 @@ export default function DashboardNew() {
         onOpenPolicy={(id) => setLocation(`/agent/policies/${id}`)}
         onOpenQueue={() => setLocation('/agent/my-queue')}
       />
+      </>
     );
   }
 
@@ -470,6 +474,8 @@ export default function DashboardNew() {
           </Button>
         </div>
       </div>
+
+      <FreePlanBanner />
 
       {/* CREDIT WARNINGS */}
       {creditsRemaining === 0 && (

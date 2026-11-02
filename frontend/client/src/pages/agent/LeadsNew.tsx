@@ -159,12 +159,13 @@ export default function LeadsNew() {
           <p className="text-sm text-slate-500 mt-1">{t("leads.subtitle")}</p>
         </div>
         <div className="flex items-center gap-4">
-          <button
+          {/* Adding is paid on the limited Free plan (2026-11-02); the list stays readable. */}
+          {!agent?.limitedFree && <button
             onClick={() => { setView("pipeline"); setCreateOpen((v) => !v); }}
             className="flex items-center gap-2 rounded-xl bg-[#0D9488] px-5 py-3 text-base font-bold text-white hover:bg-[#0f766e] shadow-sm"
           >
             {createOpen ? <X size={18} /> : <Plus size={18} />} {createOpen ? t("common.cancel") : t("leads.add")}
-          </button>
+          </button>}
           <button onClick={load} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
           </button>

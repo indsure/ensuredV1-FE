@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, IndianRupee, LayoutDashboard, MessageCircle, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { Lock, BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, IndianRupee, LayoutDashboard, MessageCircle, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -13,6 +13,14 @@ import { useLanguage, LanguageToggle } from "@/i18n/LanguageContext"
 import { recordLocation } from "@/lib/navHistory"
 import { AgentTabBar } from "@/components/agent/AgentTabBar"
 import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
+import { EntitlementSync } from "@/components/agent/PaidOnly"
+
+// Paid-only screens for the limited Free plan (founder, 2026-11-02). Kept in the rail with a
+// lock so the advisor sees what paid adds; the route itself shows the upgrade screen.
+const PAID_ONLY_HREFS = new Set([
+  "/agent/insights", "/agent/my-queue", "/agent/values", "/agent/team", "/agent/claims",
+  "/agent/my-page", "/agent/calculator", "/agent/compare/quotes", "/agent/riders",
+])
 
 interface AgentLayoutProps {
   children: ReactNode;
@@ -239,6 +247,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex text-slate-800 font-['Inter']">
+      <EntitlementSync />
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
@@ -397,7 +406,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                             ].join(" ")}
                           >
                             <span>{child.label}</span>
-                            {child.badge === "queue" && (
+                            {agent?.limitedFree && PAID_ONLY_HREFS.has(child.href) && (
+                              <Lock className="w-4 h-4 shrink-0 text-white/50" aria-label={t("paywall.locked")} />
+                            )}
+                            {child.badge === "queue" && !agent?.limitedFree && (
                               <span className="inline-flex items-center rounded-full border border-[#0D9488]/30 bg-[#0D9488]/15 px-2 py-0.5 text-xs font-black tabular-nums text-[#5eead4]">
                                 {queueCount}
                               </span>
@@ -532,7 +544,7 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           <LanguageToggle />
         </div>
         <div className="flex-1 p-4 pb-24 md:p-6 md:pb-6 lg:p-8 lg:pt-2">{children}</div>
-        <AgentTabBar onMore={() => setMobileOpen(true)} />
+        <AgentTabBar onMore={() => setMobileOpen(true)} limited={!!agent?.limitedFree} />
       </main>
       <PlaygroundTour hidden={mobileOpen} />
 

@@ -857,8 +857,8 @@ export const DOC_SECTIONS: DocSection[] = [
         slug: "plans",
         nav: "Plans and checks",
         title: "Plans and policy checks",
-        description: "How IndSure plans work for advisors: the free plan, what a policy check is, what is always free, and how to upgrade.",
-        lead: "What is free, what a policy check is, and how to get more.",
+        description: "How IndSure plans work for advisors: what the free plan includes, what a policy check is, and how to upgrade.",
+        lead: "What the free plan includes, what a policy check is, and how to get more.",
         blocks: [
           {
             t: "p",
@@ -867,17 +867,20 @@ export const DOC_SECTIONS: DocSection[] = [
           { t: "h2", text: "The free plan", id: "free" },
           {
             t: "p",
-            text: "The Free plan is free forever. It is not a trial, and you do not need a card. It includes a few policy checks so you can see the reports for yourself.",
+            text: "The Free plan is free forever. It is not a trial, and you do not need a card. It includes 3 health policy checks and 20 policy scans (motor, life, term and travel) so you can see the reports for yourself.",
           },
-          { t: "h2", text: "Always free, on every plan", id: "always-free" },
           {
             t: "list",
             items: [
-              "Leads, renewals and your customer list.",
-              "The Cover Calculator.",
-              "WhatsApp message drafts.",
-              "Comparing plans from our list.",
+              "Sharing a report with your client is free on every plan.",
+              "Comparing plans from our list is free on every plan.",
+              "Customers, leads, renewals, the Cover Calculator, WhatsApp drafts and every other tool are on the paid plan.",
             ],
+          },
+          {
+            t: "note",
+            tone: "tip",
+            text: "If you already had an IndSure account before this Free plan started, nothing changes for you: your Free plan keeps everything it had.",
           },
           { t: "h2", text: "What uses a policy check", id: "checks" },
           {
@@ -892,7 +895,7 @@ export const DOC_SECTIONS: DocSection[] = [
           { t: "h2", text: "Getting more", id: "more" },
           {
             t: "p",
-            text: "To move to a paid plan, or to buy more checks, message our team on WhatsApp from the [pricing page](/advisors/pricing). There is no card payment inside the portal. For agencies, each seat gets its own checks every month, and the owner can move unused ones between advisors.",
+            text: "To move to a paid plan, or to buy more checks, open **Plan & payments** in the portal and pay with UPI, card or net banking, or message our team on WhatsApp from the [pricing page](/advisors/pricing). For agencies, each seat gets its own checks every month, and the owner can move unused ones between advisors.",
           },
           { t: "cta", kind: "contact" },
         ],
@@ -932,7 +935,7 @@ export const DOC_SECTIONS: DocSection[] = [
           {
             t: "faq",
             items: [
-              { q: "Is IndSure free?", a: "There is a Free plan that is free forever, with no card needed. Leads, renewals, your customer list, the Cover Calculator and WhatsApp drafts are free on every plan. Paid plans add more policy checks. See [Plans and policy checks](/docs/plans)." },
+              { q: "Is IndSure free?", a: "There is a Free plan that is free forever, with no card needed. It includes 3 health policy checks and 20 policy scans. Customers, leads, renewals and the other tools are on the paid plan. See [Plans and policy checks](/docs/plans)." },
               { q: "Does IndSure take a commission on policies I sell?", a: "No. IndSure charges a flat subscription. We are not an IRDAI-registered broker or agent and do not earn commission." },
               { q: "Does IndSure sell insurance to my customers?", a: "No. We do not sell insurance. Your customers are yours." },
               { q: "Do I need to install an app?", a: "No. IndSure works in the browser on your phone and computer. On a phone, the main screens are in tabs at the bottom." },
@@ -967,7 +970,7 @@ export const DOC_SECTIONS: DocSection[] = [
             items: [
               { q: "Can my team share one login?", a: "No. Each advisor has their own login. For a team, use an agency account. See [Team, for agencies](/docs/team)." },
               { q: "What happens to my customers if I stop using IndSure?", a: "They stay yours. You can export everything to Excel or download your data at any time. Your data is kept or deleted as our Privacy Policy and India's DPDP Act require. Just ask us." },
-              { q: "How do I upgrade?", a: "Message our team on WhatsApp from the [pricing page](/advisors/pricing). There is no card payment inside the portal." },
+              { q: "How do I upgrade?", a: "Open **Plan & payments** in the portal and pay with UPI, card or net banking, or message our team on WhatsApp from the [pricing page](/advisors/pricing)." },
             ],
           },
         ],

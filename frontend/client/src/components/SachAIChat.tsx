@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { CLAUSE_LIBRARY } from "@/data/clause-library";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { isLimitedFreeSession, onEntitlementChange } from "@/lib/entitlement";
 
 // Simple markdown parser for bold, italic, and lists
 const SimpleMarkdown = ({ content }: { content: string }) => {
@@ -103,6 +104,10 @@ function answerFromGlossary(question: string): string | null {
 
 export default function SachAIChat() {
   const [location] = useLocation();
+  // Sach is a paid feature for advisors (pricing table). Advisors on the limited Free plan
+  // (2026-11-02) do not get the bubble inside the portal; set by EntitlementSync.
+  const [limitedAdvisor, setLimitedAdvisor] = useState(isLimitedFreeSession());
+  useEffect(() => onEntitlementChange(() => setLimitedAdvisor(isLimitedFreeSession())), []);
   const { t, locale } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -337,7 +342,7 @@ export default function SachAIChat() {
   // sits on, and a reader there wants the page, not a chat.
   // An advisor's own page (/a/...) and /start are single-purpose pages with the menu
   // hidden on purpose; the bubble was a way off them.
-  if (location.startsWith("/admin") || location.startsWith("/docs") || location.startsWith("/a/") || location === "/start") {
+  if (location.startsWith("/admin") || location.startsWith("/docs") || location.startsWith("/a/") || location === "/start" || (limitedAdvisor && location.startsWith("/agent"))) {
     return null;
   }
 
