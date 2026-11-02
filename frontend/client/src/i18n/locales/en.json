@@ -1531,18 +1531,10 @@
     "update": "Update Password"
   },
   "signup": {
-    "code_check_failed": "Could not check the code right now. Check your internet connection and try again.",
-    "code_not_found": "Invite code not found. Check your email or WhatsApp for the correct code.",
-    "code_expired": "This invite code is no longer valid. Contact us for a new one.",
-    "code_invalid": "Invalid or inactive invite code.",
-    "code_used": "This invite code has already been used.",
-    "code_limit": "This invite code has reached its usage limit.",
     "signup_failed": "Signup failed. Please try again.",
     "profile_failed": "Could not create your profile. Please try again.",
     "server_unreachable": "We could not reach the server. Please try again or contact support on WhatsApp.",
     "generic_error": "Something went wrong. Please try again.",
-    "need_code_checking": "invite code (checking…)",
-    "need_code": "a valid invite code",
     "need_agency": "agency name",
     "need_name": "full name",
     "need_email": "email",
@@ -1556,7 +1548,6 @@
     "step_empanelment": "Empanelment",
     "create_account": "Create your account",
     "draft_saved": "Draft saved",
-    "need_invite": "You'll need an invite code to get started",
     "who_signing": "Are you signing up on your own, or for an agency?",
     "individual": "Individual advisor",
     "individual_blurb": "Just you. Your own leads, customers and policy checks.",
@@ -1567,9 +1558,6 @@
     "how_many": "How many advisors, roughly?",
     "optional": "optional",
     "agency_note": "Your account is created either way and works straight away. We set the team up for you and confirm the seats before anything is charged. The Agency plan starts at five seats.",
-    "invite_code": "Invite Code",
-    "invite_ph": "Paste your invite code here",
-    "no_code": "Don't have an invite code? Request access →",
     "full_name": "Full Name",
     "email": "Email",
     "phone": "Phone",
@@ -1605,7 +1593,8 @@
     "email_personal": "This email is already used for a personal IndSure account. Please use a different email for your advisor account.",
     "email_unconfirmed": "This email is waiting to be confirmed. Open the confirmation link we emailed you, then sign in.",
     "rate_limited": "Too many attempts just now. Please wait a few minutes and try again.",
-    "account_check_failed": "We could not check this email just now. Check your internet connection and try again."
+    "account_check_failed": "We could not check this email just now. Check your internet connection and try again.",
+    "free_to_start": "Free to start. No card needed."
   },
   "signup2": {
     "select_one": "Please select at least one insurer to continue",
@@ -4969,7 +4958,6 @@
     "saving": "Setting up your account...",
     "use_another": "Use a different account",
     "help": "Stuck? WhatsApp us",
-    "code_invalid": "That invite code is not valid or has already been used. Check the code, or WhatsApp us for a new one.",
     "mismatch": "This login does not match the details sent. Tap Use a different account, sign in again and retry.",
     "save_failed": "We could not finish setting up your account. Please try again, or WhatsApp us.",
     "no_email": "This login has no email address, so it cannot be set up as an advisor account here. Please WhatsApp us and we will sort it out."

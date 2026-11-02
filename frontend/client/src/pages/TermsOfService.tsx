@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
-const LAST_UPDATED = "27 October 2026";
+const LAST_UPDATED = "2 November 2026";
 const EFFECTIVE_DATE = "27 October 2026";
 
 export default function TermsOfService() {
@@ -138,8 +138,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Your account</h2>
             <p>
-              Anyone can create a free personal account. To open an advisor account, you need a valid invite
-              code. You are responsible for:
+              Anyone can create a free personal account or a free advisor account. You are responsible for:
             </p>
             <ul className="list-disc pl-5 mt-3 space-y-2">
               <li>Maintaining the confidentiality of your login credentials.</li>

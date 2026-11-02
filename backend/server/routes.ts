@@ -1895,17 +1895,31 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Email does not match the account being created" });
       }
 
-      // Invite-only signup, enforced here. The browser checks the code too, but
-      // that check is advisory: anyone can call this route directly. The agent
-      // row and the spent code commit together, so a code is never spent on a
-      // failed signup and a signup never lands without a code.
+      // A personal (consumer) login must not quietly gain an agents row: once it
+      // exists, requireIndividual and bootstrap refuse the login, which locks
+      // the person out of their own portfolio. With the invite code gone, this
+      // is the server-side check that stands in for it. An existing advisor row
+      // (a retry) is left alone.
+      const existingAgent = await pool.query("SELECT 1 FROM agents WHERE id = $1", [id]);
+      if (!existingAgent.rowCount) {
+        const personal = await pool.query("SELECT 1 FROM individual_profiles WHERE id = $1", [id]);
+        if (personal.rowCount) {
+          return res.status(409).json({ error: "PERSONAL_ACCOUNT", message: "This email is already used for a personal IndSure account." });
+        }
+      }
+
+      // Signup is open (founder, 2026-11-02): the invite code is optional. When
+      // one comes along (a team invite link, an old shared link) and it is still
+      // spendable, it is spent and recorded on the agent for attribution, in the
+      // same transaction as the agent row. A code that is stale or used up never
+      // costs anyone their signup: the account is created without it.
       const code = String(invite_code || "").trim().toUpperCase();
       const c = await pool.connect();
       try {
         await c.query("BEGIN");
         const ins = await c.query(
           `INSERT INTO agents (id, email, full_name, name, phone, city, location, experience_years, invite_code, consent_given_at, marketing_consent)
-           VALUES ($1, $2, $3, $3, $4, $5, $5, $6, $7, NOW(), $8)
+           VALUES ($1, $2, $3, $3, $4, $5, $5, $6, NULL, NOW(), $7)
            ON CONFLICT (id) DO NOTHING`,
           [
             id,
@@ -1914,16 +1928,14 @@ export async function registerRoutes(
             phone || null,
             city || null,
             experience_years || 0,
-            code || null,
             marketing_consent ?? false,
           ]
         );
-        // rowCount 0 = this profile already exists (a retry); its code was spent
-        // when it was created, so there is nothing to spend again.
-        if (ins.rowCount) {
-          // Same rules the signup page applies: a no-limit code is single-use
-          // (used_by marks it), a counted code spends one of max_uses, and an
-          // expired or switched-off code is refused.
+        // rowCount 0 = this profile already exists (a retry); any code was
+        // spent when it was created, so there is nothing to spend again.
+        if (ins.rowCount && code) {
+          // A no-limit code is single-use (used_by marks it), a counted code
+          // spends one of max_uses, and an expired or switched-off code is skipped.
           const spent = await c.query(
             `UPDATE invite_codes SET
                used_by      = CASE WHEN max_uses IS NULL THEN $2 ELSE used_by END,
@@ -1937,9 +1949,8 @@ export async function registerRoutes(
                  OR (max_uses IS NOT NULL AND COALESCE(current_uses, 0) < max_uses))`,
             [code, id]
           );
-          if (!code || !spent.rowCount) {
-            await c.query("ROLLBACK");
-            return res.status(400).json({ error: "That invite code is not valid or has already been used." });
+          if (spent.rowCount) {
+            await c.query("UPDATE agents SET invite_code = $2 WHERE id = $1", [id, code]);
           }
         }
         await c.query("COMMIT");
