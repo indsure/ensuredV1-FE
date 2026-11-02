@@ -25,6 +25,12 @@ const SachAIChat = lazy(() => import("@/components/SachAIChat"));
 // --- Agent Auth ---
 const AgentLanding = lazy(() => import("@/pages/agent/Landing"));
 const PlaygroundEntry = lazy(() => import("@/pages/agent/PlaygroundEntry"));
+/* Corporate portal (IndSure Commercial demo: fictional data, kept in the browser). Built for the dev
+ * server and beta only, see vite.config.ts. The check sits around the import itself: hiding only the
+ * <Route> would still emit the chunk, because Rollup keeps an import() it cannot prove unused. */
+const CorporatePortal = import.meta.env.VITE_CORPORATE_PORTAL === "on"
+  ? lazy(() => import("@/pages/corporate/Portal"))
+  : null;
 const AgentLoginNew = lazy(() => import("@/pages/agent/LoginNew"));
 const AgentForgotPassword = lazy(() => import("@/pages/agent/ForgotPassword"));
 const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
@@ -211,6 +217,7 @@ function App() {
                       <Route path="/compare/sample" component={CompareSample} />
 
                       {/* --- Agent Auth --- */}
+                      {CorporatePortal && <Route path="/corporate" component={CorporatePortal} />}
                       <Route path="/agent" component={AgentLanding} />
                       <Route path="/agent/playground" component={PlaygroundEntry} />
                       <Route path="/agent/login" component={AgentLoginNew} />

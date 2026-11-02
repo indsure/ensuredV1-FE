@@ -25,7 +25,8 @@ export function MobileNav() {
 
   // Fix 2: Hide D2C chrome on agent/admin routes
   // MUST BE AFTER ALL HOOKS
-  if (location.startsWith('/agent') || location.startsWith('/admin')) {
+  // /corporate (the beta-only corporate portal) has its own menu; two would stack on a phone.
+  if (location.startsWith('/agent') || location.startsWith('/admin') || location.startsWith('/corporate')) {
     return null;
   }
 

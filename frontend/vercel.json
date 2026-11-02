@@ -386,7 +386,7 @@
       "destination": "/api/advisor-page?slug=:slug"
     },
     {
-      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|compare/sample|agent|admin|account|login|signup|forgot-password|reset-password|app|hospitals|pay)(/.*)?",
+      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|compare/sample|agent|admin|account|login|signup|forgot-password|reset-password|app|hospitals|pay|corporate)(/.*)?",
       "destination": "/app-shell.html"
     }
   ]

@@ -1,0 +1,207 @@
+// Pure helpers: formatting, the four separate state axes, FX lookup, report building, CSV.
+import { TODAY, FIELDS, FIELD } from "./data.js";
+
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const fmtDate = (iso) => {
+  if (!iso) return "--";
+  const [y, m, d] = String(iso).slice(0, 10).split("-");
+  if (!y || !m || !d) return String(iso);
+  return `${d} ${MON[+m - 1]} ${y}`;
+};
+export const fmtStamp = (iso) => (iso ? `${fmtDate(iso)}, ${String(iso).slice(11, 16)}` : "--");
+export const fmtMonth = (ym) => { if (!ym) return "--"; const [y, m] = ym.split("-"); return `${MON[+m - 1]} ${y}`; };
+export const isNum = (x) => x !== "" && x != null && !Number.isNaN(Number(x));
+export const fmtNum = (n, cur = "INR") => {
+  if (!isNum(n)) return "--";
+  const x = Math.round(Number(n) * 100) / 100;
+  return x.toLocaleString(cur === "INR" ? "en-IN" : "en-US", { maximumFractionDigits: 2, minimumFractionDigits: Number.isInteger(x) ? 0 : 2 });
+};
+export const fmtMoney = (n, cur = "INR") => (isNum(n) ? `${cur === "INR" ? "₹" : cur + " "}${fmtNum(n, cur)}` : "--");
+export const r2 = (x) => Math.round(Number(x) * 100) / 100;
+export const nowIso = () => { const d = new Date(); const p = (x) => String(x).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; };
+export const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+export const fmtValue = (key, v, cur) => {
+  const f = FIELD[key];
+  if (v === "" || v == null) return "--";
+  if (!f) return String(v);
+  if (f.type === "date") return fmtDate(v);
+  if (f.type === "money") return fmtMoney(v, cur);
+  if (f.type === "pct") return `${fmtNum(v)}%`;
+  return String(v);
+};
+
+// ---- financial years
+export const fyRange = (fy) => { const y = +fy.slice(0, 4); return [`${y}-04-01`, `${y + 1}-03-31`]; };
+export const fyLabel = (fy) => { const [a, b] = fyRange(fy); return `${fmtDate(a)} to ${fmtDate(b)}`; };
+export const FY_OPTIONS = ["2025-26", "2026-27"];
+
+// ---- the four state axes, each derived separately
+export function missingFields(term) {
+  const v = term.values || {};
+  const miss = FIELDS.filter((f) => f.req && (v[f.key] === "" || v[f.key] == null)).map((f) => f.label);
+  if (!term.brokerageConfirmed) miss.push("Brokerage confirmation");
+  return miss;
+}
+export function completeness(term) {
+  if (term.status === "draft") return { label: "Draft", tone: "warn" };
+  return { label: "Complete", tone: "good" };
+}
+export function coverage(term) {
+  if (term.status === "draft") return { label: "Not confirmed", tone: "muted", why: "Coverage is shown once the record is confirmed" };
+  if (term.cancelled) return { label: "Cancelled", tone: "bad" };
+  const { riskStart: s, riskEnd: e } = term.values;
+  if (!s || !e) return { label: "Dates missing", tone: "warn" };
+  if (TODAY < s) return { label: "Scheduled", tone: "info", why: `Cover starts ${fmtDate(s)}` };
+  if (TODAY > e) return { label: "Expired", tone: "muted", why: `Ended ${fmtDate(e)}` };
+  return { label: "Active", tone: "good", why: `Until ${fmtDate(e)}` };
+}
+export const instTotal = (i) => r2((+i.amount || 0) * (1 + (+i.taxPct || 0) / 100));
+export function paymentSummary(term) {
+  const due = term.instalments.length ? r2(term.instalments.reduce((a, i) => a + instTotal(i), 0)) : +term.values.grossPremium || 0;
+  const received = r2(term.receipts.reduce((a, r) => a + (+r.amount || 0), 0));
+  const outstanding = r2(due - received);
+  let label = "Unpaid", tone = "bad";
+  if (received > 0 && outstanding > 0) { label = "Part paid"; tone = "warn"; }
+  if (due > 0 && outstanding <= 0) { label = "Paid"; tone = "good"; }
+  if (!due) { label = "No amount"; tone = "muted"; }
+  return { due, received, outstanding, label, tone };
+}
+export function instalmentRows(term) {
+  return term.instalments.map((i) => {
+    const recs = term.receipts.filter((r) => r.instNo === i.no);
+    const total = instTotal(i);
+    const got = r2(recs.reduce((a, r) => a + (+r.amount || 0), 0));
+    const out = r2(total - got);
+    const lastDate = recs.map((r) => r.date).sort().pop() || "";
+    let status = "Upcoming", tone = "muted";
+    if (out <= 0) { status = lastDate > i.due ? `Paid late (${daysBetween(i.due, lastDate)} days)` : "Paid on time"; tone = lastDate > i.due ? "warn" : "good"; }
+    else if (got > 0) { status = i.due < TODAY ? "Part paid, overdue" : "Part paid"; tone = "warn"; }
+    else if (i.due < TODAY) { status = `Overdue (${daysBetween(i.due, TODAY)} days)`; tone = "bad"; }
+    return { ...i, total, tax: r2(total - (+i.amount || 0)), got, out, recs, lastDate, status, tone };
+  });
+}
+
+// ---- FX: latest version for a month, demo rates only
+export function fxRate(db, month, cur) {
+  if (cur === "INR") return { rate: 1, version: 0, month, note: "INR" };
+  const row = db.fx.find((x) => x.month === month && x.cur === cur);
+  if (!row || !row.versions.length) return null;
+  const v = row.versions[row.versions.length - 1];
+  return { rate: v.rate, version: row.versions.length, month, note: v.note };
+}
+
+// ---- brokerage presets
+export function activePreset(db, insurerId, policyType) {
+  const p = db.presets.find((x) => x.insurerId === insurerId && x.policyType === policyType);
+  if (!p) return null;
+  const confirmed = p.versions.filter((v) => v.status === "confirmed");
+  if (!confirmed.length) return null;
+  const v = confirmed[confirmed.length - 1];
+  return { presetId: p.id, version: v.v, pct: v.pct };
+}
+
+// ---- lookups
+export const insurerOf = (db, id) => db.insurers.find((i) => i.id === id);
+export const branchOf = (db, insId, brId) => insurerOf(db, insId)?.branches.find((b) => b.id === brId);
+export const teamName = (db, code) => { const t = db.team.find((x) => x.code === code); return t ? `${t.name} (${t.code})` : code ? `${code} (not in team list)` : "--"; };
+export const latestTerm = (db, p) => db.terms.find((t) => t.id === p.termIds[p.termIds.length - 1]);
+
+// ---- reports
+export const DATE_BASES = [
+  { key: "bookDate", label: "Business booked date" },
+  { key: "riskStart", label: "Risk start date" },
+  { key: "issueDate", label: "Policy issue date" },
+];
+export const GROUPINGS = [
+  { key: "none", label: "No grouping" },
+  { key: "date", label: "Date Wise" }, { key: "insurer", label: "Insurer Wise" }, { key: "rm", label: "RM Wise" },
+  { key: "cse", label: "CSE Wise (legacy: CSC Wise)" }, { key: "policy", label: "Policy Wise (policy type)" }, { key: "branch", label: "Branch Wise (insurer branch)" },
+  { key: "month", label: "Month Wise" }, { key: "ref", label: "Ref Wise (source / referral)" }, { key: "client", label: "Client Wise" }, { key: "location", label: "Location Wise (customer city)" },
+];
+
+export function businessRows(db, f) {
+  const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(f.fy);
+  const rows = [];
+  let drafts = 0;
+  for (const t of db.terms) {
+    const p = db.policies.find((x) => x.id === t.policyId);
+    const c = db.customers.find((x) => x.id === p.customerId);
+    const v = t.values;
+    const basisDate = v[f.basis];
+    if (t.status === "draft") { if (basisDate && basisDate >= from && basisDate <= to) drafts++; else if (!basisDate) drafts++; continue; }
+    if (!basisDate || basisDate < from || basisDate > to) continue;
+    if (f.vertical !== "ALL" && c.vertical !== f.vertical) continue;
+    if (f.insurer && p.insurerId !== f.insurer) continue;
+    if (f.dept && p.dept !== f.dept) continue;
+    if (f.cse && c.cse !== f.cse) continue;
+    if (f.rm && c.rm !== f.rm) continue;
+    if (f.nr && t.nr !== f.nr) continue;
+    if (f.currency && v.currency !== f.currency) continue;
+    const ins = insurerOf(db, p.insurerId), br = branchOf(db, p.insurerId, p.branchId);
+    const month = basisDate.slice(0, 7);
+    const fx = fxRate(db, month, v.currency);
+    const brokerage = r2((+v.netPremium || 0) * (+v.brokeragePct || 0) / 100);
+    const toInr = (x) => (fx && isNum(x) ? r2(+x * fx.rate) : null);
+    rows.push({
+      termId: t.id, policyId: p.id, controlNo: p.controlNo, policyNo: v.policyNo, custCode: c.code, customer: c.name, vertical: c.vertical,
+      dept: p.dept, type: p.type, insurer: ins?.name || "--", branch: br ? `${br.name}, ${br.city}` : "--", cse: teamName(db, c.cse), rm: c.rm ? teamName(db, c.rm) : "Not assigned",
+      nr: t.nr, basisDate, month, proposalDate: v.proposalDate, issueDate: v.issueDate, riskStart: v.riskStart, riskEnd: v.riskEnd, bookDate: v.bookDate,
+      currency: v.currency, sumInsured: +v.sumInsured || 0, netPremium: +v.netPremium || 0, gst: +v.gst || 0, stampDuty: +v.stampDuty || 0, grossPremium: +v.grossPremium || 0,
+      brokeragePct: +v.brokeragePct || 0, brokerage, presetNote: t.brokerageSnap ? `Preset v${t.brokerageSnap.version}` : "Entered manually",
+      fxMonth: month, fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
+      netInr: toInr(v.netPremium), gstInr: toInr(v.gst), grossInr: toInr(v.grossPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
+      ref: c.source === "Referral" ? c.referral || "Referral" : "Direct business", location: c.city,
+    });
+  }
+  rows.sort((a, b) => a.basisDate.localeCompare(b.basisDate) || a.controlNo.localeCompare(b.controlNo));
+  return { rows, drafts, from, to };
+}
+export const groupKey = (g, r) => ({ none: "All records", date: fmtDate(r.basisDate), insurer: r.insurer, rm: r.rm, cse: r.cse, policy: r.type, branch: r.branch, month: fmtMonth(r.month), ref: r.ref, client: `${r.customer} (${r.custCode})`, location: r.location }[g]);
+export function totals(rows) {
+  const t = { count: rows.length, netInr: 0, gstInr: 0, grossInr: 0, brokerageInr: 0, siInr: 0, noRate: 0, native: {} };
+  for (const r of rows) {
+    const n = (t.native[r.currency] ||= { count: 0, net: 0, gst: 0, gross: 0, brokerage: 0, si: 0 });
+    n.count++; n.net += r.netPremium; n.gst += r.gst; n.gross += r.grossPremium; n.brokerage += r.brokerage; n.si += r.sumInsured;
+    if (r.fxRate == null) { t.noRate++; continue; }
+    t.netInr += r.netInr; t.gstInr += r.gstInr; t.grossInr += r.grossInr; t.brokerageInr += r.brokerageInr; t.siInr += r.siInr;
+  }
+  ["netInr", "gstInr", "grossInr", "brokerageInr", "siInr"].forEach((k) => (t[k] = r2(t[k])));
+  Object.values(t.native).forEach((n) => ["net", "gst", "gross", "brokerage", "si"].forEach((k) => (n[k] = r2(n[k]))));
+  return t;
+}
+export function groupRows(rows, g) {
+  const m = new Map();
+  rows.forEach((r) => { const k = groupKey(g, r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); });
+  return [...m.entries()].map(([key, rs]) => ({ key, rows: rs, totals: totals(rs) }));
+}
+
+export function renewalRows(db, f) {
+  const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(f.fy);
+  const out = [];
+  for (const t of db.terms) {
+    if (t.status === "draft") continue;
+    const v = t.values;
+    if (!v.riskEnd || v.riskEnd < from || v.riskEnd > to) continue;
+    const p = db.policies.find((x) => x.id === t.policyId), c = db.customers.find((x) => x.id === p.customerId);
+    if (f.vertical !== "ALL" && c.vertical !== f.vertical) continue;
+    if (f.insurer && p.insurerId !== f.insurer) continue;
+    if (f.outcome && t.outcome !== f.outcome) continue;
+    const next = t.nextTermId ? db.terms.find((x) => x.id === t.nextTermId) : null;
+    const draftNext = db.terms.find((x) => x.prevTermId === t.id && x.status === "draft");
+    out.push({
+      termId: t.id, policyId: p.id, controlNo: p.controlNo, policyNo: v.policyNo, riskStart: v.riskStart, riskEnd: v.riskEnd, type: p.type, dept: p.dept,
+      group: c.vertical, customer: c.name, custCode: c.code, insurer: insurerOf(db, p.insurerId)?.name, rm: c.rm ? teamName(db, c.rm) : "Not assigned", cse: teamName(db, c.cse),
+      currency: v.currency, sumInsured: +v.sumInsured || 0, grossPremium: +v.grossPremium || 0, brokerage: r2((+v.netPremium || 0) * (+v.brokeragePct || 0) / 100),
+      renewable: v.renewable || "Not entered", outcome: t.outcome, lossDetail: t.lossDetail, nextPolicyNo: next?.values.policyNo || "", draftInProgress: !!draftNext, location: c.city,
+    });
+  }
+  out.sort((a, b) => a.riskEnd.localeCompare(b.riskEnd));
+  return out;
+}
+
+// ---- CSV
+const esc = (x) => { const s = x == null ? "" : String(x); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+export function toCsv(labelRows, header, rows) {
+  return [...labelRows.map((r) => r.map(esc).join(",")), "", header.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\r\n");
+}
