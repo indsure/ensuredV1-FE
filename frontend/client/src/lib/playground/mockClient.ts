@@ -470,6 +470,38 @@ function playgroundApiResponse(url: string, init?: any): Response {
     return json({ rows });
   }
 
+  // Top 3 and the advisor's preferred list. The demo catalogue carries cell
+  // points (0 to 3), not wording profiles, so its "completeness" is the share
+  // of points a plan earns. The list lives in memory for the demo session.
+  if (url.includes("/api/compare/recommend")) {
+    const plans = DEMO_CATALOG
+      .filter((p) => demoPreferred.length === 0 || demoPreferred.includes(p.uin))
+      .map((p) => ({
+        plan_key: p.uin, uin: p.uin, variant: "", insurer: p.insurer, plan_name: p.plan_name,
+        sum_insured_options: p.sum_insured_options,
+        score: Math.round((p.cells.reduce((a, c) => a + c[1], 0) / (p.cells.length * 3)) * 100),
+        strengths: p.cells.filter((c) => c[1] === 3).slice(0, 2).map((c) => c[0]),
+        // Demo cells carry a value but no clause name, so a gap would read as a
+        // bare "Not covered". Strengths read fine on their own.
+        gaps: [] as string[],
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    return json({ source: demoPreferred.length ? "preferred" : "catalog", plans });
+  }
+  if (url.includes("/api/agent/preferred-plans")) {
+    const method = (init?.method ?? "GET").toUpperCase();
+    if (method === "POST") {
+      try {
+        const key = JSON.parse(init?.body ?? "{}").plan_key;
+        if (key && !demoPreferred.includes(key)) demoPreferred.push(key);
+      } catch { /* ignore */ }
+    } else if (method === "DELETE") {
+      const key = decodeURIComponent(url.split("/api/agent/preferred-plans/")[1] ?? "");
+      demoPreferred = demoPreferred.filter((k) => k !== key);
+    }
+    return json({ plan_keys: demoPreferred });
+  }
   if (url.includes("/api/compare/catalog")) return json({ policies: DEMO_CATALOG });
   if (url.includes("/api/compare/from-catalog")) {
     let uins: string[] = [];
@@ -485,6 +517,8 @@ function playgroundApiResponse(url: string, init?: any): Response {
   if (url.includes("/api/calculator/save-report")) return json({ uuid: demoUuid("demo-calc"), success: true });
   return json({ ok: true, simulated: true, message: "Demo mode — this action is simulated and nothing was saved." });
 }
+
+let demoPreferred: string[] = [];
 
 let fetchPatched = false;
 export function installPlaygroundFetch(): void {

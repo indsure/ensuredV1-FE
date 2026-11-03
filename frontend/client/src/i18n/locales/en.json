@@ -5000,5 +5000,31 @@
     "f_calculator": "the Cover Calculator",
     "f_compare_quotes": "quote compare",
     "f_riders": "the Rider Directory"
+  },
+  "toprec": {
+    "eyebrow": "Top plans for {{amount}} of cover",
+    "title_catalog": "The 3 most complete plans",
+    "title_preferred": "Top 3 from your preferred list",
+    "sub": "Ranked by what the policy wording actually covers: room rent, co-pay, waiting periods, sub-limits and more. We earn nothing from any insurer, so no plan pays to be here.",
+    "score": "Completeness",
+    "out_of": "{{n}} out of 100",
+    "good": "Strong on",
+    "watch": "Watch for",
+    "compare": "Compare these side by side",
+    "age_note": "Some plans are only for certain ages or cities. Check the entry age and the premium with the insurer before you buy.",
+    "none": "No plan in our catalogue confirms {{amount}} of cover in its wording.",
+    "none_preferred": "None of your preferred plans confirms {{amount}} of cover in its wording.",
+    "cover_label": "Cover needed (₹ lakh)",
+    "hint_star": "Star the plans you work with, and this ranks from your own list.",
+    "loading": "Finding the plans...",
+    "failed": "Could not load plans. Please try again."
+  },
+  "pref": {
+    "title": "My preferred plans",
+    "empty": "No plans yet. Add a plan to compare, then press its star to keep it on your list.",
+    "add": "Add to my list",
+    "remove": "Remove from my list",
+    "compare_add": "Add to compare",
+    "failed": "Could not update your list. Please try again."
   }
 }
