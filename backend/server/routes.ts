@@ -42,6 +42,7 @@ import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
 import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
+import { registerPlanRecommendRoutes } from "./services/planRecommend";
 import { registerPaymentRoutes } from "./services/payments";
 import { log } from "./lib/logger";
 import { isLimitedFree, NEEDS_UPGRADE } from "./lib/entitlement";
@@ -4222,6 +4223,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      The catalog is the scale answer: each wording is extracted ONCE into a
      stored profile, so comparing any two is pure deterministic math (no AI,
      no per-compare cost). Public read — product data, not user data. */
+
+  // Top plans for a cover amount, ranked by completeness, and the advisor's
+  // preferred list (services/planRecommend.ts).
+  registerPlanRecommendRoutes(app, getUserIdFromToken);
 
   app.get("/api/compare/catalog", async (req, res) => {
     // PUBLIC: product data only (no user data), deterministic, ZERO AI cost.

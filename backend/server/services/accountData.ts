@@ -44,6 +44,7 @@ export const AGENT_TABLES: OwnedTable[] = [
   { table: "agent_leads",         key: "agent_id", exportable: true,  label: "Leads" },
   { table: "public_reports",      key: "agent_id", exportable: false, label: "Shared report links" },
   { table: "saved_comparisons",   key: "agent_id", exportable: true,  label: "Saved comparisons" },
+  { table: "agent_preferred_plans", key: "agent_id", exportable: true, label: "Preferred plans" },
   { table: "comparison_reports",  key: "agent_id", exportable: true,  label: "Comparisons" },
   { table: "calculator_reports",  key: "agent_id", exportable: true,  label: "Cover calculations" },
   { table: "agent_summaries",     key: "agent_id", exportable: true,  label: "Summaries" },

@@ -14,6 +14,7 @@ import { Eyebrow } from "@/components/marketing";
 import { DiffRows } from "@/components/marketing/showcase";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { PageFaq } from "@/components/PageFaq";
+import { TopPlans } from "@/components/TopPlans";
 
 /**
  * PUBLIC catalog compare — the consumer version of the agent's
@@ -285,6 +286,10 @@ function HealthCatalogCompare() {
   useSEO(seoFor("/compare"));
 
   const { t } = useLanguage();
+  // ?minSI=40 (lakhs) arrives from a calculator report. It opens the page on the
+  // most complete plans that can carry that cover.
+  const minSI = Number(new URLSearchParams(useSearch()).get("minSI")) || 0;
+  const builderRef = useRef<HTMLDivElement>(null);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
@@ -391,8 +396,20 @@ function HealthCatalogCompare() {
             shift. Now only the picker waits, disabled, with the loading line
             in the same slot as the hint it replaces. */}
         <>
+            {minSI > 0 && (
+              <div className="mb-6">
+                <TopPlans
+                  minSiLakhs={minSI}
+                  onCompare={(keys) => {
+                    setSelected(keys.slice(0, MAX_PLANS));
+                    builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                />
+              </div>
+            )}
+
             {/* Builder */}
-            <div className="bg-white rounded-2xl border border-[var(--color-border-light)] p-5 shadow-sm">
+            <div ref={builderRef} className="bg-white rounded-2xl border border-[var(--color-border-light)] p-5 shadow-sm">
               <div className="flex flex-wrap gap-3 items-stretch">
                 {selected.map((uin, i) =>
                   byKey[uin] ? <PlanCard key={uin} item={byKey[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
