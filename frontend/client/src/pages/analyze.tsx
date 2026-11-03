@@ -7,14 +7,12 @@ import {
   FileText,
   Calculator,
   Scale,
-  FileSearch,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/motion";
 import { Section, SectionHeading, Eyebrow, LOB } from "@/components/marketing";
 import { useSEO } from "@/hooks/use-seo";
-import { loadSampleReport, mockReport, mockReportLife, mockReportVehicle } from "@/lib/mock-data";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function AnalyzePage() {
@@ -42,7 +40,6 @@ export default function AnalyzePage() {
       lob: LOB.health,
       href: "/login?next=/policychecker",
       badge: t("cflow.an_popular"),
-      sampleReport: mockReport,
     },
     {
       id: "life",
@@ -53,7 +50,6 @@ export default function AnalyzePage() {
       lob: LOB.life,
       href: "/login?next=/life",
       badge: null,
-      sampleReport: mockReportLife,
     },
     {
       id: "vehicle",
@@ -64,7 +60,6 @@ export default function AnalyzePage() {
       lob: LOB.motor,
       href: "/login?next=/vehicle",
       badge: null,
-      sampleReport: mockReportVehicle,
     },
   ];
 
@@ -140,7 +135,7 @@ export default function AnalyzePage() {
                           {type.description}
                         </p>
 
-                        <div className="mt-auto flex flex-col gap-1 pt-2">
+                        <div className="mt-auto pt-2">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -151,18 +146,6 @@ export default function AnalyzePage() {
                           >
                             {type.cta}
                             <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              loadSampleReport(type.sampleReport);
-                              setLocation("/report?sample=" + type.id);
-                            }}
-                            className="flex min-h-11 w-full items-center justify-center gap-2 text-[15px] font-semibold text-[var(--color-teal-700)] hover:text-[var(--color-navy-900)]"
-                          >
-                            <FileSearch className="h-4 w-4" aria-hidden="true" />
-                            {t("cflow.an_sample")}
                           </button>
                         </div>
                       </div>
