@@ -226,7 +226,10 @@ export default function CatalogCompare() {
   const { t } = useLanguage();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
-  const [selected, setSelected] = useState<string[]>([]);
+  // ?keys=a,b,c from Plan Match on the calculator opens on those plans.
+  const [selected, setSelected] = useState<string[]>(() =>
+    (new URLSearchParams(window.location.search).get("keys") ?? "")
+      .split(",").map((k) => k.trim()).filter(Boolean).slice(0, MAX_PLANS));
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);

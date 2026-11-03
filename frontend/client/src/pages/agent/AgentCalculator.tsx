@@ -7,6 +7,7 @@ import {
 
 import CoverCalculator, { type CoverCalculatorCompletion } from "@/components/calculator/CoverCalculator";
 import { SeparatePolicyCard } from "@/components/calculator/SeparatePolicyCard";
+import { PlanMatch } from "@/components/agent/PlanMatch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAgent } from "@/context/AgentContext";
@@ -484,6 +485,12 @@ export default function AgentCalculator() {
                     ))}
                   </ul>
                 </div>
+              )}
+
+              {/* Best plan from the advisor's insurers for this client. Advisor
+                  portal only: never on the shared report or its PDF. */}
+              {done?.inputs && (r.coverageBreakdown?.finalOptimal ?? 0) > 0 && (
+                <PlanMatch inputs={done.inputs} minSiLakhs={Math.round(r.coverageBreakdown!.finalOptimal / 1e5)} />
               )}
 
               {/* ACTIONS */}

@@ -13,6 +13,7 @@ import type { Express } from "express";
 import { pool } from "../lib/db";
 import type { WordingProfile } from "../types/wordingProfile";
 import { COMPLETENESS_VERSION, maxSumInsured, scoreCompleteness, type CompletenessResult } from "./planCompleteness";
+import { matchPlans, sameInsurer, type MatchAnswers, type MatchPlan } from "./planMatch";
 
 export const TOP_N = 3;
 
@@ -32,6 +33,7 @@ interface ScoredPlan extends CompletenessResult {
   sum_insured_options: string | null;
   max_si: number | null;
   entry_age?: EntryAge | null;
+  profile: WordingProfile;
 }
 
 /**
@@ -72,6 +74,7 @@ async function scoredCatalog(): Promise<ScoredPlan[]> {
     sum_insured_options: r.sum_insured_options,
     max_si: maxSumInsured(r.sum_insured_options),
     entry_age: (r.profile?.entry_age as EntryAge | undefined) ?? null,
+    profile: r.profile as WordingProfile,
     ...scoreCompleteness(r.profile as WordingProfile),
   }));
   cache = { at: Date.now(), plans };
@@ -85,14 +88,14 @@ async function scoredCatalog(): Promise<ScoredPlan[]> {
  * do not fill the list. Plans the adults cannot join by age are left out
  * (ageEligible).
  */
-export function rankPlans(plans: ScoredPlan[], minSi: number, only?: Set<string>, adultAges: number[] = []): ScoredPlan[] {
+export function rankPlans<T extends Omit<ScoredPlan, "profile">>(plans: T[], minSi: number, only?: Set<string>, adultAges: number[] = []): T[] {
   const eligible = plans
     .filter((p) => (only ? only.has(p.plan_key) : true))
     .filter((p) => minSi <= 0 || (p.max_si != null && p.max_si >= minSi))
     .filter((p) => ageEligible(p.entry_age, adultAges))
     .sort((a, b) => b.score - a.score || a.unknown - b.unknown || a.insurer.localeCompare(b.insurer));
   const seen = new Set<string>();
-  const out: ScoredPlan[] = [];
+  const out: T[] = [];
   for (const p of eligible) {
     if (seen.has(p.insurer)) continue;
     seen.add(p.insurer);
@@ -232,4 +235,81 @@ export function registerPlanRecommendRoutes(
       return res.status(500).json({ error: "Could not update your list." });
     }
   });
+
+  // Client Plan Match (services/planMatch.ts). Advisor sign-in only. The plan
+  // pool is read here, never taken from the browser: the advisor's starred
+  // plans when they have any, else every plan from the insurers on their
+  // profile, else the whole catalogue.
+  app.post("/api/agent/plan-match", async (req, res) => {
+    try {
+      const agentId = await requireAgent(req, res);
+      if (!agentId) return;
+      const lakhs = Number(req.body?.min_si_lakhs ?? 0);
+      if (!Number.isFinite(lakhs) || lakhs < 0 || lakhs > 100000) {
+        return res.status(400).json({ error: "Invalid cover amount" });
+      }
+      const answers = cleanAnswers(req.body?.answers);
+      const catalog = await scoredCatalog();
+
+      const stars = new Set(await preferredKeys(agentId).catch(() => [] as string[]));
+      const prof = await pool.query("SELECT partnered_companies FROM agents WHERE id = $1", [agentId]);
+      const partners: string[] = Array.isArray(prof.rows[0]?.partnered_companies) ? prof.rows[0].partnered_companies : [];
+
+      let source: "stars" | "insurers" | "catalog";
+      let inPool: (p: ScoredPlan) => boolean;
+      if (stars.size > 0) {
+        source = "stars";
+        inPool = (p) => stars.has(p.plan_key);
+      } else if (partners.length > 0) {
+        source = "insurers";
+        inPool = (p) => partners.some((n) => sameInsurer(n, p.insurer));
+      } else {
+        source = "catalog";
+        inPool = () => true;
+      }
+      const toMatch = (p: ScoredPlan): MatchPlan => ({
+        plan_key: p.plan_key, insurer: p.insurer, plan_name: p.plan_name, variant: p.variant,
+        max_si: p.max_si, score: p.score, profile: p.profile, entry_age: p.entry_age,
+      });
+      const poolPlans = catalog.filter(inPool);
+      const result = matchPlans(answers, Math.round(lakhs * 1e5), poolPlans.map(toMatch), catalog.filter((p) => !inPool(p)).map(toMatch));
+
+      return res.json({
+        source,
+        stars: stars.size,
+        insurers: [...new Set(poolPlans.map((p) => p.insurer))],
+        // Profile insurers with no plan in the catalogue, so the advisor knows
+        // why one of theirs is missing.
+        unmatched: source === "insurers" ? partners.filter((n) => !catalog.some((p) => sameInsurer(n, p.insurer))) : [],
+        ...result,
+      });
+    } catch (err: any) {
+      console.error("ERROR matching plans:", err?.message ?? err);
+      return res.status(500).json({ error: "Could not match plans." });
+    }
+  });
+}
+
+/** Only the answers the match reads, each type-checked. */
+function cleanAnswers(raw: any): MatchAnswers {
+  const a = raw && typeof raw === "object" ? raw : {};
+  const str = (v: any) => (typeof v === "string" && v.length <= 60 ? v : undefined);
+  const num = (v: any) => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 110 ? v : undefined);
+  const list = (v: any) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.length <= 30).slice(0, 10) : undefined);
+  return {
+    familyStructure: str(a.familyStructure),
+    exactAge: num(a.exactAge),
+    spouseAge: num(a.spouseAge),
+    fatherAge: num(a.fatherAge),
+    motherAge: num(a.motherAge),
+    globalTravel: str(a.globalTravel),
+    hospitalPreference: str(a.hospitalPreference),
+    recurringExpenses: str(a.recurringExpenses),
+    okWithDeductibles: typeof a.okWithDeductibles === "boolean" ? a.okWithDeductibles : undefined,
+    riskPosture: str(a.riskPosture),
+    preExistingConditions: list(a.preExistingConditions),
+    spousePreExistingConditions: list(a.spousePreExistingConditions),
+    fatherPreExistingConditions: list(a.fatherPreExistingConditions),
+    motherPreExistingConditions: list(a.motherPreExistingConditions),
+  };
 }
