@@ -3185,7 +3185,20 @@
     "pd_notfound_d": "This policy isn't in your portfolio.",
     "pd_cant_read": "We couldn't read this policy document.",
     "pd_still": "This policy is still being checked. Look back in a moment.",
-    "pd_missing": "The stored report for this policy is missing or in an old format."
+    "pd_missing": "The stored report for this policy is missing or in an old format.",
+    "need_eyebrow": "Your cover need",
+    "need_ideal": "Ideal health cover",
+    "need_have": "Your health cover",
+    "need_gap": "The gap",
+    "need_short": "Short by {{amount}}",
+    "need_covered": "Fully covered",
+    "need_none": "Not added yet",
+    "need_upload": "Upload your health policy",
+    "need_upload_d": "We read your policy and show how close it gets you to {{amount}}.",
+    "need_calc_on": "Worked out on {{date}}",
+    "need_view": "See the calculation",
+    "need_saved": "Your calculation is saved to your account",
+    "need_unknown": "Not known yet"
   },
   "connect": {
     "t_renew": "Renew a policy",
@@ -4185,7 +4198,9 @@
     "compare": "Compare Plans With This Coverage",
     "analyse": "Check My Existing Policy",
     "start_new": "Start New Analysis",
-    "no_sell": "IndSure does not sell insurance or earn commissions. These recommendations are purely analytical."
+    "no_sell": "IndSure does not sell insurance or earn commissions. These recommendations are purely analytical.",
+    "saving": "Saving your calculation...",
+    "save_failed": "We could not save your calculation. Please try again."
   },
   "lobp": {
     "private100": "100% private",

@@ -31,8 +31,8 @@ describe("the table map covers what the database actually holds", () => {
     assert.equal(AGENT_TABLES.length, 22);
   });
 
-  it("carries all three consumer tables (individual_check_log from 030)", () => {
-    assert.equal(INDIVIDUAL_TABLES.length, 3);
+  it("carries all four consumer tables (individual_check_log from 030, calculator_reports.user_id from 033)", () => {
+    assert.equal(INDIVIDUAL_TABLES.length, 4);
   });
 
   it("names no table twice", () => {

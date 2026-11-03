@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
-    Check, Shield, AlertTriangle, Activity, RefreshCcw, Info, Download,
+    Check, Shield, AlertTriangle, Activity, RefreshCcw, Info, Download, ArrowRight, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -10,6 +10,9 @@ import { EngineResult, UserInputs } from "@/lib/health-engine-logic";
 import { SeparatePolicyCard } from "@/components/calculator/SeparatePolicyCard";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
+import { saveCalculatorReport } from "@/lib/calculator-storage";
+import { savePendingCalculation } from "@/lib/pendingCalculation";
+import { supabase } from "@/lib/supabase";
 import { pdf } from "@react-pdf/renderer";
 import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
@@ -232,8 +235,11 @@ function CoverageOptions({ result, cityTier }: { result: EngineResult; cityTier?
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CalculatorReportPage() {
+    // A full page load, as before, but through assign(). Writing the path to
+    // location.pathname percent-encoded its "?", so "/compare?minSI=40" became
+    // "/compare%3FminSI=40" and the compare button landed on a 404.
     const setLocation = (path: string) => {
-        window.location.pathname = path;
+        window.location.assign(path);
     };
 
     const pathname = window.location.pathname;
@@ -284,6 +290,31 @@ export default function CalculatorReportPage() {
         }
     };
     const [showSavedBanner, setShowSavedBanner] = useState(false);
+    const [savingCalc, setSavingCalc] = useState(false);
+
+    // "Check My Existing Policy": keep this calculation, then sign in, so the
+    // portfolio can put it next to the cover the person actually holds. A report
+    // that only lives in this tab (no id in the URL) is saved first, because
+    // only a saved one can be attached to an account. /app does the attaching
+    // (pendingCalculation.ts), so signup, login and an already signed-in visit
+    // all end the same way.
+    const checkExistingPolicy = async () => {
+        if (savingCalc) return;
+        setSavingCalc(true);
+        let uuid = matchUuid;
+        if (!uuid && result && inputs) {
+            const saved = await saveCalculatorReport(inputs, result);
+            if (saved.success) uuid = saved.uuid;
+        }
+        if (!uuid) {
+            setSavingCalc(false);
+            showError(t("crep.save_failed"), "");
+            return;
+        }
+        savePendingCalculation(uuid);
+        const { data: { session } } = await supabase.auth.getSession();
+        setLocation(session ? "/app" : "/login?next=/app");
+    };
 
     useEffect(() => {
         const loadReport = async () => {
@@ -665,38 +696,54 @@ export default function CalculatorReportPage() {
                                 {t("crep.next")}
                             </h3>
 
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <Button
-                                    size="lg"
-                                    className="bg-[var(--color-cta)] hover:bg-[var(--color-teal-700)] text-white shadow-md px-8 py-5 text-base"
+                            {/* Two equal buttons and a text link. The three used to be
+                                three different shapes (rounded fill, square outline,
+                                faded ghost), so they did not read as one choice. */}
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <button
+                                    type="button"
+                                    className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-cta)] px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
                                     onClick={() =>
                                         setLocation(minSI > 0 ? `/compare?minSI=${minSI}` : "/compare")
                                     }
                                 >
                                     {t("crep.compare")}
-                                </Button>
+                                    <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                </button>
 
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    className="border-[var(--color-border-medium)] text-[var(--color-navy-900)] hover:bg-[var(--color-cream-dark)] px-8 py-5 text-base"
-                                    onClick={() => setLocation("/analyze")}
+                                <button
+                                    type="button"
+                                    disabled={savingCalc}
+                                    className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border-medium)] bg-white px-5 py-3 text-base font-semibold text-[var(--color-navy-900)] transition-colors hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] disabled:opacity-70"
+                                    onClick={checkExistingPolicy}
                                 >
-                                    {t("crep.analyse")}
-                                </Button>
+                                    {savingCalc ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+                                            {t("crep.saving")}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {t("crep.analyse")}
+                                            <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
 
-                                <Button
-                                    size="lg"
-                                    variant="ghost"
-                                    className="text-[var(--color-text-muted)] hover:text-[var(--color-navy-900)] px-8 py-5 text-base"
+                            <div className="flex justify-center">
+                                <button
+                                    type="button"
+                                    className="inline-flex min-h-11 items-center gap-2 px-3 text-[15px] font-semibold text-[var(--color-teal-700)] hover:text-[var(--color-navy-900)]"
                                     onClick={() => {
                                         sessionStorage.removeItem("calculator_result");
                                         sessionStorage.removeItem("calculator_inputs");
                                         setLocation("/calculator");
                                     }}
                                 >
+                                    <RefreshCcw className="h-4 w-4" aria-hidden="true" />
                                     {t("crep.start_new")}
-                                </Button>
+                                </button>
                             </div>
 
                             <p className="text-center text-xs text-[var(--color-text-muted)] pt-4 border-t border-[var(--color-border-light)]">
