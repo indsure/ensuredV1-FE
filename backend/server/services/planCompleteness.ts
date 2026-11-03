@@ -35,14 +35,20 @@ function asDatum(v: unknown): AxisDatum | null {
   return v && typeof v === "object" ? (v as AxisDatum) : null;
 }
 
-export function scoreCompleteness(profile: WordingProfile): CompletenessResult {
+/**
+ * `weightMult` scales a clause's weight for one client (planMatch.ts: a family
+ * with a pre-existing condition counts the PED wait 3x). Omitted, every clause
+ * keeps its AXES weight, which is the public score.
+ */
+export function scoreCompleteness(profile: WordingProfile, weightMult: Record<string, number> = {}): CompletenessResult {
   let earned = 0;
   let possible = 0;
   let unknown = 0;
   const good: { w: number; text: string }[] = [];
   const weak: { w: number; text: string; bad: boolean }[] = [];
 
-  for (const def of AXES) {
+  for (const axis of AXES) {
+    const def = { ...axis, weight: axis.weight * (weightMult[axis.key] ?? 1) };
     if (def.weight <= 0) continue;
     const d = asDatum(profile[def.key]) ?? { display: "" };
     const tone = toneFor(def, d) ?? "unknown";

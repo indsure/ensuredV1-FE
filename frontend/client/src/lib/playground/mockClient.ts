@@ -470,6 +470,40 @@ function playgroundApiResponse(url: string, init?: any): Response {
     return json({ rows });
   }
 
+  // Plan Match on the demo calculator. The demo catalogue has cell points (0
+  // to 3) per row and no cover-abroad row, so abroad always reads "confirm".
+  if (url.includes("/api/agent/plan-match")) {
+    let a: any = {};
+    try { a = JSON.parse(init?.body ?? "{}").answers ?? {}; } catch { /* ignore */ }
+    const conds = [...(a.preExistingConditions ?? []), ...(a.spousePreExistingConditions ?? [])].filter((c: string) => c && c !== "none");
+    const needs = [
+      a.globalTravel === "Yes, I travel abroad" && { key: "abroad", must: true, why: "travels abroad" },
+      /Large|Premium/.test(a.hospitalPreference ?? "") && { key: "room", must: true, why: a.hospitalPreference },
+      a.okWithDeductibles === false && { key: "deductible", must: true, why: "no deductible" },
+      conds.length > 0 && { key: "ped", must: false, why: conds.join(", ") },
+      { key: "cover", must: true, why: "recommended cover" },
+    ].filter(Boolean) as { key: string; must: boolean; why: string }[];
+    const cellIdx: Record<string, number> = { room: 0, deductible: 2, ped: 3 };
+    const verdicts = DEMO_CATALOG.map((p) => {
+      const ns = needs.map((n) => {
+        if (n.key === "abroad") return { key: n.key, must: n.must, status: "unclear", detail: "Not in the demo catalogue" };
+        if (n.key === "cover") return { key: n.key, must: n.must, status: "met", detail: p.sum_insured_options };
+        const c = p.cells[cellIdx[n.key]];
+        return { key: n.key, must: n.must, status: c[1] >= 2 ? "met" : "unmet", detail: c[0] };
+      });
+      const met = ns.filter((n) => n.status === "met").length;
+      const completeness = Math.round((p.cells.reduce((s, c) => s + c[1], 0) / (p.cells.length * 3)) * 100);
+      return { plan_key: p.uin, insurer: p.insurer, plan_name: p.plan_name, variant: "", completeness, fit: completeness, needs: ns, met, addons: 0, unclear: ns.filter((n) => n.status === "unclear").length, failed: ns.find((n) => n.must && n.status === "unmet") ?? null };
+    }).sort((x, y) => y.met - x.met || y.fit - x.fit);
+    const seen = new Set<string>();
+    const picks = verdicts.filter((v) => !v.failed && !seen.has(v.insurer) && seen.add(v.insurer)).slice(0, 3);
+    const pickKeys = new Set(picks.map((p) => p.plan_key));
+    const why_not = verdicts.filter((v) => !pickKeys.has(v.plan_key)).map((v) => ({
+      plan_key: v.plan_key, insurer: v.insurer, plan_name: v.plan_name, variant: "", completeness: v.completeness,
+      kind: v.failed ? "fail" : "lower", need: v.failed, met: v.met, of: needs.length,
+    }));
+    return json({ source: "insurers", stars: 0, insurers: [...new Set(DEMO_CATALOG.map((p) => p.insurer))], unmatched: [], needs, picks, why_not, blocked: null });
+  }
   // Top 3 and the advisor's preferred list. The demo catalogue carries cell
   // points (0 to 3), not wording profiles, so its "completeness" is the share
   // of points a plan earns. The list lives in memory for the demo session.
