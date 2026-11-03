@@ -125,5 +125,15 @@
     "cumulative_bonus",
     "room_rent"
   ],
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": null,
+    "adult_max": null,
+    "segment": "senior",
+    "source": null,
+    "ref": null,
+    "quote": null,
+    "note": "Entry age not found. Treated as a senior plan with ages unconfirmed.",
+    "checked": "2026-11-03"
+  }
 }

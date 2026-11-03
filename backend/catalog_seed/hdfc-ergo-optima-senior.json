@@ -138,5 +138,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T08:01:17.634Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 61,
+    "adult_max": null,
+    "segment": "senior",
+    "source": "insurer",
+    "ref": "https://www.hdfcergo.com/docs/default-source/downloads/prospectus/health/optima-senior-prospectus.pdf",
+    "quote": "The minimum entry age under this policy is 61 years and above.",
+    "checked": "2026-11-03"
+  }
 }

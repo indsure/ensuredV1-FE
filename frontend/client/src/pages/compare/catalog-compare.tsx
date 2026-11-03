@@ -287,8 +287,11 @@ function HealthCatalogCompare() {
 
   const { t } = useLanguage();
   // ?minSI=40 (lakhs) arrives from a calculator report. It opens the page on the
-  // most complete plans that can carry that cover.
-  const minSI = Number(new URLSearchParams(useSearch()).get("minSI")) || 0;
+  // most complete plans that can carry that cover. ?ages=42,38 are the adults to
+  // cover, so plans they cannot join by age are left out.
+  const search = new URLSearchParams(useSearch());
+  const minSI = Number(search.get("minSI")) || 0;
+  const ages = search.get("ages") ?? "";
   const builderRef = useRef<HTMLDivElement>(null);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
@@ -400,6 +403,7 @@ function HealthCatalogCompare() {
               <div className="mb-6">
                 <TopPlans
                   minSiLakhs={minSI}
+                  adultAges={ages}
                   onCompare={(keys) => {
                     setSelected(keys.slice(0, MAX_PLANS));
                     builderRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });

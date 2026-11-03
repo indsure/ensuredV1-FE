@@ -170,5 +170,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-18T05:34:12.875Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 56,
+    "adult_max": null,
+    "segment": "senior",
+    "source": "insurer",
+    "ref": "https://www.magmainsurance.com/documents/5553002/0/Prospectus+-+OneHealth+Senior+(1).pdf",
+    "quote": "For individual Policies, minimum entry age is 56 years. No cap on maximum entry age.",
+    "checked": "2026-11-03"
+  }
 }

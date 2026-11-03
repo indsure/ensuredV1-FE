@@ -123,5 +123,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T08:02:10.762Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": null,
+    "segment": null,
+    "source": "wording",
+    "ref": "PolicyWordings_myOptimaSecure p44",
+    "quote": "The minimum entry age for an adult is 18 years and there is no limit on maximum entry age.",
+    "checked": "2026-11-03"
+  }
 }

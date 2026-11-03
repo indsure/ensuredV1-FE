@@ -173,5 +173,15 @@
   "audited_at": "2026-10-09",
   "audit_gaps": [
     "icu"
-  ]
+  ],
+  "entry_age": {
+    "adult_min": 61,
+    "adult_max": 85,
+    "segment": "senior",
+    "source": "secondary",
+    "ref": "https://www.scribd.com/document/744553519/elder-care-brochure-8b110b6804-2",
+    "quote": "Minimum entry age - 61 years and Maximum entry age - 85 years",
+    "note": "Copy of Tata AIG's Elder Care brochure.",
+    "checked": "2026-11-03"
+  }
 }

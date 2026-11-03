@@ -170,5 +170,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-17T13:43:25.677Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 60,
+    "adult_max": 80,
+    "segment": "senior",
+    "source": "secondary",
+    "ref": "https://www.policyx.com/health-insurance/new-india-health-insurance/new-india-assurance-senior-citizen-mediclaim-policy.php",
+    "quote": "with an entry age of 60 to 80 years",
+    "checked": "2026-11-03"
+  }
 }

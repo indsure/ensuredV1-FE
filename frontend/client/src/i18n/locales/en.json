@@ -5011,7 +5011,7 @@
     "good": "Strong on",
     "watch": "Watch for",
     "compare": "Compare these side by side",
-    "age_note": "Some plans are only for certain ages or cities. Check the entry age and the premium with the insurer before you buy.",
+    "age_note": "Plans the adults in this family cannot join by age are left out, where the insurer publishes entry ages. Check the premium and entry age with the insurer before you buy.",
     "none": "No plan in our catalogue confirms {{amount}} of cover in its wording.",
     "none_preferred": "None of your preferred plans confirms {{amount}} of cover in its wording.",
     "cover_label": "Cover needed (₹ lakh)",
