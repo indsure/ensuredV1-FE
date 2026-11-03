@@ -250,6 +250,16 @@ const claimUploadRateLimiter = rateLimit({
   message: { error: "Too many tries. Please wait a few minutes and try again." },
 });
 
+// Saving a calculation to an account. Its own bucket, so pressing "Check My
+// Existing Policy" a few times cannot use up the upload-claim allowance.
+const calcClaimRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many tries. Please wait a few minutes and try again." },
+});
+
 // Pre-signup uploads. Tighter than the authenticated limiter because there is
 // no account behind the request: this endpoint is a writable bucket exposed to
 // anyone who finds it, so the cap is per-IP and low. It costs no Gemini spend,
@@ -1639,18 +1649,32 @@ export async function registerRoutes(
         .json({ error: "Invalid data format" });
     }
 
-    // Optional agent stamping: the public consumer flow sends no auth header
-    // and saves anonymously, exactly as before. The agent portal sends its
-    // Supabase token so the report is linked to the agent (and optionally a
-    // customer, after an ownership check). Auth failures degrade to an
-    // anonymous save rather than rejecting the report.
+    // Optional owner stamping: a visitor with no session saves anonymously,
+    // exactly as before. The agent portal sends its Supabase token so the
+    // report is linked to the agent (and optionally a customer, after an
+    // ownership check). Auth failures degrade to an anonymous save rather than
+    // rejecting the report.
+    //
+    // agent_id is a foreign key to agents(id). apiFetch attaches the session of
+    // a signed-in CONSUMER too, and stamping that id into agent_id failed the
+    // foreign key, so signed-in consumers could not save a calculation at all.
+    // Consumers go in user_id (migration 033) instead.
     let agentId: string | null = null;
+    let userId: string | null = null;
     let customerId: string | null = null;
     const authHeader = req.headers["authorization"] as string | undefined;
     if (authHeader?.startsWith("Bearer ")) {
       try {
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader.slice(7));
-        if (!error && user) agentId = user.id;
+        if (!error && user) {
+          const isAgent = await pool.query("SELECT 1 FROM agents WHERE id = $1", [user.id]);
+          if (isAgent.rows.length > 0) {
+            agentId = user.id;
+          } else {
+            const isIndividual = await pool.query("SELECT 1 FROM individual_profiles WHERE id = $1", [user.id]);
+            if (isIndividual.rows.length > 0) userId = user.id;
+          }
+        }
       } catch {
         // anonymous save
       }
@@ -1664,10 +1688,17 @@ export async function registerRoutes(
     }
 
     try {
-      const insertRes = await pool.query(
-        "INSERT INTO calculator_reports (inputs, result_data, agent_id, customer_id) VALUES ($1, $2, $3, $4) RETURNING id",
-        [JSON.stringify(inputs), JSON.stringify(result_data), agentId, customerId]
-      );
+      // user_id is named only when there is one, so anonymous and advisor
+      // saves keep working on a database that has not run 033 yet.
+      const insertRes = userId
+        ? await pool.query(
+            "INSERT INTO calculator_reports (inputs, result_data, user_id) VALUES ($1, $2, $3) RETURNING id",
+            [JSON.stringify(inputs), JSON.stringify(result_data), userId]
+          )
+        : await pool.query(
+            "INSERT INTO calculator_reports (inputs, result_data, agent_id, customer_id) VALUES ($1, $2, $3, $4) RETURNING id",
+            [JSON.stringify(inputs), JSON.stringify(result_data), agentId, customerId]
+          );
       return res.json({ uuid: insertRes.rows[0].id, success: true });
     } catch (err: any) {
       console.error("ERROR saving calculator report:", err);
@@ -1713,6 +1744,92 @@ export async function registerRoutes(
         error: "Failed to load report. Please try again.",
         retryable: true
       });
+    }
+  });
+
+  /* ── Calculator: save a calculation to a consumer's account ─────────── */
+
+  // "Check My Existing Policy" on a calculator report sends a signed-out
+  // visitor through login, then lands here with the report's id. The portfolio
+  // then shows ideal cover against the cover the person holds.
+  //
+  // An unowned report is adopted in place. A report someone else owns (an
+  // advisor made it for this person and shared the link) is COPIED, so the
+  // advisor's record is never changed or taken over. The id is a random uuid
+  // that only reaches someone through the report link, and the row holds no
+  // personal data beyond the calculator answers.
+  app.post("/api/me/calculator/claim", calcClaimRateLimiter, async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+
+      const uuid = String(req.body?.uuid || "");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
+        return res.status(400).json({ error: "Invalid report ID format" });
+      }
+
+      const found = await pool.query(
+        "SELECT id, agent_id, user_id FROM calculator_reports WHERE id = $1",
+        [uuid]
+      );
+      const row = found.rows[0];
+      if (!row) return res.status(404).json({ error: "Report not found or has expired", code: "REPORT_NOT_FOUND" });
+
+      if (row.user_id === userId) return res.json({ uuid: row.id });
+
+      if (!row.agent_id && !row.user_id) {
+        const adopted = await pool.query(
+          "UPDATE calculator_reports SET user_id = $1 WHERE id = $2 AND agent_id IS NULL AND user_id IS NULL RETURNING id",
+          [userId, uuid]
+        );
+        if (adopted.rows.length > 0) return res.json({ uuid: adopted.rows[0].id });
+      }
+
+      // Already copied once: pressing the button again must not stack copies.
+      const existing = await pool.query(
+        `SELECT id FROM calculator_reports
+          WHERE user_id = $1
+            AND result_data = (SELECT result_data FROM calculator_reports WHERE id = $2)
+          ORDER BY created_at DESC LIMIT 1`,
+        [userId, uuid]
+      );
+      if (existing.rows.length > 0) return res.json({ uuid: existing.rows[0].id });
+
+      const copied = await pool.query(
+        `INSERT INTO calculator_reports (inputs, result_data, user_id)
+         SELECT inputs, result_data, $1 FROM calculator_reports WHERE id = $2
+         RETURNING id`,
+        [userId, uuid]
+      );
+      return res.json({ uuid: copied.rows[0].id });
+    } catch (err: any) {
+      console.error("ERROR claiming calculator report:", err?.message ?? err);
+      return res.status(500).json({ error: "Could not save your calculation. Please try again." });
+    }
+  });
+
+  // The latest calculation on a consumer's account: what the portfolio's cover
+  // card compares against. Health-only, like the calculator itself.
+  app.get("/api/me/calculator/latest", async (req, res) => {
+    try {
+      const userId = await requireIndividual(req, res);
+      if (!userId) return;
+
+      const r = await pool.query(
+        `SELECT id, created_at, result_data->'coverageBreakdown'->>'finalOptimal' AS final_optimal
+           FROM calculator_reports
+          WHERE user_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1`,
+        [userId]
+      );
+      const row = r.rows[0];
+      const recommended = row ? Number(row.final_optimal) : NaN;
+      if (!row || !Number.isFinite(recommended) || recommended <= 0) return res.json({ report: null });
+      return res.json({ report: { uuid: row.id, createdAt: row.created_at, recommendedCover: recommended } });
+    } catch (err: any) {
+      console.error("ERROR loading latest calculation:", err?.message ?? err);
+      return res.status(500).json({ error: "Could not load your calculation." });
     }
   });
 

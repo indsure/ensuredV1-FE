@@ -107,13 +107,16 @@ async function cleanupDpdpRetention() {
     }
 
     // calculator_reports: optionally linked to a customer via customer_id.
-    // Keep any report tied to a customer who still exists (active client work).
+    // Keep any report tied to a customer who still exists (active client work),
+    // and any report a consumer saved to their own account (user_id, migration
+    // 033): those leave with the account, through accountData's INDIVIDUAL_TABLES.
     // Purge, once past the grace window, only: (a) untethered scratch reports
     // with no customer attached, and (b) reports orphaned by a deleted customer.
     try {
       await pool.query(
         `DELETE FROM calculator_reports
          WHERE created_at < NOW() - interval '${interval}'
+           AND user_id IS NULL
            AND (
              customer_id IS NULL
              OR NOT EXISTS (
