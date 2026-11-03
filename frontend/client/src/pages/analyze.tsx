@@ -30,6 +30,8 @@ export default function AnalyzePage() {
     noindex: true,
   });
 
+  // Each check starts at the customer login; ?next= brings them back to that
+  // checker once they are signed in.
   const insuranceTypes = [
     {
       id: "health",
@@ -38,7 +40,7 @@ export default function AnalyzePage() {
       description: t("cflow.an_health_d"),
       icon: Heart,
       lob: LOB.health,
-      href: "/policychecker",
+      href: "/login?next=/policychecker",
       badge: t("cflow.an_popular"),
       sampleReport: mockReport,
     },
@@ -49,7 +51,7 @@ export default function AnalyzePage() {
       description: t("cflow.an_life_d"),
       icon: Users,
       lob: LOB.life,
-      href: "/life",
+      href: "/login?next=/life",
       badge: null,
       sampleReport: mockReportLife,
     },
@@ -60,7 +62,7 @@ export default function AnalyzePage() {
       description: t("cflow.an_vehicle_d"),
       icon: Car,
       lob: LOB.motor,
-      href: "/vehicle",
+      href: "/login?next=/vehicle",
       badge: null,
       sampleReport: mockReportVehicle,
     },
