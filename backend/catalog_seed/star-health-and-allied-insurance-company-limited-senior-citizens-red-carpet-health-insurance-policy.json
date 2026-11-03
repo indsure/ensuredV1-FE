@@ -170,5 +170,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:23:49.402Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 60,
+    "adult_max": 75,
+    "segment": "senior",
+    "source": "insurer",
+    "ref": "https://d28c6jni2fmamz.cloudfront.net/Senior_Citizen_Red_Carpet_Brochure_07625d0d94.pdf",
+    "quote": "It provides cover to anyone from the age of 60 and permits entry right up to the age of 75",
+    "checked": "2026-11-03"
+  }
 }

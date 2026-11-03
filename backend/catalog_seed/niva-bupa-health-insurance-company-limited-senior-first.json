@@ -173,5 +173,14 @@
   "audited_at": "2026-10-09",
   "audit_gaps": [
     "icu"
-  ]
+  ],
+  "entry_age": {
+    "adult_min": 61,
+    "adult_max": 75,
+    "segment": "senior",
+    "source": "insurer",
+    "ref": "https://transaction.nivabupa.com/pages/doc/prospectus/Senior-First-Prospectus.pdf",
+    "quote": "The entry age under this policy is from 61 years to 75 years (as on last birthday).",
+    "checked": "2026-11-03"
+  }
 }

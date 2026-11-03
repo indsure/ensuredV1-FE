@@ -134,5 +134,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:53:20.217Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": null,
+    "segment": null,
+    "source": "wording",
+    "ref": "Health-Guard_PW.pdf p6",
+    "quote": "Adults 18 yrs to Lifelong",
+    "checked": "2026-11-03"
+  }
 }

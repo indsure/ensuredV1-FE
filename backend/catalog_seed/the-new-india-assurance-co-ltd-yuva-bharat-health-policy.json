@@ -170,5 +170,15 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-17T13:35:50.756Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": 45,
+    "segment": "youth",
+    "source": "secondary",
+    "ref": "https://lalwaniinsurance.com/new-india-yuva-bharat/",
+    "quote": "Entry Age: 18 to 45 Years for Adults",
+    "note": "Two other broker pages agree; New India's own document not read.",
+    "checked": "2026-11-03"
+  }
 }

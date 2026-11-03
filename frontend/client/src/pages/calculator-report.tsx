@@ -441,6 +441,15 @@ export default function CalculatorReportPage() {
         ? Math.round(result.coverageBreakdown.finalOptimal / 100000)
         : 0;
 
+    // The adults on the family policy, so the compare page leaves out plans
+    // they cannot join by age. Ages only, never names.
+    const adultAges = [
+        inputs?.exactAge,
+        inputs?.familyStructure?.startsWith("Couple") ? inputs?.spouseAge : undefined,
+        inputs?.familyStructure === "Parents included" ? inputs?.fatherAge : undefined,
+        inputs?.familyStructure === "Parents included" ? inputs?.motherAge : undefined,
+    ].filter((a): a is number => typeof a === "number" && a >= 18).join(",");
+
     return (
         <div className="min-h-screen bg-[var(--color-cream-main)] font-sans flex flex-col">
             <Header />
@@ -727,7 +736,7 @@ export default function CalculatorReportPage() {
                                     type="button"
                                     className="inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-cta)] px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
                                     onClick={() =>
-                                        setLocation(minSI > 0 ? `/compare?minSI=${minSI}` : "/compare")
+                                        setLocation(minSI > 0 ? `/compare?minSI=${minSI}${adultAges ? `&ages=${adultAges}` : ""}` : "/compare")
                                     }
                                 >
                                     {t("crep.compare")}

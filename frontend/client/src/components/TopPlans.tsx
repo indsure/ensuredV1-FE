@@ -28,8 +28,11 @@ export function TopPlans({
   onCompare,
   audience = "consumer",
   refreshKey = 0,
+  adultAges = "",
 }: {
   minSiLakhs: number;
+  /** "42,38": the adults to be covered. Plans they cannot join by age are left out. */
+  adultAges?: string;
   onCompare: (planKeys: string[]) => void;
   audience?: "consumer" | "advisor";
   refreshKey?: number;
@@ -46,7 +49,8 @@ export function TopPlans({
     setFailed(false);
     (async () => {
       try {
-        const res = await apiFetch(`/api/compare/recommend?min_si=${encodeURIComponent(String(minSiLakhs))}`);
+        const agesParam = /^[\d,]+$/.test(adultAges) ? `&ages=${adultAges}` : "";
+        const res = await apiFetch(`/api/compare/recommend?min_si=${encodeURIComponent(String(minSiLakhs))}${agesParam}`);
         if (!res.ok) throw new Error("recommend");
         const json = await res.json();
         if (!alive) return;
@@ -57,7 +61,7 @@ export function TopPlans({
       }
     })();
     return () => { alive = false; };
-  }, [minSiLakhs, refreshKey]);
+  }, [minSiLakhs, adultAges, refreshKey]);
 
   if (!(minSiLakhs > 0)) return null;
   const amount = formatINRShort(minSiLakhs * 1e5);

@@ -16,6 +16,13 @@ import { COMPLETENESS_VERSION, maxSumInsured, scoreCompleteness, type Completene
 
 export const TOP_N = 3;
 
+/** profile.entry_age, written from backend/catalog_entry_ages.json (migration 035). */
+export interface EntryAge {
+  adult_min: number | null;
+  adult_max: number | null;
+  segment: "youth" | "senior" | null;
+}
+
 interface ScoredPlan extends CompletenessResult {
   plan_key: string;
   uin: string;
@@ -24,6 +31,23 @@ interface ScoredPlan extends CompletenessResult {
   plan_name: string;
   sum_insured_options: string | null;
   max_si: number | null;
+  entry_age?: EntryAge | null;
+}
+
+/**
+ * Can these adults join this plan? Ages are the adults to be covered; an empty
+ * list means we were not told, and the plan must then suit a typical adult
+ * (18 to 65). A known limit that excludes anyone rules the plan out. A youth or
+ * senior plan whose ages we could not confirm is ruled out too: it is the kind
+ * of plan that turns people away. Any other plan with no stated ages stays in,
+ * since general plans take adults from 18 to at least 65.
+ */
+export function ageEligible(ea: EntryAge | null | undefined, adultAges: number[]): boolean {
+  if (!ea) return true;
+  const known = ea.adult_min != null || ea.adult_max != null;
+  if (ea.segment && !known) return false;
+  const ages = adultAges.length > 0 ? adultAges : [18, 65];
+  return ages.every((a) => (ea.adult_min == null || a >= ea.adult_min) && (ea.adult_max == null || a <= ea.adult_max));
 }
 
 // The catalogue changes when someone runs the loader, not per request. Scoring
@@ -47,6 +71,7 @@ async function scoredCatalog(): Promise<ScoredPlan[]> {
     plan_name: r.plan_name,
     sum_insured_options: r.sum_insured_options,
     max_si: maxSumInsured(r.sum_insured_options),
+    entry_age: (r.profile?.entry_age as EntryAge | undefined) ?? null,
     ...scoreCompleteness(r.profile as WordingProfile),
   }));
   cache = { at: Date.now(), plans };
@@ -57,12 +82,14 @@ async function scoredCatalog(): Promise<ScoredPlan[]> {
  * Rank plans that can carry `minSi` rupees of cover. A plan whose wording does
  * not state its sum insured is left out: we cannot tell the person it offers
  * the cover they need. One plan per insurer, so three variants of one product
- * do not fill the list.
+ * do not fill the list. Plans the adults cannot join by age are left out
+ * (ageEligible).
  */
-export function rankPlans(plans: ScoredPlan[], minSi: number, only?: Set<string>): ScoredPlan[] {
+export function rankPlans(plans: ScoredPlan[], minSi: number, only?: Set<string>, adultAges: number[] = []): ScoredPlan[] {
   const eligible = plans
     .filter((p) => (only ? only.has(p.plan_key) : true))
     .filter((p) => minSi <= 0 || (p.max_si != null && p.max_si >= minSi))
+    .filter((p) => ageEligible(p.entry_age, adultAges))
     .sort((a, b) => b.score - a.score || a.unknown - b.unknown || a.insurer.localeCompare(b.insurer));
   const seen = new Set<string>();
   const out: ScoredPlan[] = [];
@@ -111,6 +138,12 @@ export function registerPlanRecommendRoutes(
         return res.status(400).json({ error: "Invalid cover amount" });
       }
       const minSi = Math.round(lakhs * 1e5);
+      // ?ages=42,38 : the adults to be covered, from the calculator. Optional.
+      const adultAges = String(req.query.ages ?? "")
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter((n) => Number.isInteger(n) && n >= 18 && n <= 110)
+        .slice(0, 6);
       const plans = await scoredCatalog();
 
       const agentId = await agentIdFrom(req, getUserIdFromToken);
@@ -123,15 +156,17 @@ export function registerPlanRecommendRoutes(
         if (keys.length > 0) { source = "preferred"; only = new Set(keys); }
       }
 
-      const top = rankPlans(plans, minSi, only);
+      const top = rankPlans(plans, minSi, only, adultAges);
       return res.json({
         source,
         min_si: minSi,
+        ages: adultAges,
         scoring_version: COMPLETENESS_VERSION,
         plans: top.map((p) => ({
           plan_key: p.plan_key, uin: p.uin, variant: p.variant, insurer: p.insurer,
           plan_name: p.plan_name, sum_insured_options: p.sum_insured_options,
           score: p.score, strengths: p.strengths, gaps: p.gaps,
+          entry_age: p.entry_age ? { adult_min: p.entry_age.adult_min, adult_max: p.entry_age.adult_max } : null,
         })),
       });
     } catch (err: any) {

@@ -146,5 +146,15 @@
     "post_hosp",
     "ambulance"
   ],
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": 45,
+    "segment": "youth",
+    "source": "secondary",
+    "ref": "https://www.scribd.com/document/626180465/Activ-Fit-PBT",
+    "quote": "Min / Max Age at Entry (Adult) Min 18, Max 45 Years",
+    "note": "Copy of Aditya Birla's product benefit table; policyx.com agrees.",
+    "checked": "2026-11-03"
+  }
 }

@@ -131,5 +131,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:58:45.044Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": 65,
+    "segment": null,
+    "source": "wording",
+    "ref": "health-unlimited-policy-wording.pdf p39",
+    "quote": "Min. Entry Age (Adult) 18 Years Max. Entry Age (Adult) 65 Years",
+    "checked": "2026-11-03"
+  }
 }

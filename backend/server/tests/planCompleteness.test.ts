@@ -9,7 +9,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import { maxSumInsured, scoreCompleteness } from "../services/planCompleteness";
-import { rankPlans } from "../services/planRecommend";
+import { ageEligible, rankPlans } from "../services/planRecommend";
 import type { WordingProfile } from "../types/wordingProfile";
 
 const profile = (axes: Record<string, object>): WordingProfile =>
@@ -95,5 +95,34 @@ describe("rankPlans", () => {
 
   it("ranks only within an advisor's list when given one", () => {
     assert.deepEqual(rankPlans(catalog, 40e5, new Set(["e1", "c1", "a2"])).map((p) => p.plan_key), ["a2", "e1"]);
+  });
+
+  it("leaves out plans the adults cannot join by age", () => {
+    const aged = [
+      { ...plan("y1", "Y", 99, 1e7), entry_age: { adult_min: 18, adult_max: 40, segment: "youth" as const } },
+      { ...plan("s1", "S", 98, 1e7), entry_age: { adult_min: 61, adult_max: 75, segment: "senior" as const } },
+      ...catalog,
+    ];
+    assert.deepEqual(rankPlans(aged, 40e5, undefined, [35, 33]).map((p) => p.plan_key), ["y1", "a1", "b1"]);
+    // A 58-year-old spouse is too young for the 61-to-75 senior plan.
+    assert.deepEqual(rankPlans(aged, 40e5, undefined, [66, 58]).map((p) => p.plan_key), ["a1", "b1", "e1"]);
+    assert.deepEqual(rankPlans(aged, 40e5, undefined, [68]).map((p) => p.plan_key), ["s1", "a1", "b1"]);
+    // No ages: only plans a typical adult (18 to 65) can join.
+    assert.deepEqual(rankPlans(aged, 40e5).map((p) => p.plan_key), ["a1", "b1", "e1"]);
+  });
+});
+
+describe("ageEligible", () => {
+  it("keeps general plans with no stated ages, drops age-group plans with none", () => {
+    assert.equal(ageEligible(null, [70]), true);
+    assert.equal(ageEligible({ adult_min: null, adult_max: null, segment: null }, [70]), true);
+    assert.equal(ageEligible({ adult_min: null, adult_max: null, segment: "senior" }, [70]), false);
+  });
+
+  it("checks every adult against both limits", () => {
+    const ea = { adult_min: 18, adult_max: 65, segment: null };
+    assert.equal(ageEligible(ea, [42, 38]), true);
+    assert.equal(ageEligible(ea, [42, 67]), false);
+    assert.equal(ageEligible({ adult_min: 18, adult_max: null, segment: null }, [90]), true);
   });
 });
