@@ -9,12 +9,10 @@ import {
   FileText,
   Calculator,
   Scale,
-  FileSearch,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
-import { loadSampleReport, mockReport, mockReportLife, mockReportVehicle } from "@/lib/mock-data";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function AnalyzePage() {
@@ -30,6 +28,8 @@ export default function AnalyzePage() {
     noindex: true,
   });
 
+  // Each check starts at the customer login; ?next= brings them back to that
+  // checker once they are signed in.
   const insuranceTypes = [
     {
       id: "health",
@@ -42,9 +42,8 @@ export default function AnalyzePage() {
       gradientTo: "to-[#FCA5A5]/20",
       darkGradientFrom: "dark:from-[#EF4444]/10",
       darkGradientTo: "dark:to-[#FCA5A5]/10",
-      href: "/policychecker",
+      href: "/login?next=/policychecker",
       badge: t("cflow.an_popular"),
-      sampleReport: mockReport,
     },
     {
       id: "life",
@@ -57,9 +56,8 @@ export default function AnalyzePage() {
       gradientTo: "to-[#1A3A52]/20",
       darkGradientFrom: "dark:from-[#00B4D8]/10",
       darkGradientTo: "dark:to-[#1A3A52]/10",
-      href: "/life",
+      href: "/login?next=/life",
       badge: null,
-      sampleReport: mockReportLife,
     },
     {
       id: "vehicle",
@@ -72,9 +70,8 @@ export default function AnalyzePage() {
       gradientTo: "to-[#059669]/20",
       darkGradientFrom: "dark:from-[#10B981]/10",
       darkGradientTo: "dark:to-[#059669]/10",
-      href: "/vehicle",
+      href: "/login?next=/vehicle",
       badge: null,
-      sampleReport: mockReportVehicle,
     },
   ];
 
@@ -146,18 +143,6 @@ export default function AnalyzePage() {
                       {type.cta}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        loadSampleReport(type.sampleReport);
-                        setLocation("/report?sample=" + type.id);
-                      }}
-                      className="mt-3 min-h-11 w-full text-center text-sm text-[#00B4D8] hover:text-[#0099B4] dark:text-cyan-400 dark:hover:text-cyan-300 flex items-center justify-center gap-2"
-                    >
-                      <FileSearch className="w-4 h-4" />
-                      {t("cflow.an_sample")}
-                    </button>
                   </CardContent>
                 </Card>
               );
