@@ -80,7 +80,6 @@ const SharedReport = lazy(() => import("@/pages/SharedReport"));
 const AdminPanel = lazy(() => import("@/pages/admin/AdminPanel"));
 
 // --- Compare ---
-const CompareSample = lazy(() => import("@/pages/CompareSample"));
 const PublicCatalogCompare = lazy(() => import("@/pages/compare/catalog-compare"));
 const SharedComparison = lazy(() => import("@/pages/compare/SharedComparison"));
 
@@ -210,7 +209,6 @@ function App() {
                         {(params) => <SharedComparison uuid={params.uuid} />}
                       </Route>
                       <Route path="/compare" component={PublicCatalogCompare} />
-                      <Route path="/compare/sample" component={CompareSample} />
 
                       {/* --- Agent Auth --- */}
                       <Route path="/agent" component={AgentLanding} />
@@ -297,12 +295,12 @@ function App() {
                       {/* Compare defaults to the catalog: instant, and it costs the
                           agent nothing. Uploading two wordings is the paid lane and
                           lives one click deeper, at /agent/compare/quotes.
-                          /agent/compare/catalog stays alive for older links. */}
+                          /agent/compare/catalog only redirects, for older links. */}
                       <Route path="/agent/compare/quotes">
                         {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_compare_quotes"><AgentCompare /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/compare/catalog">
-                        {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
+                        {() => <Redirect to="/agent/compare" />}
                       </Route>
                       <Route path="/agent/compare">
                         {() => <AgentProtectedRoute><AgentCatalogCompare /></AgentProtectedRoute>}
@@ -364,8 +362,6 @@ function App() {
 
                       {/* --- Hospitals --- */}
                       <Route path="/find-provider" component={Hospitals} />
-                      <Route path="/hospitals" component={Hospitals} />
-
                       {/* --- Legal pages --- */}
                       <Route path="/privacy-policy" component={PrivacyPolicy} />
                       <Route path="/terms" component={TermsOfService} />
