@@ -15,6 +15,16 @@
   ],
   "redirects": [
     {
+      "source": "/hospitals",
+      "destination": "/find-provider",
+      "permanent": true
+    },
+    {
+      "source": "/compare/sample",
+      "destination": "/compare",
+      "permanent": true
+    },
+    {
       "source": "/blog/1",
       "destination": "/blog/health-insurance-sufficiency-guide",
       "permanent": true
@@ -386,7 +396,7 @@
       "destination": "/api/advisor-page?slug=:slug"
     },
     {
-      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|compare/sample|agent|admin|account|login|signup|forgot-password|reset-password|app|hospitals|pay)(/.*)?",
+      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|agent|admin|account|login|signup|forgot-password|reset-password|app|pay)(/.*)?",
       "destination": "/app-shell.html"
     }
   ]

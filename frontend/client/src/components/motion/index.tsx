@@ -3,7 +3,7 @@
    ------------------------------------------------------------
    Every public page animates through these components, so easing,
    distance and timing are decided once rather than re-invented per
-   page. Before this, home.tsx, CompareSample.tsx and hospitals.tsx
+   page. Before this, home.tsx and hospitals.tsx
    each carried their own near-identical variant objects with
    slightly different durations.
 
