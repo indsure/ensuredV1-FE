@@ -1,4 +1,5 @@
 import { SELFTEST_PDF } from "./selftest.js";
+import { VOCAB, phraseRe } from "./vocab.js";
 // Reads the text layer of a PDF in the browser (pdf.js) and finds register fields with fixed label rules.
 // Nothing is uploaded. Scanned PDFs have no text layer and are reported as such; nothing is guessed.
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
@@ -111,24 +112,46 @@ export function findDates(s) {
   }
   return out;
 }
-const AMT_RE = /(?:(₹|rs\.?|inr|usd|us\$|\$|aed|eur|€)\s*)?(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)(\s*%|\s*\/-)?/gi;
+const AMT_RE = /(?:(₹|rs\.?|inr|usd|us\$|\$|aed|eur|€)\s*)?(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)(\s*(?:lakhs?|lacs?|crores?|cr|millions?|mn|billions?|bn|thousand)\b\.?)?(\s*%|\s*\/-)?/gi;
+const UNIT = { lakh: 1e5, lakhs: 1e5, lac: 1e5, lacs: 1e5, crore: 1e7, crores: 1e7, cr: 1e7, million: 1e6, millions: 1e6, mn: 1e6, billion: 1e9, billions: 1e9, bn: 1e9, thousand: 1e3 };
+// "Rupees Forty Lakh Only", "Eight Thousand Seventeen", "USD Five Million". Indian and international scales.
+const SMALL = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fourty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const WORD_RE = new RegExp(String.raw`\b(rupees|rs\.?|inr|usd|us\s*dollars?|dollars?)?\s*((?:(?:` + Object.keys(SMALL).join("|") + "|hundred|thousand|lakhs?|lacs?|crores?|million|billion|and" + String.raw`)\b[\s-]*)+)(rupees|dollars?)?\s*(only)?`, "gi");
+export function wordsToAmount(s) {
+  for (const m of s.matchAll(WORD_RE)) {
+    const words = m[2].toLowerCase().split(/[\s-]+/).filter((w) => w && w !== "and");
+    const curWord = m[1] || m[3]; // "Rupees Forty Lakh" or "Forty Lakh Rupees"
+    if (!words.length || !(curWord || m[4])) continue; // only with a currency word or "only", never a stray "one"
+    let total = 0, cur = 0;
+    for (const w of words) {
+      if (w in SMALL) cur += SMALL[w];
+      else if (w === "hundred") cur = (cur || 1) * 100;
+      else { total += (cur || 1) * UNIT[w]; cur = 0; }
+    }
+    const v = total + cur;
+    if (v > 0) return { v, cur: curWord && /usd|dollar/i.test(curWord) ? "USD" : "INR", words: true };
+  }
+  return null;
+}
 export function findAmounts(s) {
   const dates = findDates(s);
   const out = [];
   for (const m of s.matchAll(AMT_RE)) {
-    if (m[3] && m[3].includes("%")) continue;
+    if (m[4] && m[4].includes("%")) continue;
     if (dates.some((d) => m.index >= d.index && m.index < d.end)) continue;
     const prev = s.slice(Math.max(0, m.index - 1), m.index);
     if (/[A-Za-z\/]/.test(prev)) continue; // part of a code like NGI/26/0991
     if (/\bno\.?\s*$/i.test(s.slice(Math.max(0, m.index - 4), m.index))) continue; // a reference number, "No. 67"
     const next = s.slice(m.index + m[0].length, m.index + m[0].length + 1);
-    if (!m[3] && /^[)\-\/A-Za-z]/.test(next)) continue; // list marker "1)" or code "67-B"
-    const v = +m[2].replace(/,/g, "");
+    if (!m[4] && !m[3] && /^[)\-\/A-Za-z]/.test(next)) continue; // list marker "1)" or code "67-B"
+    const unit = m[3] ? UNIT[m[3].trim().toLowerCase().replace(/\.$/, "")] : 1;
+    const v = Math.round(+m[2].replace(/,/g, "") * unit * 100) / 100;
     if (!Number.isFinite(v)) continue;
     if (!m[1] && /^(19|20)\d{2}$/.test(m[2])) continue; // a bare year
-    if (!m[1] && !/[,.]/.test(m[2]) && v > 0 && v < 100) continue; // too small to be money without a currency mark
+    if (!m[1] && !m[3] && !/[,.]/.test(m[2]) && v > 0 && v < 100) continue; // too small to be money without a currency mark
     out.push({ v, cur: m[1] ? curOf(m[1]) : null });
   }
+  if (!out.length) { const w = wordsToAmount(s); if (w) out.push(w); }
   return out;
 }
 function curOf(t) { t = t.toLowerCase(); return /usd|us\$|^\$$/.test(t) ? "USD" : t === "aed" ? "AED" : /eur|€/.test(t) ? "EUR" : "INR"; }
@@ -138,23 +161,23 @@ const cleanText = (s) => s.replace(/`\s*(?=\d)/g, "₹ ").replace(/^[\s:\-–.]+
 
 // ---- field rules (order matters: specific labels before generic ones)
 const RULES = [
-  { key: "policyNo", kind: "id", label: /\b(policy|certificate|cover\s*note)\s*(no|number|num)\b\.?|\bcertificate\s*ref(erence)?\b|\breference\s*(no|number)\b/i, not: /previous|prev\b|old\b|expiring|proposal|endorsement|receipt|invoice|order/i },
-  { key: "uin", kind: "id", label: /\bUIN\b/i },
-  { key: "planName", kind: "text", label: /\b(product\s*name|plan\s*name|name\s*of\s*(the\s*)?product)\b/i },
-  { key: "proposalDate", kind: "date", label: /proposal\s*(date|signed\s*on)|date\s*of\s*proposal/i },
-  { key: "issueDate", kind: "date", label: /date\s*of\s*(issue|issuance)|issue\s*date|issued\s*on|date\s*issued|policy\s*issued/i },
-  { key: "riskStart", kind: "date", label: /\b(policy\s*)?start\s*date|risk\s*(start|inception)|commencement\s*date|inception\s*date|valid\s*from|effective\s*from|cover\s*from/i, not: /endorsement/i },
-  { key: "riskEnd", kind: "date", label: /\b(policy\s*)?end\s*date|expiry\s*date|date\s*of\s*expiry|risk\s*end|valid\s*(up\s*)?(to|till)|cover\s*(to|till)/i },
-  { key: "sumInsured", kind: "amount", label: /total\s*sum\s*insured|sum\s*insured|sum\s*assured|insured\s*declared\s*value|\bIDV\b|agreed\s*value|limit\s*of\s*(liability|indemnity)|aggregate\s*limit/i, not: /used|balance/i },
-  { key: "netPremium", kind: "amount", label: /net\s*premium|basic\s*premium|premium\s*(before|excl\.?|excluding)\s*(tax|gst)|taxable\s*(value|premium|amount)|total\s*premium\s*(before|excl)/i },
-  { key: "grossPremium", kind: "amount", label: /gross\s*premium|total\s*premium(\s*payable)?|premium\s*payable|total\s*(amount\s*)?payable|final\s*premium|total\s*amount|\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i, not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
+  { key: "policyNo", kind: "id", label: phraseRe(VOCAB.policyNo), not: /previous|prev\b|old\b|expiring|proposal|endorsement|receipt|invoice|order/i },
+  { key: "uin", kind: "id", label: phraseRe(VOCAB.uin) },
+  { key: "planName", kind: "text", label: phraseRe(VOCAB.planName), badValue: /^(both\s+)?(indemnity|benefit)(\s+and\s+(indemnity|benefit))?\b|^(fresh|new|renewal|individual|group|floater)$|^(product|policy|type|details|name)\b\s*\/?/i },
+  { key: "proposalDate", kind: "date", label: phraseRe(VOCAB.proposalDate) },
+  { key: "issueDate", kind: "date", label: phraseRe(VOCAB.issueDate) },
+  { key: "riskStart", kind: "date", label: phraseRe(VOCAB.riskStart), not: /endorsement/i },
+  { key: "riskEnd", kind: "date", label: phraseRe(VOCAB.riskEnd), not: /endorsement|renewals*notice/i },
+  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum|%\s*of|per\s*(person|employee|member|vessel)|in\s*words/i },
+  { key: "netPremium", kind: "amount", label: new RegExp(phraseRe(VOCAB.netPremium).source + "|" + /total\s*premium\s*(before|excl)/i.source, "i") },
+  { key: "grossPremium", kind: "amount", label: new RegExp(phraseRe(VOCAB.grossPremium).source + "|" + /\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i.source, "i"), not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
   // A bare "Premium" label is the premium before tax. Only as a label in its own cell or before a colon.
   { key: "netPremium", kind: "amount", label: /\bpremium\b/i, strict: true, not: /total|gross|\bnet\b|rate|payable|deposit|minimum|paid|refund|additional|due|cheque|tax|gst|words|details|head|share|basis|amount|annual|holiday/i },
-  { key: "gst", kind: "amount", label: /\b(igst|gst|goods\s*(and|&)\s*services?\s*tax|service\s*tax)\b/i, not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl/i },
-  { key: "stampDuty", kind: "amount", label: /stamp\s*duty/i, zeroOk: true },
-  { key: "premiumRate", kind: "pct", label: /\b(premium\s*)?rate\b/i, not: /gst|tax|exchange|interest/i },
-  { key: "excess", kind: "text", label: /compulsory\s*deductible|deductible|\bexcess\b/i, needDigit: true },
-  { key: "location", kind: "text", label: /risk\s*location|location\s*of\s*risk|insured\s*location|risk\s*address|situation\s*of\s*risk|\bsituation\b|premises\s*address|location\s*address/i },
+  { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl/i },
+  { key: "stampDuty", kind: "amount", label: phraseRe(VOCAB.stampDuty), zeroOk: true },
+  { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i },
+  { key: "excess", kind: "text", label: phraseRe(VOCAB.excess), needDigit: true, not: /voluntary|discount/i },
+  { key: "location", kind: "text", label: phraseRe(VOCAB.location) },
 ];
 const LABELS = { policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location" };
 
@@ -174,6 +197,14 @@ const WHOLE = {
   id: /^\s*[A-Z0-9][A-Z0-9\/\-.]{4,}[A-Z0-9]\s*$/i,
 };
 const isPunct = (s) => /^[\s:;\-–=|.]*$/.test(s) || /^\s*:?\s*(rs\.?|inr|`|₹)\s*:?\s*$/i.test(s);
+
+const POLICY_DATES = new Set(["proposalDate", "issueDate", "riskStart", "riskEnd"]);
+const oldest = new Date().getFullYear() - 15;
+function acceptable(rule, v) {
+  if (rule.badValue && rule.badValue.test(String(v.v))) return false;
+  if (POLICY_DATES.has(rule.key) && +String(v.v).slice(0, 4) < oldest) return false;
+  return true;
+}
 
 function candidates(lines, rule) {
   const out = [];
@@ -200,7 +231,7 @@ function candidates(lines, rule) {
       for (const part of rest) {
         if (isPunct(part)) continue;
         const v = parseKind(rule.kind, part, rule.zeroOk, rule.needDigit);
-        if (v) { out.push({ ...v, ref: i + 1, conf: "high" }); return; }
+        if (v && acceptable(rule, v)) { out.push({ ...v, ref: i + 1, conf: "high" }); return; }
         if (rule.kind === "text" || rule.kind === "id") break;
         if (!ownCell && !tail) break; // "Label: words" with no value: stop rather than wander along the line
       }
@@ -213,7 +244,7 @@ function candidates(lines, rule) {
         const whole = rule.kind === "date" ? (() => { const d = findDates(under.s); return d.length && d[0].end - d[0].index >= under.s.trim().length * 0.6; })()
           : rule.kind === "text" ? under.s.length < 120 : WHOLE[rule.kind].test(under.s);
         const v = whole && parseKind(rule.kind, under.s, rule.zeroOk, rule.needDigit);
-        if (v) out.push({ ...v, ref: i + 2, conf: "high", note: "Read from the cell below the label" });
+        if (v && acceptable(rule, v)) out.push({ ...v, ref: i + 2, conf: "high", note: "Read from the cell below the label" });
       }
     });
   });
@@ -243,7 +274,7 @@ export function parseFields(lines) {
   // Period lines with two dates, e.g. "Period of insurance: 01/12/2026 to 30/11/2027"
   lines.forEach((ln, i) => {
     if (ln.marker || !/period|from\b.*\bto\b|\bfrom\b/i.test(ln.text)) return;
-    const ds = findDates(ln.text);
+    const ds = findDates(ln.text).filter((d) => +d.iso.slice(0, 4) >= oldest);
     if (ds.length === 1 && /\bfrom\b/i.test(ln.text) && !fields.riskStart) { fields.riskStart = { v: ds[0].iso, ref: i + 1, conf: "low", note: "Only a start date is given on this line. Check the end date." }; return; }
     if (ds.length < 2 || !/period|from|to|till/i.test(ln.text)) return;
     const [a, b] = [ds[0].iso, ds[1].iso];
@@ -298,12 +329,13 @@ export function parseFields(lines) {
 // ---- who is insured, and by whom
 // The insured's name: the value of a label set out as a label, cut at the next cell, and only if it
 // looks like a name (not an amount, not a clause of wording).
-const INSURED_RULE = { kind: "text", label: /\b(legal\s*name(\s*of\s*business)?|trade\s*name|customer\s*name|name\s*of\s*(the\s*)?(insured|assured|proposer|policy\s*holder)|(insured|assured|proposer|policy\s*holder)('s|s)?\s*name|original\s*insured|policy\s*holder|policyholder|insured|assured)\b/i,
+const INSURED_RULE = { kind: "text", label: phraseRe(VOCAB.insured),
   not: /sum\s*(insured|assured)|insured\s*(object|value|location|address|details|event|peril|property|person|member|employee)|persons?\s*insured|lives\s*insured|interests?\s*insured|subject.?matter|(?<!\bof\s)\bthe\s+(insured|assured)\b/i };
 const NOT_A_NAME = /\d{3,}|\b(rs\.?|inr|usd|amt|amount|sum|where|which|shall|will|whose|each|policy|period|premium|said\s+to|contain|limit)\b|;\s*$|^[^A-Za-z]|^[^(]*\)|^(mailing|address|contact|details|place|gstin|pan|mobile|e-?mail|date|holder)\b/i;
 function findInsured(lines) {
   for (const c of candidates(lines, INSURED_RULE)) {
     const v = c.v.split(/\s{3,}|\s+[|]\s+/)[0].replace(/\s+(e-?mail|intermediary|address|gstin|pan|mobile|phone)\b.*$/i, "").trim();
+    if (INSURERS.some(([, re]) => re.test(v)) || /\b(insurance|assurance)\s+(company|co\.?)\b/i.test(v)) continue; // the insurer, not the insured
     if (v.length >= 3 && v.length <= 90 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && v.split(/\s+/).length <= 10) return { v, ref: c.ref };
   }
   return null;
