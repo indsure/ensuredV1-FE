@@ -1,5 +1,5 @@
 import { SELFTEST_PDF } from "./selftest.js";
-import { VOCAB, phraseRe } from "./vocab.js";
+import { VOCAB, phraseRe, CITIES, MUMBAI_AREAS } from "./vocab.js";
 // Reads the text layer of a PDF in the browser (pdf.js) and finds register fields with fixed label rules.
 // Nothing is uploaded. Scanned PDFs have no text layer and are reported as such; nothing is guessed.
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
@@ -323,6 +323,8 @@ export function parseFields(lines) {
   if (ins) info.insured = ins.v;
   const insurer = findInsurer(lines);
   if (insurer) info.insurer = insurer;
+  const office = findOffice(lines);
+  if (office) info.branch = office;
   return { fields, info };
 }
 
@@ -352,6 +354,59 @@ const INSURERS = [
   ["Navi General Insurance", /navi\s*general/i], ["Zuno General Insurance", /\bzuno\b|edelweiss\s*general/i], ["Star Health Insurance", /star\s*health/i], ["Care Health Insurance", /care\s*health/i],
   ["Niva Bupa Health Insurance", /niva\s*bupa|max\s*bupa/i], ["ManipalCigna Health Insurance", /manipal\s*cigna/i], ["Aditya Birla Health Insurance", /aditya\s*birla\s*health/i], ["ECGC", /\becgc\b/i],
 ];
+// The insurer's office that issued or services the policy: its name, office code and city.
+// Offices are printed as "Office Name: HARBOUR ROAD D.O - II (123456)", "Office Code: CORPORATE_OFFICE (654321)",
+// "Issued At: PUNE-BANER", "Area Code: Kothrud Branch Office", or only an address under "Policy Servicing Office".
+const OFFICE = { name: phraseRe(VOCAB.branchName), code: phraseRe(VOCAB.branchCode), addr: phraseRe(VOCAB.branchAddress) };
+const tidyCase = (s) => (s === s.toUpperCase() ? s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\b(d\.o|b\.o|r\.o|h\.o)\b/gi, (m) => m.toUpperCase()) : s);
+function cityIn(text) {
+  const t = " " + text.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ") + " ";
+  const city = CITIES.find((c) => t.includes(" " + c.toLowerCase() + " "));
+  if (city) return city;
+  return MUMBAI_AREAS.some((a) => t.includes(" " + a + " ")) ? "Mumbai" : "";
+}
+function findOffice(lines) {
+  let name = "", code = "", city = "", ref = 0, at = -1, x = 0;
+  const looksLikeAddress = (v) => v.length > 45 || (v.match(/,/g) || []).length >= 2 || /\b\d{6}\b/.test(v);
+  const paymentLine = (c) => /\b(bank|instrument|cheque|drawee|payment|receipt|neft|utr)\b/i.test(lines[c.ref - 1]?.text || "") || /\b(bank|instrument|cheque|drawee)\b/i.test(lines[c.ref - 2]?.text || "");
+  const HEADER = /^(amount|premium|total|date|code|name|address|details|no\.?|number|type|status|remarks?)$/i;
+  // Name first, then a lettered office code, then an address-only block.
+  for (const c of candidates(lines, { key: "branchName", kind: "text", label: OFFICE.name, not: /insured|customer|claims?|nearest|respective/i })) {
+    if (paymentLine(c)) continue;
+    let v = c.v.split(/\s{3,}|\s+\|\s+/)[0].trim();
+    const m = v.match(/\((\d{3,8})\)\s*$/); if (m) { code = m[1]; v = v.slice(0, m.index).trim(); }
+    if (!/[A-Za-z]{3}/.test(v) || HEADER.test(v) || INSURERS.some(([, re]) => re.test(v))) continue;
+    if (looksLikeAddress(v)) { city = city || cityIn(v); at = at < 0 ? c.ref - 1 : at; continue; }
+    name = tidyCase(v.replace(/\s*branch\s*office$/i, " Branch").trim()); ref = c.ref; at = c.ref - 1; break;
+  }
+  for (const c of candidates(lines, { key: "branchCode", kind: "text", label: OFFICE.code, not: /sales|channel|agent|intermediary|pin|area\s*code/i })) {
+    if (paymentLine(c)) continue;
+    const v = c.v.split(/\s{3,}|\s+\|\s+/)[0].trim();
+    const m = v.match(/\((\d{3,8})\)/) || v.match(/^(\d{3,8})$/);
+    if (m) code = code || m[1];
+    const label = v.replace(/\(\d{3,8}\)/, "").replace(/_/g, " ").trim();
+    if (!name && /[A-Za-z]{4}/.test(label) && !looksLikeAddress(label)) { name = tidyCase(label); ref = c.ref; }
+    if (at < 0) at = c.ref - 1;
+    break;
+  }
+  if (!name) {
+    const i = lines.slice(0, 30).findIndex((l) => !l.marker && l.text.trim().split(/\s+/).length <= 7 && /\b(branch(\s+office)?|divisional\s+office|d\.o\.?|branch\s+office)\s*$/i.test(l.text.trim()) && !/nearest|respective|contact|any\b/i.test(l.text));
+    if (i >= 0) { name = tidyCase(lines[i].text.trim().replace(/\s*branch(\s+office)?\s*$/i, "").trim()) || ""; ref = i + 1; if (at < 0) at = i; }
+  }
+  // The address block sits under the label; in two-column layouts only the office's own column counts.
+  lines.forEach((l, i) => { if (at < 0 && !l.marker && OFFICE.addr.test(l.text)) at = i; });
+  if (at >= 0) {
+    const head = lines[at];
+    const seg = head?.segs?.find((s) => OFFICE.addr.test(s.s) || OFFICE.code.test(s.s) || OFFICE.name.test(s.s));
+    x = seg && head.segs.length > 1 ? seg.x : 0;
+    const block = lines.slice(at, at + 7).filter((l) => !l.marker).map((l) => (l.segs || [{ x: 0, s: l.text }]).filter((s) => s.x >= x - 20).map((s) => s.s).join(" ")).join(" ");
+    city = city || cityIn(name) || cityIn(block);
+  }
+  if (!name && !code && !city) return null;
+  if (!name) name = code ? "Office " + code : city + " office";
+  return { name, code, city, ref: ref || at + 1 };
+}
+
 function findInsurer(lines) {
   const text = lines.filter((l) => !l.marker).map((l) => l.text).join("\n");
   let best = null;

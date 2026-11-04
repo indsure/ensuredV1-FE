@@ -68,7 +68,9 @@ export function suggestFromDocument(db, fx) {
   if (insHit.length === 1) {
     out.insurerId = insHit[0].id;
     const brs = insHit[0].branches;
-    const br = brs.find((b) => text.includes(flat(b.name))) || (brs.filter((b) => text.includes(flat(b.city))).length === 1 ? brs.find((b) => text.includes(flat(b.city))) : null) || (brs.length === 1 ? brs[0] : null);
+    const office = fx.info?.branch;
+    const byOffice = office && brs.find((b) => flat(b.name) === flat(office.name) || (office.code && flat(b.name).includes(office.code)));
+    const br = byOffice || brs.find((b) => text.includes(flat(b.name))) || (brs.filter((b) => text.includes(flat(b.city))).length === 1 ? brs.find((b) => text.includes(flat(b.city))) : null) || (brs.length === 1 ? brs[0] : null);
     if (br) out.branchId = br.id;
   }
   // Policy type: a sample says it outright; otherwise the longest type name in the text, then known short forms.
@@ -85,7 +87,7 @@ export function suggestFromDocument(db, fx) {
   return out;
 }
 
-const cleanInsurer = (s) => String(s).replace(/\((fictional|sample)\)/gi, "").replace(/\b(company\s+)?(limited|ltd\.?)\b/gi, "").replace(/\s+/g, " ").trim().replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase());
+const cleanInsurer = (s) => String(s).replace(/\((fictional|sample)\)/gi, "").replace(/[\s,]*\b(co\.?|company)?\s*\b(ltd|limited)\b\.?\s*$/i, "").replace(/[\s,.-]+$/, "").replace(/\s+/g, " ").trim().replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase());
 
 const Found = ({ ok, children }) => <span className={`src ${ok ? "src-ok" : "src-miss"}`}>{children}</span>;
 
@@ -108,8 +110,8 @@ export function QuickAdd() {
     setFx(x); setGuess(g); setTried(false); setReviewing(false);
     setS({ customerId: g.customerId || (g.insuredName ? "NEW" : ""), cse: c?.cse || "", rm: c?.rm || "", insurerId: g.insurerId || "", branchId: g.branchId || "", dept: g.dept || "", type: g.type || "", cover: "", vesselMode: "" });
     setNc({ name: g.insuredName || "", city: g.city || "", vertical: "Corporate" });
-    const brLine = (x.lines || []).find((l) => /\bbranch\b/i.test(l) && l.length < 80) || "";
-    setExtra({ insName: cleanInsurer(x.info?.insurer || ""), brName: brLine.replace(/\bbranch\b.*$/i, "").replace(/[^A-Za-z0-9 ,&.-]/g, "").trim(), brCity: "", cseCode: "", cseName: "" }); setExtraErr("");
+    const office = x.info?.branch;
+    setExtra({ insName: cleanInsurer(x.info?.insurer || ""), brName: office?.name || "", brCity: office?.city || "", cseCode: "", cseName: "" }); setExtraErr("");
   };
   const set = (k) => (v) => setS((x) => {
     const n = { ...x, [k]: v };

@@ -63,7 +63,25 @@ export const VOCAB = {
     "situation", "premises", "insured premises", "address of the premises", "premises address", "location address", "place of risk", "situated at",
   ],
   premiumRate: ["rate", "premium rate", "rate per mille", "rate per cent"],
+  // The insurer's office that issued or services the policy.
+  branchName: ["office name", "branch name", "issuing office name", "branch office", "servicing branch", "issued at", "area code", "branch"],
+  branchCode: ["office code", "branch code", "issuing office code"],
+  branchAddress: ["office address", "issuing office address", "issuing office details", "issuing office", "policy servicing office", "servicing office", "policy issuing office"],
 };
+
+// Cities insurers' offices print, and Mumbai localities that mean Mumbai ("Vile Parle D.O - I").
+export const CITIES = [
+  "Navi Mumbai", "Mumbai", "Thane", "Pune", "Nashik", "Nagpur", "Aurangabad", "Kolhapur", "New Delhi", "Delhi", "Gurugram", "Gurgaon",
+  "Noida", "Ghaziabad", "Faridabad", "Chennai", "Coimbatore", "Madurai", "Bengaluru", "Bangalore", "Mysuru", "Mangaluru", "Hyderabad",
+  "Secunderabad", "Visakhapatnam", "Vijayawada", "Kolkata", "Howrah", "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhidham", "Vapi",
+  "Jaipur", "Udaipur", "Lucknow", "Kanpur", "Indore", "Bhopal", "Chandigarh", "Ludhiana", "Amritsar", "Kochi", "Cochin",
+  "Thiruvananthapuram", "Kozhikode", "Panaji", "Goa", "Bhubaneswar", "Patna", "Ranchi", "Raipur", "Guwahati", "Dehradun", "Jamshedpur",
+];
+export const MUMBAI_AREAS = [
+  "vile parle", "santacruz", "andheri", "goregaon", "bandra", "bkc", "fort", "nariman point", "prabhadevi", "lower parel", "parel",
+  "worli", "malad", "borivali", "kandivali", "dadar", "tardeo", "sakinaka", "powai", "chembur", "ghatkopar", "mulund", "vikhroli",
+  "kurla", "colaba", "churchgate", "byculla", "jogeshwari", "juhu", "khar", "mahim", "matunga", "sion", "wadala", "bhandup",
+];
 
 // One case-insensitive pattern that matches any phrase of a field, as whole words.
 export function phraseRe(phrases) {

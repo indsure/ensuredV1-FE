@@ -724,12 +724,53 @@ function Snapshots({ openId }) {
 }
 
 // ---------------------------------------------------------------- admin
+// Renames an insurer or one of its branches. Policies point to them by id, so every record shows the new name.
+function RenameMaster({ edit, onClose }) {
+  const { db, update, log, toast } = useApp();
+  const [f, setF] = useState({ name: edit.name, city: edit.city || "", country: edit.country || "India" });
+  const [err, setErr] = useState("");
+  const ins = insurerOf(db, edit.insId);
+  const isBranch = edit.kind === "branch";
+  const used = db.policies.filter((p) => (isBranch ? p.branchId === edit.brId : p.insurerId === edit.insId)).length;
+  const save = () => {
+    const name = f.name.trim().replace(/\s+/g, " ");
+    if (!name || (isBranch && (!f.city.trim() || !f.country.trim()))) return setErr(isBranch ? "Fill branch, city and country" : "Enter the insurer name");
+    const clash = isBranch ? ins.branches.some((b) => b.id !== edit.brId && b.name.toLowerCase() === name.toLowerCase()) : db.insurers.some((i) => i.id !== edit.insId && i.name.toLowerCase() === name.toLowerCase());
+    if (clash) return setErr(isBranch ? "That branch already exists for this insurer" : "That insurer already exists");
+    update((d) => {
+      const i = d.insurers.find((x) => x.id === edit.insId);
+      if (isBranch) {
+        const b = i.branches.find((x) => x.id === edit.brId);
+        log(d, { action: "Branch renamed", detail: `${i.name}: ${b.name} (${b.city}) to ${name} (${f.city.trim()}).` });
+        Object.assign(b, { name, city: f.city.trim(), country: f.country.trim() });
+      } else {
+        log(d, { action: "Insurer renamed", detail: `${i.name} to ${name}.` });
+        i.name = name;
+      }
+    });
+    toast(isBranch ? "Branch renamed" : "Insurer renamed");
+    onClose();
+  };
+  return (
+    <Card title={isBranch ? `Rename branch of ${ins.name}` : `Rename ${edit.name}`} sub={used ? `Used on ${used} polic${used === 1 ? "y" : "ies"}; they will all show the new name.` : "Not used on any policy yet."}>
+      <div className="formgrid">
+        <Labeled label={isBranch ? "Branch" : "Insurer name"} htmlFor="rn-name"><input id="rn-name" value={f.name} onChange={(e) => { setF({ ...f, name: e.target.value }); setErr(""); }} /></Labeled>
+        {isBranch && <Labeled label="City" htmlFor="rn-city"><input id="rn-city" value={f.city} onChange={(e) => { setF({ ...f, city: e.target.value }); setErr(""); }} /></Labeled>}
+        {isBranch && <Labeled label="Country" htmlFor="rn-country"><input id="rn-country" value={f.country} onChange={(e) => { setF({ ...f, country: e.target.value }); setErr(""); }} /></Labeled>}
+      </div>
+      {err && <div className="err-text small" role="alert">{err}</div>}
+      <div className="row gap-s"><Btn kind="primary" onClick={save}>Save name</Btn><Btn onClick={onClose}>Cancel</Btn></div>
+    </Card>
+  );
+}
+
 function Masters() {
   const { db, update, log, toast } = useApp();
   const [tab, setTab] = useState("insurers");
   const [ni, setNi] = useState("");
   const [nb, setNb] = useState({ ins: "", name: "", city: "", country: "India" });
   const [err, setErr] = useState("");
+  const [edit, setEdit] = useState(null);
   const typeCount = {};
   Object.values(DEPARTMENTS).flat().forEach((t) => (typeCount[t] = (typeCount[t] || 0) + 1));
   const addIns = () => { if (!ni.trim()) return setErr("Enter the insurer name"); if (db.insurers.some((i) => i.name.toLowerCase() === ni.trim().toLowerCase())) return setErr("That insurer already exists"); update((d) => { d.insurers.push({ id: `INS${++d.seq}`, name: ni.trim(), branches: [] }); log(d, { action: "Insurer added", detail: ni.trim() }); }); setNi(""); setErr(""); toast("Insurer added"); };
@@ -742,7 +783,11 @@ function Masters() {
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
         <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><Labeled label="City" htmlFor="ms-bc"><input id="ms-bc" value={nb.city} onChange={(e) => setNb({ ...nb, city: e.target.value })} /></Labeled><Labeled label="Country" htmlFor="ms-bco"><input id="ms-bco" value={nb.country} onChange={(e) => setNb({ ...nb, country: e.target.value })} /></Labeled><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
-        <Table><thead><tr><th>Insurer</th><th>Branch</th><th>City</th><th>Country</th></tr></thead><tbody>{db.insurers.flatMap((i) => (i.branches.length ? i.branches : [null]).map((b, j) => <tr key={i.id + (b?.id || "none")}><td>{j === 0 ? i.name : ""}</td><td>{b?.name || <span className="muted">No branches yet</span>}</td><td>{b?.city || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
+        <Table><thead><tr><th>Insurer</th><th>Branch</th><th>City</th><th>Country</th></tr></thead><tbody>{db.insurers.flatMap((i) => (i.branches.length ? i.branches : [null]).map((b, j) => <tr key={i.id + (b?.id || "none")}>
+          <td>{j === 0 && <div className="row gap-s wrap"><span>{i.name}</span><Btn onClick={() => setEdit({ kind: "insurer", insId: i.id, name: i.name })}>Rename</Btn></div>}</td>
+          <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, country: b.country })}>Rename</Btn></div> : <span className="muted">No branches yet</span>}</td>
+          <td>{b?.city || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
+        {edit && <RenameMaster edit={edit} onClose={() => setEdit(null)} />}
       </>}
       {tab === "types" && <Card title="Departments and policy types" sub={<>As captured from the current platform: unvalidated and possibly incomplete. Final lists are open <Confirm /></>}>
         <div className="note small">The notes list lines of business as {NOTES_LOB.join(", ")}. These departments differ: there is no Aviation or PA department, and Agriculture and Motor are extra. The notes win conflicts.</div>
