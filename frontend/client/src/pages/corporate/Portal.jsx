@@ -2,18 +2,20 @@
 import "./commercial.css";
 import { seed, TODAY, LIVE, DEPARTMENTS, NOTES_LOB, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate } from "./lib.js";
-import { Ctx, useApp, SearchPick, Icon, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy } from "./ui.jsx";
+import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
 import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved } from "./store.js";
 import { QuickAdd, createPolicy } from "./add.jsx";
+import { Guide } from "./guide.jsx";
+import { placeOf } from "./places.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
 // Live and demo records never share storage.
 const STORE = LIVE ? "indsure-commercial-live-v1" : "indsure-commercial-demo-v1";
 const ROLES = {
-  ops: { label: "Operations / BD", who: LIVE ? "Operations user" : "Meera Joshi (CSE014)", perms: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch"] },
+  ops: { label: "Operations / BD", who: LIVE ? "Operations user" : "Meera Joshi (CSC014)", perms: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch"] },
   accounts: { label: "Accounts", who: LIVE ? "Accounts user" : "Farah Khan (ACC02)", perms: ["receipt", "export", "finalize", "addDoc"] },
   admin: { label: "Admin", who: LIVE ? "Admin" : "Admin (demo)", perms: "*" },
   readonly: { label: "Read-only", who: "Read-only viewer", perms: [] },
@@ -35,7 +37,9 @@ const NAV = [
     { key: "fx", label: "FX rates", icon: "rupee", roles: ["accounts", "admin"] },
     { key: "presets", label: "Brokerage presets", icon: "percent", roles: ["accounts", "admin"] },
     { key: "reminders", label: "Reminders preview", icon: "bell", roles: ["ops", "admin"] },
-    { key: "decisions", label: "Open decisions", icon: "help", roles: ["ops", "accounts", "admin", "readonly"] }] },
+    { key: "decisions", label: "Decisions", icon: "list", roles: ["ops", "accounts", "admin", "readonly"] }] },
+  { group: "Help", items: [
+    { key: "guide", label: "How to", icon: "help", roles: ["ops", "accounts", "admin", "readonly"] }] },
 ];
 
 
@@ -63,7 +67,15 @@ export function App() {
   // Load once. A book that has never been saved (a fresh seed) is saved straight away.
   useEffect(() => {
     onSaveStatus(setSaveState);
-    openStore(STORE, seed).then((d) => { loaded.current = storeInfo().version ? d : null; setDb(d); });
+    openStore(STORE, seed).then((d) => {
+      // The role once called CSE is now CSC. Books saved before the rename are brought up to date once.
+      const old = (d.team || []).filter((t) => t.role === "CSE");
+      if (old.length) {
+        d = { ...d, team: d.team.map((t) => (t.role === "CSE" ? { ...t, role: "CSC" } : t)), audit: [...d.audit, { id: `A${d.audit.length + 1}`, at: nowIso(), who: "System", action: "Role renamed", detail: `CSE is now called CSC (${old.length} team member${old.length === 1 ? "" : "s"}).` }] };
+        loaded.current = null; // save the updated book
+      } else loaded.current = storeInfo().version ? d : null;
+      setDb(d);
+    });
   }, []);
   // Every change is saved shortly after it is made. The book exactly as loaded is not re-saved.
   useEffect(() => {
@@ -109,7 +121,7 @@ export function App() {
   else if (!visible(v)) view = <Empty title="Not available for this role">Switch role at the top, or pick a page from the menu.</Empty>;
   else view = {
     home: <HomeView />, customers: <CustomersView />, new: <NewBusiness key={(route.customerId || "new") + (route.fx?.id || "")} presetCustomer={route.customerId} presetFx={route.fx} />, register: <RegisterView />, expiry: <ExpiryView />,
-    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, decisions: <Decisions />,
+    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, decisions: <Decisions />, guide: <Guide />,
   }[v];
 
   return (
@@ -153,6 +165,7 @@ export function App() {
           <footer className="foot">{LIVE ? `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
           {backup && <BackupModal db={db} onRestore={(d) => { setDb(d); setBackup(false); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
         </div>
+        <PlaceLists />
         <div className="toasts" aria-live="polite">{toasts.map((t) => <div key={t.id} className={`toast toast-${t.tone}`}>{t.msg}</div>)}</div>
       </div>
     </Ctx.Provider>
@@ -251,7 +264,7 @@ function HomeView() {
 const CUST_FIELDS = { name: "Insured name", address: "Address", city: "City", phone: "Contact number", email: "Email", gst: "GSTIN" };
 function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
   const { db, update, log, toast } = useApp();
-  const [f, setF] = useState(initial || { name: "", vertical: "Corporate", address: "", city: "", country: "India", phone: "", email: "", gst: "", source: "Direct", referral: "", tags: "", cse: "", rm: "" });
+  const [f, setF] = useState(initial || { name: "", vertical: "Corporate", address: "", city: "", state: "", country: "India", phone: "", email: "", gst: "", source: "Direct", referral: "", tags: "", cse: "", rm: "" });
   const [tried, setTried] = useState(false);
   const [fx, setFx] = useState(null);
   const [srcs, setSrcs] = useState({});
@@ -264,7 +277,11 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
     setFx(x);
     const got = x.customer || {};
     const filled = {};
-    setF((cur) => { const next = { ...cur }; Object.entries(got).forEach(([k, s]) => { if (!String(cur[k] || "").trim()) { next[k] = s.v; filled[k] = s; } }); return next; });
+    setF((cur) => { const next = { ...cur }; Object.entries(got).forEach(([k, s]) => { if (!String(cur[k] || "").trim()) { next[k] = s.v; filled[k] = s; } });
+      // A city read from the document fills State and Country too.
+      const place = filled.city ? placeOf(next.city) : null;
+      if (place) { if (!String(cur.state || "").trim()) next.state = place.state; next.country = place.country; }
+      return next; });
     setSrcs(() => filled);
     setTried(false);
   };
@@ -275,13 +292,13 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
     return <span className="row gap-xs wrap"><span className={`src ${s.edited ? "src-edit" : s.conf === "low" ? "src-low" : "src-ok"}`}>{s.edited ? `Edited (document said ${s.v})` : `From the PDF, line ${s.ref}`}</span>{s.note && !s.edited && <span className="warn-text">{s.note}</span>}</span>;
   };
   const dup = db.customers.find((c) => c.name.trim().toLowerCase() === f.name.trim().toLowerCase() && c.id !== initial?.id);
-  const stillNeeded = [!f.name.trim() && "Insured name", !f.city.trim() && "City", !f.cse && "CSE"].filter(Boolean);
+  const stillNeeded = [!f.name.trim() && "Insured name", !f.city.trim() && "City", !f.cse && "CSC"].filter(Boolean);
   const errs = {
     name: !f.name.trim() ? "Enter the insured name (the customer named on the policy)" : dup ? `Already exists as ${dup.code}. Open that customer instead.` : null,
     city: !f.city.trim() ? "Enter the city" : null,
     email: f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email) ? "This does not look like an email address" : null,
     gst: f.gst && f.gst.trim().length !== 15 ? "A GSTIN has 15 characters" : null,
-    cse: !f.cse ? "A CSE must be assigned" : null,
+    cse: !f.cse ? "A CSC must be assigned" : null,
     referral: f.source === "Referral" && !f.referral.trim() ? "Name the referral" : null,
   };
   const save = (thenPolicy) => {
@@ -290,7 +307,7 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
     let id;
     update((d) => {
       const tags = (typeof f.tags === "string" ? f.tags.split(",") : f.tags).map((x) => x.trim()).filter(Boolean);
-      if (initial) { const c = d.customers.find((x) => x.id === initial.id); Object.assign(c, { ...f, tags }); id = c.id; log(d, { customerId: c.id, action: "Customer updated", detail: `Details or team changed. CSE ${f.cse}, RM ${f.rm || "none"}.` }); }
+      if (initial) { const c = d.customers.find((x) => x.id === initial.id); Object.assign(c, { ...f, tags }); id = c.id; log(d, { customerId: c.id, action: "Customer updated", detail: `Details or team changed. CSC ${f.cse}, RM ${f.rm || "none"}.` }); }
       else {
         id = `C${++d.seq}`; const code = `CUST-${1000 + d.customers.length + 1}`; d.customers.push({ ...f, tags, id, code, createdAt: nowIso() });
         const from = Object.keys(srcs).filter((k) => !srcs[k].edited).map((k) => CUST_FIELDS[k]);
@@ -301,7 +318,7 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
     onDone(id, thenPolicy ? fx : null);
     return id;
   };
-  // Active people only, plus whoever this customer already has, so an inactive CSE still shows until changed.
+  // Active people only, plus whoever this customer already has, so an inactive CSC still shows until changed.
   const team = (role) => db.team.filter((t) => t.role === role && (t.active !== false || t.code === f.cse || t.code === f.rm)).map((t) => ({ value: t.code, label: `${t.name} (${t.code})${t.active === false ? " (inactive)" : ""}` }));
   const nRead = Object.keys(fx?.customer || {}).length;
   return (
@@ -309,8 +326,8 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
       {!initial && (
         <div className="fld-wide stack">
           <PdfAttach id="cf-file" label="Attach the customer's policy PDF or GST certificate to fill this in" ready={fx} onReady={onRead}
-            describe={(x) => x.noText ? <><strong>{x.fileName}</strong>: no readable text (probably a scan). Please type the details.</> : <><strong>{x.fileName}</strong>: found {nRead} customer detail{nRead === 1 ? "" : "s"}{nRead ? ` (${Object.keys(x.customer).map((k) => CUST_FIELDS[k]).join(", ")})` : ""}. Fields already typed were not changed.</>} />
-          {fx && stillNeeded.length > 0 && <div className="askpanel" role="status"><strong>Please enter: {stillNeeded.join(", ")}.</strong> {stillNeeded.includes("CSE") ? "The CSE is never taken from a document. " : ""}{stillNeeded.includes("City") && f.address ? "The city is not filled from the address automatically; type it to be sure." : ""}</div>}
+            describe={(x) => x.noText ? <><strong>{x.fileName}</strong>: no readable text, even read as a scan. Please type the details.</> : <><strong>{x.fileName}</strong>: found {nRead} customer detail{nRead === 1 ? "" : "s"}{nRead ? ` (${Object.keys(x.customer).map((k) => CUST_FIELDS[k]).join(", ")})` : ""}. Fields already typed were not changed.</>} />
+          {fx && stillNeeded.length > 0 && <div className="askpanel" role="status"><strong>Please enter: {stillNeeded.join(", ")}.</strong> {stillNeeded.includes("CSC") ? "The CSC is never taken from a document. " : ""}{stillNeeded.includes("City") && f.address ? "The city is not filled from the address automatically; type it to be sure." : ""}</div>}
           {fx && !fx.noText && <details className="small"><summary>Show the text read from {fx.fileName}</summary><DocPane lines={fx.lines} title={fx.fileName} extracted /></details>}
         </div>
       )}
@@ -318,15 +335,15 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
       {tried && dup && onUseExisting && <div className="fld"><Btn onClick={() => onUseExisting(dup.id, fx)}>Use {dup.code} instead</Btn></div>}
       <Labeled label="Vertical" htmlFor="cf-vert" hint="Corporate or Retail, as in current reports"><Select id="cf-vert" value={f.vertical} onChange={set("vertical")} options={["Corporate", "Retail"]} /></Labeled>
       <Labeled label="Address" htmlFor="cf-addr" hint={hint("address")}><input id="cf-addr" value={f.address} onChange={set("address")} /></Labeled>
-      <Labeled label="City" htmlFor="cf-city" req error={tried && errs.city} hint={hint("city")}><input id="cf-city" value={f.city} onChange={set("city")} /></Labeled>
-      <Labeled label="Country" htmlFor="cf-country"><input id="cf-country" value={f.country} onChange={set("country")} /></Labeled>
+      <PlaceFields id="cf" value={{ city: f.city, state: f.state, country: f.country }} req cityError={tried && errs.city} cityHint={hint("city")}
+        onChange={(p) => { if (p.city !== f.city) set("city")(p.city); setF((x) => ({ ...x, state: p.state, country: p.country })); }} />
       <Labeled label="Contact number" htmlFor="cf-phone" hint={hint("phone")}><input id="cf-phone" value={f.phone} onChange={set("phone")} /></Labeled>
       <Labeled label="Email" htmlFor="cf-email" error={tried && errs.email} hint={hint("email")}><input id="cf-email" value={f.email} onChange={set("email")} /></Labeled>
       <Labeled label="GSTIN" htmlFor="cf-gst" error={tried && errs.gst} hint={hint("gst")}><input id="cf-gst" value={f.gst} onChange={set("gst")} /></Labeled>
       <Labeled label="Source" htmlFor="cf-src"><Select id="cf-src" value={f.source} onChange={set("source")} options={["Direct", "Referral"]} /></Labeled>
       {f.source === "Referral" && <Labeled label="Referral (REF/POS name)" htmlFor="cf-ref" req error={tried && errs.referral}><input id="cf-ref" value={f.referral} onChange={set("referral")} /></Labeled>}
       <Labeled label="POC tags (comma separated)" htmlFor="cf-tags"><input id="cf-tags" value={typeof f.tags === "string" ? f.tags : f.tags.join(", ")} onChange={set("tags")} /></Labeled>
-      <Labeled label="CSE" htmlFor="cf-cse" req error={tried && errs.cse} hint="Type a name or code, then pick from the list"><SearchPick id="cf-cse" value={f.cse} onChange={set("cse")} options={team("CSE")} noun="CSE" /></Labeled>
+      <Labeled label="CSC" htmlFor="cf-cse" req error={tried && errs.cse} hint="Type a name or code, then pick from the list"><SearchPick id="cf-cse" value={f.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
       <Labeled label="RM" htmlFor="cf-rm" hint="Optional. Type a name or code. Inward/outward meaning is open (decision 8)"><SearchPick id="cf-rm" value={f.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
       <p className="fld-wide small muted">PAN is not collected until purpose, access and retention are decided <Confirm /></p>
       <div className="row gap-s fld-wide wrap">
@@ -348,10 +365,10 @@ function CustomersView() {
     <div className="stack">
       <header className="page-head"><div><h1>Customers</h1><p className="muted">The customer is the insured named on the policy. One customer holds every policy, of any type. Search by insured name, code, city, GSTIN or team member.</p></div>{can("createCustomer") && !adding && <Btn kind="primary" onClick={() => setAdding(true)}>Add customer</Btn>}</header>
       {adding && <Card title="New customer"><CustomerForm offerPolicy onDone={(id, fx) => { setAdding(false); if (id) go(fx ? { view: "new", customerId: id, fx } : { view: "customer", id }); }} onUseExisting={(id, fx) => { setAdding(false); go(fx && !fx.noText ? { view: "new", customerId: id, fx } : { view: "customer", id }); }} /></Card>}
-      <div className="searchbar"><label htmlFor="cs-q" className="sr">Search customers</label><input id="cs-q" type="search" placeholder="Search by insured name, code, city, GSTIN, CSE or RM" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      <div className="searchbar"><label htmlFor="cs-q" className="sr">Search customers</label><input id="cs-q" type="search" placeholder="Search by insured name, code, city, GSTIN, CSC or RM" value={q} onChange={(e) => setQ(e.target.value)} /></div>
       {list.length ? (
-        <Table><thead><tr><th>Code</th><th>Insured</th><th>Vertical</th><th>City</th><th>CSE</th><th>RM</th><th className="num">Policies</th></tr></thead>
-          <tbody>{list.map((c) => <tr key={c.id} className="clickrow" onClick={() => go({ view: "customer", id: c.id })}><td>{c.code}</td><td><button className="linkbtn">{c.name}</button></td><td>{c.vertical}</td><td>{c.city}, {c.country}</td><td>{teamName(db, c.cse)}</td><td>{c.rm ? teamName(db, c.rm) : "--"}</td><td className="num">{db.policies.filter((p) => p.customerId === c.id).length}</td></tr>)}</tbody></Table>
+        <Table><thead><tr><th>Code</th><th>Insured</th><th>Vertical</th><th>City</th><th>CSC</th><th>RM</th><th className="num">Policies</th></tr></thead>
+          <tbody>{list.map((c) => <tr key={c.id} className="clickrow" onClick={() => go({ view: "customer", id: c.id })}><td>{c.code}</td><td><button className="linkbtn">{c.name}</button></td><td>{c.vertical}</td><td>{[c.city, c.state].filter(Boolean).join(", ")}<div className="small muted">{c.country}</div></td><td>{teamName(db, c.cse)}</td><td>{c.rm ? teamName(db, c.rm) : "--"}</td><td className="num">{db.policies.filter((p) => p.customerId === c.id).length}</td></tr>)}</tbody></Table>
       ) : <Empty title={`No customer matches "${q}"`}>Check the spelling, or add a new customer.</Empty>}
     </div>
   );
@@ -370,12 +387,12 @@ function CustomerView({ id }) {
   return (
     <div className="stack">
       <div className="crumbs"><button className="linkbtn" onClick={() => go({ view: "customers" })}>Customers</button> / {c.code}</div>
-      <header className="page-head"><div><p className="eyebrow">{c.code} · {c.vertical}</p><h1>{c.name}</h1><p className="muted">{[c.address, c.city, c.country].filter(Boolean).join(", ")}</p></div>
+      <header className="page-head"><div><p className="eyebrow">{c.code} · {c.vertical}</p><h1>{c.name}</h1><p className="muted">{[c.address, c.city, c.state, c.country].filter(Boolean).join(", ")}</p></div>
         <div className="row gap-s wrap">{can("editCustomer") && !edit && <Btn onClick={() => setEdit(true)}>Edit details and team</Btn>}{can("newBusiness") && <Btn kind="primary" onClick={() => go({ view: "new", customerId: c.id })}>New business for this customer</Btn>}</div></header>
       {edit ? <Card title="Edit customer"><CustomerForm initial={{ ...c, tags: c.tags.join(", ") }} onDone={() => setEdit(false)} /></Card> : (
         <div className="grid2">
           <Card title="Details"><KV items={[["Contact number", c.phone || "--"], ["Email", c.email || "--"], ["GSTIN", c.gst || "--"], ["Source", c.source === "Referral" ? `Referral: ${c.referral}` : "Direct business"], ["POC tags", c.tags.length ? c.tags.join(", ") : "--"]]} /></Card>
-          <Card title="Team"><KV items={[["CSE", teamName(db, c.cse)], ["RM", c.rm ? teamName(db, c.rm) : "Not assigned"]]} /><p className="small muted">CSE (notes) vs CSC (legacy reports): same role? <Confirm /></p></Card>
+          <Card title="Team"><KV items={[["CSC", teamName(db, c.cse)], ["RM", c.rm ? teamName(db, c.rm) : "Not assigned"]]} /></Card>
         </div>
       )}
       <Card title={`Policies (${pols.length})`} sub="Each policy keeps its terms. Renewal adds a linked term.">
@@ -403,7 +420,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
   const [q, setQ] = useState("");
   const [creating, setCreating] = useState(false);
   const [addBr, setAddBr] = useState(false);
-  const [nb, setNb] = useState({ name: "", city: "", country: "India" });
+  const [nb, setNb] = useState({ name: "", city: "", state: "", country: "India" });
   const [tried, setTried] = useState(false);
   const [userFx, setUserFx] = useState(presetFx || null);
   const c = db.customers.find((x) => x.id === s.customerId);
@@ -413,7 +430,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
   const ins = insurerOf(db, s.insurerId), br = branchOf(db, s.insurerId, s.branchId);
   const stepErr = [
     !s.customerId ? "Choose or create a customer" : null,
-    !s.cse ? "A CSE must be assigned" : null,
+    !s.cse ? "A CSC must be assigned" : null,
     !s.insurerId ? "Choose the insurer" : !s.branchId ? "Choose the insurer branch" : null,
     !s.dept ? "Choose the department" : !s.type ? "Choose the policy type" : null,
     !s.fixtureId && !userFx ? (LIVE ? "Attach the policy PDF" : "Attach the policy PDF, or choose a sample document") : null,
@@ -443,7 +460,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
         {step === 1 && (
           <div className="stack"><h2>Who looks after {c.name}?</h2>
             <div className="formgrid">
-              <Labeled label="CSE" htmlFor="nb-cse" req error={tried && stepErr} hint="Mandatory. Type a name or code, then pick from the list"><SearchPick id="nb-cse" value={s.cse} onChange={set("cse")} options={team("CSE")} noun="CSE" /></Labeled>
+              <Labeled label="CSC" htmlFor="nb-cse" req error={tried && stepErr} hint="Mandatory. Type a name or code, then pick from the list"><SearchPick id="nb-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
               <Labeled label="RM" htmlFor="nb-rm" hint="Optional. Type a name or code"><SearchPick id="nb-rm" value={s.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
             </div>
             <p className="small muted">Changing these updates the customer record, with history.</p></div>)}
@@ -453,18 +470,18 @@ function NewBusiness({ presetCustomer, presetFx }) {
               <Labeled label="Insurer" htmlFor="nb-ins" req error={tried && !s.insurerId ? stepErr : null}><Select id="nb-ins" value={s.insurerId} onChange={(v) => setS((x) => ({ ...x, insurerId: v, branchId: "" }))} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
               <Labeled label="Insurer branch" htmlFor="nb-br" req error={tried && s.insurerId && !s.branchId ? stepErr : null}><Select id="nb-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
               <Labeled label="City (filled from branch)" htmlFor="nb-city"><input id="nb-city" value={br?.city || ""} readOnly /></Labeled>
+              <Labeled label="State (filled from branch)" htmlFor="nb-state"><input id="nb-state" value={br?.state || ""} readOnly /></Labeled>
               <Labeled label="Country (filled from branch)" htmlFor="nb-country"><input id="nb-country" value={br?.country || ""} readOnly /></Labeled>
             </div>
             {ins && can("addBranch") && (!addBr ? <div><Btn onClick={() => setAddBr(true)}>Branch not listed? Add it</Btn></div> : (
               <div className="formgrid boxed">
                 <Labeled label="Branch name" htmlFor="nb-bn" req error={tried && addBr && !nb.name.trim() ? "Required" : null}><input id="nb-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled>
-                <Labeled label="City" htmlFor="nb-bc" req><input id="nb-bc" value={nb.city} onChange={(e) => setNb({ ...nb, city: e.target.value })} /></Labeled>
-                <Labeled label="Country" htmlFor="nb-bco" req><input id="nb-bco" value={nb.country} onChange={(e) => setNb({ ...nb, country: e.target.value })} /></Labeled>
+                <PlaceFields id="nb-b" value={nb} req countryReq onChange={(p) => setNb({ ...nb, ...p })} />
                 <div className="row gap-s fld-wide"><Btn onClick={() => setAddBr(false)}>Cancel</Btn><Btn kind="primary" onClick={() => {
                   if (!nb.name.trim() || !nb.city.trim() || !nb.country.trim()) { setTried(true); toast("Fill branch name, city and country", "bad"); return; }
                   if (ins.branches.some((b) => b.name.toLowerCase() === nb.name.trim().toLowerCase())) { toast("That branch already exists for this insurer", "bad"); return; }
-                  let bid; update((d) => { bid = `BR${++d.seq}`; d.insurers.find((i) => i.id === ins.id).branches.push({ id: bid, name: nb.name.trim(), city: nb.city.trim(), country: nb.country.trim() }); log(d, { action: "Branch added", detail: `${nb.name} (${nb.city}) added to ${ins.name} from new business.` }); });
-                  setTimeout(() => setS((x) => ({ ...x, branchId: bid })), 0); setAddBr(false); setNb({ name: "", city: "", country: "India" }); toast("Branch added to masters"); }}>Save branch</Btn></div>
+                  let bid; update((d) => { bid = `BR${++d.seq}`; d.insurers.find((i) => i.id === ins.id).branches.push({ id: bid, name: nb.name.trim(), city: nb.city.trim(), state: (nb.state || "").trim(), country: nb.country.trim() }); log(d, { action: "Branch added", detail: `${nb.name} (${nb.city}) added to ${ins.name} from new business.` }); });
+                  setTimeout(() => setS((x) => ({ ...x, branchId: bid })), 0); setAddBr(false); setNb({ name: "", city: "", state: "", country: "India" }); toast("Branch added to masters"); }}>Save branch</Btn></div>
               </div>))}
           </div>)}
         {step === 3 && (
@@ -493,7 +510,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
             <Btn kind="primary" onClick={next}>{step === 4 ? "Read document and review" : "Next"}</Btn>
           </div>)}
       </Card>
-      {c && <p className="small muted">Insured: {c.name} ({c.code}){s.cse ? ` · CSE ${teamName(db, s.cse)}` : ""}{ins ? ` · ${ins.name}` : ""}{br ? `, ${br.name}` : ""}{s.type ? ` · ${s.type}` : ""}</p>}
+      {c && <p className="small muted">Insured: {c.name} ({c.code}){s.cse ? ` · CSC ${teamName(db, s.cse)}` : ""}{ins ? ` · ${ins.name}` : ""}{br ? `, ${br.name}` : ""}{s.type ? ` · ${s.type}` : ""}</p>}
     </div>
   );
 }
@@ -606,8 +623,8 @@ function BusinessReport() {
   const basisLabel = DATE_BASES.find((b) => b.key === f.basis).label;
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   const missingRate = [...new Set(rows.filter((r) => r.fxRate == null).map((r) => `${r.currency} ${fmtMonth(r.fxMonth)}`))];
-  const filterText = [`Vertical: ${f.vertical}`, f.insurer && `Insurer: ${insurerOf(db, f.insurer).name}`, f.dept && `Department: ${f.dept}`, f.cse && `CSE: ${teamName(db, f.cse)}`, f.rm && `RM: ${teamName(db, f.rm)}`, f.nr && `N/R: ${f.nr}`, f.currency && `Currency: ${f.currency}`].filter(Boolean).join("; ");
-  const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSE", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Net premium", "GST", "Stamp duty", "Gross premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Net premium INR", "GST INR", "Gross premium INR", "Brokerage INR"];
+  const filterText = [`Vertical: ${f.vertical}`, f.insurer && `Insurer: ${insurerOf(db, f.insurer).name}`, f.dept && `Department: ${f.dept}`, f.cse && `CSC: ${teamName(db, f.cse)}`, f.rm && `RM: ${teamName(db, f.rm)}`, f.nr && `N/R: ${f.nr}`, f.currency && `Currency: ${f.currency}`].filter(Boolean).join("; ");
+  const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSC", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Net premium", "GST", "Stamp duty", "Gross premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Net premium INR", "GST INR", "Gross premium INR", "Brokerage INR"];
   const csv = () => toCsv([
     ["Report", LIVE ? "Business report, IndSure Commercial beta" : "Business report, IndSure Commercial demo prototype (fictional data)"], ["Financial year", f.useRange ? "Custom range" : `F.Y. ${fy}`], ["Period", `${from} to ${to}`], ["Date basis", basisLabel], ["Filters", filterText], ["Grouping", GROUPINGS.find((x) => x.key === g).label], ["Printed", printedAt.replace("T", " ")], ["Excluded drafts", String(drafts)], ["FX", "Demo monthly rates, not market data. Month follows the date basis (open decision)."]],
     header, groups.flatMap((gr) => gr.rows.map((r) => [gr.key, r.controlNo, r.policyNo, r.custCode, r.customer, r.vertical, r.dept, r.type, r.insurer, r.branch, r.cse, r.rm, r.nr, r.basisDate, r.proposalDate, r.issueDate, r.riskStart, r.riskEnd, r.bookDate, r.currency, r.sumInsured, r.netPremium, r.gst, r.stampDuty, r.grossPremium, r.brokeragePct, r.brokerage, r.presetNote, r.fxMonth, r.fxRate ?? "NO RATE", r.fxVersion ?? "", r.netInr ?? "", r.gstInr ?? "", r.grossInr ?? "", r.brokerageInr ?? ""])).concat([["TOTAL (INR, rows with a rate)", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", T.netInr, T.gstInr, T.grossInr, T.brokerageInr]]));
@@ -620,7 +637,7 @@ function BusinessReport() {
       <header className="page-head"><div><h1>Business report</h1><p className="muted">Pick filters, grouping and output separately. Confirmed records only.</p></div></header>
       <ReportFilters f={f} setF={setF} extra={<>
         <Labeled label="Department" htmlFor="bf-dept"><Select id="bf-dept" value={f.dept} onChange={set("dept")} placeholder="All" options={Object.keys(DEPARTMENTS)} /></Labeled>
-        <Labeled label="CSE" htmlFor="bf-cse"><SearchPick id="bf-cse" value={f.cse} onChange={set("cse")} noun="CSE" emptyLabel="All CSEs" placeholder="All CSEs" options={db.team.filter((t) => t.role === "CSE").map((t) => ({ value: t.code, label: `${t.name} (${t.code})${t.active === false ? " (inactive)" : ""}` }))} /></Labeled>
+        <Labeled label="CSC" htmlFor="bf-cse"><SearchPick id="bf-cse" value={f.cse} onChange={set("cse")} noun="CSC" emptyLabel="All CSCs" placeholder="All CSCs" options={db.team.filter((t) => t.role === "CSC").map((t) => ({ value: t.code, label: `${t.name} (${t.code})${t.active === false ? " (inactive)" : ""}` }))} /></Labeled>
         <Labeled label="RM" htmlFor="bf-rm"><SearchPick id="bf-rm" value={f.rm} onChange={set("rm")} noun="RM" emptyLabel="All RMs" placeholder="All RMs" options={db.team.filter((t) => t.role === "RM").map((t) => ({ value: t.code, label: `${t.name} (${t.code})${t.active === false ? " (inactive)" : ""}` }))} /></Labeled>
         <Labeled label="New / Renewal" htmlFor="bf-nr"><Select id="bf-nr" value={f.nr} onChange={set("nr")} placeholder="Both" options={["New", "Renewal"]} /></Labeled>
         <Labeled label="Currency" htmlFor="bf-cur"><Select id="bf-cur" value={f.currency} onChange={set("currency")} placeholder="All" options={CURRENCIES} /></Labeled>
@@ -680,7 +697,7 @@ function RenewalsReport() {
   const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(fy);
   const byIns = groupRows(rows.map((r) => ({ ...r, basisDate: r.riskEnd, month: r.riskEnd.slice(0, 7), fxRate: 1, netInr: 0, gstInr: 0, grossInr: 0, brokerageInr: 0, siInr: 0, netPremium: 0, gst: 0, brokerage: 0 })), "insurer");
   const count = (o) => rows.filter((r) => r.outcome === o).length;
-  const header = ["Insurer", "S.No", "Control no", "Policy no", "Start date", "Expiry date", "Policy type", "Customer group", "Insured (customer)", "Cust code", "Location", "Currency", "Sum insured", "Gross premium", "Brokerage", "RM", "CSE", "Renewable", "Outcome", "Renewed as", "Loss detail (LossBy meaning open)"];
+  const header = ["Insurer", "S.No", "Control no", "Policy no", "Start date", "Expiry date", "Policy type", "Customer group", "Insured (customer)", "Cust code", "Location", "Currency", "Sum insured", "Gross premium", "Brokerage", "RM", "CSC", "Renewable", "Outcome", "Renewed as", "Loss detail (LossBy meaning open)"];
   const csv = () => toCsv([["Report", LIVE ? "Renewals report, IndSure Commercial beta" : "Renewals report, IndSure Commercial demo prototype (fictional data)"], ["Date basis", "Risk end (expiry) date"], ["Period", `${from} to ${to}`], ["Printed", printedAt.replace("T", " ")], ["Counts", `Renewed ${count("Renewed")}, Lost ${count("Lost")}, Open ${count("Open")}`]], header,
     byIns.flatMap((g) => g.rows.map((r, i) => [g.key, i + 1, r.controlNo, r.policyNo, r.riskStart, r.riskEnd, r.type, r.group, r.customer, r.custCode, r.location, r.currency, r.sumInsured, r.grossPremium, r.brokerage, r.rm, r.cse, r.renewable, r.outcome, r.nextPolicyNo, r.lossDetail])));
   return (
@@ -727,7 +744,7 @@ function Snapshots({ openId }) {
 // Renames an insurer or one of its branches. Policies point to them by id, so every record shows the new name.
 function RenameMaster({ edit, onClose }) {
   const { db, update, log, toast } = useApp();
-  const [f, setF] = useState({ name: edit.name, city: edit.city || "", country: edit.country || "India" });
+  const [f, setF] = useState({ name: edit.name, city: edit.city || "", state: edit.state || "", country: edit.country || "India" });
   const [err, setErr] = useState("");
   const ins = insurerOf(db, edit.insId);
   const isBranch = edit.kind === "branch";
@@ -742,7 +759,7 @@ function RenameMaster({ edit, onClose }) {
       if (isBranch) {
         const b = i.branches.find((x) => x.id === edit.brId);
         log(d, { action: "Branch renamed", detail: `${i.name}: ${b.name} (${b.city}) to ${name} (${f.city.trim()}).` });
-        Object.assign(b, { name, city: f.city.trim(), country: f.country.trim() });
+        Object.assign(b, { name, city: f.city.trim(), state: (f.state || "").trim(), country: f.country.trim() });
       } else {
         log(d, { action: "Insurer renamed", detail: `${i.name} to ${name}.` });
         i.name = name;
@@ -755,8 +772,7 @@ function RenameMaster({ edit, onClose }) {
     <Card title={isBranch ? `Rename branch of ${ins.name}` : `Rename ${edit.name}`} sub={used ? `Used on ${used} polic${used === 1 ? "y" : "ies"}; they will all show the new name.` : "Not used on any policy yet."}>
       <div className="formgrid">
         <Labeled label={isBranch ? "Branch" : "Insurer name"} htmlFor="rn-name"><input id="rn-name" value={f.name} onChange={(e) => { setF({ ...f, name: e.target.value }); setErr(""); }} /></Labeled>
-        {isBranch && <Labeled label="City" htmlFor="rn-city"><input id="rn-city" value={f.city} onChange={(e) => { setF({ ...f, city: e.target.value }); setErr(""); }} /></Labeled>}
-        {isBranch && <Labeled label="Country" htmlFor="rn-country"><input id="rn-country" value={f.country} onChange={(e) => { setF({ ...f, country: e.target.value }); setErr(""); }} /></Labeled>}
+        {isBranch && <PlaceFields id="rn" value={f} req countryReq onChange={(p) => { setF({ ...f, ...p }); setErr(""); }} />}
       </div>
       {err && <div className="err-text small" role="alert">{err}</div>}
       <div className="row gap-s"><Btn kind="primary" onClick={save}>Save name</Btn><Btn onClick={onClose}>Cancel</Btn></div>
@@ -768,13 +784,13 @@ function Masters() {
   const { db, update, log, toast } = useApp();
   const [tab, setTab] = useState("insurers");
   const [ni, setNi] = useState("");
-  const [nb, setNb] = useState({ ins: "", name: "", city: "", country: "India" });
+  const [nb, setNb] = useState({ ins: "", name: "", city: "", state: "", country: "India" });
   const [err, setErr] = useState("");
   const [edit, setEdit] = useState(null);
   const typeCount = {};
   Object.values(DEPARTMENTS).flat().forEach((t) => (typeCount[t] = (typeCount[t] || 0) + 1));
   const addIns = () => { if (!ni.trim()) return setErr("Enter the insurer name"); if (db.insurers.some((i) => i.name.toLowerCase() === ni.trim().toLowerCase())) return setErr("That insurer already exists"); update((d) => { d.insurers.push({ id: `INS${++d.seq}`, name: ni.trim(), branches: [] }); log(d, { action: "Insurer added", detail: ni.trim() }); }); setNi(""); setErr(""); toast("Insurer added"); };
-  const addBr = () => { if (!nb.ins || !nb.name.trim() || !nb.city.trim() || !nb.country.trim()) return setErr("Choose an insurer and fill branch, city and country"); const ins = insurerOf(db, nb.ins); if (ins.branches.some((b) => b.name.toLowerCase() === nb.name.trim().toLowerCase())) return setErr("That branch already exists"); update((d) => { d.insurers.find((i) => i.id === nb.ins).branches.push({ id: `BR${++d.seq}`, name: nb.name.trim(), city: nb.city.trim(), country: nb.country.trim() }); log(d, { action: "Branch added", detail: `${nb.name} (${nb.city}) for ${ins.name}` }); }); setNb({ ...nb, name: "", city: "" }); setErr(""); toast("Branch added"); };
+  const addBr = () => { if (!nb.ins || !nb.name.trim() || !nb.city.trim() || !nb.country.trim()) return setErr("Choose an insurer and fill branch, city and country"); const ins = insurerOf(db, nb.ins); if (ins.branches.some((b) => b.name.toLowerCase() === nb.name.trim().toLowerCase())) return setErr("That branch already exists"); update((d) => { d.insurers.find((i) => i.id === nb.ins).branches.push({ id: `BR${++d.seq}`, name: nb.name.trim(), city: nb.city.trim(), state: (nb.state || "").trim(), country: nb.country.trim() }); log(d, { action: "Branch added", detail: `${nb.name} (${nb.city}) for ${ins.name}` }); }); setNb({ ...nb, name: "", city: "", state: "" }); setErr(""); toast("Branch added"); };
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Masters</h1><p className="muted">Lists that feed every entry screen.</p></div></header>
@@ -782,11 +798,11 @@ function Masters() {
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
-        <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><Labeled label="City" htmlFor="ms-bc"><input id="ms-bc" value={nb.city} onChange={(e) => setNb({ ...nb, city: e.target.value })} /></Labeled><Labeled label="Country" htmlFor="ms-bco"><input id="ms-bco" value={nb.country} onChange={(e) => setNb({ ...nb, country: e.target.value })} /></Labeled><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
-        <Table><thead><tr><th>Insurer</th><th>Branch</th><th>City</th><th>Country</th></tr></thead><tbody>{db.insurers.flatMap((i) => (i.branches.length ? i.branches : [null]).map((b, j) => <tr key={i.id + (b?.id || "none")}>
+        <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><PlaceFields id="ms-b" value={nb} req countryReq onChange={(x) => setNb({ ...nb, ...x })} /><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
+        <Table><thead><tr><th>Insurer</th><th>Branch</th><th>City</th><th>State</th><th>Country</th></tr></thead><tbody>{db.insurers.flatMap((i) => (i.branches.length ? i.branches : [null]).map((b, j) => <tr key={i.id + (b?.id || "none")}>
           <td>{j === 0 && <div className="row gap-s wrap"><span>{i.name}</span><Btn onClick={() => setEdit({ kind: "insurer", insId: i.id, name: i.name })}>Rename</Btn></div>}</td>
-          <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, country: b.country })}>Rename</Btn></div> : <span className="muted">No branches yet</span>}</td>
-          <td>{b?.city || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
+          <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, state: b.state, country: b.country })}>Rename</Btn></div> : <span className="muted">No branches yet</span>}</td>
+          <td>{b?.city || ""}</td><td>{b?.state || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
         {edit && <RenameMaster edit={edit} onClose={() => setEdit(null)} />}
       </>}
       {tab === "types" && <Card title="Departments and policy types" sub={<>As captured from the current platform: unvalidated and possibly incomplete. Final lists are open <Confirm /></>}>
@@ -800,10 +816,10 @@ function Masters() {
 
 // Team master: add, edit, move customers, deactivate or remove. A code is referenced by customers, so
 // changing it renames every reference, and nobody who still looks after a customer can be removed.
-const TEAM_ROLES = ["CSE", "RM", "Accounts"];
+const TEAM_ROLES = ["CSC", "RM", "Accounts"];
 function TeamMaster() {
   const { db, update, log, toast } = useApp();
-  const [nt, setNt] = useState({ code: "", name: "", role: "CSE" });
+  const [nt, setNt] = useState({ code: "", name: "", role: "CSC" });
   const [addErr, setAddErr] = useState("");
   const [edit, setEdit] = useState(null); // { code, f: { code, name, role }, moveTo, err }
   const [showInactive, setShowInactive] = useState(true);
@@ -814,7 +830,7 @@ function TeamMaster() {
     if (/\s/.test(nt.code.trim())) return setAddErr("Codes cannot contain spaces");
     if (codeTaken(nt.code)) return setAddErr("That code is already used");
     update((d) => { d.team.push({ code: nt.code.trim().toUpperCase(), name: nt.name.trim(), role: nt.role, active: true }); log(d, { action: "Team member added", detail: `${nt.name.trim()} (${nt.code.trim().toUpperCase()}) as ${nt.role}` }); });
-    setNt({ code: "", name: "", role: "CSE" }); setAddErr(""); toast("Team member added");
+    setNt({ code: "", name: "", role: "CSC" }); setAddErr(""); toast("Team member added");
   };
   const open = (t) => setEdit({ code: t.code, f: { code: t.code, name: t.name, role: t.role }, moveTo: "", err: "" });
   const t0 = edit && db.team.find((t) => t.code === edit.code);
@@ -848,7 +864,7 @@ function TeamMaster() {
   const remove = (t) => { update((d) => { d.team = d.team.filter((x) => x.code !== t.code); log(d, { action: "Team member removed", detail: `${t.name} (${t.code}), ${t.role}. Was not assigned to any customer.` }); }); setEdit(null); toast("Team member removed"); };
   const rows = db.team.filter((t) => showInactive || t.active !== false);
   return (<>
-    <Card title="Add team member" sub="CSE is the same role the current platform calls CSC.">
+    <Card title="Add team member" sub="CSC: the customer service coordinator who looks after the customer.">
       <div className="filters">
         <Labeled label="Code" htmlFor="ms-tc"><input id="ms-tc" value={nt.code} onChange={(e) => setNt({ ...nt, code: e.target.value })} /></Labeled>
         <Labeled label="Name" htmlFor="ms-tn"><input id="ms-tn" value={nt.name} onChange={(e) => setNt({ ...nt, name: e.target.value })} /></Labeled>
@@ -858,7 +874,7 @@ function TeamMaster() {
       {addErr && <div className="err-text small" role="alert">{addErr}</div>}
     </Card>
     <label className="check small"><input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> Show inactive people</label>
-    <Table><thead><tr><th>Code</th><th>Name</th><th>Role</th><th className="num">Customers as CSE</th><th className="num">as RM</th><th>Status</th><th /></tr></thead>
+    <Table><thead><tr><th>Code</th><th>Name</th><th>Role</th><th className="num">Customers as CSC</th><th className="num">as RM</th><th>Status</th><th /></tr></thead>
       <tbody>{rows.map((t) => { const u = uses(t.code); return (
         <tr key={t.code} className={t.active === false ? "row-held" : ""}>
           <td>{t.code}</td><td>{t.name}</td><td>{t.role}</td><td className="num">{u.cse.length}</td><td className="num">{u.rm.length}</td>
@@ -866,7 +882,7 @@ function TeamMaster() {
           <td><Btn onClick={() => (edit?.code === t.code ? setEdit(null) : open(t))}>{edit?.code === t.code ? "Close" : "Edit"}</Btn></td>
         </tr>); })}</tbody></Table>
     {edit && t0 && (
-      <Card title={`Edit ${t0.name} (${t0.code})`} sub={assigned ? `Looks after ${u0.cse.length} customer${u0.cse.length === 1 ? "" : "s"} as CSE and ${u0.rm.length} as RM.` : "Not assigned to any customer."}>
+      <Card title={`Edit ${t0.name} (${t0.code})`} sub={assigned ? `Looks after ${u0.cse.length} customer${u0.cse.length === 1 ? "" : "s"} as CSC and ${u0.rm.length} as RM.` : "Not assigned to any customer."}>
         <div className="formgrid">
           <Labeled label="Code" htmlFor="tm-code" hint={assigned ? "Changing it updates every customer that uses it" : ""}><input id="tm-code" value={edit.f.code} onChange={(e) => setEdit({ ...edit, err: "", f: { ...edit.f, code: e.target.value } })} /></Labeled>
           <Labeled label="Name" htmlFor="tm-name"><input id="tm-name" value={edit.f.name} onChange={(e) => setEdit({ ...edit, err: "", f: { ...edit.f, name: e.target.value } })} /></Labeled>
@@ -982,36 +998,39 @@ function Reminders() {
         <Table><thead><tr><th>Insured</th><th>Policy</th><th className="num">Balanced SI</th><th className="num">% left</th><th>Would remind?</th></tr></thead><tbody>{bal.map(({ t, pct, bal: b }) => <tr key={t.id}><td>{C(t).name}</td><td>{t.values.policyNo}</td><td className="num">{fmtMoney(b)}</td><td className="num">{pct}%</td><td>{db.settings.balanceThresholdPct == null ? <span className="muted">No threshold set</span> : pct < db.settings.balanceThresholdPct ? <Pill tone="warn">Yes (preview)</Pill> : "No"}</td></tr>)}</tbody></Table>
       </Card>
       <Card title="Sample wording (draft, not approved)">
-        <div className="paper-note">Dear customer, your {"{policy type}"} policy {"{policy no.}"} with {"{insurer}"} ends on {"{risk end date}"}. Please contact {"{CSE name}"} to discuss renewal. Sender, signature and opt-out text to be approved.</div>
+        <div className="paper-note">Dear customer, your {"{policy type}"} policy {"{policy no.}"} with {"{insurer}"} ends on {"{risk end date}"}. Please contact {"{CSC name}"} to discuss renewal. Sender, signature and opt-out text to be approved.</div>
       </Card>
     </div>
   );
 }
 
+// The 15 questions the notes left open, answered by IndSure on 4 Nov 2026. "status" says honestly
+// whether the portal already works that way.
 const DECISIONS = [
-  ["CSE vs CSC", "The notes say CSE; legacy reports say CSC Wise. Same role? Final label?", "Labels read \"CSE (legacy: CSC Wise)\"."],
-  ["Department and policy-type lists", "Notes' lines of business and the captured departments differ. Duplicates exist across departments.", "Masters > Departments shows both and flags duplicates."],
-  ["Date definitions", "Proposal, issue, risk start/end, business booked, payment received, remittance. What books business, and when?", "All dates kept separately; reports ask for an explicit date basis."],
-  ["Report totals", "Two net premium figures disagree on the photographed report.", "Totals block carries a reconciliation note."],
-  ["Brokerage presets", "Does \"company\" mean insurer, customer or both? Who edits? How are versions approved?", "Presets keyed by insurer + policy type, versioned, confirm step."],
-  ["PAN and retention", "Lawful purpose, access, retention and deletion for PAN and contacts; overall record retention.", "PAN is not collected. Nothing is deleted except unconfirmed drafts."],
-  ["Reminders", "Triggers, recipients, templates, sender, opt-outs; open-policy balance threshold (30% was an example).", "Reminders preview only. Threshold unset by default."],
-  ["Team model and permissions", "RM inward/outward, multiple RMs, accounts owner level, per-role rights for view, correct, export, approve.", "Demo roles are a proposal and not security."],
-  ["Fleet changes", "Pro-rata or refund calculation for adding/removing vessels.", "Adjustments are typed in from the insurer document; no formula."],
-  ["Charterers' Liability declarations", "Fields, frequency and premium effect.", "Placeholder fields only, marked CONFIRM."],
-  ["LossBy and renewal action label", "What LossBy records; the full \"...el/Achieved/Lost\" label.", "Free-text loss detail, labelled as unconfirmed."],
-  ["FX month and approval", "Which date picks the FX month; who approves monthly rates.", "Month of the report's date basis; Admin edits; versions kept."],
-  ["Over-limit declarations", "What happens when a cargo declaration exceeds the balanced sum insured.", "Saved and flagged, not blocked."],
-  ["Fleet adjustments in reports", "Whether recorded premium/brokerage adjustments enter business totals, and when.", "Shown on the policy, left out of report totals."],
-  ["Technology, hosting, vendor, budget", "A project decision not answered by notes or screenshots.", "This prototype is not a stack choice."],
+  ["CSE or CSC", "CSC. It is one role: the customer service coordinator who looks after the customer. Reports group it as \"CSC Wise\".", "built", "Renamed everywhere. Team members saved as CSE were changed to CSC."],
+  ["Departments and policy types", "One list. Every policy type sits under one department only. Where the notes and the old system disagree, the old system's name is kept and the duplicate is merged into it.", "partly", "Masters shows both lists and flags duplicates. Merging is done by hand in Masters for now."],
+  ["Date definitions", "Every date is kept separately. Business is booked on the risk start date (that is when the cover and our brokerage begin). Brokerage received is counted on the date the money arrives. Remittance is its own date.", "partly", "All dates are stored and every report lets you pick the date to use. Use risk start for the business report and receipt date for brokerage received."],
+  ["Report totals", "The portal's totals are the only totals: the sum of net premium (without GST) from the policy records. The two figures on the old photographed report are not copied.", "built", "Totals are worked out from the records, with a note saying how."],
+  ["Brokerage presets", "\"Company\" means the insurer. A rate is set per insurer and policy type. Accounts and Admin can change it. Every change is saved as a new version and each policy keeps the rate it was made with. No separate approval step for now.", "built", "Presets are per insurer and policy type, with versions."],
+  ["PAN and record keeping", "Do not collect PAN: the insurer does KYC, we do not need it. Keep business contacts only. Keep policy records for at least 10 years after the policy ends, and never delete them earlier.", "check", "PAN is not collected and nothing is deleted. Ask your compliance adviser to confirm the 10-year period against the IRDAI broker rules before going live."],
+  ["Reminders", "Renewal reminders 60, 30 and 15 days before the risk end date, to the CSC first. Open-policy balance reminder when less than 30% of the sum insured is left. Messages to customers only after the wording is approved.", "partly", "Reminders preview shows who would be reminded. Set the 30% threshold there (Admin). Sending email or WhatsApp is not built."],
+  ["Team and permissions", "Four roles: Operations / BD (CSC), Accounts, Admin, Read-only. Each customer has one CSC and one RM; the RM who brought the business is kept on each policy. Only Accounts and Admin export. After a report is finalized only Admin can correct it.", "partly", "The roles and their screens exist. They are a role switch, not logins: everyone on this computer can switch. Real logins are needed before more than one person uses it."],
+  ["Fleet changes", "The insurer's endorsement figure is final. We type it in; we never calculate our own premium for it.", "built", "Fleet changes take the premium and brokerage change from the insurer's document."],
+  ["Charterers' Liability declarations", "Monthly declaration: vessel, charter period, GRT and the premium the insurer charges for it. The premium comes from the insurer, not a formula.", "partly", "Declarations can be recorded. The exact fields should be checked with the marine team on the first real policy."],
+  ["Lost renewals", "The label is \"Renewed / Achieved / Lost\". For a lost renewal record who it went to (another broker, direct to the insurer, customer closed or did not buy) and why.", "partly", "\"Mark as lost\" saves who and why as free text. A fixed pick-list is not built."],
+  ["FX month and approval", "Use the rate for the month of the date the report uses (normally risk start). Admin enters the monthly rate; every change is kept.", "built", "FX rates are per month, Admin and Accounts can enter them, and versions are kept."],
+  ["Declarations over the limit", "Save it and flag it in red, and the CSC asks the insurer to raise the sum insured. Never block it: the cargo has already moved.", "built", "Over-limit declarations are saved and flagged."],
+  ["Fleet changes in reports", "Include them in business and brokerage totals in the month the insurer's endorsement is dated.", "todo", "Not built yet: fleet changes show on the policy but are left out of report totals."],
+  ["Technology and hosting", "Same stack as the rest of IndSure, no new vendor: this React portal, our own backend on the EC2 server, the Supabase database and file storage we already pay for.", "todo", "Today it runs only on this computer, with its own small records server. Moving it to EC2 and Supabase is the next build step."],
 ];
+const STATUS = { built: ["good", "Built"], partly: ["warn", "Partly built"], todo: ["muted", "Not built yet"], check: ["bad", "Needs a legal check"] };
 function Decisions() {
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Open decisions</h1><p className="muted">Questions the expert team must answer before the real build. Where the prototype had to show something, it says what it does for now.</p></div></header>
-      <Table><thead><tr><th>#</th><th>Decision</th><th>Question</th><th>What this prototype does meanwhile</th></tr></thead>
-        <tbody>{DECISIONS.map(([a, b, c], i) => <tr key={a}><td>{i + 1}</td><td><strong>{a}</strong> <Confirm /></td><td>{b}</td><td className="small">{c}</td></tr>)}</tbody></Table>
-      <Card title="How to read the labels"><p><Confirm /> needs an expert decision. <Proposed /> is a design suggestion, not approved. <Legacy /> was seen on the current platform and is reference only.</p><p className="small muted">Proposed in this demo: four separate state axes (record, cover, payment, renewal outcome) with renewable as a manual attribute; cover state derived from risk dates, never from issue date.</p></Card>
+      <header className="page-head"><div><h1>Decisions</h1><p className="muted">The questions the notes left open, answered on 4 Nov 2026. Each one says whether the portal already works that way.</p></div></header>
+      <Table><thead><tr><th>#</th><th>Topic</th><th>Decision</th><th>In the portal now</th></tr></thead>
+        <tbody>{DECISIONS.map(([a, b, st, c], i) => <tr key={a}><td>{i + 1}</td><td><strong>{a}</strong></td><td>{b}</td><td className="small"><Pill tone={STATUS[st][0]}>{STATUS[st][1]}</Pill><div>{c}</div></td></tr>)}</tbody></Table>
+      <Card title="How to read the labels"><p><Proposed /> is a design suggestion, not approved. <Legacy /> was seen on the current platform and is reference only. <Confirm /> still needs checking with the team.</p></Card>
     </div>
   );
 }

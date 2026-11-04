@@ -1,5 +1,6 @@
 // Seed data, masters, OCR sample fixtures. Everything in the demo seed is fictional.
 import { demoCargoProfile } from "./marine.js";
+import { placeOf } from "./places.js";
 
 // LIVE: real records. Every built portal (beta) and the local dev server run live: an empty book to
 // start, today's date, records saved by store.js. ?demo on the dev server opens the fictional demo.
@@ -351,8 +352,8 @@ function demoSeed() {
         { id: "BR8", name: "Kolkata Park Street", city: "Kolkata", country: "India" }] },
     ],
     team: [
-      { code: "CSE014", name: "Meera Joshi", role: "CSE" },
-      { code: "CSE022", name: "Arun Pillai", role: "CSE" },
+      { code: "CSC014", name: "Meera Joshi", role: "CSC" },
+      { code: "CSC022", name: "Arun Pillai", role: "CSC" },
       { code: "RM07", name: "Kavita Rao", role: "RM" },
       { code: "RM11", name: "Sanjay Menon", role: "RM" },
       { code: "ACC02", name: "Farah Khan", role: "Accounts" },
@@ -380,17 +381,17 @@ function demoSeed() {
   // November 2026 is left without rates on purpose, so reports show the missing-rate state.
 
   const cust = (o) => d.customers.push({ address: "", phone: "", email: "", gst: "", source: "Direct", referral: "", tags: [], createdAt: "2026-04-01T09:00:00", ...o });
-  cust({ id: "C1", code: "CUST-1001", name: "Konkan Bulk Carriers Pvt Ltd", vertical: "Corporate", city: "Mumbai", country: "India", address: "4th floor, Harbour View, Ballard Estate", phone: "+91 90000 00101", email: "ops@konkanbulk.example", gst: "27AAACK0000A1Z0", cse: "CSE014", rm: "RM07", tags: ["Marine", "Fleet owner"] });
-  cust({ id: "C2", code: "CUST-1002", name: "Deccan Agro Exports LLP", vertical: "Corporate", city: "Pune", country: "India", phone: "+91 90000 00102", email: "accounts@deccanagro.example", gst: "27AAAFD0000B1Z0", source: "Referral", referral: "REF-03 Pune CA network", cse: "CSE022", rm: "RM11", tags: ["Exporter"] });
-  cust({ id: "C3", code: "CUST-1003", name: "Riverbend Textiles Ltd", vertical: "Corporate", city: "Surat", country: "India", phone: "+91 90000 00103", email: "admin@riverbend.example", gst: "24AAACR0000C1Z0", cse: "CSE014", rm: "RM11", tags: ["Manufacturing"] });
-  cust({ id: "C4", code: "CUST-1004", name: "Gulf Horizon Shipping FZE", vertical: "Corporate", city: "Dubai", country: "UAE", phone: "+971 50 000 0104", email: "chartering@gulfhorizon.example", source: "Referral", referral: "REF-07 Dubai P&I desk", cse: "CSE022", rm: "RM07", tags: ["Charterer"] });
-  cust({ id: "C5", code: "CUST-1005", name: "Sunrise Events and Expos", vertical: "Corporate", city: "Mumbai", country: "India", phone: "+91 90000 00105", cse: "CSE022", rm: "RM11" });
-  cust({ id: "C6", code: "CUST-1006", name: "Rohan Mehta", vertical: "Retail", city: "Pune", country: "India", phone: "+91 90000 00106", cse: "CSE014", rm: "" });
-  cust({ id: "C7", code: "CUST-1007", name: "Lotus Clinics Pvt Ltd", vertical: "Corporate", city: "Mumbai", country: "India", phone: "+91 90000 00107", gst: "27AAACL0000D1Z0", source: "Referral", referral: "REF-03 Pune CA network", cse: "CSE014", rm: "RM07", tags: ["Prospect"] });
-  cust({ id: "C8", code: "CUST-1008", name: "Vikram Nair", vertical: "Retail", city: "Mumbai", country: "India", phone: "+91 90000 00108", cse: "CSE022", rm: "" });
+  cust({ id: "C1", code: "CUST-1001", name: "Konkan Bulk Carriers Pvt Ltd", vertical: "Corporate", city: "Mumbai", country: "India", address: "4th floor, Harbour View, Ballard Estate", phone: "+91 90000 00101", email: "ops@konkanbulk.example", gst: "27AAACK0000A1Z0", cse: "CSC014", rm: "RM07", tags: ["Marine", "Fleet owner"] });
+  cust({ id: "C2", code: "CUST-1002", name: "Deccan Agro Exports LLP", vertical: "Corporate", city: "Pune", country: "India", phone: "+91 90000 00102", email: "accounts@deccanagro.example", gst: "27AAAFD0000B1Z0", source: "Referral", referral: "REF-03 Pune CA network", cse: "CSC022", rm: "RM11", tags: ["Exporter"] });
+  cust({ id: "C3", code: "CUST-1003", name: "Riverbend Textiles Ltd", vertical: "Corporate", city: "Surat", country: "India", phone: "+91 90000 00103", email: "admin@riverbend.example", gst: "24AAACR0000C1Z0", cse: "CSC014", rm: "RM11", tags: ["Manufacturing"] });
+  cust({ id: "C4", code: "CUST-1004", name: "Gulf Horizon Shipping FZE", vertical: "Corporate", city: "Dubai", country: "UAE", phone: "+971 50 000 0104", email: "chartering@gulfhorizon.example", source: "Referral", referral: "REF-07 Dubai P&I desk", cse: "CSC022", rm: "RM07", tags: ["Charterer"] });
+  cust({ id: "C5", code: "CUST-1005", name: "Sunrise Events and Expos", vertical: "Corporate", city: "Mumbai", country: "India", phone: "+91 90000 00105", cse: "CSC022", rm: "RM11" });
+  cust({ id: "C6", code: "CUST-1006", name: "Rohan Mehta", vertical: "Retail", city: "Pune", country: "India", phone: "+91 90000 00106", cse: "CSC014", rm: "" });
+  cust({ id: "C7", code: "CUST-1007", name: "Lotus Clinics Pvt Ltd", vertical: "Corporate", city: "Mumbai", country: "India", phone: "+91 90000 00107", gst: "27AAACL0000D1Z0", source: "Referral", referral: "REF-03 Pune CA network", cse: "CSC014", rm: "RM07", tags: ["Prospect"] });
+  cust({ id: "C8", code: "CUST-1008", name: "Vikram Nair", vertical: "Retail", city: "Mumbai", country: "India", phone: "+91 90000 00108", cse: "CSC022", rm: "" });
 
-  const doc = (o) => { const id = `DOC${d.documents.length + 1}`; d.documents.push({ id, policyId: null, termId: null, fixtureId: null, addedAt: "2026-04-01T09:00:00", addedBy: "Meera Joshi (CSE014)", note: "", ...o }); return id; };
-  const log = (o) => d.audit.push({ id: `A${d.audit.length + 1}`, who: "Meera Joshi (CSE014)", ...o });
+  const doc = (o) => { const id = `DOC${d.documents.length + 1}`; d.documents.push({ id, policyId: null, termId: null, fixtureId: null, addedAt: "2026-04-01T09:00:00", addedBy: "Meera Joshi (CSC014)", note: "", ...o }); return id; };
+  const log = (o) => d.audit.push({ id: `A${d.audit.length + 1}`, who: "Meera Joshi (CSC014)", ...o });
 
   let ctl = 1;
   const pol = (o) => { const id = `P${d.policies.length + 1}`; d.policies.push({ id, controlNo: `CN-${String(ctl++).padStart(4, "0")}`, cover: "", vesselMode: "", termIds: [], ...o }); return id; };
@@ -420,8 +421,8 @@ function demoSeed() {
   const dn = doc({ customerId: "C1", policyId: p1, termId: t1.id, kind: "Debit note", name: "Debit note CGA-DN-0457.pdf", addedAt: "2026-02-19T10:00:00" });
   const endDoc = doc({ customerId: "C1", policyId: p1, termId: t1.id, kind: "Endorsement", name: "Endorsement CGA/PI/END/02 (vessel added).pdf", addedAt: "2026-07-03T12:00:00" });
   t1.vesselSchedules = [
-    { version: 1, effectiveFrom: "2026-02-20", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }, { name: "MV Konkan Star", imo: "9000002", gt: 28500 }, { name: "MV Ratnagiri Dawn", imo: "9000003", gt: 18200 }], change: null, at: "2026-02-18T11:00:00", by: "Meera Joshi (CSE014)" },
-    { version: 2, effectiveFrom: "2026-07-01", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }, { name: "MV Konkan Star", imo: "9000002", gt: 28500 }, { name: "MV Ratnagiri Dawn", imo: "9000003", gt: 18200 }, { name: "MV Konkan Crest", imo: "9000004", gt: 24100 }], change: { type: "Add", vessel: "MV Konkan Crest", effDate: "2026-07-01", premiumAdj: 6000, brokerageAdj: 480, docId: endDoc, note: "Amounts as stated on insurer endorsement CGA/PI/END/02. No formula applied." }, at: "2026-07-03T12:10:00", by: "Meera Joshi (CSE014)" }];
+    { version: 1, effectiveFrom: "2026-02-20", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }, { name: "MV Konkan Star", imo: "9000002", gt: 28500 }, { name: "MV Ratnagiri Dawn", imo: "9000003", gt: 18200 }], change: null, at: "2026-02-18T11:00:00", by: "Meera Joshi (CSC014)" },
+    { version: 2, effectiveFrom: "2026-07-01", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }, { name: "MV Konkan Star", imo: "9000002", gt: 28500 }, { name: "MV Ratnagiri Dawn", imo: "9000003", gt: 18200 }, { name: "MV Konkan Crest", imo: "9000004", gt: 24100 }], change: { type: "Add", vessel: "MV Konkan Crest", effDate: "2026-07-01", premiumAdj: 6000, brokerageAdj: 480, docId: endDoc, note: "Amounts as stated on insurer endorsement CGA/PI/END/02. No formula applied." }, at: "2026-07-03T12:10:00", by: "Meera Joshi (CSC014)" }];
   log({ at: "2026-07-03T12:10:00", customerId: "C1", policyId: p1, termId: t1.id, action: "Fleet change confirmed", detail: "Added MV Konkan Crest from 01-Jul-2026. Premium adjustment USD 6,000, brokerage adjustment USD 480 (reviewed). Schedule v1 kept." });
   [["2026-03-02", "R1"], ["2026-05-18", "R2"], ["2026-09-14", "R3"]].forEach(([dt, r]) => log({ at: `${dt}T16:00:00`, who: "Farah Khan (ACC02)", customerId: "C1", policyId: p1, termId: t1.id, action: "Receipt recorded", detail: `Receipt ${r} recorded against an instalment. Policy values unchanged.` }));
   void dn;
@@ -429,7 +430,7 @@ function demoSeed() {
   // P2: H&M, individual vessel, USD, single payment.
   const p2 = pol({ customerId: "C1", dept: "Marine", type: "Marine Hull & Machinery", insurerId: "INS1", branchId: "BR1", vesselMode: "Individual vessel" });
   const t2 = term(p2, { values: { policyNo: "BSG/HM/2026/1182", planName: "Hull ITC basis", uin: "", proposalDate: "2026-03-20", issueDate: "2026-03-28", riskStart: "2026-04-01", riskEnd: "2027-03-31", bookDate: "2026-04-02", currency: "USD", sumInsured: 3200000, premiumRate: 0.9, netPremium: 28800, gstPct: 18, gst: 5184, stampDuty: 0, grossPremium: 33984, excess: "USD 30,000 each accident", location: "Indian coastal", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 10 }, brokerageSnap: snap("PR2", 1, 10) });
-  t2.vesselSchedules = [{ version: 1, effectiveFrom: "2026-04-01", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }], change: null, at: "2026-03-28T11:00:00", by: "Meera Joshi (CSE014)" }];
+  t2.vesselSchedules = [{ version: 1, effectiveFrom: "2026-04-01", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }], change: null, at: "2026-03-28T11:00:00", by: "Meera Joshi (CSC014)" }];
   t2.receipts = [{ id: "R4", instNo: null, date: "2026-04-10", amount: 33984, mode: "Bank transfer", ref: "UTR DEMO0410D", bank: "Demo Bank, Fort", remitDate: "2026-04-12", proofDocId: null }];
 
   // P3: Group Mediclaim: term 1 renewed, term 2 issued but not yet started, unpaid.
@@ -448,7 +449,7 @@ function demoSeed() {
   const decl = (n, from, to, cert, vessel, pol_, pod, dest, bl, fcCur, fcVal, siInr, rate, prem, goods) => ({
     id: `DEC${n}`, no: `D-${String(n).padStart(3, "0")}`, from, to, certNo: cert, certDate: to, vesselNo: vessel, portLoading: pol_, portDischarge: pod, finalDest: dest,
     blNo: bl, blDate: from, currency: fcCur, siFc: fcVal, siInr, rate, premiumInr: prem, premiumFc: r2(prem / (fcCur === "USD" ? 83.5 : 1)), invoiceNo: `INV-${n}0${n}`, invoiceDate: from,
-    goods, basis: "CIF + 10%", marks: `DAE/${n}/1-${n * 40}`, packages: `${n * 40} bags`, coverage: "ICC (A)", lrNo: "", lrDate: "", at: `${to}T15:00:00`, by: "Arun Pillai (CSE022)",
+    goods, basis: "CIF + 10%", marks: `DAE/${n}/1-${n * 40}`, packages: `${n * 40} bags`, coverage: "ICC (A)", lrNo: "", lrDate: "", at: `${to}T15:00:00`, by: "Arun Pillai (CSC022)",
   });
   t4.cargoDecls = [
     decl(1, "2026-07-01", "2026-07-31", "CERT-7701", "VSL-DEMO-11", "Nhava Sheva", "Jebel Ali", "Dubai", "BL-DEMO-0711", "USD", 287425, 24000000, 0.05, 12000, "Basmati rice in 50 kg bags"),
@@ -459,7 +460,7 @@ function demoSeed() {
   const p5 = pol({ customerId: "C3", dept: "Fire", type: "Standard Fire and Special Perils", insurerId: "INS3", branchId: "BR5" });
   const t5 = term(p5, { values: { policyNo: "NGI/FIRE/2025/0812", planName: "Standard Fire and Special Perils", uin: "", proposalDate: "2025-11-20", issueDate: "2025-11-27", riskStart: "2025-12-01", riskEnd: "2026-11-30", bookDate: "2025-11-28", currency: "INR", sumInsured: 180000000, premiumRate: 0.12, netPremium: 216000, gstPct: 18, gst: 38880, stampDuty: 0, grossPremium: 254880, excess: "5% of claim, min Rs. 10,000", location: "Plot 22, GIDC Sachin, Surat", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 12.5 }, brokerageSnap: snap("PR4", 1, 12.5) });
   const e1doc = doc({ customerId: "C3", policyId: p5, termId: t5.id, kind: "Endorsement", name: "Endorsement NGI-END-01 (stock increase).pdf", addedAt: "2026-03-10T12:00:00" });
-  t5.endorsements = [{ id: "E1", no: "END-01", docId: e1doc, effDate: "2026-03-10", at: "2026-03-10T12:30:00", by: "Meera Joshi (CSE014)",
+  t5.endorsements = [{ id: "E1", no: "END-01", docId: e1doc, effDate: "2026-03-10", at: "2026-03-10T12:30:00", by: "Meera Joshi (CSC014)",
     changes: [
       { field: "sumInsured", before: 160000000, after: 180000000, beforeSrc: { docId: t5.docId, ref: 8 }, afterSrc: { docId: e1doc, ref: 6 } },
       { field: "netPremium", before: 192000, after: 216000, beforeSrc: { docId: t5.docId, ref: 9 }, afterSrc: { docId: e1doc, ref: 7 } },
@@ -477,10 +478,10 @@ function demoSeed() {
   const t6 = term(p6, { values: { policyNo: "CGA/CL/2026/0088", planName: "Charterers liability, time and voyage", uin: "", proposalDate: "2026-04-20", issueDate: "2026-04-28", riskStart: "2026-05-01", riskEnd: "2027-04-30", bookDate: "2026-05-06", currency: "USD", sumInsured: 10000000, premiumRate: "", netPremium: 22000, gstPct: 0, gst: 0, stampDuty: 0, grossPremium: 22000, excess: "USD 15,000", location: "Worldwide", share: 100, coBrokerShare: 20, renewable: "Yes", brokeragePct: 10 }, brokerageSnap: null });
   t6.sources.gst = { docId: null, ref: null, conf: "manual", note: "Entered by Arun Pillai. Tax treatment for this branch is not verified." };
   t6.sources.gstPct = { docId: null, ref: null, conf: "manual" };
-  t6.vesselSchedules = [{ version: 1, effectiveFrom: "2026-05-01", vessels: [{ name: "MV Desert Falcon (chartered)", imo: "9000011", gt: 41000 }, { name: "MV Pearl Current (chartered)", imo: "9000012", gt: 36500 }], change: null, at: "2026-04-28T11:00:00", by: "Arun Pillai (CSE022)" }];
+  t6.vesselSchedules = [{ version: 1, effectiveFrom: "2026-05-01", vessels: [{ name: "MV Desert Falcon (chartered)", imo: "9000011", gt: 41000 }, { name: "MV Pearl Current (chartered)", imo: "9000012", gt: 36500 }], change: null, at: "2026-04-28T11:00:00", by: "Arun Pillai (CSC022)" }];
   t6.charterDecls = [
-    { id: "CD1", period: "May 2026", reference: "CP-DEMO-0501", vessel: "MV Desert Falcon (chartered)", remarks: "Time charter, 45 days", at: "2026-06-04T10:00:00", by: "Arun Pillai (CSE022)" },
-    { id: "CD2", period: "Jun 2026", reference: "CP-DEMO-0602", vessel: "MV Pearl Current (chartered)", remarks: "Voyage charter", at: "2026-07-03T10:00:00", by: "Arun Pillai (CSE022)" }];
+    { id: "CD1", period: "May 2026", reference: "CP-DEMO-0501", vessel: "MV Desert Falcon (chartered)", remarks: "Time charter, 45 days", at: "2026-06-04T10:00:00", by: "Arun Pillai (CSC022)" },
+    { id: "CD2", period: "Jun 2026", reference: "CP-DEMO-0602", vessel: "MV Pearl Current (chartered)", remarks: "Voyage charter", at: "2026-07-03T10:00:00", by: "Arun Pillai (CSC022)" }];
   t6.receipts = [{ id: "R9", instNo: null, date: "2026-05-12", amount: 22000, mode: "SWIFT", ref: "SWIFT DEMO0512H", bank: "Demo Bank, Dubai", remitDate: "2026-05-15", proofDocId: null }];
 
   // P7: Event Cancellation, NOT renewable, expiring 20-Nov-2026.
@@ -502,7 +503,7 @@ function demoSeed() {
 
   // P10: draft from a poor scan, fields missing.
   const p10 = pol({ customerId: "C2", dept: "Miscellaneous", type: "Burglary Insurance", insurerId: "INS3", branchId: "BR6" });
-  const fdoc = doc({ customerId: "C2", policyId: p10, kind: "Policy schedule", name: "Burglary schedule (faint scan).pdf", fixtureId: "FX-FIRE-POOR", addedAt: "2026-10-29T15:00:00", addedBy: "Arun Pillai (CSE022)" });
+  const fdoc = doc({ customerId: "C2", policyId: p10, kind: "Policy schedule", name: "Burglary schedule (faint scan).pdf", fixtureId: "FX-FIRE-POOR", addedAt: "2026-10-29T15:00:00", addedBy: "Arun Pillai (CSC022)" });
   const t10 = term(p10, { status: "draft", docId: fdoc, values: { policyNo: "NGI/BUR/26/0#41", issueDate: "2026-10-27", riskStart: "2026-11-01", riskEnd: "", bookDate: "", currency: "INR", sumInsured: 12000000, netPremium: 18000, gstPct: "", gst: "", grossPremium: 21240, location: "", renewable: "", brokeragePct: "" }, brokerageConfirmed: false,
     sources: { policyNo: { docId: fdoc, ref: 4, conf: "low" }, issueDate: { docId: fdoc, ref: 6, conf: "low" }, riskStart: { docId: fdoc, ref: 7, conf: "high" }, currency: { docId: fdoc, ref: 8, conf: "high" }, sumInsured: { docId: fdoc, ref: 8, conf: "high" }, netPremium: { docId: fdoc, ref: 9, conf: "high" }, grossPremium: { docId: fdoc, ref: 11, conf: "high" } } });
   d.documents.find((x) => x.id === fdoc).termId = t10.id;
@@ -521,6 +522,10 @@ function demoSeed() {
     { id: "RM3", insurerId: "INS3", date: "2026-07-10", ref: "NGI-BRK-0710", note: "", at: "2026-07-11T10:00:00", by: "Farah Khan (ACC02)", lines: [{ termId: t4.id, amount: 7500 }, { termId: t5.id, amount: 27000 }] },
   ];
   d.remittances.forEach((r) => log({ at: r.at, who: r.by, action: "Brokerage received", detail: `${r.ref}: ${r.lines.length} polic${r.lines.length === 1 ? "y" : "ies"} from ${d.insurers.find((i) => i.id === r.insurerId).name}.` }));
+
+  // States come from the city, the same way the forms fill them.
+  d.customers.forEach((c) => { c.state = c.state || placeOf(c.city)?.state || ""; });
+  d.insurers.forEach((i) => i.branches.forEach((br) => { br.state = br.state || placeOf(br.city)?.state || ""; }));
 
   d.audit.sort((a, b) => a.at.localeCompare(b.at));
   return d;

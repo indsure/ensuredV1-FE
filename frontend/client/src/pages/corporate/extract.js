@@ -1,10 +1,15 @@
 import { SELFTEST_PDF } from "./selftest.js";
 import { VOCAB, phraseRe, CITIES, MUMBAI_AREAS } from "./vocab.js";
 // Reads the text layer of a PDF in the browser (pdf.js) and finds register fields with fixed label rules.
-// Nothing is uploaded. Scanned PDFs have no text layer and are reported as such; nothing is guessed.
+// Nothing is uploaded. Scanned PDFs and photos are read with OCR (tesseract.js), also inside the browser:
+// only the OCR program and its English word data are downloaded, the policy never leaves this computer.
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
 const MAX_PAGES = 20;
 const MAX_LINES = 600;
+const OCR_PAGES = 6;
+const TESSERACT = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const IMAGE_RE = /\.(jpe?g|png|webp|bmp|gif)$/i;
+export const isImage = (f) => IMAGE_RE.test(f?.name || "") || /^image\/(jpeg|png|webp|bmp|gif)$/.test(f?.type || "");
 
 export class ReadError extends Error { constructor(code, message, detail = "") { super(message); this.code = code; this.detail = detail; } }
 
@@ -46,7 +51,7 @@ export function readerSelfTest() {
 // ---- PDF -> lines with x positions
 export async function pdfToLines(file, onProgress = () => {}) {
   const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
-  if (!isPdf) throw new ReadError("type", /\.(jpe?g|png|heic|webp|tiff?)$/i.test(file.name) ? "This is a photo, not a PDF. Photos need OCR, which this demo cannot run in the browser." : "Only PDF files can be read. Choose the policy PDF.");
+  if (!isPdf) throw new ReadError("type", /\.(heic|heif|tiff?)$/i.test(file.name) ? "This photo format cannot be opened in a browser. Save it as JPG or PNG, or as a PDF, and attach that." : "Only a PDF or a photo (JPG, PNG) can be read. Choose the policy file.");
   const lib = await loadPdfJs();
   let pdf;
   try {
@@ -83,7 +88,71 @@ export async function pdfToLines(file, onProgress = () => {}) {
       lines.push({ page: p, text: segs.map((s) => s.s).join("    "), segs });
     }
   }
-  return { lines: lines.slice(0, MAX_LINES), pages: pdf.numPages, readPages: pages, textChars: lines.reduce((a, l) => a + (l.marker ? 0 : l.text.length), 0) };
+  return { pdf, lines: lines.slice(0, MAX_LINES), pages: pdf.numPages, readPages: pages, textChars: lines.reduce((a, l) => a + (l.marker ? 0 : l.text.length), 0) };
+}
+
+// ---- OCR for scans and photos
+let tess = null;
+function loadTesseract() {
+  if (!tess) tess = (async () => {
+    if (!window.Tesseract) await loadScript(TESSERACT);
+    if (!window.Tesseract) throw new Error("tesseract.js loaded but did not start");
+    return window.Tesseract.createWorker("eng", 1);
+  })().catch((e) => { tess = null; throw new ReadError("load", "The scan reader could not load. Check the internet connection and try again, or type the values in.", e?.message || String(e)); });
+  return tess;
+}
+// One OCR'd image -> lines in the same shape as a PDF's text layer (segments split where the gap is wide).
+async function ocrCanvas(canvas, page, multi) {
+  const worker = await loadTesseract();
+  const { data } = await worker.recognize(canvas);
+  const out = multi ? [{ page, text: `[Page ${page}]`, segs: [], marker: true }] : [];
+  for (const ln of data.lines || []) {
+    const words = (ln.words || []).filter((w) => w.text && w.text.trim() && w.confidence > 20);
+    if (!words.length) continue;
+    const h = Math.max(8, ...words.map((w) => w.bbox.y1 - w.bbox.y0));
+    const segs = [];
+    for (const w of words) {
+      const last = segs[segs.length - 1];
+      if (last && w.bbox.x0 - last.x2 < h * 1.4) { last.s += " " + w.text; last.x2 = w.bbox.x1; }
+      else segs.push({ x: w.bbox.x0, x2: w.bbox.x1, s: w.text });
+    }
+    // Table borders read as "|" and a scanned ":" often comes out as "©", "¢" or "+". Tidy both.
+    const clean = [];
+    for (const sg of segs) {
+      let t = sg.s.replace(/\s+/g, " ").replace(/^[|\[\]{}_\s]+|[|\[\]{}_\s]+$/g, "").replace(/\s\|\s/g, "    ").trim();
+      const colon = /^[©¢+~:;]+(\s|$)/.test(t);
+      if (colon) t = t.replace(/^[©¢+~:;]+\s*/, "");
+      if (colon && clean.length && !/:$/.test(clean[clean.length - 1].s)) clean[clean.length - 1].s += " :";
+      if (!t || /^[^A-Za-z0-9₹]{1,3}$/.test(t)) continue;
+      clean.push({ ...sg, s: t });
+    }
+    if (clean.length) out.push({ page, text: clean.map((x) => x.s).join("    "), segs: clean });
+  }
+  return out;
+}
+const canvasOf = (w, h) => { const c = document.createElement("canvas"); c.width = Math.round(w); c.height = Math.round(h); return c; };
+async function ocrPdf(pdf, onProgress) {
+  const n = Math.min(pdf.numPages, OCR_PAGES);
+  const lines = [];
+  for (let p = 1; p <= n; p++) {
+    onProgress(p, n, true);
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({ scale: 3 });
+    const c = canvasOf(vp.width, vp.height);
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    lines.push(...await ocrCanvas(c, p, n > 1));
+  }
+  return { lines, readPages: n };
+}
+async function ocrImage(file, onProgress) {
+  onProgress(1, 1, true);
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch (e) { throw new ReadError("broken", "This photo could not be opened. It may be damaged, or in a format the browser cannot show.", e?.message || String(e)); }
+  // Small photos are enlarged and huge ones shrunk: OCR reads best at about 2000 to 3000 pixels wide.
+  const k = Math.min(3, Math.max(0.5, 2400 / bmp.width));
+  const c = canvasOf(bmp.width * k, bmp.height * k);
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+  return { lines: await ocrCanvas(c, 1, false), readPages: 1 };
 }
 
 // ---- value parsers
@@ -122,6 +191,8 @@ export function wordsToAmount(s) {
     const words = m[2].toLowerCase().split(/[\s-]+/).filter((w) => w && w !== "and");
     const curWord = m[1] || m[3]; // "Rupees Forty Lakh" or "Forty Lakh Rupees"
     if (!words.length || !(curWord || m[4])) continue; // only with a currency word or "only", never a stray "one"
+    // "Rupees Twenty-Nine" at the end of a line, with no "Only", is usually cut off: the rest is on the next line.
+    if (!m[4] && !/^(hundred|thousand|lakhs?|lacs?|crores?|million|billion)$/.test(words[words.length - 1]) && /^[\s|]*$/.test(s.slice(m.index + m[0].length))) continue;
     let total = 0, cur = 0;
     for (const w of words) {
       if (w in SMALL) cur += SMALL[w];
@@ -251,25 +322,26 @@ function candidates(lines, rule) {
   return out;
 }
 
-function pick(cands, key) {
+function pick(cands, key, ocr) {
   if (!cands.length) return null;
-  const first = cands[0];
+  // On a scan, a garbled word can look like "SI" next to a small number. The sum insured is the largest figure.
+  const first = ocr && key === "sumInsured" ? cands.reduce((a, c) => (+c.v > +a.v ? c : a)) : cands[0];
   const distinct = [...new Set(cands.map((c) => String(c.v)))];
   const res = { v: first.v, ref: first.ref, conf: first.conf, note: first.note };
   if (distinct.length > 1) {
     res.conf = "low";
     const other = cands.find((c) => String(c.v) !== String(first.v));
-    res.note = `The document shows different values (lines ${first.ref} and ${other.ref}). The first one was used.`;
+    res.note = `The document shows different values (lines ${first.ref} and ${other.ref}). ${first === cands[0] ? "The first one was used." : "The largest one was used."}`;
   }
   if (first.ambiguous) { res.note = (res.note ? res.note + " " : "") + "Read as day/month/year."; }
   return res;
 }
 
-export function parseFields(lines) {
+export function parseFields(lines, ocr = false) {
   const fields = {};
   const found = {};
   for (const r of RULES) found[r.key] = (found[r.key] || []).concat(candidates(lines, r));
-  for (const k of Object.keys(found)) { const p = pick(found[k], k); if (p) fields[k] = p; }
+  for (const k of Object.keys(found)) { const p = pick(found[k], k, ocr); if (p) fields[k] = p; }
 
   // Period lines with two dates, e.g. "Period of insurance: 01/12/2026 to 30/11/2027"
   lines.forEach((ln, i) => {
@@ -314,6 +386,8 @@ export function parseFields(lines) {
   const n = fields.netPremium, g = fields.grossPremium;
   if (n && g && n.v > g.v) { n.conf = g.conf = "low"; n.note = g.note = "Net premium is larger than gross premium on the document. Check both."; }
   else if (n && g && n.v === g.v) { g.conf = "low"; g.note = "Gross premium is the same as net premium. Check whether tax is included."; }
+  const tax = fields.gst;
+  if (tax && g && tax.v >= g.v) { tax.conf = g.conf = "low"; tax.note = g.note = "GST is not smaller than the gross premium, so one of them is misread. Check both."; }
   if (fields.riskStart && fields.riskEnd && fields.riskEnd.v <= fields.riskStart.v) { fields.riskEnd.conf = "low"; fields.riskEnd.note = "End date is not after the start date. Check it."; }
   Object.values(fields).forEach((f) => { delete f.noteSet; if (!f.note) delete f.note; });
 
@@ -470,13 +544,24 @@ export function parseCustomer(lines) {
   return out;
 }
 
-export async function readPolicyPdf(file, onProgress) {
-  const res = await pdfToLines(file, onProgress);
-  const base = { id: `USER-${Date.now()}`, extracted: true, title: file.name, fileName: file.name, fileSize: file.size, pages: res.pages, readPages: res.readPages };
-  if (res.textChars < 40) {
-    return { ...base, noText: true, lines: ["This PDF has no readable text. It is probably a scan or a photo saved as PDF.", "Enter the values by hand, or attach the digital PDF from the insurer."], fields: {}, info: {}, customer: {} };
+export async function readPolicyPdf(file, onProgress = () => {}) {
+  let res, ocr = false;
+  if (isImage(file)) { res = { ...(await ocrImage(file, onProgress)), pages: 1 }; ocr = true; }
+  else {
+    res = await pdfToLines(file, onProgress);
+    // No text layer: the pages are pictures, so read them with OCR.
+    if (res.textChars < 40) { const o = await ocrPdf(res.pdf, onProgress); res = { ...res, lines: o.lines, readPages: o.readPages }; ocr = true; }
   }
-  const { fields, info } = parseFields(res.lines);
-  return { ...base, lines: res.lines.map((l) => l.text), fields, info, customer: parseCustomer(res.lines) };
+  const base = { id: `USER-${Date.now()}`, extracted: true, title: file.name, fileName: file.name, fileSize: file.size, pages: res.pages, readPages: res.readPages, ocr };
+  const chars = res.lines.reduce((a, l) => a + (l.marker ? 0 : l.text.length), 0);
+  if (chars < 40) {
+    return { ...base, noText: true, lines: ["No readable text was found, even after reading the pages as a scan.", "The scan may be too faint or blurred. Enter the values by hand, or attach the digital PDF from the insurer."], fields: {}, info: {}, customer: {} };
+  }
+  const lines = res.lines.slice(0, MAX_LINES);
+  const { fields, info } = parseFields(lines, ocr);
+  const customer = parseCustomer(lines);
+  // A scan can misread a letter or digit, so every value read from one is marked for checking.
+  if (ocr) for (const set of [fields, customer]) for (const k of Object.keys(set)) set[k] = { ...set[k], conf: "low", note: [set[k].note, "Read from a scan. Check it against the document."].filter(Boolean).join(" ") };
+  return { ...base, lines: lines.map((l) => l.text), fields, info, customer };
 }
 export { LABELS as EXTRACT_LABELS };

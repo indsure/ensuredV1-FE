@@ -360,3 +360,7 @@
 .ic-root .ic-loading, .ic-loading { min-height: 100vh; display: grid; place-items: center; font-family: "Inter", system-ui, sans-serif; color: #64748B; background: #FAFAF8; }
 .ic-root .save-line { white-space: normal; }
 .ic-root a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+.ic-root .guide-steps { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 6px; line-height: 1.5; }
+.ic-root .grow { flex: 1 1 260px; min-width: 0; }
+.ic-root .grow input { width: 100%; }

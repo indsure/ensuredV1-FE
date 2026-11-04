@@ -1,5 +1,6 @@
 // Small shared UI pieces.
 import { useState, useEffect, useLayoutEffect, useRef, createContext, useContext } from "react";
+import { placeOf, CITY_NAMES, COUNTRIES } from "./places.js";
 
 export const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -220,5 +221,36 @@ export function DocModal({ doc, onClose }) {
       <div className="row gap-s wrap"><Btn kind="primary" onClick={copy}>Copy text</Btn><Btn onClick={download}>Download .txt</Btn><span className="small" role="status">{msg}</span></div>
       <p className="small muted">Draft for a person to check and send. Nothing is sent from here.</p>
     </Modal>
+  );
+}
+
+// City, State and Country together. Choosing a known city fills State and Country; all three stay editable.
+// value = { city, state, country }; onChange receives the whole updated object.
+export function PlaceFields({ id, value, onChange, req, cityError, cityHint, countryReq }) {
+  const setCity = (city) => {
+    const p = placeOf(city);
+    onChange(p ? { ...value, city, state: p.state, country: p.country } : { ...value, city });
+  };
+  return (
+    <>
+      <Labeled label="City" htmlFor={`${id}-city`} req={req} error={cityError} hint={cityHint}>
+        <input id={`${id}-city`} list="ic-cities" value={value.city || ""} autoComplete="off" onChange={(e) => setCity(e.target.value)} />
+      </Labeled>
+      <Labeled label="State" htmlFor={`${id}-state`} hint={value.city && placeOf(value.city) && value.state === placeOf(value.city).state ? "Filled from the city" : ""}>
+        <input id={`${id}-state`} value={value.state || ""} onChange={(e) => onChange({ ...value, state: e.target.value })} />
+      </Labeled>
+      <Labeled label="Country" htmlFor={`${id}-country`} req={countryReq}>
+        <input id={`${id}-country`} list="ic-countries" value={value.country || ""} autoComplete="off" onChange={(e) => onChange({ ...value, country: e.target.value })} />
+      </Labeled>
+    </>
+  );
+}
+// The suggestion lists PlaceFields uses; rendered once by the app shell.
+export function PlaceLists() {
+  return (
+    <>
+      <datalist id="ic-cities">{CITY_NAMES.map((c) => <option key={c} value={c} />)}</datalist>
+      <datalist id="ic-countries">{COUNTRIES.map((c) => <option key={c} value={c} />)}</datalist>
+    </>
   );
 }

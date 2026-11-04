@@ -15,11 +15,18 @@ export function docLines(doc) {
   return null;
 }
 
+// Downloads the original file kept on this computer. Files attached before files were kept cannot be.
+export function DownloadDoc({ doc, label = "Download PDF", kind = "secondary" }) {
+  const id = doc?.userFile?.fileId;
+  if (!id) return <Btn disabled why={doc?.userFile ? "The original file was not kept: it was attached before files were saved on this computer" : "Sample document, no file to download"}>{label}</Btn>;
+  return <a className={`btn btn-${kind}`} href={fileUrl(id) + "?download=1"} download={doc.userFile.name}>{label}</a>;
+}
+
 export function DocViewer({ doc, onClose }) {
   const lines = docLines(doc);
   return (
     <Modal title={doc.name} onClose={onClose} wide>
-      {doc.userFile?.fileId && <a className="btn btn-primary" href={fileUrl(doc.userFile.fileId)} target="_blank" rel="noreferrer">Open the original PDF</a>}
+      {doc.userFile?.fileId && <div className="row gap-s wrap"><a className="btn btn-primary" href={fileUrl(doc.userFile.fileId)} target="_blank" rel="noreferrer">{/\.pdf$/i.test(doc.userFile.name) ? "Open the original PDF" : "Open the original file"}</a><DownloadDoc doc={doc} /></div>}
       <KV items={[["Type", doc.kind], ["Added", `${fmtStamp(doc.addedAt)} by ${doc.addedBy}`], ["Note", doc.note || "--"]]} />
       {lines ? <DocPane lines={lines} title={doc.name} generated={!!doc.lines && !doc.extracted} extracted={doc.extracted} />
         : doc.userFile ? <div className="note">{doc.userFile.fileId ? <>Kept on this computer: "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB).</> : <>Your file "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB) is listed only; the file itself was not kept.</>}</div>
@@ -138,10 +145,10 @@ function Overview({ p, term, go, openDoc }) {
       )}
       <div className="grid2">
         <Card title="Customer and team">
-          <KV items={[["Insured", <button className="linkbtn" onClick={() => go({ view: "customer", id: c.id })}>{c.name} ({c.code})</button>], ["Vertical", c.vertical], ["CSE", teamName(db, c.cse)], ["RM", c.rm ? teamName(db, c.rm) : "Not assigned"], ["Source", c.source === "Referral" ? c.referral : "Direct business"], ["New / Renewal", term.nr]]} />
+          <KV items={[["Insured", <button className="linkbtn" onClick={() => go({ view: "customer", id: c.id })}>{c.name} ({c.code})</button>], ["Vertical", c.vertical], ["CSC", teamName(db, c.cse)], ["RM", c.rm ? teamName(db, c.rm) : "Not assigned"], ["Source", c.source === "Referral" ? c.referral : "Direct business"], ["New / Renewal", term.nr]]} />
         </Card>
         <Card title="Policy document">
-          {doc ? <><p>{doc.name}</p><Btn onClick={() => openDoc(doc)}>View document</Btn></> : <Empty title="No policy document attached" />}
+          {doc ? <><p>{doc.name}</p><div className="row gap-s wrap"><Btn onClick={() => openDoc(doc)}>View document</Btn><DownloadDoc doc={doc} label="Download policy PDF" kind="primary" /></div></> : <Empty title="No policy document attached" />}
           {term.status === "confirmed" && <p className="small muted" style={{ marginTop: 8 }}>Confirmed values change only through an endorsement, so the earlier value is always kept.</p>}
         </Card>
       </div>
@@ -219,13 +226,13 @@ function DocumentsTab({ p, term, terms, openDoc }) {
         {adding && <AddDocForm customerId={p.customerId} policyId={p.id} termId={term.id} kinds={["Debit note", "Supporting document", "Receipt proof", "Endorsement"]} onDone={() => setAdding(false)} />}
         {docs.length ? (
           <Table><thead><tr><th>Document</th><th>Type</th><th>Term</th><th>Added</th><th /></tr></thead>
-            <tbody>{docs.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{tlabel(d.termId)}</td><td>{fmtStamp(d.addedAt)}</td><td><Btn onClick={() => openDoc(d)}>View</Btn></td></tr>)}</tbody></Table>
+            <tbody>{docs.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{tlabel(d.termId)}</td><td>{fmtStamp(d.addedAt)}</td><td><div className="row gap-xs wrap"><Btn onClick={() => openDoc(d)}>View</Btn><DownloadDoc doc={d} label="Download" /></div></td></tr>)}</tbody></Table>
         ) : <Empty title="No documents yet" />}
       </Card>
       <Card title="Customer documents not linked to a policy" sub="Quotes, KYC and similar papers live on the customer. Link one here if it belongs to this policy.">
         {loose.length ? (
           <Table><thead><tr><th>Document</th><th>Type</th><th>Added</th><th /></tr></thead>
-            <tbody>{loose.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{fmtStamp(d.addedAt)}</td><td className="row gap-xs"><Btn onClick={() => openDoc(d)}>View</Btn>{can("addDoc") && <Btn onClick={() => attach(d.id)}>Link to term {term.termNo}</Btn>}</td></tr>)}</tbody></Table>
+            <tbody>{loose.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{fmtStamp(d.addedAt)}</td><td className="row gap-xs"><Btn onClick={() => openDoc(d)}>View</Btn><DownloadDoc doc={d} label="Download" />{can("addDoc") && <Btn onClick={() => attach(d.id)}>Link to term {term.termNo}</Btn>}</td></tr>)}</tbody></Table>
         ) : <Empty title="Nothing waiting to be linked" />}
       </Card>
     </div>
@@ -288,7 +295,7 @@ function EndorsementsTab({ p, term, openDoc }) {
             <div className="review-fields">
               <Labeled label="Effective date" htmlFor="en-eff" req error={tried && !eff ? "Enter the effective date" : null}><input id="en-eff" type="date" value={eff} onChange={(e) => setEff(e.target.value)} /></Labeled>
               <Table><thead><tr><th>Change?</th><th>Field</th><th>Current value</th><th>On endorsement</th></tr></thead>
-                <tbody>{!Object.keys(fx.fields).length && <tr><td colSpan={4}><Empty title="No values could be read from this PDF">{fx.noText ? "It has no text layer (probably a scan)." : "None of the known labels were found."} Cancel and check the document, or record the change from a sample.</Empty></td></tr>}{Object.entries(fx.fields).filter(([k]) => FIELD[k]).map(([k, x]) => {
+                <tbody>{!Object.keys(fx.fields).length && <tr><td colSpan={4}><Empty title="No values could be read from this PDF">{fx.noText ? "No text could be read, even as a scan." : "None of the known labels were found."} Cancel and check the document, or record the change from a sample.</Empty></td></tr>}{Object.entries(fx.fields).filter(([k]) => FIELD[k]).map(([k, x]) => {
                   const same = String(x.v) === String(v[k]);
                   return (
                     <tr key={k} className={picked[k] ? "row-pick" : ""}>

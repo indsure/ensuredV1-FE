@@ -45,7 +45,7 @@ export function PdfAttach({ id, label = "Attach the policy PDF", onReady, ready,
     if (!file) return;
     setState({ busy: true, msg: "Opening the PDF reader...", err: "", detail: "" });
     try {
-      const fx = await readPolicyPdf(file, (p, n) => setState({ busy: true, msg: `Reading page ${p} of ${n}...`, err: "", detail: "" }));
+      const fx = await readPolicyPdf(file, (p, n, ocr) => setState({ busy: true, msg: ocr ? `This is a scan, reading it page by page: page ${p} of ${n} (about 10 seconds a page)...` : `Reading page ${p} of ${n}...`, err: "", detail: "" }));
       fx.fileId = await saveFile(file);
       setState({ busy: false, msg: "", err: "", detail: "" });
       onReady(fx);
@@ -58,18 +58,18 @@ export function PdfAttach({ id, label = "Attach the policy PDF", onReady, ready,
     <div className={`attach ${ready ? "attach-on" : ""} ${over ? "attach-over" : ""}`}
       onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); read(e.dataTransfer.files[0]); }}>
-      <input id={id} className="sr" type="file" accept=".pdf,application/pdf" disabled={state.busy} onChange={(e) => { read(e.target.files[0]); e.target.value = ""; }} />
+      <input id={id} className="sr" type="file" accept=".pdf,application/pdf,.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" disabled={state.busy} onChange={(e) => { read(e.target.files[0]); e.target.value = ""; }} />
       <label htmlFor={id} className="dropzone">
         <span className="dz-icon"><Icon name="upload" size={26} /></span>
         <span className="attach-label">{label}</span>
-        <span className="dz-sub">Drop the PDF here or click to browse</span>
-        <span className="small muted">Digital PDFs from the insurer work best. The text is read inside this browser; nothing is uploaded. Scanned PDFs and photos cannot be read here.</span>
+        <span className="dz-sub">Drop the PDF or a photo of it here, or click to browse</span>
+        <span className="small muted">Digital PDFs from the insurer work best. Scanned PDFs and photos (JPG, PNG) are read too, more slowly, and every value is marked for checking. Everything is read inside this browser; nothing is uploaded.</span>
       </label>
       <ReaderStatus />
       {state.busy && <p className="small" role="status">{state.msg}</p>}
       {state.err && <div className="err-text" role="alert">{state.err}{state.detail && <div className="small muted">Technical detail: {state.detail}</div>}</div>}
       {ready && !state.busy && (
-        <p className="small" role="status">{describe ? describe(ready) : ready.noText ? <><strong>{ready.fileName}</strong>: no readable text (probably a scan). You will be asked to enter the values.</> : <><strong>{ready.fileName}</strong>: found {n} field{n === 1 ? "" : "s"} on {ready.readPages} page{ready.readPages === 1 ? "" : "s"}. Anything not found will be asked for on the next screen.</>}</p>
+        <p className="small" role="status">{describe ? describe(ready) : ready.noText ? <><strong>{ready.fileName}</strong>: no readable text, even read as a scan. You will be asked to enter the values.</> : <><strong>{ready.fileName}</strong>: found {n} field{n === 1 ? "" : "s"} on {ready.readPages} page{ready.readPages === 1 ? "" : "s"}{ready.ocr ? " (read as a scan, so check each value)" : ""}. Anything not found will be asked for on the next screen.</>}</p>
       )}
     </div>
   );
@@ -185,8 +185,8 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
         </div>
       </div>
       <div className="note small" role="status">
-        {fixture.noText ? <><strong>No text could be read from {fixture.fileName}.</strong> It looks like a scan or photo. Please enter the values below. The real build would run OCR on it.</>
-          : <>Filled <strong>{found}</strong> field{found === 1 ? "" : "s"} from {fixture.extracted ? <strong>{fixture.fileName}</strong> : "the document"}{fixture.extracted && fixture.readPages < fixture.pages ? ` (first ${fixture.readPages} of ${fixture.pages} pages)` : ""}. Click a green or amber tag to see the line it came from.</>}
+        {fixture.noText ? <><strong>No text could be read from {fixture.fileName}.</strong> It was read as a scan but the text was too faint or blurred. Please enter the values below.</>
+          : <>Filled <strong>{found}</strong> field{found === 1 ? "" : "s"} from {fixture.extracted ? <strong>{fixture.fileName}</strong> : "the document"}{fixture.ocr ? " (read as a scan: every value is amber, check each one)" : ""}{fixture.extracted && fixture.readPages < fixture.pages ? ` (first ${fixture.readPages} of ${fixture.pages} pages)` : ""}. Click a green or amber tag to see the line it came from.</>}
         {fixture.info?.insured && (!customerName ? <div>Insured name on the document: <strong>{fixture.info.insured}</strong>. Check it is the right customer.</div>
           : sameName(fixture.info.insured, customerName) ? <div className="ins-ok">Insured on the document: <strong>{fixture.info.insured}</strong>. Matches the customer.</div>
           : <div className="ins-diff"><strong>Insured on the document is {fixture.info.insured}</strong>, but this record is for {customerName}. Check you picked the right customer before saving.</div>)}

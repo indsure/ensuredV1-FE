@@ -43,6 +43,13 @@ function readBody(req, limit) {
     req.on("error", reject);
   });
 }
+const TYPES = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg" };
+function kindOf(buf) {
+  if (buf.subarray(0, 5).toString("latin1") === "%PDF-") return "pdf";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "png";
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
+  return null;
+}
 // The book is the portal's whole record set. It must look like one before it is stored.
 function validBook(b) {
   return b && typeof b === "object" && b.version === 2 && ["customers", "policies", "terms", "documents", "insurers", "team", "audit"].every((k) => Array.isArray(b[k]));
@@ -96,13 +103,14 @@ const server = http.createServer(async (req, res) => {
       if (!r) return send(res, 404, { error: "no such version" }, cors);
       return send(res, 200, { version: r.version, savedAt: r.saved_at, db: JSON.parse(r.data) }, cors);
     }
-    // Original PDFs, stored by content hash: the same file attached twice is kept once.
+    // Original PDFs and photos, stored by content hash: the same file attached twice is kept once.
     if (req.method === "POST" && p === "/api/corp/files") {
       const buf = await readBody(req, MAX_PDF);
-      if (buf.subarray(0, 5).toString("latin1") !== "%PDF-") return send(res, 400, { error: "not a PDF" }, cors);
+      const ext = kindOf(buf);
+      if (!ext) return send(res, 400, { error: "not a PDF, JPG or PNG" }, cors);
       const id = crypto.createHash("sha256").update(buf).digest("hex").slice(0, 32);
       const name = decodeURIComponent(String(req.headers["x-file-name"] || "document.pdf")).replace(/[\\/:*?"<>|\r\n]/g, "_").slice(0, 160);
-      const file = path.join(FILES, `${id}.pdf`);
+      const file = path.join(FILES, `${id}.${ext}`);
       if (!fs.existsSync(file)) fs.writeFileSync(file, buf);
       db.prepare("INSERT INTO files (id, name, size, saved_at) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO NOTHING").run(id, name, buf.length, now());
       return send(res, 200, { id, size: buf.length }, cors);
@@ -110,9 +118,11 @@ const server = http.createServer(async (req, res) => {
     const fm = p.match(/^\/api\/corp\/files\/([a-f0-9]{32})$/);
     if (req.method === "GET" && fm) {
       const row = db.prepare("SELECT name FROM files WHERE id = ?").get(fm[1]);
-      const file = path.join(FILES, `${fm[1]}.pdf`);
-      if (!row || !fs.existsSync(file)) return send(res, 404, { error: "no such file" }, cors);
-      res.writeHead(200, { ...cors, "content-type": "application/pdf", "content-disposition": `inline; filename="${row.name.replace(/"/g, "")}"` });
+      const ext = Object.keys(TYPES).find((e) => fs.existsSync(path.join(FILES, `${fm[1]}.${e}`)));
+      if (!row || !ext) return send(res, 404, { error: "no such file" }, cors);
+      const file = path.join(FILES, `${fm[1]}.${ext}`);
+      const how = url.searchParams.has("download") ? "attachment" : "inline";
+      res.writeHead(200, { ...cors, "content-type": TYPES[ext], "content-disposition": `${how}; filename="${row.name.replace(/"/g, "")}"` });
       return fs.createReadStream(file).pipe(res);
     }
     return send(res, 404, { error: "not found" }, cors);

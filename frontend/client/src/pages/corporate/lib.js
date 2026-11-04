@@ -116,7 +116,7 @@ export const DATE_BASES = [
 export const GROUPINGS = [
   { key: "none", label: "No grouping" },
   { key: "date", label: "Date Wise" }, { key: "insurer", label: "Insurer Wise" }, { key: "rm", label: "RM Wise" },
-  { key: "cse", label: "CSE Wise (legacy: CSC Wise)" }, { key: "policy", label: "Policy Wise (policy type)" }, { key: "branch", label: "Branch Wise (insurer branch)" },
+  { key: "cse", label: "CSC Wise" }, { key: "policy", label: "Policy Wise (policy type)" }, { key: "branch", label: "Branch Wise (insurer branch)" },
   { key: "month", label: "Month Wise" }, { key: "ref", label: "Ref Wise (source / referral)" }, { key: "client", label: "Client Wise" }, { key: "location", label: "Location Wise (customer city)" },
 ];
 

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { DEPARTMENTS, FIXTURES, fixtureById, isVesselType, LIVE } from "./data.js";
 import { nowIso, missingFields, insurerOf } from "./lib.js";
-import { useApp, SearchPick, Card, Btn, Labeled, Select, AskFirst, Pill, Confirm } from "./ui.jsx";
+import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill, Confirm } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName } from "./review.jsx";
+import { placeOf } from "./places.js";
 
 // Saves a new policy and its first term. Shared by this screen and the step-by-step wizard.
 // Everything happens in ONE update: React may run a second queued update later, after we navigate.
@@ -14,12 +15,12 @@ export function createPolicy({ update, log, toast, go, who }, s0, fx, pl, confir
   update((d) => {
     const s = newCustomer ? { ...s0, customerId: newCustomer(d) } : s0;
     const cust = d.customers.find((x) => x.id === s.customerId);
-    if (cust.cse !== s.cse || (cust.rm || "") !== (s.rm || "")) { cust.cse = s.cse; cust.rm = s.rm; log(d, { customerId: cust.id, action: "Team assigned", detail: `CSE ${s.cse}, RM ${s.rm || "none"}.` }); }
+    if (cust.cse !== s.cse || (cust.rm || "") !== (s.rm || "")) { cust.cse = s.cse; cust.rm = s.rm; log(d, { customerId: cust.id, action: "Team assigned", detail: `CSC ${s.cse}, RM ${s.rm || "none"}.` }); }
     pid = `P${++d.seq}`; tid = `T${++d.seq}`;
     const docId = `DOC${++d.seq}`;
     const n = d.policies.length + 1;
     d.documents.push(fx.extracted
-      ? { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: fx.fileName, fixtureId: null, lines: fx.lines, fixtureFields: fx.fields, info: fx.info, extracted: true, userFile: { name: fx.fileName, size: fx.fileSize, fileId: fx.fileId || null }, addedAt: nowIso(), addedBy: who, note: fx.noText ? "No readable text; values entered by hand" : "Text read in the browser" }
+      ? { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: fx.fileName, fixtureId: null, lines: fx.lines, fixtureFields: fx.fields, info: fx.info, extracted: true, userFile: { name: fx.fileName, size: fx.fileSize, fileId: fx.fileId || null }, addedAt: nowIso(), addedBy: who, note: fx.noText ? "No readable text; values entered by hand" : fx.ocr ? "Scan read with OCR in the browser" : "Text read in the browser" }
       : { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: `${fx.title}.pdf`, fixtureId: fx.id, addedAt: nowIso(), addedBy: who, note: "" });
     d.policies.push({ id: pid, controlNo: `CN-${String(n).padStart(4, "0")}`, customerId: s.customerId, dept: s.dept, type: s.type, insurerId: s.insurerId, branchId: s.branchId, cover: s.cover || "", vesselMode: s.vesselMode || "", termIds: [tid] });
     d.terms.push({ id: tid, policyId: pid, termNo: 1, prevTermId: null, nextTermId: null, status: confirm ? "confirmed" : "draft", cancelled: false, nr: "New", outcome: "Open", lossDetail: "", instalments: [], receipts: [], endorsements: [], vesselSchedules: [], cargoDecls: [], charterDecls: [], docId, ...pl });
@@ -97,7 +98,7 @@ export function QuickAdd() {
   const [fx, setFx] = useState(null);
   const [s, setS] = useState(null);
   const [guess, setGuess] = useState({});
-  const [nc, setNc] = useState({ name: "", city: "", vertical: "Corporate" });
+  const [nc, setNc] = useState({ name: "", city: "", state: "", country: "India", vertical: "Corporate" });
   const [tried, setTried] = useState(false);
   const [extra, setExtra] = useState({ insName: "", brName: "", brCity: "", cseCode: "", cseName: "" });
   const [extraErr, setExtraErr] = useState("");
@@ -109,7 +110,8 @@ export function QuickAdd() {
     const c = db.customers.find((y) => y.id === g.customerId);
     setFx(x); setGuess(g); setTried(false); setReviewing(false);
     setS({ customerId: g.customerId || (g.insuredName ? "NEW" : ""), cse: c?.cse || "", rm: c?.rm || "", insurerId: g.insurerId || "", branchId: g.branchId || "", dept: g.dept || "", type: g.type || "", cover: "", vesselMode: "" });
-    setNc({ name: g.insuredName || "", city: g.city || "", vertical: "Corporate" });
+    const place = placeOf(g.city);
+    setNc({ name: g.insuredName || "", city: g.city || "", state: place?.state || "", country: place?.country || "India", vertical: "Corporate" });
     const office = x.info?.branch;
     setExtra({ insName: cleanInsurer(x.info?.insurer || ""), brName: office?.name || "", brCity: office?.city || "", cseCode: "", cseName: "" }); setExtraErr("");
   };
@@ -127,7 +129,7 @@ export function QuickAdd() {
   const errs = s ? {
     customer: !s.customerId ? "Choose the customer, or add a new one" : isNew && !nc.name.trim() ? "Enter the insured name" : dup ? `Already exists as ${dup.code}. Choose ${dup.name} instead.` : null,
     city: isNew && !nc.city.trim() ? "Enter the city" : null,
-    cse: !s.cse ? "Assign a CSE" : null,
+    cse: !s.cse ? "Assign a CSC" : null,
     insurer: !s.insurerId ? "Choose the insurer" : null,
     branch: s.insurerId && !s.branchId ? "Choose the branch" : null,
     type: !s.dept ? "Choose the department" : !s.type ? "Choose the policy type" : null,
@@ -152,21 +154,22 @@ export function QuickAdd() {
     const same = ins.branches.find((b) => b.name.toLowerCase() === name.toLowerCase());
     if (same) { set("branchId")(same.id); return setExtraErr(""); }
     const id = newId("BR");
-    update((d) => { d.insurers.find((i) => i.id === ins.id).branches.push({ id, name, city, country: "India" }); log(d, { action: "Branch added", detail: `${name} (${city}) for ${ins.name}.` }); });
+    const place = placeOf(city);
+    update((d) => { d.insurers.find((i) => i.id === ins.id).branches.push({ id, name, city, state: place?.state || "", country: place?.country || "India" }); log(d, { action: "Branch added", detail: `${name} (${city}) for ${ins.name}.` }); });
     setS((x) => ({ ...x, branchId: id })); setExtraErr(""); toast("Branch added");
   };
   const addCse = () => {
     const code = extra.cseCode.trim().toUpperCase(), name = extra.cseName.trim();
-    if (!code || !name) return setExtraErr("Enter the CSE code and name");
+    if (!code || !name) return setExtraErr("Enter the CSC code and name");
     if (/\s/.test(code)) return setExtraErr("Codes cannot contain spaces");
     if (db.team.some((t) => t.code.toLowerCase() === code.toLowerCase())) return setExtraErr("That code is already used");
-    update((d) => { d.team.push({ code, name, role: "CSE", active: true }); log(d, { action: "Team member added", detail: `${name} (${code}) as CSE.` }); });
-    setS((x) => ({ ...x, cse: code })); setExtraErr(""); toast("CSE added");
+    update((d) => { d.team.push({ code, name, role: "CSC", active: true }); log(d, { action: "Team member added", detail: `${name} (${code}) as CSC.` }); });
+    setS((x) => ({ ...x, cse: code })); setExtraErr(""); toast("CSC added");
   };
   const toReview = () => { setTried(true); if (!todo.length) setReviewing(true); };
   const addCustomer = (d) => {
     const cid = `C${++d.seq}`; const code = `CUST-${1000 + d.customers.length + 1}`;
-    d.customers.push({ id: cid, code, name: nc.name.trim(), vertical: nc.vertical, address: fx.customer?.address?.v || "", city: nc.city.trim(), country: "India", phone: fx.customer?.phone?.v || "", email: fx.customer?.email?.v || "", gst: fx.customer?.gst?.v || "", source: "Direct", referral: "", tags: [], cse: s.cse, rm: s.rm, createdAt: nowIso() });
+    d.customers.push({ id: cid, code, name: nc.name.trim(), vertical: nc.vertical, address: fx.customer?.address?.v || "", city: nc.city.trim(), state: (nc.state || "").trim(), country: (nc.country || "India").trim(), phone: fx.customer?.phone?.v || "", email: fx.customer?.email?.v || "", gst: fx.customer?.gst?.v || "", source: "Direct", referral: "", tags: [], cse: s.cse, rm: s.rm, createdAt: nowIso() });
     log(d, { customerId: cid, action: "Customer created", detail: `${nc.name.trim()} created as ${code} from ${fx.fileName || fx.title}.` });
     return cid;
   };
@@ -192,10 +195,11 @@ export function QuickAdd() {
             </Labeled>
             {isNew && <>
               <Labeled label="Insured name" htmlFor="ap-nname" req error={tried && (errs.customer && isNew ? errs.customer : null)} hint={guess.insuredName ? <Found ok>Read from the document</Found> : null}><input id="ap-nname" value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} /></Labeled>
-              <Labeled label="City" htmlFor="ap-ncity" req error={tried && errs.city} hint={nc.city && nc.city === guess.city ? <Found ok>Read from the document</Found> : null}><input id="ap-ncity" value={nc.city} onChange={(e) => setNc({ ...nc, city: e.target.value })} /></Labeled>
+              <PlaceFields id="ap-n" value={{ city: nc.city, state: nc.state, country: nc.country }} req cityError={tried && errs.city}
+                cityHint={nc.city && nc.city === guess.city ? <Found ok>Read from the document</Found> : null} onChange={(p) => setNc({ ...nc, ...p })} />
               <Labeled label="Vertical" htmlFor="ap-nvert"><Select id="ap-nvert" value={nc.vertical} onChange={(v) => setNc({ ...nc, vertical: v })} options={["Corporate", "Retail"]} /></Labeled>
             </>}
-            <Labeled label="CSE" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From the customer record" : "Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSE")} noun="CSE" /></Labeled>
+            <Labeled label="CSC" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From the customer record" : "Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
             <Labeled label="RM" htmlFor="ap-rm" hint="Optional"><SearchPick id="ap-rm" value={s.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
             <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the document")}><Select id="ap-ins" value={s.insurerId} onChange={set("insurerId")} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
             <Labeled label="Insurer branch" htmlFor="ap-br" req error={tried && errs.branch} hint={s.insurerId ? hintFor("branch", !!guess.branchId && s.branchId === guess.branchId, "Read from the document") : null}><Select id="ap-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
@@ -220,13 +224,13 @@ export function QuickAdd() {
                 <Btn onClick={addBranch}>Add branch</Btn>
               </div>
             </div>)}
-          {canAdd && !team("CSE").length && (
+          {canAdd && !team("CSC").length && (
             <div className="boxed stack inline-add">
-              <div className="small"><strong>No CSEs yet.</strong> Add one here, or your whole team under Masters, Team (Admin role).</div>
+              <div className="small"><strong>No CSCs yet.</strong> Add one here, or your whole team under Masters, Team (Admin role).</div>
               <div className="row gap-s wrap" style={{ alignItems: "flex-end" }}>
-                <Labeled label="CSE code" htmlFor="ap-new-csecode"><input id="ap-new-csecode" value={extra.cseCode} onChange={(e) => setExtra({ ...extra, cseCode: e.target.value })} /></Labeled>
+                <Labeled label="CSC code" htmlFor="ap-new-csecode"><input id="ap-new-csecode" value={extra.cseCode} onChange={(e) => setExtra({ ...extra, cseCode: e.target.value })} /></Labeled>
                 <Labeled label="Name" htmlFor="ap-new-csename"><input id="ap-new-csename" value={extra.cseName} onChange={(e) => setExtra({ ...extra, cseName: e.target.value })} /></Labeled>
-                <Btn onClick={addCse}>Add CSE</Btn>
+                <Btn onClick={addCse}>Add CSC</Btn>
               </div>
             </div>)}
           {extraErr && <div className="err-text small" role="alert">{extraErr}</div>}

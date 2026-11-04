@@ -84,12 +84,13 @@ export async function reloadLatest() {
 export async function listVersions() { const r = await getJson(`${SERVER}/api/corp/versions`); return r.status === 200 ? r.body : []; }
 export async function getVersion(v) { const r = await getJson(`${SERVER}/api/corp/versions/${v}`); if (r.status !== 200) throw new Error("no such version"); return r.body; }
 
-// Keeps the original PDF on this computer. Returns its id, or null when there is no server.
+// Keeps the original PDF or photo on this computer. Returns its id, or null when there is no server.
 export async function saveFile(file) {
   if (kind !== "server" || !file || file.size > 40 * 1024 * 1024) return null;
   try {
-    const head = new Uint8Array(await file.slice(0, 5).arrayBuffer());
-    if (String.fromCharCode(...head) !== "%PDF-") return null;
+    const h = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    const pdf = String.fromCharCode(...h.slice(0, 5)) === "%PDF-", png = h[0] === 0x89 && h[1] === 0x50, jpg = h[0] === 0xff && h[1] === 0xd8;
+    if (!pdf && !png && !jpg) return null;
     const r = await fetch(`${SERVER}/api/corp/files`, { method: "POST", headers: { "x-file-name": encodeURIComponent(file.name) }, body: file });
     return r.ok ? (await r.json()).id : null;
   } catch (e) { return null; }
