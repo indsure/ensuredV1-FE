@@ -9,7 +9,7 @@
 //   CORP_LOGIN_EMAIL     the owner login (always an Admin)
 //   CORP_LOGIN_HASH      <salt hex>:<scrypt hex>
 //   CORP_SESSION_SECRET  signs session tokens
-//   CORP_FEEDBACK_TO     where problem reports are emailed (default hello@indsure.in)
+//   CORP_FEEDBACK_TO     where problem reports are emailed (default tech@indsure.in)
 // With any of the first three missing, every route answers 503 and nothing else changes.
 //
 // The portal saves its records as one book, so the server can refuse a Read-only login's save but cannot
@@ -292,7 +292,7 @@ export function registerCorporateRoutes(app: Express) {
       );
       const link = fileId ? `\nScreenshot (link works for 30 days): https://${req.headers.host}/api/corp/files/${fileId}?t=${encodeURIComponent(sign("files", Date.now() + 30 * 86400000))}` : "";
       const sent = await sendMail({
-        to: process.env.CORP_FEEDBACK_TO || "hello@indsure.in",
+        to: process.env.CORP_FEEDBACK_TO || "tech@indsure.in",
         replyTo: user.email,
         subject: `[Commercial portal] ${kind === "idea" ? "Idea" : "Problem"} #${rows[0].id} from ${user.name}: ${message.replace(/\s+/g, " ").slice(0, 60)}`,
         text: `${message}\n\nFrom: ${user.name} (${user.email}), role ${user.role}\nPage: ${page}\nBrowser: ${browser}${link}\n\nReport #${rows[0].id}, kept in the corp_feedback table.`,
