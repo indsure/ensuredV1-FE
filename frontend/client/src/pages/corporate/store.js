@@ -126,7 +126,9 @@ export async function saveFile(file) {
     const h = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     const pdf = String.fromCharCode(...h.slice(0, 5)) === "%PDF-", png = h[0] === 0x89 && h[1] === 0x50, jpg = h[0] === 0xff && h[1] === 0xd8;
     if (!pdf && !png && !jpg) return null;
-    const r = await fetch(`${SERVER}/api/corp/files`, { method: "POST", headers: { "x-file-name": encodeURIComponent(file.name), ...auth() }, body: file });
+    // The backend's CORS rules allow only standard headers, so online the name travels in the address.
+    const r = REMOTE ? await fetch(`${SERVER}/api/corp/files?name=${encodeURIComponent(file.name)}`, { method: "POST", headers: { "content-type": "application/octet-stream", ...auth() }, body: file })
+      : await fetch(`${SERVER}/api/corp/files`, { method: "POST", headers: { "x-file-name": encodeURIComponent(file.name) }, body: file });
     return r.ok ? (await r.json()).id : null;
   } catch (e) { return null; }
 }

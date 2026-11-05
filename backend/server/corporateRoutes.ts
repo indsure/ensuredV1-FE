@@ -144,7 +144,7 @@ export function registerCorporateRoutes(app: Express) {
       const ext = Buffer.isBuffer(buf) ? kindOf(buf) : null;
       if (!ext) return res.status(400).json({ error: "not a PDF, JPG or PNG" });
       const id = crypto.createHash("sha256").update(buf).digest("hex").slice(0, 32);
-      const name = decodeURIComponent(String(req.headers["x-file-name"] || "document")).replace(/[\\/:*?"<>|\r\n]/g, "_").slice(0, 160);
+      const name = String(req.query.name || "document").replace(/[\\/:*?"<>|\r\n]/g, "_").slice(0, 160);
       await ensureBucket();
       const { error } = await storage().from(BUCKET).upload(`${id}.${ext}`, buf, { contentType: TYPES[ext], upsert: true });
       if (error) throw error;
