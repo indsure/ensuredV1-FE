@@ -1,15 +1,17 @@
-// IndSure Commercial demo prototype: shell, workspaces and the views that are not about one policy.
+// IndSure Commercial: shell, workspaces and the views that are not about one policy.
 import "./commercial.css";
-import { seed, TODAY, LIVE, DEPARTMENTS, NOTES_LOB, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
+import { seed, TODAY, LIVE, DEPARTMENTS, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook } from "./lib.js";
-import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy, DateInput } from "./ui.jsx";
+import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, DateInput } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
-import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut } from "./store.js";
+import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent } from "./store.js";
 import { CorpLogin } from "./login.jsx";
 import { QuickAdd, createPolicy } from "./add.jsx";
 import { Guide } from "./guide.jsx";
+import { FeedbackPage } from "./feedback.jsx";
+import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
@@ -37,10 +39,10 @@ const NAV = [
     { key: "masters", label: "Masters", icon: "db", roles: ["admin"] },
     { key: "fx", label: "FX rates", icon: "rupee", roles: ["accounts", "admin"] },
     { key: "presets", label: "Brokerage presets", icon: "percent", roles: ["accounts", "admin"] },
-    { key: "reminders", label: "Reminders preview", icon: "bell", roles: ["ops", "admin"] },
-    { key: "decisions", label: "Decisions", icon: "list", roles: ["ops", "accounts", "admin", "readonly"] }] },
+    { key: "reminders", label: "Reminders", icon: "bell", roles: ["ops", "admin"] }] },
   { group: "Help", items: [
-    { key: "guide", label: "How to", icon: "help", roles: ["ops", "accounts", "admin", "readonly"] }] },
+    { key: "guide", label: "How to", icon: "help", roles: ["ops", "accounts", "admin", "readonly"] },
+    { key: "feedback", label: "Report a problem", icon: "alert", roles: ["ops", "accounts", "admin", "readonly"] }] },
 ];
 
 
@@ -49,7 +51,8 @@ export function App({ onSignedOut }) {
   const [loadErr, setLoadErr] = useState(false);
   const [saveState, setSaveState] = useState({ state: "idle" });
   const loaded = useRef(null);
-  const [role, setRole] = useState("ops");
+  const [role, setRole] = useState(() => (isRemote() && currentUser()?.role) || "ops");
+  const lastPage = useRef("");
   const [fy, setFy] = useState("2026-27");
   const [route, setRoute] = useState({ view: "home" });
   const [toasts, setToasts] = useState([]);
@@ -101,11 +104,12 @@ export function App({ onSignedOut }) {
     if (saveState.state !== "conflict") return;
     reloadLatest().then((d) => { loaded.current = d; setDb(d); toast("Another window saved changes first. The latest records are shown; redo your last change if it is missing.", "bad"); }).catch(() => {});
   }, [saveState]);
-  const R = ROLES[role];
+  const R = isRemote() && currentUser() ? { ...ROLES[role], who: currentUser().name } : ROLES[role];
   const can = (a) => R.perms === "*" || R.perms.includes(a);
   const log = (d, o) => d.audit.push({ id: `A${++d.seq}`, at: nowIso(), who: R.who, ...o });
   // Runs straight away, so code after update() can use what it produced (a new customer's id, say).
   const latestDb = useRef(db); latestDb.current = db;
+  if (route.view !== "feedback") lastPage.current = `${route.view}${route.id ? ` ${route.id}` : ""}`;
   const update = (fn) => { const d = structuredClone(latestDb.current); fn(d); latestDb.current = d; setDb(d); };
   const toast = (msg, tone = "good") => { const id = Math.random(); setToasts((t) => [...t, { id, msg, tone }]); setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3600); };
   const go = (r) => { setRoute(r); setMenu(false); mainRef.current?.scrollTo?.(0, 0); window.scrollTo(0, 0); };
@@ -129,7 +133,7 @@ export function App({ onSignedOut }) {
   else if (!visible(v)) view = <Empty title="Not available for this role">Switch role at the top, or pick a page from the menu.</Empty>;
   else view = {
     home: <HomeView />, customers: <CustomersView />, new: <NewBusiness key={(route.customerId || "new") + (route.fx?.id || "")} presetCustomer={route.customerId} presetFx={route.fx} />, register: <RegisterView />, expiry: <ExpiryView />,
-    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, decisions: <Decisions />, guide: <Guide />,
+    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, feedback: <FeedbackPage page={lastPage.current} />,
   }[v];
 
   return (
@@ -160,7 +164,7 @@ export function App({ onSignedOut }) {
           <div className="demo-banner">
             <span className="row gap-xs"><Icon name="sparkle" size={16} /> {!LIVE ? "Demo prototype: fictional data, nothing leaves this browser." : isRemote() ? "Beta: your records are saved securely online." : storeInfo().kind === "server" ? "Your records are saved on this computer, not online." : "Beta: your records are kept in this browser only. Download a backup regularly."}</span>
             <div className="banner-ctl">
-              <label className="pillsel"><span className="sr">Role</span><select id="role" value={role} onChange={(e) => switchRole(e.target.value)}>{Object.entries(ROLES).map(([k, x]) => <option key={k} value={k}>Role: {x.label}</option>)}</select></label>
+              {!isRemote() && <label className="pillsel"><span className="sr">Role</span><select id="role" value={role} onChange={(e) => switchRole(e.target.value)}>{Object.entries(ROLES).map(([k, x]) => <option key={k} value={k}>Role: {x.label}</option>)}</select></label>}
               <label className="pillsel"><span className="sr">Financial year</span><select id="fy" value={fy} onChange={(e) => setFy(e.target.value)}>{FY_OPTIONS.map((f) => <option key={f} value={f}>F.Y. {f}</option>)}</select></label>
               {import.meta.env.DEV && <a className="btn btn-banner" href={LIVE ? "?demo" : "?"}>{LIVE ? "Open the demo" : "Back to my records"}</a>}
               <Btn kind="banner" onClick={() => setBackup(true)}>Backup</Btn>
@@ -169,7 +173,7 @@ export function App({ onSignedOut }) {
                 : <AskFirst label="Reset demo" question="Put all example data back?" yes="Reset" onYes={reset} kind="banner" />}
             </div>
           </div>
-          <p className="rolebar">{LIVE ? "Today" : "Today in this demo"}: {fmtDate(TODAY)}. Roles are for {LIVE ? "testing" : "the demo"}, not security <Confirm />. <SaveLine s={saveState} /></p>
+          <p className="rolebar">{LIVE ? "Today" : "Today in this demo"}: {fmtDate(TODAY)}. <SaveLine s={saveState} /></p>
           <main className="main" ref={mainRef}>{view}</main>
           <footer className="foot">{LIVE ? isRemote() ? "IndSure Commercial beta. Records and original files are saved online behind this sign-in. No email or payment is sent from here." : `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
           {backup && <BackupModal db={db} onRestore={(d) => { setDb(upgradeBook(d)); setBackup(false); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
@@ -354,8 +358,8 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
       {f.source === "Referral" && <Labeled label="Referral (REF/POS name)" htmlFor="cf-ref" req error={tried && errs.referral}><input id="cf-ref" value={f.referral} onChange={set("referral")} /></Labeled>}
       <Labeled label="POC tags (comma separated)" htmlFor="cf-tags"><input id="cf-tags" value={typeof f.tags === "string" ? f.tags : f.tags.join(", ")} onChange={set("tags")} /></Labeled>
       <Labeled label="CSC" htmlFor="cf-cse" req error={tried && errs.cse} hint="Type a name or code, then pick from the list"><SearchPick id="cf-cse" value={f.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
-      <Labeled label="RM" htmlFor="cf-rm" hint="Optional. Type a name or code. Inward/outward meaning is open (decision 8)"><SearchPick id="cf-rm" value={f.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
-      <p className="fld-wide small muted">PAN is not collected until purpose, access and retention are decided <Confirm /></p>
+      <Labeled label="RM" htmlFor="cf-rm" hint="Optional. Type a name or code. The person who brought the business"><SearchPick id="cf-rm" value={f.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
+      <p className="fld-wide small muted">PAN is not collected.</p>
       <div className="row gap-s fld-wide wrap">
         <Btn onClick={() => onDone(null)}>Cancel</Btn>
         {offerPolicy && fx && !fx.noText && <Btn kind="primary" onClick={() => save(true)}>Create customer and add this policy</Btn>}
@@ -502,7 +506,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
               <Labeled label="Individual or Group" htmlFor="nb-cover" hint="Where it applies"><Select id="nb-cover" value={s.cover} onChange={set("cover")} placeholder="Not applicable" options={["Individual", "Group"]} /></Labeled>
               {s.dept === "Marine" && ["Protection & Indemnity", "Marine Hull & Machinery", "Charterers Liability"].includes(s.type) && <Labeled label="Vessel cover" htmlFor="nb-vm" hint="Kept apart from Individual/Group"><Select id="nb-vm" value={s.vesselMode} onChange={set("vesselMode")} placeholder="Choose" options={["Individual vessel", "Fleet"]} /></Labeled>}
             </div>
-            <p className="small muted">Lists are as captured from the current platform; final lists are an open decision <Confirm /></p></div>)}
+            </div>)}
         {step === 4 && (
           <div className="stack"><h2>Attach the policy document</h2>
             <PdfAttach id="nb-file" ready={userFx} onReady={(x) => { setUserFx(x); set("fixtureId")(""); setTried(false); }} />
@@ -609,7 +613,7 @@ function ReportFilters({ f, setF, withBasis = true, extra }) {
         {withBasis && <Labeled label="Date basis" htmlFor="bf-basis" req hint="Every total follows this date"><Select id="bf-basis" value={f.basis} onChange={set("basis")} options={DATE_BASES.map((b) => ({ value: b.key, label: b.label }))} /></Labeled>}
         <Labeled label="Period" htmlFor="bf-range"><Select id="bf-range" value={f.useRange ? "range" : "fy"} onChange={(v) => setF((x) => ({ ...x, useRange: v === "range" }))} options={[{ value: "fy", label: `F.Y. ${fy} (from the top bar)` }, { value: "range", label: "Custom date range" }]} /></Labeled>
         {f.useRange && <><Labeled label="From" htmlFor="bf-from" error={f.from && f.to && f.to < f.from ? "End is before start" : null}><DateInput id="bf-from" value={f.from} onChange={(e) => set("from")(e.target.value)} /></Labeled><Labeled label="To" htmlFor="bf-to"><DateInput id="bf-to" value={f.to} onChange={(e) => set("to")(e.target.value)} /></Labeled></>}
-        <fieldset className="fld radios"><legend>Vertical <Legacy /></legend>{["ALL", "Corporate", "Retail"].map((x) => <label key={x} className="check"><input type="radio" name="vertical" checked={f.vertical === x} onChange={() => set("vertical")(x)} /> {x === "ALL" ? "All" : x}</label>)}</fieldset>
+        <fieldset className="fld radios"><legend>Vertical</legend>{["ALL", "Corporate", "Retail"].map((x) => <label key={x} className="check"><input type="radio" name="vertical" checked={f.vertical === x} onChange={() => set("vertical")(x)} /> {x === "ALL" ? "All" : x}</label>)}</fieldset>
         <Labeled label="Insurer" htmlFor="bf-ins"><Select id="bf-ins" value={f.insurer} onChange={set("insurer")} placeholder="All insurers" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
         {extra}
       </div>
@@ -656,7 +660,7 @@ function BusinessReport() {
         <Card title="2. Grouping: how rows are organised"><Labeled label="Group by" htmlFor="bf-group"><Select id="bf-group" value={g} onChange={setG} options={GROUPINGS.map((x) => ({ value: x.key, label: x.label }))} /></Labeled></Card>
         <Card title="3. Output">
           <div className="seg" role="radiogroup" aria-label="Output">{[["screen", "On screen"], ["print", "Print view"], ["csv", "CSV file"]].map(([k, l]) => <button key={k} role="radio" aria-checked={out === k} className={out === k ? "on" : ""} onClick={() => setOut(k)}>{l}</button>)}</div>
-          {out === "csv" && <div className="stack" style={{ marginTop: 10 }}>{can("export") ? <><p className="small">Downloads exactly the rows on screen, with the date basis, filters, FX rates and print date written at the top.</p><Btn kind="primary" disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`business-report-${f.useRange ? "range" : fy}-${f.basis}.csv`, csv(), toast, setFallback)}>Download CSV</Btn></> : <p className="small">Your role cannot export. Permissions apply to downloads as well as screens <Confirm /></p>}</div>}
+          {out === "csv" && <div className="stack" style={{ marginTop: 10 }}>{can("export") ? <><p className="small">Downloads exactly the rows on screen, with the date basis, filters, FX rates and print date written at the top.</p><Btn kind="primary" disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`business-report-${f.useRange ? "range" : fy}-${f.basis}.csv`, csv(), toast, setFallback)}>Download CSV</Btn></> : <p className="small">Your role cannot export.</p>}</div>}
           {out === "print" && <div className="row gap-s wrap" style={{ marginTop: 10 }}><Btn kind="primary" onClick={() => window.print()}><Icon name="file" size={16} /> Print or save as PDF</Btn><span className="small muted">Prints only the report, with letterhead and print date.</span></div>}
           {can("finalize") && <div style={{ marginTop: 10 }}><AskFirst label="Finalize this report" question="Freeze these rows and FX rates?" yes="Finalize" onYes={finalize} disabled={!rows.length} why="No rows" /></div>}
         </Card>
@@ -671,7 +675,7 @@ function BusinessReport() {
               <div key={gr.key} className="rgroup">
                 {g !== "none" && <h4>{gr.key} <span className="muted small">({gr.rows.length})</span></h4>}
                 <Table className="rtable"><thead><tr><th>Policy</th><th>Insured</th>{g !== "insurer" && <th>Insurer</th>}<th>N/R</th><th>Basis date</th><th className="num">Net (native)</th><th className="num">Brokerage (native)</th><th className="num">Net INR</th><th className="num">Brokerage INR</th></tr></thead>
-                  <tbody>{gr.rows.map((r) => <tr key={r.termId}><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td>{r.customer}<div className="small muted">{r.type}</div></td>{g !== "insurer" && <td>{r.insurer}</td>}<td>{r.nr}</td><td>{fmtDate(r.basisDate)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="num">{fmtMoney(r.brokerage, r.currency)}<div className="small muted">{r.brokeragePct}% · {r.presetNote}</div></td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}{r.currency !== "INR" && <div className="small">{r.fxRate == null ? <span className="bad-text">No rate for {fmtMonth(r.fxMonth)}</span> : <span className="muted">{fmtMonth(r.fxMonth)} @ {r.fxRate} (v{r.fxVersion})</span>}</div>}</td><td className="num">{r.brokerageInr == null ? "No rate" : fmtNum(r.brokerageInr)}</td></tr>)}</tbody>
+                  <tbody>{gr.rows.map((r) => <tr key={r.rowKey || r.termId}><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td>{r.customer}<div className="small muted">{r.type}</div></td>{g !== "insurer" && <td>{r.insurer}</td>}<td>{r.nr}</td><td>{fmtDate(r.basisDate)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="num">{fmtMoney(r.brokerage, r.currency)}<div className="small muted">{r.brokeragePct}% · {r.presetNote}</div></td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}{r.currency !== "INR" && <div className="small">{r.fxRate == null ? <span className="bad-text">No rate for {fmtMonth(r.fxMonth)}</span> : <span className="muted">{fmtMonth(r.fxMonth)} @ {r.fxRate} (v{r.fxVersion})</span>}</div>}</td><td className="num">{r.brokerageInr == null ? "No rate" : fmtNum(r.brokerageInr)}</td></tr>)}</tbody>
                   {g !== "none" && <tfoot><tr><td colSpan={g !== "insurer" ? 7 : 6}>Subtotal {gr.key}</td><td className="num">{fmtNum(gr.totals.netInr)}</td><td className="num">{fmtNum(gr.totals.brokerageInr)}</td></tr></tfoot>}
                 </Table>
               </div>
@@ -720,7 +724,6 @@ function RenewalsReport() {
         <div key={g.key} className="rgroup"><h4>{g.key} <span className="muted small">({g.rows.length})</span></h4>
           <Table><thead><tr><th>S.No</th><th>Policy</th><th>Expiry</th><th>Insured</th><th className="num">Sum insured</th><th className="num">Net premium</th><th>RM</th><th>Renewal</th></tr></thead>
             <tbody>{g.rows.map((r, i) => <tr key={r.termId} className={r.renewable === "No" ? "row-nonrenew" : ""}><td>{i + 1}</td><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td className="nowrap">{fmtDate(r.riskEnd)}</td><td>{r.customer}<div className="small muted">{r.type}{r.group ? ` · ${r.group}` : ""}</div></td><td className="num">{fmtMoney(r.sumInsured, r.currency)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td>{r.rm}</td><td><div className="pills"><Pill tone={r.outcome === "Renewed" ? "good" : r.outcome === "Lost" ? "bad" : "muted"}>{r.outcome}</Pill>{r.draftInProgress && <Pill tone="info">Draft in progress</Pill>}</div><div className="small muted">Renewable: {r.renewable}{r.outcome === "Renewed" ? `. Renewed as ${r.nextPolicyNo}` : r.lossDetail ? `. ${r.lossDetail}` : ""}</div></td></tr>)}</tbody></Table></div>))}
-      <p className="small muted">The legacy renewal report action reads "...el/Achieved/Lost"; its full label and the meaning of LossBy are open <Confirm /></p>
       {fallback && <CsvFallback data={fallback} onClose={() => setFallback(null)} />}
     </div>
   );
@@ -741,7 +744,7 @@ function Snapshots({ openId }) {
         return (
           <Card title={s.title} sub={`Frozen ${fmtStamp(s.at)} by ${s.by}`}>
             <Table><thead><tr><th>Control no.</th><th>Insured</th><th>Policy type</th><th className="num">Net (native)</th><th>FX used then</th><th className="num">Net INR then</th></tr></thead>
-              <tbody>{s.rows.map((r) => <tr key={r.termId}><td>{r.controlNo}</td><td>{r.customer}</td><td>{r.type}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="small">{r.currency === "INR" ? "INR" : r.fxRate == null ? "No rate" : `${fmtMonth(r.fxMonth)} @ ${r.fxRate} (v${r.fxVersion})`}</td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}</td></tr>)}</tbody></Table>
+              <tbody>{s.rows.map((r) => <tr key={r.rowKey || r.termId}><td>{r.controlNo}</td><td>{r.customer}</td><td>{r.type}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="small">{r.currency === "INR" ? "INR" : r.fxRate == null ? "No rate" : `${fmtMonth(r.fxMonth)} @ ${r.fxRate} (v${r.fxVersion})`}</td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}</td></tr>)}</tbody></Table>
             <TotalsBlock T={s.totals} consistent={null} />
             <div className={`note ${Math.abs(live.netInr - s.totals.netInr) > 0.01 ? "note-warn" : ""}`}>Same records valued with today's rates and values: net INR {fmtNum(live.netInr)}. {Math.abs(live.netInr - s.totals.netInr) > 0.01 ? "This differs from the frozen figure, which is kept as finalized." : "No difference so far."}</div>
           </Card>);
@@ -804,7 +807,7 @@ function Masters() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Masters</h1><p className="muted">Lists that feed every entry screen.</p></div></header>
-      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
+      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
@@ -815,8 +818,8 @@ function Masters() {
           <td>{b?.city || ""}</td><td>{b?.state || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
         {edit && <RenameMaster edit={edit} onClose={() => setEdit(null)} />}
       </>}
-      {tab === "types" && <Card title="Departments and policy types" sub={<>As captured from the current platform: unvalidated and possibly incomplete. Final lists are open <Confirm /></>}>
-        <div className="note small">The notes list lines of business as {NOTES_LOB.join(", ")}. These departments differ: there is no Aviation or PA department, and Agriculture and Motor are extra. The notes win conflicts.</div>
+      {tab === "logins" && <LoginsTab />}
+      {tab === "types" && <Card title="Departments and policy types" >
         <div className="typegrid">{Object.entries(DEPARTMENTS).map(([dpt, types]) => <div key={dpt}><h4>{dpt} <span className="muted small">({types.length})</span></h4><ul>{types.map((t) => <li key={t}>{t}{typeCount[t] > 1 && <Pill tone="warn" title="Listed under more than one department">Also elsewhere</Pill>}</li>)}</ul>{dpt === "Miscellaneous" && <p className="small muted">Visible portion only; the source list scrolls further.</p>}</div>)}</div>
       </Card>}
       {tab === "team" && <TeamMaster />}
@@ -829,7 +832,7 @@ function Masters() {
 const TEAM_ROLES = ["CSC", "RM", "Accounts"];
 function TeamMaster() {
   const { db, update, log, toast } = useApp();
-  const [nt, setNt] = useState({ code: "", name: "", role: "CSC" });
+  const [nt, setNt] = useState({ code: "", name: "", role: "CSC", email: "" });
   const [addErr, setAddErr] = useState("");
   const [edit, setEdit] = useState(null); // { code, f: { code, name, role }, moveTo, err }
   const [showInactive, setShowInactive] = useState(true);
@@ -840,7 +843,7 @@ function TeamMaster() {
     if (/\s/.test(nt.code.trim())) return setAddErr("Codes cannot contain spaces");
     if (codeTaken(nt.code)) return setAddErr("That code is already used");
     update((d) => { d.team.push({ code: nt.code.trim().toUpperCase(), name: nt.name.trim(), role: nt.role, active: true }); log(d, { action: "Team member added", detail: `${nt.name.trim()} (${nt.code.trim().toUpperCase()}) as ${nt.role}` }); });
-    setNt({ code: "", name: "", role: "CSC" }); setAddErr(""); toast("Team member added");
+    setNt({ code: "", name: "", role: "CSC", email: "" }); setAddErr(""); toast("Team member added");
   };
   const open = (t) => setEdit({ code: t.code, f: { code: t.code, name: t.name, role: t.role }, moveTo: "", err: "" });
   const t0 = edit && db.team.find((t) => t.code === edit.code);
@@ -878,13 +881,14 @@ function TeamMaster() {
       <div className="filters">
         <Labeled label="Code" htmlFor="ms-tc"><input id="ms-tc" value={nt.code} onChange={(e) => setNt({ ...nt, code: e.target.value })} /></Labeled>
         <Labeled label="Name" htmlFor="ms-tn"><input id="ms-tn" value={nt.name} onChange={(e) => setNt({ ...nt, name: e.target.value })} /></Labeled>
+        <Labeled label="Email" htmlFor="ms-te" hint="Reminders go here"><input id="ms-te" type="email" value={nt.email} onChange={(e) => setNt({ ...nt, email: e.target.value })} /></Labeled>
         <Labeled label="Role" htmlFor="ms-tr"><Select id="ms-tr" value={nt.role} onChange={(v) => setNt({ ...nt, role: v })} options={TEAM_ROLES} /></Labeled>
         <div className="fld"><Btn kind="primary" onClick={add}>Add</Btn></div>
       </div>
       {addErr && <div className="err-text small" role="alert">{addErr}</div>}
     </Card>
     <label className="check small"><input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> Show inactive people</label>
-    <Table><thead><tr><th>Code</th><th>Name</th><th>Role</th><th className="num">Customers as CSC</th><th className="num">as RM</th><th>Status</th><th /></tr></thead>
+    <Table><thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Role</th><th className="num">Customers as CSC</th><th className="num">as RM</th><th>Status</th><th /></tr></thead>
       <tbody>{rows.map((t) => { const u = uses(t.code); return (
         <tr key={t.code} className={t.active === false ? "row-held" : ""}>
           <td>{t.code}</td><td>{t.name}</td><td>{t.role}</td><td className="num">{u.cse.length}</td><td className="num">{u.rm.length}</td>
@@ -896,6 +900,7 @@ function TeamMaster() {
         <div className="formgrid">
           <Labeled label="Code" htmlFor="tm-code" hint={assigned ? "Changing it updates every customer that uses it" : ""}><input id="tm-code" value={edit.f.code} onChange={(e) => setEdit({ ...edit, err: "", f: { ...edit.f, code: e.target.value } })} /></Labeled>
           <Labeled label="Name" htmlFor="tm-name"><input id="tm-name" value={edit.f.name} onChange={(e) => setEdit({ ...edit, err: "", f: { ...edit.f, name: e.target.value } })} /></Labeled>
+          <Labeled label="Email" htmlFor="tm-email" hint="Reminders go here"><input id="tm-email" type="email" value={edit.f.email || ""} onChange={(e) => setEdit({ ...edit, err: "", f: { ...edit.f, email: e.target.value } })} /></Labeled>
           <Labeled label="Role" htmlFor="tm-role"><Select id="tm-role" value={edit.f.role} onChange={(v) => setEdit({ ...edit, err: "", f: { ...edit.f, role: v } })} options={TEAM_ROLES} /></Labeled>
         </div>
         {edit.err && <div className="note note-bad small" role="alert">{edit.err}</div>}
@@ -918,7 +923,6 @@ function TeamMaster() {
         </div>
       </Card>
     )}
-    <p className="small muted">Open: RM inward/outward, more than one RM per record, accounts owner level <Confirm /></p>
   </>);
 }
 
@@ -940,11 +944,11 @@ function FxView() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>FX rates</h1><p className="muted">Monthly rates used to show INR to accounts. {LIVE ? "Enter the rates your accounts team uses." : "Demo values only, not market data."}</p></div></header>
-      <div className="note small">Which month a policy uses (booking, risk start or receipt) and who approves rates are open decisions <Confirm />. This demo uses the month of the report's date basis.</div>
+      <div className="note small">A report uses the rate for the month of the date it is based on.</div>
       {edit && <div className="row gap-s wrap"><Labeled label="Show an extra month" htmlFor="fx-new"><input id="fx-new" type="month" value={newMonth} onChange={(e) => setNewMonth(e.target.value)} /></Labeled></div>}
       <Table><thead><tr><th>Month</th>{["USD", "AED", "EUR"].map((c) => <th key={c} className="num">INR per {c}</th>)}</tr></thead>
         <tbody>{allMonths.slice().reverse().map((m) => <tr key={m}><td>{fmtMonth(m)}</td>{["USD", "AED", "EUR"].map((c) => { const r = fxRate(db, m, c); const row = db.fx.find((x) => x.month === m && x.cur === c); return <td key={c} className="num">{r ? <>{r.rate}<span className="muted small"> v{r.version}</span></> : <span className="bad-text">No rate</span>}{row?.versions.length > 1 && <div className="small muted">was {row.versions[row.versions.length - 2].rate}</div>}{edit && <div><button className="linkbtn small" onClick={() => { setEd({ month: m, cur: c }); setVal(r ? String(r.rate) : ""); setNote(""); setErr(""); }}>{r ? "Change" : "Add"}</button></div>}</td>; })}</tr>)}</tbody></Table>
-      {!edit && <p className="small muted">Only Admin can change rates in this demo <Confirm /></p>}
+      {!edit && <p className="small muted">Only Admin can change rates.</p>}
       {ed && <Modal title={`${ed.cur} rate for ${fmtMonth(ed.month)}`} onClose={() => setEd(null)}>
         <div className="formgrid"><Labeled label="INR per 1 unit" htmlFor="fx-val" req error={err}><input id="fx-val" inputMode="decimal" value={val} onChange={(e) => setVal(e.target.value)} /></Labeled><Labeled label="Source or note" htmlFor="fx-note"><input id="fx-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Demo rate" /></Labeled></div>
         <p className="small">Saving adds version {(db.fx.find((x) => x.month === ed.month && x.cur === ed.cur)?.versions.length || 0) + 1}. Earlier versions and finalized reports are kept.</p>
@@ -967,7 +971,6 @@ function PresetsView() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Brokerage presets</h1><p className="muted">Load by insurer + policy type, stay editable on each policy, and need a reviewer to confirm. A policy keeps the % it was confirmed with.</p></div></header>
-      <div className="note small">Open: whether "company" in the notes means insurer, customer or both; who may edit; how versions are approved <Confirm /></div>
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {edit && <Card title="New preset"><div className="filters"><Labeled label="Insurer" htmlFor="pr-ins"><Select id="pr-ins" value={np.ins} onChange={(v) => setNp({ ...np, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Policy type" htmlFor="pr-type"><Select id="pr-type" value={np.type} onChange={(v) => setNp({ ...np, type: v })} placeholder="Choose" options={[...new Set(Object.values(DEPARTMENTS).flat())].sort()} /></Labeled><Labeled label="Brokerage %" htmlFor="pr-pct"><input id="pr-pct" inputMode="decimal" value={np.pct} onChange={(e) => setNp({ ...np, pct: e.target.value })} /></Labeled><div className="fld"><Btn kind="primary" onClick={addPreset}>Save as draft</Btn></div></div></Card>}
       {db.presets.map((p) => { const act = activePreset(db, p.insurerId, p.policyType); return (
@@ -980,71 +983,39 @@ function PresetsView() {
   );
 }
 
+const REMIND_DAYS = [60, 30, 15];
 function Reminders() {
-  const { db, update, role, toast, log } = useApp();
-  const [days, setDays] = useState("30");
-  const [th, setTh] = useState(db.settings.balanceThresholdPct ?? "");
-  const exp = db.terms.filter((t) => t.status === "confirmed" && t.outcome === "Open" && !t.nextTermId && t.values.riskEnd >= TODAY && daysBetween(TODAY, t.values.riskEnd) <= +days);
-  const inst = db.terms.filter((t) => t.status === "confirmed").flatMap((t) => instalmentRows(t).filter((r) => r.out > 0 && daysBetween(TODAY, r.due) <= 30).map((r) => ({ t, r })));
-  const bal = db.terms.filter((t) => t.status === "confirmed" && isCargoOpen(db.policies.find((p) => p.id === t.policyId).type)).map((t) => { const si = +t.values.sumInsured; const used = t.cargoDecls.reduce((a, x) => a + x.siInr, 0); return { t, pct: r2((si - used) / si * 100), bal: si - used }; });
-  const C = (t) => db.customers.find((c) => c.id === db.policies.find((p) => p.id === t.policyId).customerId);
+  const { db, update, log, toast, role } = useApp();
+  const [th, setTh] = useState(db.settings.balanceThresholdPct ?? 30);
+  const [sent, setSent] = useState([]);
+  useEffect(() => { let on = true; remindersSent().then((r) => on && setSent(r)); return () => { on = false; }; }, []);
   const P = (t) => db.policies.find((p) => p.id === t.policyId);
+  const C = (t) => db.customers.find((c) => c.id === P(t).customerId);
+  const goesTo = (t) => { const m = db.team.find((x) => x.code === C(t).cse); return m?.email ? <>{m.name}<div className="small muted">{m.email}</div></> : <span className="bad-text">{m ? m.name + ": no email, add one in Masters" : "No CSC"}</span>; };
+  const wasSent = (key) => sent.find((x) => x.key === key);
+  const exp = db.terms.filter((t) => t.status === "confirmed" && !t.cancelled && t.outcome === "Open" && !t.nextTermId && t.values.renewable !== "No" && t.values.riskEnd >= TODAY && daysBetween(TODAY, t.values.riskEnd) <= 60).sort((a, b) => a.values.riskEnd.localeCompare(b.values.riskEnd));
+  const level = db.settings.balanceThresholdPct ?? 30;
+  const bal = db.terms.filter((t) => t.status === "confirmed" && !t.cancelled && isCargoOpen(P(t).type) && +t.values.sumInsured > 0).map((t) => { const si = +t.values.sumInsured; const used = t.cargoDecls.reduce((a, x) => a + x.siInr, 0); return { t, pct: r2((si - used) / si * 100), bal: si - used }; });
+  const inst = db.terms.filter((t) => t.status === "confirmed").flatMap((t) => instalmentRows(t).filter((r) => r.out > 0 && daysBetween(TODAY, r.due) <= 30).map((r) => ({ t, r })));
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Reminders preview</h1><p className="muted">What reminders would cover, shown on screen only. No email or message is sent from this demo.</p></div></header>
-      <div className="note note-warn">Not approved yet <Confirm />: triggers, recipients, templates, sender and opt-outs. Automation stays off until they are.</div>
-      <Card title="Renewal reminders" sub="Trigger window is a preview setting, not a decided rule.">
-        <Labeled label="Preview window" htmlFor="rm-days"><Select id="rm-days" value={days} onChange={setDays} options={[{ value: "30", label: "30 days before expiry" }, { value: "45", label: "45 days" }, { value: "60", label: "60 days" }]} /></Labeled>
-        {exp.length ? <Table><thead><tr><th>Insured</th><th>Policy</th><th>Ends</th><th>Basis</th><th>Would go to</th><th>Status</th></tr></thead><tbody>{exp.map((t) => <tr key={t.id}><td>{C(t).name}</td><td>{P(t).type}{t.values.renewable === "No" && <Pill tone="warn">Not renewable</Pill>}</td><td>{fmtDate(t.values.riskEnd)}</td><td className="small">Risk end date, {daysBetween(TODAY, t.values.riskEnd)} days away</td><td><Confirm /></td><td><Pill>Preview only, not sent</Pill></td></tr>)}</tbody></Table> : <Empty title="Nothing in this window" />}
+      <header className="page-head"><div><h1>Reminders</h1><p className="muted">Emails go to the CSC looking after the customer at 60, 30 and 15 days before a policy ends. Nothing is sent to customers.</p></div></header>
+      <Card title="Renewals in the next 60 days">
+        {exp.length ? <Table><thead><tr><th>Insured</th><th>Policy</th><th>Ends</th><th className="num">Days left</th><th>Goes to</th><th>Last reminder</th></tr></thead><tbody>{exp.map((t) => { const last = REMIND_DAYS.map((d) => wasSent(t.id + ":renew:" + d)).find(Boolean); return <tr key={t.id}><td>{C(t).name}</td><td>{P(t).type}<div className="small muted">{t.values.policyNo}</div></td><td>{fmtDate(t.values.riskEnd)}</td><td className="num">{daysBetween(TODAY, t.values.riskEnd)}</td><td>{goesTo(t)}</td><td className="small">{last ? fmtStamp(new Date(last.sent_at).toISOString()) : "Not yet"}</td></tr>; })}</tbody></Table> : <Empty title="No renewals in the next 60 days" />}
       </Card>
-      <Card title="Instalments due or overdue (next 30 days and past)">
-        {inst.length ? <Table><thead><tr><th>Insured</th><th>Instalment</th><th>Due</th><th className="num">Outstanding</th><th>Would go to</th><th>Status</th></tr></thead><tbody>{inst.map(({ t, r }) => <tr key={t.id + r.no}><td>{C(t).name}</td><td>{P(t).type}, #{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtMoney(r.out, t.values.currency)}</td><td><Confirm /></td><td><Pill>Preview only, not sent</Pill></td></tr>)}</tbody></Table> : <Empty title="No instalments due" />}
+      <Card title="Instalments due or overdue" sub="Shown here only. No email goes out for these.">
+        {inst.length ? <Table><thead><tr><th>Insured</th><th>Instalment</th><th>Due</th><th className="num">Outstanding</th></tr></thead><tbody>{inst.map(({ t, r }) => <tr key={t.id + r.no}><td>{C(t).name}</td><td>{P(t).type}, #{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtMoney(r.out, t.values.currency)}</td></tr>)}</tbody></Table> : <Empty title="No instalments due" />}
       </Card>
-      <Card title="Open policy balance" sub="Notes gave 30% only as an example. Set a preview value to see which policies would show.">
+      <Card title="Open policy balance" sub="An email goes out once when a cargo open policy falls below this level.">
         <div className="row gap-s wrap">
-          <Labeled label="Preview threshold (% of sum insured left)" htmlFor="rm-th"><input id="rm-th" inputMode="decimal" value={th} onChange={(e) => setTh(e.target.value)} disabled={role !== "admin"} /></Labeled>
-          {role === "admin" && <Btn onClick={() => { const v = th === "" ? null : isNum(th) && +th >= 0 && +th <= 100 ? +th : undefined; if (v === undefined) { toast("Enter a number from 0 to 100, or leave blank", "bad"); return; } update((d) => { d.settings.balanceThresholdPct = v; log(d, { action: "Preview threshold saved", detail: v == null ? "Threshold cleared" : `${v}% (preview only, not a decided rule)` }); }); toast(v == null ? "Threshold cleared" : "Preview threshold saved"); }}>Save preview threshold</Btn>}
+          <Labeled label="Remind when less than this % of sum insured is left" htmlFor="rm-th"><input id="rm-th" inputMode="decimal" value={th} onChange={(e) => setTh(e.target.value)} disabled={role !== "admin"} /></Labeled>
+          {role === "admin" && <Btn onClick={() => { if (!isNum(th) || +th < 0 || +th > 100) { toast("Enter a number from 0 to 100", "bad"); return; } update((d) => { d.settings.balanceThresholdPct = +th; log(d, { action: "Reminder level saved", detail: th + "% of sum insured" }); }); toast("Reminder level saved"); }}>Save</Btn>}
         </div>
-        <Table><thead><tr><th>Insured</th><th>Policy</th><th className="num">Balanced SI</th><th className="num">% left</th><th>Would remind?</th></tr></thead><tbody>{bal.map(({ t, pct, bal: b }) => <tr key={t.id}><td>{C(t).name}</td><td>{t.values.policyNo}</td><td className="num">{fmtMoney(b)}</td><td className="num">{pct}%</td><td>{db.settings.balanceThresholdPct == null ? <span className="muted">No threshold set</span> : pct < db.settings.balanceThresholdPct ? <Pill tone="warn">Yes (preview)</Pill> : "No"}</td></tr>)}</tbody></Table>
-      </Card>
-      <Card title="Sample wording (draft, not approved)">
-        <div className="paper-note">Dear customer, your {"{policy type}"} policy {"{policy no.}"} with {"{insurer}"} ends on {"{risk end date}"}. Please contact {"{CSC name}"} to discuss renewal. Sender, signature and opt-out text to be approved.</div>
+        {bal.length ? <Table><thead><tr><th>Insured</th><th>Policy</th><th className="num">Balanced SI</th><th className="num">% left</th><th>Below the level?</th><th>Goes to</th></tr></thead><tbody>{bal.map(({ t, pct, bal: b }) => <tr key={t.id}><td>{C(t).name}</td><td>{t.values.policyNo}</td><td className="num">{fmtMoney(b)}</td><td className="num">{pct}%</td><td>{pct < level ? <Pill tone="warn">Yes</Pill> : "No"}</td><td>{goesTo(t)}</td></tr>)}</tbody></Table> : <Empty title="No cargo open policies" />}
       </Card>
     </div>
   );
 }
-
-// The 15 questions the notes left open, answered by IndSure on 4 Nov 2026. "status" says honestly
-// whether the portal already works that way.
-const DECISIONS = [
-  ["CSE or CSC", "CSC. It is one role: the customer service coordinator who looks after the customer. Reports group it as \"CSC Wise\".", "built", "Renamed everywhere. Team members saved as CSE were changed to CSC."],
-  ["Departments and policy types", "One list. Every policy type sits under one department only. Where the notes and the old system disagree, the old system's name is kept and the duplicate is merged into it.", "partly", "Masters shows both lists and flags duplicates. Merging is done by hand in Masters for now."],
-  ["Date definitions", "Every date is kept separately and shown as DD/MM/YYYY. The business booked date starts as the policy issue date and can be changed. Brokerage received is counted on the date the money arrives. Remittance is its own date.", "built", "Booked date fills from the issue date. Every report lets you pick the date to use."],
-  ["Report totals", "The portal's totals are the only totals, worked out from the policy records. Gross premium + GST = net premium, the final amount paid. Brokerage is on gross, unless a policy is ticked for brokerage on net.", "built", "Reports show gross, GST and net separately."],
-  ["Brokerage presets", "\"Company\" means the insurer. A rate is set per insurer and policy type, charged on gross premium unless the policy is ticked for net. Accounts and Admin can change it. Every change is saved as a new version and each policy keeps the rate it was made with. No separate approval step for now.", "built", "Presets are per insurer and policy type, with versions."],
-  ["PAN and record keeping", "Do not collect PAN: the insurer does KYC, we do not need it. Keep business contacts only. Keep policy records for at least 10 years after the policy ends, and never delete them earlier.", "check", "PAN is not collected and nothing is deleted. Ask your compliance adviser to confirm the 10-year period against the IRDAI broker rules before going live."],
-  ["Reminders", "Renewal reminders 60, 30 and 15 days before the risk end date, to the CSC first. Open-policy balance reminder when less than 30% of the sum insured is left. Messages to customers only after the wording is approved.", "partly", "Reminders preview shows who would be reminded. Set the 30% threshold there (Admin). Sending email or WhatsApp is not built."],
-  ["Team and permissions", "Four roles: Operations / BD (CSC), Accounts, Admin, Read-only. Each customer has one CSC and one RM; the RM who brought the business is kept on each policy. Only Accounts and Admin export. After a report is finalized only Admin can correct it.", "partly", "The roles and their screens exist. They are a role switch, not logins: everyone on this computer can switch. Real logins are needed before more than one person uses it."],
-  ["Fleet changes", "The insurer's endorsement figure is final. We type it in; we never calculate our own premium for it.", "built", "Fleet changes take the premium and brokerage change from the insurer's document."],
-  ["Charterers' Liability declarations", "Monthly declaration: vessel, charter period, GRT and the premium the insurer charges for it. The premium comes from the insurer, not a formula.", "partly", "Declarations can be recorded. The exact fields should be checked with the marine team on the first real policy."],
-  ["Lost renewals", "The label is \"Renewed / Achieved / Lost\". For a lost renewal record who it went to (another broker, direct to the insurer, customer closed or did not buy) and why.", "partly", "\"Mark as lost\" saves who and why as free text. A fixed pick-list is not built."],
-  ["FX month and approval", "Use the rate for the month of the date the report uses (normally risk start). Admin enters the monthly rate; every change is kept.", "built", "FX rates are per month, Admin and Accounts can enter them, and versions are kept."],
-  ["Declarations over the limit", "Save it and flag it in red, and the CSC asks the insurer to raise the sum insured. Never block it: the cargo has already moved.", "built", "Over-limit declarations are saved and flagged."],
-  ["Fleet changes in reports", "Include them in business and brokerage totals in the month the insurer's endorsement is dated.", "todo", "Not built yet: fleet changes show on the policy but are left out of report totals."],
-  ["Technology and hosting", "Same stack as the rest of IndSure, no new vendor: this React portal, our own backend on the EC2 server, the Supabase database and file storage we already pay for.", "todo", "Today it runs only on this computer, with its own small records server. Moving it to EC2 and Supabase is the next build step."],
-];
-const STATUS = { built: ["good", "Built"], partly: ["warn", "Partly built"], todo: ["muted", "Not built yet"], check: ["bad", "Needs a legal check"] };
-function Decisions() {
-  return (
-    <div className="stack">
-      <header className="page-head"><div><h1>Decisions</h1><p className="muted">The questions the notes left open, answered on 4 Nov 2026. Each one says whether the portal already works that way.</p></div></header>
-      <Table><thead><tr><th>#</th><th>Topic</th><th>Decision</th><th>In the portal now</th></tr></thead>
-        <tbody>{DECISIONS.map(([a, b, st, c], i) => <tr key={a}><td>{i + 1}</td><td><strong>{a}</strong></td><td>{b}</td><td className="small"><Pill tone={STATUS[st][0]}>{STATUS[st][1]}</Pill><div>{c}</div></td></tr>)}</tbody></Table>
-      <Card title="How to read the labels"><p><Proposed /> is a design suggestion, not approved. <Legacy /> was seen on the current platform and is reference only. <Confirm /> still needs checking with the team.</p></Card>
-    </div>
-  );
-}
-
 
 // Scoped root: every rule in commercial.css sits under .ic-root, so nothing leaks into the rest of the app.
 export default function CommercialPortal() {

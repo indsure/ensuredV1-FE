@@ -14,12 +14,11 @@ export const DEPARTMENTS = {
   Engineering: ["Advance Loss of Profit Insurance", "Boiler and Pressure Plant Insurance", "Contractor All Risk Insurance", "Contractors Plant and Machinery Insurance", "Electronic Equipments Insurance", "Erection All Risk Insurance", "Machinery Breakdown Insurance", "Machinery Loss of Profit"],
   Agriculture: ["Weather Insurance Policy"],
   Marine: ["Charterers Liability", "Contractual Liability", "Delay in start up", "Freight, Demurrage and Defence", "Loss of Hire", "Marine Cargo - Open Policy", "Marine Cargo - Specific Policy", "Marine Hull & Machinery", "Marine Legal Liability", "Marine Transit Policy", "Protection & Indemnity"],
-  Liability: ["Agency Liability", "Bankers Indemnity Insurance", "Carrier Legal Liability", "Commercial General Liability Insurance", "Cyber Security Insurance", "Directors and Officers Liability Insurance", "Errors and Ommissions Insurance", "FMC BOND", "Marine Legal Liability", "Media Liability Insurance", "Multi Model Transport Operator", "Product Liability Insurance", "Professional Indemnity Insurance", "Public Liability Insurance - Act", "Public Liability Insurance - Industrial", "Public Liability Insurance - Non Industrial", "Ship Brokers Liability", "Signature Professional Indemnity", "Workmens Compensation Policy"],
-  Miscellaneous: ["ATM Safe Insurance", "Baggage Insurance", "Burglary Insurance", "Cattle Insurance", "Cellular Network Insurance", "Commercial Package policy", "Credit Insurance", "Customs duty package", "Event Cancellation Insurance", "Fidelity Guarantee Insurance", "Film Insurance", "Fine Arts", "Group Personal Accident Policy", "Home Package Policy", "Hotel and Restaurant Package Policy", "Individual Personal Accident Policy", "Jewellers Block Insurance", "Kidnap Ransom and Extortion Insurance", "Lift Irrigation Insurance", "Money Insurance", "Neon Sign insurance", "Office Package Policy", "Plate Glass Insurance", "Port Package Policy", "Portable Equipment Insurance", "Shopkeeper Package Policy", "Signage Insurance", "Special contingency", "Traders Package Policy"],
+  Liability: ["Agency Liability", "Bankers Indemnity Insurance", "Carrier Legal Liability", "Commercial General Liability Insurance", "Cyber Security Insurance", "Directors and Officers Liability Insurance", "Errors and Ommissions Insurance", "FMC BOND", "Media Liability Insurance", "Multi Model Transport Operator", "Product Liability Insurance", "Professional Indemnity Insurance", "Public Liability Insurance - Act", "Public Liability Insurance - Industrial", "Public Liability Insurance - Non Industrial", "Ship Brokers Liability", "Signature Professional Indemnity", "Workmens Compensation Policy"],
+  Miscellaneous: ["ATM Safe Insurance", "Baggage Insurance", "Burglary Insurance", "Cattle Insurance", "Cellular Network Insurance", "Commercial Package policy", "Credit Insurance", "Customs duty package", "Event Cancellation Insurance", "Fidelity Guarantee Insurance", "Film Insurance", "Fine Arts", "Home Package Policy", "Hotel and Restaurant Package Policy", "Jewellers Block Insurance", "Kidnap Ransom and Extortion Insurance", "Lift Irrigation Insurance", "Money Insurance", "Neon Sign insurance", "Office Package Policy", "Plate Glass Insurance", "Port Package Policy", "Portable Equipment Insurance", "Shopkeeper Package Policy", "Signage Insurance", "Special contingency", "Traders Package Policy"],
   Health: ["Critical illness", "Group Mediclaim Policy", "Group Personal Accident Policy", "Group Travel Insurance", "Health Family Floater Policy", "Hospital Cash", "Individual Mediclaim Policy", "Individual Personal Accident Policy", "TOP UP MEDICLAIM", "Travel Insurance"],
   Motor: ["CPA Pvt Car", "CPA two wheeler", "Motor Commercial Vehicle Policy", "Motor Miscellaneous Policy", "Motor Private Car Package Policy", "Motor Third Party Liability Policy", "Motor Two Wheeler Policy", "PVT Car OD only", "Two wheeler OD only"],
 };
-export const NOTES_LOB = ["Fire", "Engg", "Marine", "Aviation", "Liability", "Health", "PA", "Misc", "Others"];
 
 export const VESSEL_TYPES = ["Protection & Indemnity", "Marine Hull & Machinery", "Charterers Liability"];
 export const isVesselType = (t) => VESSEL_TYPES.includes(t);
@@ -330,7 +329,7 @@ export function seed() {
   if (!LIVE) return demoSeed();
   const d = demoSeed();
   Object.keys(d).forEach((k) => { if (Array.isArray(d[k])) d[k] = []; });
-  d.settings = { balanceThresholdPct: null };
+  d.settings = { balanceThresholdPct: 30 };
   return d;
 }
 function demoSeed() {
@@ -368,7 +367,7 @@ function demoSeed() {
       { id: "PR6", insurerId: "INS3", policyType: "Marine Cargo - Open Policy", versions: [{ v: 1, pct: 15, status: "confirmed", at: "2026-04-01T10:00:00", by: "Admin (demo)" }, { v: 2, pct: 14, status: "draft", at: "2026-10-20T16:00:00", by: "Admin (demo)" }] },
     ],
     customers: [], policies: [], terms: [], documents: [], audit: [], snapshots: [],
-    settings: { balanceThresholdPct: null },
+    settings: { balanceThresholdPct: 30 },
   };
 
   // Demo FX rates: fictional, not market data.
@@ -498,7 +497,7 @@ function demoSeed() {
 
   // P9: Health floater lost at renewal.
   const p9 = pol({ customerId: "C8", dept: "Health", type: "Health Family Floater Policy", insurerId: "INS1", branchId: "BR1", cover: "Individual" });
-  const t9 = term(p9, { outcome: "Lost", lossDetail: "Customer said he renewed through another intermediary (meaning of LossBy not confirmed)", values: { policyNo: "BSG/HFF/2025/4410", planName: "Family floater", uin: "", proposalDate: "2025-09-28", issueDate: "2025-10-02", riskStart: "2025-10-06", riskEnd: "2026-10-05", bookDate: "2025-10-02", currency: "INR", sumInsured: 1000000, premiumRate: "", grossPremium: 24500, gstPct: 18, gst: 4410, stampDuty: 0, netPremium: 28910, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
+  const t9 = term(p9, { outcome: "Lost", lossDetail: "Customer said he renewed through another intermediary ", values: { policyNo: "BSG/HFF/2025/4410", planName: "Family floater", uin: "", proposalDate: "2025-09-28", issueDate: "2025-10-02", riskStart: "2025-10-06", riskEnd: "2026-10-05", bookDate: "2025-10-02", currency: "INR", sumInsured: 1000000, premiumRate: "", grossPremium: 24500, gstPct: 18, gst: 4410, stampDuty: 0, netPremium: 28910, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
   log({ at: "2026-10-07T10:00:00", customerId: "C8", policyId: p9, termId: t9.id, action: "Marked lost", detail: "Renewal outcome set to Lost with detail entered by Arun Pillai." });
 
   // P10: draft from a poor scan, fields missing.

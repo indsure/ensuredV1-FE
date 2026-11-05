@@ -3,7 +3,7 @@ import { LIVE } from "./data.js";
 import { saveFile } from "./store.js";
 import { FIELDS, FIELD, CURRENCIES, NUMERIC } from "./data.js";
 import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf } from "./lib.js";
-import { useApp, Btn, Pill, Labeled, AskFirst, Confirm, Icon, DateInput } from "./ui.jsx";
+import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput } from "./ui.jsx";
 import { readPolicyPdf, readerSelfTest, ReadError } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -261,7 +261,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               })}
               {g === "Brokerage" && (
                 <div className="brok">
-                  <p className="small">{preset ? <>Preset for {ins?.name} + {policyType}: <strong>{preset.pct}%</strong> (version {preset.version}). It loads as a starting value and stays editable.</> : <>No confirmed preset for this insurer and policy type. Enter brokerage by hand.</>} Preset keying is open <Confirm /></p>
+                  <p className="small">{preset ? <>Preset for {ins?.name} + {policyType}: <strong>{preset.pct}%</strong> (version {preset.version}). It loads as a starting value and stays editable.</> : <>No confirmed preset for this insurer and policy type. Enter brokerage by hand.</>}</p>
                   <label className="check"><input id="rv-brok-net" type="checkbox" checked={!!vals.brokerageOnNet} onChange={(e) => setVals((p) => ({ ...p, brokerageOnNet: e.target.checked }))} /> Brokerage on net premium (leave unticked for gross)</label>
                   {isNum(vals.brokeragePct) && isNum(vals.brokerageOnNet ? vals.netPremium : vals.grossPremium) && <p className="small">Brokerage amount: <strong>{fmtValue("grossPremium", brokerageOf(vals), vals.currency)}</strong> ({vals.brokerageOnNet ? "net" : "gross"} premium x brokerage %)</p>}
                   <label className="check"><input id="rv-brok-ok" type="checkbox" checked={brokOk} onChange={(e) => setBrokOk(e.target.checked)} /> I have checked the brokerage for this policy</label>

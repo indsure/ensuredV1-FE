@@ -124,6 +124,30 @@ export function businessRows(db, f) {
   const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(f.fy);
   const rows = [];
   let drafts = 0;
+  const passes = (p, c, v) => (f.vertical === "ALL" || c.vertical === f.vertical) && (!f.insurer || p.insurerId === f.insurer) && (!f.dept || p.dept === f.dept) && (!f.cse || c.cse === f.cse) && (!f.rm || c.rm === f.rm) && (!f.currency || v.currency === f.currency);
+  // One report row for a term. Fleet rows start from this and replace the money.
+  const rowOf = (t) => {
+    const p = db.policies.find((x) => x.id === t.policyId);
+    const c = db.customers.find((x) => x.id === p.customerId);
+    const v = t.values;
+    if (!passes(p, c, v) || (f.nr && f.nr !== "Fleet change")) return null;
+    const basisDate = v[f.basis] || "";
+    const ins = insurerOf(db, p.insurerId), br = branchOf(db, p.insurerId, p.branchId);
+    const month = basisDate.slice(0, 7);
+    const fx = month ? fxRate(db, month, v.currency) : null;
+    const brokerage = brokerageOf(v);
+    const toInr = (x) => (fx && isNum(x) ? r2(+x * fx.rate) : null);
+    return {
+      termId: t.id, policyId: p.id, controlNo: p.controlNo, policyNo: v.policyNo, custCode: c.code, customer: c.name, vertical: c.vertical,
+      dept: p.dept, type: p.type, insurer: ins?.name || "--", branch: br ? `${br.name}, ${br.city}` : "--", cse: teamName(db, c.cse), rm: c.rm ? teamName(db, c.rm) : "Not assigned",
+      nr: t.nr, basisDate, month, proposalDate: v.proposalDate, issueDate: v.issueDate, riskStart: v.riskStart, riskEnd: v.riskEnd, bookDate: v.bookDate,
+      currency: v.currency, sumInsured: +v.sumInsured || 0, grossPremium: +v.grossPremium || 0, gst: +v.gst || 0, stampDuty: +v.stampDuty || 0, netPremium: +v.netPremium || 0,
+      brokeragePct: +v.brokeragePct || 0, brokerage, presetNote: t.brokerageSnap ? `Preset v${t.brokerageSnap.version}` : "Entered manually",
+      fxMonth: month, fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
+      grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
+      ref: c.source === "Referral" ? c.referral || "Referral" : "Direct business", location: c.city,
+    };
+  };
   for (const t of db.terms) {
     const p = db.policies.find((x) => x.id === t.policyId);
     const c = db.customers.find((x) => x.id === p.customerId);
@@ -153,6 +177,21 @@ export function businessRows(db, f) {
       grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
       ref: c.source === "Referral" ? c.referral || "Referral" : "Direct business", location: c.city,
     });
+  }
+  // Fleet changes count in the month they take effect, whatever date the report is based on.
+  for (const t of db.terms) {
+    if (t.status === "draft" || t.cancelled) continue;
+    const base = rowOf(t);
+    if (!base) continue;
+    for (const s of t.vesselSchedules || []) {
+      const ch = s.change;
+      if (!ch || !ch.effDate || ch.effDate < from || ch.effDate > to || (!+ch.premiumAdj && !+ch.brokerageAdj)) continue;
+      const fx = fxRate(db, ch.effDate.slice(0, 7), t.values.currency);
+      const inr = (x) => (fx ? r2(+x * fx.rate) : null);
+      rows.push({ ...base, rowKey: `${t.id}:${s.version}`, nr: "Fleet change", basisDate: ch.effDate, month: ch.effDate.slice(0, 7), fxMonth: ch.effDate.slice(0, 7), fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
+        sumInsured: 0, grossPremium: +ch.premiumAdj || 0, gst: 0, stampDuty: 0, netPremium: +ch.premiumAdj || 0, brokerage: +ch.brokerageAdj || 0, presetNote: "Insurer's figure",
+        grossInr: inr(ch.premiumAdj || 0), gstInr: 0, netInr: inr(ch.premiumAdj || 0), brokerageInr: inr(ch.brokerageAdj || 0), siInr: 0 });
+    }
   }
   rows.sort((a, b) => a.basisDate.localeCompare(b.basisDate) || a.controlNo.localeCompare(b.controlNo));
   return { rows, drafts, from, to };

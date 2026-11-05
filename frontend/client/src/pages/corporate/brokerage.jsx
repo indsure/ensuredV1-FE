@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { TODAY } from "./data.js";
 import { fmtDate, fmtMoney, fmtNum, isNum, r2, nowIso, fxRate, brokerageOf, brokerageBase } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, Confirm, DocModal, DateInput } from "./ui.jsx";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, DocModal, DateInput } from "./ui.jsx";
 import { brokerageQuery } from "./docs.js";
 
 const STATUS_TONE = { Paid: "good", "Short paid": "warn", "Not received": "bad", Overpaid: "info" };
@@ -13,7 +13,7 @@ export function brokerageLedger(db) {
     const p = db.policies.find((x) => x.id === t.policyId);
     const c = db.customers.find((x) => x.id === p.customerId);
     const v = t.values;
-    const expected = brokerageOf(v);
+    const expected = r2(brokerageOf(v) + (t.vesselSchedules || []).reduce((a, s) => a + (+s.change?.brokerageAdj || 0), 0));
     const pays = (db.remittances || []).flatMap((r) => r.lines.filter((l) => l.termId === t.id).map((l) => ({ ...l, ref: r.ref, date: r.date })));
     const received = r2(pays.reduce((a, l) => a + l.amount, 0));
     const out = r2(expected - received);
@@ -121,7 +121,6 @@ export function BrokerageView() {
           </Card>
         );
       })}
-      <p className="small muted">How TDS and GST on brokerage are shown is not decided <Confirm /></p>
       {doc && <DocModal doc={doc} onClose={() => setDoc(null)} />}
     </div>
   );

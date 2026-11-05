@@ -1,7 +1,7 @@
 // One policy, its terms, and every tab that hangs off a term.
 import { FIELDS, FIELD, TODAY, LIVE, PLAIN_SAMPLES, fixtureById, makeEndorsementFixture, makeRenewalFixture, isVesselType, isCargoOpen, isCharterers, CURRENCIES } from "./data.js";
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy, Icon, DocModal, DateInput } from "./ui.jsx";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Icon, DocModal, DateInput } from "./ui.jsx";
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
@@ -30,7 +30,7 @@ export function DocViewer({ doc, onClose }) {
       <KV items={[["Type", doc.kind], ["Added", `${fmtStamp(doc.addedAt)} by ${doc.addedBy}`], ["Note", doc.note || "--"]]} />
       {lines ? <DocPane lines={lines} title={doc.name} generated={!!doc.lines && !doc.extracted} extracted={doc.extracted} />
         : doc.userFile ? <div className="note">{doc.userFile.fileId ? <>Original kept: "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB).</> : <>Your file "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB) is listed only; the file itself was not kept.</>}</div>
-          : <div className="note">Sample attachment with no preview in this demo.</div>}
+          : <div className="note">No preview for this attachment.</div>}
     </Modal>
   );
 }
@@ -77,7 +77,7 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
       <div className="crumbs"><button className="linkbtn" onClick={() => go({ view: "customer", id: c.id })}>{c.name}</button> / {p.type}</div>
       <header className="page-head">
         <div>
-          <p className="eyebrow">{p.dept} · Control no. {p.controlNo} <Legacy /></p>
+          <p className="eyebrow">{p.dept} · Control no. {p.controlNo}</p>
           <h1>{term.values.policyNo || "Policy number not entered"}</h1>
           <p className="muted">{p.type} · {ins?.name}, {br?.name} ({br?.city}, {br?.country}){p.vesselMode ? ` · ${p.vesselMode}` : ""}{p.cover ? ` · ${p.cover}` : ""}</p>
         </div>
@@ -341,7 +341,7 @@ function PaymentsTab({ p, term, openDoc }) {
         <div className="stat"><span>Received</span><strong>{fmtMoney(pay.received, cur)}</strong><em>{term.receipts.length} receipt(s)</em></div>
         <div className="stat"><span>Outstanding</span><strong className={pay.outstanding > 0 ? "bad-text" : ""}>{fmtMoney(pay.outstanding, cur)}</strong><em>{pay.label}</em></div>
       </div>
-      <Card title="Instalment schedule" sub={<>Due date and receipt date are kept separately. Booking per receipt or per policy is open <Confirm /></>}
+      <Card title="Instalment schedule" sub="Due date and receipt date are kept separately."
         actions={can("schedule") && !editSched && <Btn onClick={() => setEditSched(true)}>{term.instalments.length ? "Edit schedule" : "Set up instalments"}</Btn>}>
         {editSched ? <ScheduleEditor p={p} term={term} onDone={() => setEditSched(false)} /> : rows.length ? (
           <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Amount</th><th className="num">Tax</th><th className="num">Total due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
@@ -511,7 +511,7 @@ function VesselSection({ p, term, openDoc }) {
         <div className="boxed stack">
           {step === "form" ? (
             <>
-              <div className="note note-warn small">No pro-rata rule is applied. Enter the premium and brokerage adjustments exactly as the insurer states them. The calculation rule is an open decision <Confirm /></div>
+              <div className="note note-warn small">Enter the premium and brokerage adjustments exactly as the insurer states them.</div>
               <div className="formgrid">
                 <Labeled label="Change" htmlFor="fl-type"><Select id="fl-type" value={f.type} onChange={set("type")} options={["Add", "Remove"]} /></Labeled>
                 {f.type === "Add" ? <>
@@ -545,7 +545,7 @@ function VesselSection({ p, term, openDoc }) {
           </details>
         ))}
       </div>
-      <p className="small muted">Recorded adjustments on this term: premium {fmtMoney(adjP, cur)}, brokerage {fmtMoney(adjB, cur)}. They are kept on the policy and are not added into report totals until the booking rule is decided <Confirm /></p>
+      <p className="small muted">Recorded adjustments on this term: premium {fmtMoney(adjP, cur)}, brokerage {fmtMoney(adjB, cur)}. They count in the business report and brokerage totals in the month each change takes effect.</p>
     </Card>
   );
 }
@@ -620,7 +620,7 @@ function CargoSection({ p, term }) {
   const premUsed = r2(live.reduce((a, x) => a + x.premiumInr, 0));
   const bal = r2(si - used);
   const pct = si ? r2(bal / si * 100) : 0;
-  const th = db.settings.balanceThresholdPct;
+  const th = db.settings.balanceThresholdPct ?? 30;
   const customer = db.customers.find((c) => c.id === p.customerId);
   const insurer = insurerOf(db, p.insurerId);
   const hasValue = isNum(f.inrValue) && +f.inrValue > 0;
@@ -655,17 +655,17 @@ function CargoSection({ p, term }) {
         <div className="stat"><span>Balanced SI</span><strong>{fmtMoney(bal)}</strong><em>{pct}% of sum insured left</em></div>
       </div>
       <div className="meter" role="img" aria-label={`${pct}% remaining`}><div style={{ width: `${Math.max(0, Math.min(100, 100 - pct))}%` }} /></div>
-      <p className="small">{th == null ? <>Low-balance reminder: threshold not set. The notes gave 30% only as an example <Confirm /></> : bal / si * 100 < th ? <Pill tone="warn">Below the preview threshold of {th}%</Pill> : <>Above the preview threshold of {th}%.</>}</p>
+      <p className="small">{bal / si * 100 < th ? <Pill tone="warn">Below the reminder level of {th}%</Pill> : <>Above the reminder level of {th}%.</>}</p>
       {!profile ? (
         <div className="note row between wrap gap-s"><span><strong>No policy conditions recorded for this open policy.</strong> Declarations cannot be checked until they are.</span>{can("declare") && <Btn onClick={setUp}>{LIVE ? "Use example cargo conditions" : "Use the demo cargo conditions"}</Btn>}</div>
       ) : (
-        <details className="conditions"><summary>Policy conditions used for the checks <Proposed /></summary>
+        <details className="conditions"><summary>Policy conditions used for the checks</summary>
           <div className="small stack conditions-body">
             <div><strong>Insured interest:</strong> {profile.interestLabel}. <strong>Per sending limit:</strong> {fmtMoney(profile.perSendingLimitInr)}. <strong>Excess:</strong> {profile.excess.pct}% of the consignment, minimum {fmtMoney(profile.excess.minimumInr)}.</div>
             <div><strong>Basis of valuation:</strong> invoice value plus duty, plus 10%. Returned or used goods at depreciated market value.</div>
             <div><strong>War and strikes:</strong> {profile.warZones.map((z) => `${z.label} (${z.buyBackPct == null ? "excluded, no buy-back" : `${z.buyBackPct}% buy-back ${z.deadline}`})`).join("; ")}.</div>
             <div><strong>Excluded:</strong> sanctioned countries, bulk and break-bulk, items over 12 m by 2.5 m by 3.1 m or {profile.owcMT} t. Cargo must be containerised at sea.</div>
-            <div className="muted">{LIVE ? "Example conditions, not read from this policy. Check every result against the policy schedule before relying on it." : "Fictional demo conditions."} A real policy's conditions would be entered from its schedule <Confirm /></div>
+            <div className="muted">{LIVE ? "Example conditions, not read from this policy. Check every result against the policy schedule before relying on it." : "Fictional demo conditions."}</div>
           </div>
         </details>
       )}
@@ -734,27 +734,29 @@ function CharterSection({ p, term }) {
   const [tried, setTried] = useState(false);
   const save = () => {
     setTried(true);
-    if (!f.period.trim() || !f.reference.trim()) return;
+    if (!f.period.trim() || !f.reference.trim() || (f.premium && !isNum(f.premium))) return;
     update((d) => { const t = d.terms.find((x) => x.id === term.id); t.charterDecls.push({ ...f, id: `CD${++d.seq}`, at: nowIso(), by: who }); log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Charterers declaration saved", detail: `${f.period}, ${f.reference}. No premium effect applied (not specified).` }); });
     toast("Charterers declaration saved");
-    setOpen(false); setF({ period: "", reference: "", vessel: "", remarks: "" }); setTried(false);
+    setOpen(false); setF({ period: "", reference: "", vessel: "", remarks: "", from: "", to: "", grt: "", premium: "" }); setTried(false);
   };
   return (
-    <Card title="Charterers' Liability declarations" sub="Kept separate from cargo declarations. The notes require them, but their fields are not specified yet."
+    <Card title="Charterers' Liability declarations" sub="Kept separate from cargo declarations. The premium is the figure the insurer charges."
       actions={can("declare") && !open && <Btn kind="primary" onClick={() => setOpen(true)}>Add declaration</Btn>}>
-      <div className="note note-warn small">Open items <Confirm />: which fields are needed, how often declarations are made, and whether they change premium. Only placeholder fields are captured; no premium is calculated.</div>
       {open && (
         <div className="formgrid boxed">
           <Labeled label="Declaration period" htmlFor="ch-per" req error={tried && !f.period.trim() ? "Required" : null}><input id="ch-per" value={f.period} placeholder="For example: Nov 2026" onChange={(e) => setF({ ...f, period: e.target.value })} /></Labeled>
           <Labeled label="Charter party reference" htmlFor="ch-ref" req error={tried && !f.reference.trim() ? "Required" : null}><input id="ch-ref" value={f.reference} onChange={(e) => setF({ ...f, reference: e.target.value })} /></Labeled>
           <Labeled label="Vessel" htmlFor="ch-ves"><input id="ch-ves" value={f.vessel} onChange={(e) => setF({ ...f, vessel: e.target.value })} /></Labeled>
           <Labeled label="Remarks" htmlFor="ch-rem"><input id="ch-rem" value={f.remarks} onChange={(e) => setF({ ...f, remarks: e.target.value })} /></Labeled>
-          <p className="fld-wide muted small">Further fields: to be specified <Confirm /> · Premium effect: to be specified <Confirm /></p>
+          <Labeled label="Charter from" htmlFor="ch-from"><DateInput id="ch-from" value={f.from || ""} onChange={(e) => setF({ ...f, from: e.target.value })} /></Labeled>
+          <Labeled label="Charter to" htmlFor="ch-to"><DateInput id="ch-to" value={f.to || ""} onChange={(e) => setF({ ...f, to: e.target.value })} /></Labeled>
+          <Labeled label="GRT" htmlFor="ch-grt"><input id="ch-grt" inputMode="numeric" value={f.grt || ""} onChange={(e) => setF({ ...f, grt: e.target.value.replace(/,/g, "") })} /></Labeled>
+          <Labeled label="Premium charged by the insurer" htmlFor="ch-prem" error={tried && f.premium && !isNum(f.premium) ? "Enter a number" : null}><input id="ch-prem" inputMode="decimal" value={f.premium || ""} onChange={(e) => setF({ ...f, premium: e.target.value.replace(/,/g, "") })} /></Labeled>
           <div className="row gap-s fld-wide"><Btn onClick={() => { setOpen(false); setTried(false); }}>Cancel</Btn><Btn kind="primary" onClick={save}>Save declaration</Btn></div>
         </div>
       )}
-      {term.charterDecls.length ? <Table><thead><tr><th>Period</th><th>Reference</th><th>Vessel</th><th>Remarks</th><th>Premium effect</th><th>Recorded</th></tr></thead>
-        <tbody>{term.charterDecls.map((x) => <tr key={x.id}><td>{x.period}</td><td>{x.reference}</td><td>{x.vessel || "--"}</td><td>{x.remarks || "--"}</td><td><Confirm /></td><td className="small">{fmtStamp(x.at)} by {x.by}</td></tr>)}</tbody></Table> : <Empty title="No charterers declarations yet" />}
+      {term.charterDecls.length ? <Table><thead><tr><th>Period</th><th>Reference</th><th>Vessel</th><th>Charter dates</th><th className="num">GRT</th><th className="num">Premium</th><th>Remarks</th><th>Recorded</th></tr></thead>
+        <tbody>{term.charterDecls.map((x) => <tr key={x.id}><td>{x.period}</td><td>{x.reference}</td><td>{x.vessel || "--"}</td><td className="small">{x.from || x.to ? `${fmtDate(x.from)} to ${fmtDate(x.to)}` : "--"}</td><td className="num">{x.grt || "--"}</td><td className="num">{x.premium ? fmtMoney(+x.premium, term.values.currency) : "--"}</td><td>{x.remarks || "--"}</td><td className="small">{fmtStamp(x.at)} by {x.by}</td></tr>)}</tbody></Table> : <Empty title="No charterers declarations yet" />}
     </Card>
   );
 }
@@ -807,10 +809,12 @@ function RenewalsTab({ p, term, terms, go }) {
     });
     toast("Renewal draft discarded");
   };
+  const [lossTo, setLossTo] = useState("");
   const markLost = () => {
     setTried(true);
-    if (!loss.trim()) return;
-    update((d) => { const t = d.terms.find((x) => x.id === base.id); t.outcome = "Lost"; t.lossDetail = loss.trim(); log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Marked lost", detail: `Renewal outcome set to Lost. Detail: ${loss.trim()}` }); });
+    if (!lossTo) return;
+    const said = lossTo + (loss.trim() ? ": " + loss.trim() : "");
+    update((d) => { const t = d.terms.find((x) => x.id === base.id); t.outcome = "Lost"; t.lossTo = lossTo; t.lossDetail = said; log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Marked lost", detail: `Renewal outcome set to Lost. ${said}` }); });
     toast("Renewal outcome set to Lost");
     setLosing(false);
   };
@@ -851,7 +855,8 @@ function RenewalsTab({ p, term, terms, go }) {
                   <div className="row gap-s wrap">{!LIVE && <Btn disabled={!can("renew")} why="Your role cannot renew" onClick={() => startRenewal()}>Renew with a sample document</Btn>}<Btn disabled={!can("markLost")} why="Your role cannot change outcomes" onClick={() => setLosing(true)}>Mark as lost</Btn></div></>
                 ) : (
                   <div className="formgrid boxed">
-                    <Labeled label="Loss detail" htmlFor="ls-detail" req wide error={tried && !loss.trim() ? "Say what happened, in your own words" : null} hint={<>The legacy report has a LossBy column. What it should record is not decided <Confirm /></>}><input id="ls-detail" value={loss} onChange={(e) => setLoss(e.target.value)} /></Labeled>
+                    <Labeled label="Lost to" htmlFor="ls-to" req error={tried && !lossTo ? "Choose where it went" : null}><Select id="ls-to" value={lossTo} onChange={setLossTo} placeholder="Choose" options={["Another broker", "Direct to the insurer", "Customer closed", "Customer did not buy", "Other"]} /></Labeled>
+                    <Labeled label="Why (optional)" htmlFor="ls-detail" wide><input id="ls-detail" value={loss} onChange={(e) => setLoss(e.target.value)} /></Labeled>
                     <div className="row gap-s fld-wide"><Btn onClick={() => { setLosing(false); setTried(false); }}>Cancel</Btn><Btn kind="danger" onClick={markLost}>Save as lost</Btn></div>
                   </div>
                 )}

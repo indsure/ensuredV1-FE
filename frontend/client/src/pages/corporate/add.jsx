@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { DEPARTMENTS, FIXTURES, fixtureById, isVesselType, LIVE } from "./data.js";
 import { nowIso, missingFields, insurerOf } from "./lib.js";
-import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill, Confirm } from "./ui.jsx";
+import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName } from "./review.jsx";
 import { placeOf } from "./places.js";
 
@@ -236,7 +236,7 @@ export function QuickAdd() {
           {extraErr && <div className="err-text small" role="alert">{extraErr}</div>}
           {tried && todo.length > 0 && <div className="note note-warn small"><strong>Still needed:</strong> {todo.join("; ")}.</div>}
           <div className="row gap-s wrap"><Btn kind="primary" onClick={toReview}>Continue to the values</Btn><span className="small muted">Next: policy number, dates and amounts read from the same document, for you to check.</span></div>
-          <p className="small muted">Matching uses the names in the masters. A wrong match is easy to change here; nothing is saved until the review screen <Confirm /></p>
+          <p className="small muted">Matching uses the names in the masters. A wrong match is easy to change here; nothing is saved until the review screen</p>
         </Card>
       )}
     </div>

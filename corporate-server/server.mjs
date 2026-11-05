@@ -26,6 +26,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, data TEXT NOT NULL, saved_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS book_versions (version INTEGER PRIMARY KEY, data TEXT NOT NULL, saved_at TEXT NOT NULL, note TEXT);
   CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, name TEXT NOT NULL, size INTEGER NOT NULL, saved_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, message TEXT, page TEXT, file_id TEXT, saved_at TEXT NOT NULL);
 `);
 const now = () => new Date().toISOString();
 const getBook = () => db.prepare("SELECT version, data, saved_at FROM book WHERE id = 1").get();
@@ -124,6 +125,12 @@ const server = http.createServer(async (req, res) => {
       const how = url.searchParams.has("download") ? "attachment" : "inline";
       res.writeHead(200, { ...cors, "content-type": TYPES[ext], "content-disposition": `${how}; filename="${row.name.replace(/"/g, "")}"` });
       return fs.createReadStream(file).pipe(res);
+    }
+    if (req.method === "POST" && p === "/api/corp/feedback") {
+      const f = JSON.parse((await readBody(req, 64 * 1024)).toString("utf8"));
+      if (!String(f.message || "").trim()) return send(res, 400, { error: "say what happened" }, cors);
+      const r = db.prepare("INSERT INTO feedback (kind, message, page, file_id, saved_at) VALUES (?, ?, ?, ?, ?)").run(String(f.kind || ""), String(f.message), String(f.page || ""), f.fileId || null, now());
+      return send(res, 200, { id: Number(r.lastInsertRowid) }, cors);
     }
     return send(res, 404, { error: "not found" }, cors);
   } catch (e) {

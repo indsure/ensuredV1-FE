@@ -136,3 +136,18 @@ export const fileUrl = (id, download = false) => {
   const q = [REMOTE && session() ? `t=${encodeURIComponent(session().fileKey)}` : "", download ? "download=1" : ""].filter(Boolean).join("&");
   return `${SERVER}/api/corp/files/${id}${q ? `?${q}` : ""}`;
 };
+
+// ---- Online only: who is signed in, logins, problem reports, reminders
+export const currentUser = () => (REMOTE ? session()?.user || { name: "Admin", role: "admin" } : null);
+async function api(method, path, body) {
+  const r = await fetch(`${SERVER}${path}`, { method, headers: { ...(body ? { "content-type": "application/json" } : {}), ...auth() }, body: body ? JSON.stringify(body) : undefined });
+  return { ok: r.ok, status: r.status, body: await r.json().catch(() => null) };
+}
+export async function listLogins() { const r = await api("GET", "/api/corp/users"); if (!r.ok) throw new Error("logins"); return r.body; }
+export async function addLogin(u) { try { return await api("POST", "/api/corp/users", u); } catch (e) { return { ok: false }; } }
+export async function changeLogin(email, patch) { try { return await api("PATCH", `/api/corp/users/${encodeURIComponent(email)}`, patch); } catch (e) { return { ok: false }; } }
+export async function remindersSent() { if (!REMOTE) return []; try { const r = await api("GET", "/api/corp/reminders"); return r.ok ? r.body : []; } catch (e) { return []; } }
+export async function sendFeedback(report) {
+  if (kind !== "server") return { ok: false };
+  try { const r = await api("POST", "/api/corp/feedback", report); return { ok: r.ok, id: r.body?.id }; } catch (e) { return { ok: false }; }
+}

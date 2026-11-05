@@ -10,9 +10,6 @@ export const useApp = () => useContext(Ctx);
 export function Pill({ tone = "muted", children, title }) {
   return <span className={`pill pill-${tone}`} title={title}>{children}</span>;
 }
-export function Confirm() { return <span className="tag-confirm" title="Needs an expert decision before building">CONFIRM</span>; }
-export function Proposed() { return <span className="tag-proposed" title="Architecture proposal, not expert-approved">PROPOSED</span>; }
-export function Legacy() { return <span className="tag-legacy" title="Seen on the reference platform; not a requirement on its own">legacy</span>; }
 
 export function Card({ title, actions, children, className = "", sub }) {
   return (
