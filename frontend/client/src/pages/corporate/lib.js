@@ -56,7 +56,7 @@ export function coverage(term) {
   if (TODAY > e) return { label: "Expired", tone: "muted", why: `Ended ${fmtDate(e)}` };
   return { label: "Active", tone: "good", why: `Until ${fmtDate(e)}` };
 }
-export const instTotal = (i) => r2((+i.amount || 0) * (1 + (+i.taxPct || 0) / 100));
+export const instTotal = (i) => r2((+i.amount || 0) * (1 + (+i.taxPct || 0) / 100) + (+i.stampDuty || 0));
 export function paymentSummary(term) {
   const due = term.instalments.length ? r2(term.instalments.reduce((a, i) => a + instTotal(i), 0)) : +term.values.netPremium || 0;
   const received = r2(term.receipts.reduce((a, r) => a + (+r.amount || 0), 0));
@@ -78,7 +78,7 @@ export function instalmentRows(term) {
     if (out <= 0) { status = lastDate > i.due ? `Paid late (${daysBetween(i.due, lastDate)} days)` : "Paid on time"; tone = lastDate > i.due ? "warn" : "good"; }
     else if (got > 0) { status = i.due < TODAY ? "Part paid, overdue" : "Part paid"; tone = "warn"; }
     else if (i.due < TODAY) { status = `Overdue (${daysBetween(i.due, TODAY)} days)`; tone = "bad"; }
-    return { ...i, total, tax: r2(total - (+i.amount || 0)), got, out, recs, lastDate, status, tone };
+    return { ...i, total, tax: r2((+i.amount || 0) * (+i.taxPct || 0) / 100), got, out, recs, lastDate, status, tone };
   });
 }
 

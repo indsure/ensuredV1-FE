@@ -6,6 +6,7 @@ import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marin
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
 import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
+import { instalmentTable } from "./extract-extra.js";
 import { useState } from "react";
 
 export function docLines(doc) {
@@ -333,6 +334,15 @@ function PaymentsTab({ p, term, openDoc }) {
   const rows = instalmentRows(term);
   const debitNotes = db.documents.filter((d) => d.termId === term.id && d.kind === "Debit note");
   if (term.status === "draft") return <div className="note">Payments are tracked once the term is confirmed.</div>;
+  const found = !term.instalments.length ? db.documents.filter((d) => d.termId === term.id && d.lines?.length).map((d) => instalmentTable(d.lines)).find(Boolean) : null;
+  const useFound = () => {
+    update((d) => {
+      const t = d.terms.find((x) => x.id === term.id);
+      t.instalments = found.rows.map(({ no, due, amount, taxPct, stampDuty }) => ({ no, due, amount, taxPct, stampDuty }));
+      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Instalment schedule read from the document", detail: `${found.rows.length} instalments.` });
+    });
+    toast("Instalment schedule added");
+  };
   return (
     <div className="stack">
       <div className="note small">Receipts and debit notes are stored next to the policy. They never change premium, dates or sum insured.</div>
@@ -343,9 +353,18 @@ function PaymentsTab({ p, term, openDoc }) {
       </div>
       <Card title="Instalment schedule" sub="Due date and receipt date are kept separately."
         actions={can("schedule") && !editSched && <Btn onClick={() => setEditSched(true)}>{term.instalments.length ? "Edit schedule" : "Set up instalments"}</Btn>}>
+        {!editSched && found && can("schedule") && (
+          <div className="note" style={{ marginBottom: 12 }}>
+            <strong>This policy's document has {found.rows.length} instalments.</strong> Check them against the document, then use them.
+            <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Premium</th><th className="num">GST</th><th className="num">Stamp duty</th><th className="num">Amount</th></tr></thead>
+              <tbody>{found.rows.map((r) => <tr key={r.no}><td>{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtNum(r.amount, cur)}</td><td className="num">{fmtNum(r.gst, cur)}</td><td className="num">{r.stampDuty ? fmtNum(r.stampDuty, cur) : "--"}</td><td className="num">{fmtNum(r.total, cur)}</td></tr>)}</tbody></Table>
+            {!found.adds && <p className="warn-text small">Some rows do not add up, so a figure may be misread. Check them.</p>}
+            <div className="row gap-s" style={{ marginTop: 8 }}><Btn kind="primary" onClick={useFound}>Use this schedule</Btn></div>
+          </div>
+        )}
         {editSched ? <ScheduleEditor p={p} term={term} onDone={() => setEditSched(false)} /> : rows.length ? (
-          <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Amount</th><th className="num">Tax</th><th className="num">Total due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
-            <tbody>{rows.map((r) => <tr key={r.no}><td>{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtNum(r.amount, cur)}</td><td className="num">{fmtNum(r.tax, cur)} <span className="muted small">({r.taxPct}%)</span></td><td className="num">{fmtNum(r.total, cur)}</td><td className="num">{fmtNum(r.got, cur)}{r.recs.length > 0 && <div className="small muted">{r.recs.map((x) => fmtDate(x.date)).join(", ")}</div>}</td><td className="num">{fmtNum(r.out, cur)}</td><td><Pill tone={r.tone}>{r.status}</Pill></td></tr>)}</tbody></Table>
+          <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Amount</th><th className="num">Tax</th><th className="num">Stamp duty</th><th className="num">Total due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.no}><td>{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtNum(r.amount, cur)}</td><td className="num">{fmtNum(r.tax, cur)} <span className="muted small">({r.taxPct}%)</span></td><td className="num">{r.stampDuty ? fmtNum(r.stampDuty, cur) : "--"}</td><td className="num">{fmtNum(r.total, cur)}</td><td className="num">{fmtNum(r.got, cur)}{r.recs.length > 0 && <div className="small muted">{r.recs.map((x) => fmtDate(x.date)).join(", ")}</div>}</td><td className="num">{fmtNum(r.out, cur)}</td><td><Pill tone={r.tone}>{r.status}</Pill></td></tr>)}</tbody></Table>
         ) : <Empty title="Single payment">This term has no instalment schedule. The net premium is due as one amount.</Empty>}
         {term.scheduleHistory?.length > 0 && <details className="small"><summary>{term.scheduleHistory.length} earlier schedule version(s) kept</summary>{term.scheduleHistory.map((h, i) => <div key={i} className="muted">Version {i + 1}, replaced {fmtStamp(h.at)} by {h.by}: {h.rows.map((r) => `#${r.no} ${fmtDate(r.due)} ${fmtNum(instTotal(r), cur)}`).join("; ") || "no rows"}</div>)}</details>}
       </Card>
@@ -373,19 +392,32 @@ function ScheduleEditor({ p, term, onDone }) {
   const net = +term.values.netPremium || 0;
   const total = r2(rows.reduce((a, r) => a + instTotal(r), 0));
   const setRow = (i, k, v) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
-  const errs = rows.map((r) => (!r.due ? "Due date needed" : !isNum(r.amount) || +r.amount <= 0 ? "Amount must be more than 0" : !isNum(r.taxPct) || +r.taxPct < 0 ? "Tax % must be 0 or more" : null));
+  const errs = rows.map((r) => (!r.due ? "Due date needed" : !isNum(r.amount) || +r.amount <= 0 ? "Amount must be more than 0" : !isNum(r.taxPct) || +r.taxPct < 0 ? "Tax % must be 0 or more" : r.stampDuty !== "" && r.stampDuty != null && (!isNum(r.stampDuty) || +r.stampDuty < 0) ? "Stamp duty must be 0 or more" : null));
+  const [readMsg, setReadMsg] = useState(null);
+  const readPdf = (fx) => {
+    const t = instalmentTable(fx.lines || []);
+    if (!t) { setReadMsg({ bad: true, text: `No instalment table was found in ${fx.fileName}. Enter the rows here.` }); return; }
+    const keep = rows.filter((r) => paidNos.has(r.no));
+    if (keep.length) { setReadMsg({ bad: true, text: "Some instalments already have receipts, so the rows were not replaced." }); return; }
+    setRows(t.rows.map(({ no, due, amount, taxPct, stampDuty }) => ({ no, due, amount, taxPct, stampDuty })));
+    setReadMsg({ bad: !t.adds, text: `Read ${t.rows.length} instalments from ${fx.fileName}.${t.adds ? "" : " Some rows do not add up, so check them."} Check them against the document, then save.` });
+  };
+  // Stamp duty in the rows counts on top when the net premium does not already include it.
+  const stamps = r2(rows.reduce((a, r) => a + (+r.stampDuty || 0), 0));
+  const netHasNoStamp = isNum(term.values.grossPremium) && isNum(term.values.gst) && Math.abs(+term.values.grossPremium + +term.values.gst - net) <= 2;
+  const target = netHasNoStamp ? r2(net + stamps) : net;
   const addMonths = (iso, m) => { const d = new Date(iso + "T00:00:00"); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10); };
   const generate = () => {
     const keep = rows.filter((r) => paidNos.has(r.no));
     const out = [...keep];
-    for (let i = 0; i < +gen.count; i++) { const no = out.length + 1; out.push({ no, due: addMonths(gen.first, i * +gen.freq), amount: "", taxPct: term.values.gstPct || 0 }); }
+    for (let i = 0; i < +gen.count; i++) { const no = out.length + 1; out.push({ no, due: addMonths(gen.first, i * +gen.freq), amount: "", taxPct: term.values.gstPct || 0, stampDuty: no === 1 && +term.values.stampDuty > 0 ? term.values.stampDuty : "" }); }
     setRows(out);
   };
   const split = () => {
     const free = rows.filter((r) => !paidNos.has(r.no));
     if (!free.length) return;
     const paid = r2(rows.filter((r) => paidNos.has(r.no)).reduce((a, r) => a + instTotal(r), 0));
-    setRows((rs) => rs.map((r) => (paidNos.has(r.no) ? r : { ...r, amount: r2((net - paid) / free.length / (1 + (+r.taxPct || 0) / 100)) })));
+    setRows((rs) => rs.map((r) => (paidNos.has(r.no) ? r : { ...r, amount: r2((target - paid - free.reduce((a, x) => a + (+x.stampDuty || 0), 0)) / free.length / (1 + (+r.taxPct || 0) / 100)) })));
   };
   const save = () => {
     setTried(true);
@@ -393,7 +425,7 @@ function ScheduleEditor({ p, term, onDone }) {
     update((d) => {
       const t = d.terms.find((x) => x.id === term.id);
       t.scheduleHistory = [...(t.scheduleHistory || []), { at: nowIso(), by: who, rows: t.instalments }];
-      t.instalments = rows.map((r, i) => ({ no: i + 1, due: r.due, amount: +r.amount, taxPct: +r.taxPct }));
+      t.instalments = rows.map((r, i) => ({ no: i + 1, due: r.due, amount: +r.amount, taxPct: +r.taxPct, stampDuty: +r.stampDuty || 0 }));
       log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Instalment schedule saved", detail: `${t.instalments.length} instalment(s), total ${fmtMoney(total, cur)}. Previous schedule kept as version ${t.scheduleHistory.length}.` });
     });
     toast("Instalment schedule saved");
@@ -401,23 +433,25 @@ function ScheduleEditor({ p, term, onDone }) {
   };
   return (
     <div className="stack">
+      <PdfAttach id="sg-file" label="Read the schedule from a PDF or photo" onReady={readPdf} describe={() => (readMsg ? readMsg.text : "Reading finished.")} ready={readMsg ? { fileName: "", fields: {} } : null} />
       <div className="formgrid">
         <Labeled label="First due date" htmlFor="sg-first"><DateInput id="sg-first" value={gen.first} onChange={(e) => setGen({ ...gen, first: e.target.value })} /></Labeled>
         <Labeled label="Frequency of payment (months)" htmlFor="sg-freq"><input id="sg-freq" type="number" min="1" value={gen.freq} onChange={(e) => setGen({ ...gen, freq: e.target.value })} /></Labeled>
         <Labeled label="No. of instalments" htmlFor="sg-count"><input id="sg-count" type="number" min="1" max="24" value={gen.count} onChange={(e) => setGen({ ...gen, count: e.target.value })} /></Labeled>
         <div className="row gap-s fld-wide wrap"><Btn onClick={generate}>Make rows</Btn><Btn onClick={split} disabled={!rows.length}>Split remaining net equally (editable)</Btn><span className="small muted">Rows with receipts are locked so their due dates stay as they were.</span></div>
       </div>
-      <Table><thead><tr><th>No.</th><th>Due date</th><th>Amount (before tax)</th><th>Tax %</th><th className="num">Total</th><th /></tr></thead>
+      <Table><thead><tr><th>No.</th><th>Due date</th><th>Amount (before tax)</th><th>Tax %</th><th>Stamp duty</th><th className="num">Total</th><th /></tr></thead>
         <tbody>{rows.map((r, i) => { const locked = paidNos.has(r.no); return (
           <tr key={i}><td>{i + 1}</td>
             <td><DateInput aria-label={`Instalment ${i + 1} due date`} value={r.due} disabled={locked} onChange={(e) => setRow(i, "due", e.target.value)} /></td>
             <td><input aria-label={`Instalment ${i + 1} amount`} inputMode="decimal" value={r.amount} disabled={locked} onChange={(e) => setRow(i, "amount", e.target.value.replace(/,/g, ""))} />{tried && errs[i] && <div className="err-text">{errs[i]}</div>}</td>
             <td><input aria-label={`Instalment ${i + 1} tax percent`} inputMode="decimal" value={r.taxPct} disabled={locked} onChange={(e) => setRow(i, "taxPct", e.target.value)} /></td>
+            <td><input aria-label={`Instalment ${i + 1} stamp duty`} inputMode="decimal" value={r.stampDuty ?? ""} disabled={locked} onChange={(e) => setRow(i, "stampDuty", e.target.value.replace(/,/g, ""))} /></td>
             <td className="num">{fmtNum(instTotal(r), cur)}</td>
             <td>{locked ? <span className="small muted">Has receipt</span> : <Btn onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>Remove</Btn>}</td></tr>); })}
-          {!rows.length && <tr><td colSpan={6}><Empty title="No rows">Make rows above, or add one.</Empty></td></tr>}</tbody></Table>
-      <div className="row gap-s wrap"><Btn onClick={() => setRows((rs) => [...rs, { no: rs.length + 1, due: "", amount: "", taxPct: term.values.gstPct || 0 }])}>Add row</Btn></div>
-      <div className={`note ${Math.abs(total - net) > 0.01 ? "note-warn" : ""}`}>Schedule total {fmtMoney(total, cur)} vs net premium {fmtMoney(net, cur)}{Math.abs(total - net) > 0.01 ? `: differs by ${fmtMoney(r2(total - net), cur)}. Saving is allowed; check against the insurer schedule.` : ": matches."}</div>
+          {!rows.length && <tr><td colSpan={7}><Empty title="No rows">Make rows above, or add one.</Empty></td></tr>}</tbody></Table>
+      <div className="row gap-s wrap"><Btn onClick={() => setRows((rs) => [...rs, { no: rs.length + 1, due: "", amount: "", taxPct: term.values.gstPct || 0, stampDuty: "" }])}>Add row</Btn></div>
+      <div className={`note ${Math.abs(total - target) > 1 ? "note-warn" : ""}`}>Schedule total {fmtMoney(total, cur)} vs {netHasNoStamp && stamps ? "net premium + stamp duty" : "net premium"} {fmtMoney(target, cur)}{Math.abs(total - target) > 1 ? `: differs by ${fmtMoney(r2(total - target), cur)}. Saving is allowed; check against the insurer schedule.` : ": matches."}</div>
       <div className="row gap-s"><Btn onClick={onDone}>Cancel</Btn><Btn kind="primary" onClick={save}>Save schedule</Btn></div>
     </div>
   );
@@ -428,7 +462,13 @@ function ReceiptForm({ p, term, onDone }) {
   const rows = instalmentRows(term).filter((r) => r.out > 0);
   const [f, setF] = useState({ instNo: rows[0]?.no ? String(rows[0].no) : "", date: TODAY, amount: rows[0] ? String(rows[0].out) : "", mode: "Bank transfer", ref: "", bank: "", remitDate: "", proof: false });
   const [tried, setTried] = useState(false);
+  const [full, setFull] = useState(false);
+  const owed = paymentSummary(term).outstanding;
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
+  const tickFull = (on) => {
+    setFull(on);
+    setF((x) => (on ? { ...x, amount: String(owed), instNo: "" } : { ...x, amount: rows[0] ? String(rows[0].out) : "", instNo: rows[0]?.no ? String(rows[0].no) : "" }));
+  };
   const errs = { date: !f.date ? "Enter the date the money was received" : null, amount: !isNum(f.amount) || +f.amount <= 0 ? "Enter an amount more than 0" : null, remitDate: f.remitDate && f.remitDate < f.date ? "Remittance cannot be before receipt" : null };
   const inst = rows.find((r) => String(r.no) === f.instNo);
   const save = () => {
@@ -438,22 +478,25 @@ function ReceiptForm({ p, term, onDone }) {
       const t = d.terms.find((x) => x.id === term.id);
       let proofDocId = null;
       if (f.proof) { proofDocId = `DOC${++d.seq}`; d.documents.push({ id: proofDocId, customerId: p.customerId, policyId: p.id, termId: t.id, kind: "Receipt proof", name: "Bank receipt advice (sample).pdf", addedAt: nowIso(), addedBy: who, note: "" }); }
-      t.receipts.push({ id: `R${++d.seq}`, instNo: f.instNo ? +f.instNo : null, date: f.date, amount: +f.amount, mode: f.mode, ref: f.ref, bank: f.bank, remitDate: f.remitDate, proofDocId });
-      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Receipt recorded", detail: `${fmtMoney(+f.amount, t.values.currency)} received ${fmtDate(f.date)}${f.instNo ? ` against instalment ${f.instNo}` : ""}. Policy values unchanged.` });
+      // Full payment clears every open instalment, one receipt each, so each shows as paid on that date.
+      const parts = full && rows.length ? rows.map((r) => ({ instNo: r.no, amount: r.out })) : [{ instNo: f.instNo ? +f.instNo : null, amount: +f.amount }];
+      parts.forEach((x, k) => t.receipts.push({ id: `R${++d.seq}`, instNo: x.instNo, date: f.date, amount: x.amount, mode: f.mode, ref: f.ref, bank: f.bank, remitDate: f.remitDate, proofDocId: k === 0 ? proofDocId : null }));
+      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: full ? "Full payment recorded" : "Receipt recorded", detail: `${fmtMoney(+f.amount, t.values.currency)} received ${fmtDate(f.date)}${full ? (rows.length ? `, clearing ${rows.length} instalment(s)` : ", the full amount") : f.instNo ? ` against instalment ${f.instNo}` : ""}. Policy values unchanged.` });
     });
-    toast("Receipt recorded");
+    toast(full ? "Full payment recorded" : "Receipt recorded");
     onDone();
   };
   return (
     <div className="formgrid boxed">
-      <Labeled label="Against instalment" htmlFor="rc-inst"><Select id="rc-inst" value={f.instNo} onChange={(v) => { set("instNo")(v); const r = rows.find((x) => String(x.no) === v); if (r) set("amount")(String(r.out)); }} options={rows.map((r) => ({ value: String(r.no), label: `Instalment ${r.no}, due ${fmtDate(r.due)}, ${fmtNum(r.out, term.values.currency)} outstanding` }))} placeholder="Not linked to an instalment" /></Labeled>
+      {owed > 0 && <div className="fld-wide"><label className="check"><input id="rc-full" type="checkbox" checked={full} onChange={(e) => tickFull(e.target.checked)} /> <strong>Received full payment</strong> ({fmtMoney(owed, term.values.currency)} outstanding)</label></div>}
+      <Labeled label="Against instalment" htmlFor="rc-inst" hint={full && rows.length ? "All open instalments are cleared" : null}><Select id="rc-inst" disabled={full} value={f.instNo} onChange={(v) => { set("instNo")(v); const r = rows.find((x) => String(x.no) === v); if (r) set("amount")(String(r.out)); }} options={rows.map((r) => ({ value: String(r.no), label: `Instalment ${r.no}, due ${fmtDate(r.due)}, ${fmtNum(r.out, term.values.currency)} outstanding` }))} placeholder="Not linked to an instalment" /></Labeled>
       <Labeled label="Received on" htmlFor="rc-date" req error={tried && errs.date} hint={inst && f.date > inst.due ? `Later than the due date (${fmtDate(inst.due)}). Both dates are kept.` : null}><DateInput id="rc-date" value={f.date} onChange={(e) => set("date")(e.target.value)} /></Labeled>
-      <Labeled label={`Amount (${term.values.currency})`} htmlFor="rc-amt" req error={tried && errs.amount}><input id="rc-amt" inputMode="decimal" value={f.amount} onChange={(e) => set("amount")(e.target.value.replace(/,/g, ""))} /></Labeled>
+      <Labeled label={`Amount (${term.values.currency})`} htmlFor="rc-amt" req error={tried && errs.amount}><input id="rc-amt" inputMode="decimal" value={f.amount} readOnly={full} onChange={(e) => set("amount")(e.target.value.replace(/,/g, ""))} /></Labeled>
       <Labeled label="Payment mode" htmlFor="rc-mode"><Select id="rc-mode" value={f.mode} onChange={set("mode")} options={["Bank transfer", "NEFT", "RTGS", "Cheque", "Demand draft", "UPI", "Debit card", "SWIFT"]} /></Labeled>
       <Labeled label="Cheque / DD / transaction no. or UTR" htmlFor="rc-ref"><input id="rc-ref" value={f.ref} onChange={(e) => set("ref")(e.target.value)} /></Labeled>
       <Labeled label="Bank and branch" htmlFor="rc-bank"><input id="rc-bank" value={f.bank} onChange={(e) => set("bank")(e.target.value)} /></Labeled>
       <Labeled label="Remitted to insurer on" htmlFor="rc-remit" error={tried && errs.remitDate}><DateInput id="rc-remit" value={f.remitDate} onChange={(e) => set("remitDate")(e.target.value)} /></Labeled>
-      <div className="fld"><label className="check"><input id="rc-proof" type="checkbox" checked={f.proof} onChange={(e) => set("proof")(e.target.checked)} /> Attach a sample payment proof</label></div>
+      {!LIVE && <div className="fld"><label className="check"><input id="rc-proof" type="checkbox" checked={f.proof} onChange={(e) => set("proof")(e.target.checked)} /> Attach a sample payment proof</label></div>}
       <div className="row gap-s fld-wide"><Btn onClick={onDone}>Cancel</Btn><Btn kind="primary" onClick={save}>Save receipt</Btn></div>
     </div>
   );

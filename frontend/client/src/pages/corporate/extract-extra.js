@@ -272,3 +272,27 @@ export function clientPlace(lines, nameRef, cities, areas) {
   for (const s of starts) { const r = block(s); if (r) return r; }
   return null;
 }
+
+// ---- An instalment table on the policy: No., due date, premium, GST, stamp duty, instalment amount.
+// Works on plain lines of text, so it can also read a document already saved in the records.
+export function instalmentTable(lines) {
+  const text = lines.map((l) => (typeof l === "string" ? l : l.marker ? "" : l.text));
+  for (let i = 0; i < text.length; i++) {
+    if (!/\binst(al?l?ment)?\.?\s*(no|#)/i.test(text[i]) || !/\bdue\b/i.test(text[i])) continue;
+    const hasGst = /\b(gst|tax)\b/i.test(text[i]), hasStamp = /\bstamp\b/i.test(text[i]);
+    const rows = [];
+    for (let j = i + 1; j < Math.min(text.length, i + 40); j++) {
+      const m = text[j].match(/^\W*(\d{1,2})\W+(\d{1,2}[\/\-.](?:\d{1,2}|[A-Za-z]{3})[\/\-.]\d{2,4})\s+(.*)$/);
+      if (!m) { if (rows.length) break; continue; }
+      const due = findDates(m[2])[0];
+      const nums = (m[3].match(/\d[\d,]*(?:\.\d+)?/g) || []).map((x) => +x.replace(/,/g, ""));
+      if (!due || nums.length < 2) { if (rows.length) break; continue; }
+      const total = nums[nums.length - 1], premium = nums[0];
+      const gst = hasGst && nums.length >= 3 ? nums[1] : 0;
+      const stamp = hasStamp && nums.length >= 4 ? nums[2] : 0;
+      rows.push({ no: +m[1], due: due.iso, amount: premium, taxPct: premium ? Math.round((gst / premium) * 10000) / 100 : 0, stampDuty: stamp, gst, total, adds: Math.abs(premium + gst + stamp - total) <= 2 });
+    }
+    if (rows.length >= 2 && rows.every((r, k) => r.no === k + 1)) return { rows, ref: i + 1, adds: rows.every((r) => r.adds) };
+  }
+  return null;
+}
