@@ -169,5 +169,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:33:51.250Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": 45,
+    "segment": "youth",
+    "source": "insurer",
+    "ref": "https://oicl-cms-media.s3.ap-south-1.amazonaws.com/Oriental_Youth_Eco_Care_Policy_Prospectus_b49e7a9232.pdf",
+    "quote": "Any Person aged between 18 years and 45 years residing in India can take this Insurance.",
+    "checked": "2026-11-03"
+  }
 }

@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { assertCrmWritable } from "@/lib/entitlement";
 import { fetchAllRows } from "@/lib/fetchAllRows";
 import { getNextPremiumDate, isDataEntryType } from "@/lib/insuranceTypes";
 import { deriveCoverView } from "@shared/policy";
@@ -85,6 +86,7 @@ export async function fetchCustomer(agentId: string, id: string): Promise<Custom
 }
 
 export async function createCustomer(agentId: string, draft: CustomerDraft): Promise<Customer> {
+  assertCrmWritable();
   const { data, error } = await supabase
     .from("customers")
     .insert({ agent_id: agentId, ...cleanDraft(draft) })
@@ -95,17 +97,20 @@ export async function createCustomer(agentId: string, draft: CustomerDraft): Pro
 }
 
 export async function updateCustomer(id: string, draft: CustomerDraft): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase.from("customers").update(cleanDraft(draft)).eq("id", id);
   if (error) throw new Error(error.message);
 }
 
 /** Deleting a customer never deletes policies — the FK sets customer_id NULL. */
 export async function deleteCustomer(id: string): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase.from("customers").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
 export async function tagPolicyToCustomer(clientId: string, customerId: string | null): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase
     .from("clients")
     .update({ customer_id: customerId })

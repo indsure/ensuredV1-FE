@@ -12,6 +12,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { assertCrmWritable } from "@/lib/entitlement";
 import { createCustomer } from "@/lib/customers";
 
 /**
@@ -129,6 +130,7 @@ export async function fetchLead(agentId: string, id: string): Promise<Lead | nul
 }
 
 export async function createLead(agentId: string, draft: LeadDraft): Promise<Lead> {
+  assertCrmWritable();
   const { data, error } = await supabase
     .from(LEADS_TABLE)
     .insert({ agent_id: agentId, status: draft.status ?? "new", ...cleanDraft(draft) })
@@ -139,6 +141,7 @@ export async function createLead(agentId: string, draft: LeadDraft): Promise<Lea
 }
 
 export async function updateLead(id: string, draft: LeadDraft): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase
     .from(LEADS_TABLE)
     .update({ ...cleanDraft(draft), updated_at: new Date().toISOString() })
@@ -148,6 +151,7 @@ export async function updateLead(id: string, draft: LeadDraft): Promise<void> {
 
 /** Quick status change (used by the inline status buttons). */
 export async function setLeadStatus(id: string, status: LeadStatus): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase
     .from(LEADS_TABLE)
     .update({ status, updated_at: new Date().toISOString() })
@@ -156,6 +160,7 @@ export async function setLeadStatus(id: string, status: LeadStatus): Promise<voi
 }
 
 export async function deleteLead(id: string): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase.from("agent_leads").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
@@ -167,6 +172,7 @@ export async function deleteLead(id: string): Promise<void> {
  * lead is already linked, returns the existing customer id.
  */
 export async function convertLeadToCustomer(agentId: string, lead: Lead): Promise<string> {
+  assertCrmWritable();
   if (lead.customer_id) return lead.customer_id;
 
   const customer = await createCustomer(agentId, {

@@ -17,8 +17,8 @@ import { useLanguage } from '@/i18n/LanguageContext'
  * This calls the same create-profile route, now signed in: with a Bearer token
  * the server checks the token matches the id and takes the email from the auth
  * user, and ON CONFLICT DO NOTHING makes a second try (or a second tab) safe.
- * Signup is still invite-only, so a valid code is still required; a code is
- * never spent by a failed attempt because the server rolls the insert back.
+ * Signup is open, so no code is asked for; a code saved from the original
+ * signup (a team link) is still sent and spent if it is still valid.
  *
  * No link to the personal portal here, deliberately: /app runs bootstrap, which
  * would turn this login into a personal account and lock it out of the advisor
@@ -39,7 +39,6 @@ export default function FinishAgentSetup({
     const [fullName, setFullName] = useState(saved.full_name ?? '')
     const [phone, setPhone] = useState(saved.phone ?? '')
     const [city, setCity] = useState(saved.city ?? '')
-    const [inviteCode, setInviteCode] = useState((saved.invite_code ?? '').toUpperCase())
     const [termsAccepted, setTermsAccepted] = useState(false)
     const [marketingConsent, setMarketingConsent] = useState(saved.marketing_consent === true)
     const [error, setError] = useState('')
@@ -54,7 +53,6 @@ export default function FinishAgentSetup({
     if (!phone.trim()) stillNeeded.push(t('signup.need_mobile'))
     else if (!phoneValid) stillNeeded.push(t('signup.need_valid_mobile'))
     if (!city.trim()) stillNeeded.push(t('signup.need_city'))
-    if (!inviteCode.trim()) stillNeeded.push(t('signup.need_code'))
     if (!termsAccepted) stillNeeded.push(t('signup.need_terms'))
 
     const inputClass = 'w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 text-base focus:outline-none focus:ring-2 focus:ring-[#0D9488]/20 focus:border-[#0D9488] focus:bg-white transition-all'
@@ -93,7 +91,7 @@ export default function FinishAgentSetup({
                     phone: phoneDigits,
                     city: city.trim(),
                     experience_years: 0,
-                    invite_code: inviteCode.trim().toUpperCase(),
+                    invite_code: (saved.invite_code ?? '').trim().toUpperCase() || null,
                     marketing_consent: marketingConsent,
                     account_type: accountType,
                     agency_name: accountType === 'agency' ? saved.agency_name ?? null : null,
@@ -105,8 +103,9 @@ export default function FinishAgentSetup({
             if (!res.ok) {
                 // Non-JSON means the request never reached the backend (the SPA
                 // host answered instead), the same case SignupStep1 reports.
-                if (!isJson) setError(t('signup.server_unreachable'))
-                else if (res.status === 400 && /invite/i.test(String(body?.error ?? ''))) setError(t('finish_setup.code_invalid'))
+                if (res.status === 429) setError(t('signup.rate_limited'))
+                else if (!isJson) setError(t('signup.server_unreachable'))
+                else if (res.status === 409 && body?.error === 'PERSONAL_ACCOUNT') setError(t('signup.email_personal'))
                 else if (res.status === 403) setError(t('finish_setup.mismatch'))
                 else setError(t('finish_setup.save_failed'))
                 setSaving(false)
@@ -148,10 +147,6 @@ export default function FinishAgentSetup({
                         <label htmlFor="finish-city" className="text-sm font-semibold text-slate-700 ml-1">{t('signup.city')}</label>
                         <input id="finish-city" type="text" autoComplete="address-level2" value={city} onChange={(e) => setCity(e.target.value)} className={inputClass} />
                     </div>
-                </div>
-                <div className="space-y-1.5">
-                    <label htmlFor="finish-code" className="text-sm font-semibold text-slate-700 ml-1">{t('signup.invite_code')}</label>
-                    <input id="finish-code" type="text" autoCapitalize="characters" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase().trim())} className={`${inputClass} font-mono tracking-widest uppercase`} />
                 </div>
 
                 <label className="flex items-start gap-3 min-h-11 cursor-pointer">

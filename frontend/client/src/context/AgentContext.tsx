@@ -14,6 +14,12 @@ export type AgentProfile = {
   plan: string;
   /** agents.plan_expires_at (migration 028). null = no end date (set by hand, or not yet migrated). */
   planExpiresAt: string | null;
+  /** On the limited Free plan (2026-11-02): 3 health checks + 20 scans, everything else paid.
+   *  Advisors from before the change have agents.free_full_access = true (migration 032) and are
+   *  not limited. Only a definite `false` limits: a missing column (032 not run) or the
+   *  playground mock leaves everyone on today's access. The server enforces the paid-only
+   *  routes on its own (lib/entitlement.ts); this only decides what the portal shows. */
+  limitedFree: boolean;
 };
 
 /** Agency membership, when there is one. `isOwner` is what gates the Team
@@ -95,6 +101,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
         avatarInitials: initials,
         plan: String(profile.plan || "free").toLowerCase(),
         planExpiresAt: profile.plan_expires_at ?? null,
+        limitedFree: String(profile.plan || "free").toLowerCase() === "free" && profile.free_full_access === false,
       })
 
       const { data: credits } = await supabase

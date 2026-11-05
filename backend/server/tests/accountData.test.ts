@@ -27,12 +27,12 @@ import {
 } from "../services/accountData";
 
 describe("the table map covers what the database actually holds", () => {
-  it("carries all 22 advisor tables found in information_schema", () => {
-    assert.equal(AGENT_TABLES.length, 22);
+  it("carries all 23 advisor tables (agent_preferred_plans from 034)", () => {
+    assert.equal(AGENT_TABLES.length, 23);
   });
 
-  it("carries all three consumer tables (individual_check_log from 030)", () => {
-    assert.equal(INDIVIDUAL_TABLES.length, 3);
+  it("carries all four consumer tables (individual_check_log from 030, calculator_reports.user_id from 033)", () => {
+    assert.equal(INDIVIDUAL_TABLES.length, 4);
   });
 
   it("names no table twice", () => {

@@ -126,5 +126,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:53:21.722Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": null,
+    "segment": null,
+    "source": "wording",
+    "ref": "Health_Ensure_PW.pdf p13",
+    "quote": "Eligible Entry Age 18 years to Lifetime",
+    "checked": "2026-11-03"
+  }
 }

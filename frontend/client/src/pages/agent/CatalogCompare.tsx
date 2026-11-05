@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight, ChevronRight, ChevronLeft } from "lucide-react";
+import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight, ChevronRight, ChevronLeft, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
 import { type ComparisonResult } from "@/lib/wordingProfile";
+import { TopPlans } from "@/components/TopPlans";
 
 const MAX_PLANS = 4;
 
@@ -182,7 +183,11 @@ function AddPlanPicker({
 }
 
 // ─── Selected plan card ────────────────────────────────────────────────────────────
-function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number; onRemove: () => void }) {
+function PlanCard({
+  item, index, onRemove, starred, onToggleStar,
+}: {
+  item: CatalogItem; index: number; onRemove: () => void; starred: boolean; onToggleStar: () => void;
+}) {
   const { t } = useLanguage();
   const pal = SIDE_PALETTE[index % SIDE_PALETTE.length];
   return (
@@ -195,6 +200,16 @@ function PlanCard({ item, index, onRemove }: { item: CatalogItem; index: number;
       {item.sum_insured_options && item.sum_insured_options !== "Not specified" && (
         <p className="text-[11px] text-slate-400 mt-0.5 truncate">{item.sum_insured_options}</p>
       )}
+      <button
+        onClick={onToggleStar}
+        aria-pressed={starred}
+        aria-label={starred ? t("pref.remove") : t("pref.add")}
+        title={starred ? t("pref.remove") : t("pref.add")}
+        className={`mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition-colors ${starred ? "text-amber-700 bg-amber-50 hover:bg-amber-100" : "text-slate-500 hover:text-amber-700 hover:bg-amber-50"}`}
+      >
+        <Star className={`h-4 w-4 ${starred ? "fill-amber-500 text-amber-500" : ""}`} aria-hidden="true" />
+        {starred ? t("pref.remove") : t("pref.add")}
+      </button>
       <button
         onClick={onRemove}
         className="absolute top-2 right-2 h-7 w-7 rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-500 text-slate-400 flex items-center justify-center transition-colors"
@@ -211,10 +226,48 @@ export default function CatalogCompare() {
   const { t } = useLanguage();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
-  const [selected, setSelected] = useState<string[]>([]);
+  // ?keys=a,b,c from Plan Match on the calculator opens on those plans.
+  const [selected, setSelected] = useState<string[]>(() =>
+    (new URLSearchParams(window.location.search).get("keys") ?? "")
+      .split(",").map((k) => k.trim()).filter(Boolean).slice(0, MAX_PLANS));
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [comparing, setComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The advisor's preferred list, and the cover the top 3 is ranked for. A
+  // calculator report links here with ?minSI= (lakhs); otherwise ₹10 lakh.
+  const [preferred, setPreferred] = useState<string[]>([]);
+  const [prefVersion, setPrefVersion] = useState(0);
+  const [coverLakhs, setCoverLakhs] = useState<number>(() => {
+    const v = Number(new URLSearchParams(window.location.search).get("minSI"));
+    return v > 0 ? v : 10;
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiFetch("/api/agent/preferred-plans");
+        if (res.ok) setPreferred((await res.json()).plan_keys ?? []);
+      } catch { /* the list is optional; the page works without it */ }
+    })();
+  }, []);
+
+  const togglePreferred = async (key: string) => {
+    const on = preferred.includes(key);
+    try {
+      const res = await apiFetch(
+        on ? `/api/agent/preferred-plans/${encodeURIComponent(key)}` : "/api/agent/preferred-plans",
+        on
+          ? { method: "DELETE" }
+          : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan_key: key }) },
+      );
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("pref.failed"));
+      setPreferred((await res.json()).plan_keys ?? []);
+      setPrefVersion((v) => v + 1);
+    } catch (e: any) {
+      setError(e.message || t("pref.failed"));
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -296,11 +349,81 @@ export default function CatalogCompare() {
         </div>
       ) : (
         <>
+          {/* Top 3 for a cover amount, from the advisor's list when they have one. */}
+          <div className="mb-4 space-y-3">
+            <label className="flex flex-wrap items-center gap-3 text-[15px] font-semibold text-slate-700">
+              {t("toprec.cover_label")}
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={10000}
+                value={coverLakhs}
+                onChange={(e) => setCoverLakhs(Math.max(0, Number(e.target.value) || 0))}
+                className="h-11 w-28 rounded-lg border border-slate-300 bg-white px-3 text-base font-semibold text-slate-900 focus:border-[#0D9488] outline-none"
+              />
+            </label>
+            <TopPlans
+              minSiLakhs={coverLakhs}
+              audience="advisor"
+              refreshKey={prefVersion}
+              onCompare={(keys) => setSelected(keys.slice(0, MAX_PLANS))}
+            />
+          </div>
+
+          {/* Preferred list */}
+          <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="flex items-center gap-2 font-sans text-base font-bold text-slate-800">
+              <Star className="h-4 w-4 fill-amber-500 text-amber-500" aria-hidden="true" />
+              {t("pref.title")} <span className="text-slate-400 font-semibold">({preferred.length})</span>
+            </h2>
+            {preferred.length === 0 ? (
+              <p className="mt-2 text-[15px] text-slate-500">{t("pref.empty")}</p>
+            ) : (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {preferred.map((key) => {
+                  const it = byKey[key];
+                  const name = it ? `${it.plan_name}${it.variant ? ` (${it.variant})` : ""}` : key;
+                  return (
+                    <li key={key} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 text-sm">
+                      <button
+                        type="button"
+                        onClick={() => addPlan(key)}
+                        disabled={selected.includes(key) || selected.length >= MAX_PLANS}
+                        title={t("pref.compare_add")}
+                        className="min-h-9 pl-3 pr-1 font-semibold text-slate-700 hover:text-[#0D9488] disabled:text-slate-400"
+                      >
+                        {name}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePreferred(key)}
+                        aria-label={`${t("pref.remove")}: ${name}`}
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-red-500"
+                      >
+                        <X className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
           {/* Builder */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-2 shadow-sm">
             <div className="flex flex-wrap gap-3 items-stretch">
               {selected.map((uin, i) =>
-                byKey[uin] ? <PlanCard key={uin} item={byKey[uin]} index={i} onRemove={() => removePlan(uin)} /> : null
+                byKey[uin] ? (
+                  <PlanCard
+                    key={uin}
+                    item={byKey[uin]}
+                    index={i}
+                    onRemove={() => removePlan(uin)}
+                    starred={preferred.includes(uin)}
+                    onToggleStar={() => togglePreferred(uin)}
+                  />
+                ) : null
               )}
               {selected.length < MAX_PLANS && (
                 <AddPlanPicker grouped={grouped} exclude={excludeSet} onAdd={addPlan} />

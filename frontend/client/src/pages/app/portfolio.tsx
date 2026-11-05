@@ -4,6 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { supabase } from "@/lib/supabase";
 import { apiFetch, apiOk } from "@/lib/api";
 import { claimPendingUpload } from "@/lib/pendingUpload";
+import { claimPendingCalculation, fetchLatestCalculation, type LatestCalculation } from "@/lib/pendingCalculation";
 import { getApiBase } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ConnectAgentDialog } from "@/components/app/ConnectAgentDialog";
@@ -98,6 +99,22 @@ export default function PortfolioPage() {
     })();
     return () => { cancelled = true; };
   }, [data, load, toast]);
+
+  // Ideal cover from the calculator. A calculation held by "Check My Existing
+  // Policy" on a calculator report is saved to the account first, whichever way
+  // the person arrived (login, signup, a confirmation email, already signed in).
+  const [calc, setCalc] = useState<LatestCalculation | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const claimed = await claimPendingCalculation();
+      const latest = await fetchLatestCalculation();
+      if (cancelled) return;
+      setCalc(latest);
+      if (claimed && latest) toast({ variant: "success", title: t("pf.need_saved") });
+    })();
+    return () => { cancelled = true; };
+  }, [toast]);
 
   // Open the add panel automatically for a brand-new account — there's nothing
   // else to do on the page yet.
@@ -600,6 +617,9 @@ export default function PortfolioPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Cover need: ideal (calculator) vs held (health policies) ───── */}
+        {calc && <CoverNeedCard calc={calc} healthCover={d.healthCover} onUpload={() => openAdd("health")} />}
 
         {/* ── Quick actions — scannable, one tap each ──────────────────── */}
         {!isEmpty && (
@@ -1119,6 +1139,92 @@ const scrollTo = (id: string) =>
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
 const ringColor = (s: number) => (s >= 75 ? "var(--color-teal-400)" : s >= 50 ? "#FBBF24" : "#F87171");
+
+/** Ideal health cover from the calculator against the health cover on file, the
+ *  consumer twin of the cover-need card on the advisor's customer page. */
+function CoverNeedCard({
+  calc, healthCover, onUpload,
+}: {
+  calc: LatestCalculation;
+  healthCover: number;
+  onUpload: () => void;
+}) {
+  const { t, locale } = useLanguage();
+  const ideal = calc.recommendedCover;
+  const gap = ideal - healthCover;
+  const hasCover = healthCover > 0;
+
+  return (
+    <section className="rounded-2xl border border-[var(--color-border-light)] bg-white p-5 sm:p-6 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-[var(--color-teal-700)]">
+          {t("pf.need_eyebrow")}
+        </h2>
+        <a
+          href={`/calculator/report/${calc.uuid}`}
+          className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-[var(--color-teal-700)] hover:text-[var(--color-navy-900)]"
+        >
+          {t("pf.need_view")} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </a>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <p className="text-sm text-[var(--color-text-secondary)]">{t("pf.need_ideal")}</p>
+          <p className="mt-1 font-serif text-3xl font-bold text-[var(--color-navy-900)]">{formatINRShort(ideal)}</p>
+          <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
+            {t("pf.need_calc_on", { date: fmtDate(calc.createdAt, locale) })}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-[var(--color-text-secondary)]">{t("pf.need_have")}</p>
+          <p className="mt-1 font-serif text-3xl font-bold text-[var(--color-navy-900)]">
+            {hasCover ? formatINRShort(healthCover) : t("pf.need_none")}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-[var(--color-text-secondary)]">{t("pf.need_gap")}</p>
+          {!hasCover ? (
+            <p className="mt-1 font-serif text-3xl font-bold text-[var(--color-text-secondary)]">{t("pf.need_unknown")}</p>
+          ) : gap > 0 ? (
+            <p className="mt-1 font-serif text-3xl font-bold text-[#B91C1C]">
+              {t("pf.need_short", { amount: formatINRShort(gap) })}
+            </p>
+          ) : (
+            <p className="mt-1 inline-flex items-center gap-1.5 font-serif text-3xl font-bold text-[var(--color-teal-700)]">
+              <Check className="h-6 w-6" aria-hidden="true" /> {t("pf.need_covered")}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {hasCover ? (
+        <div className="mt-5">
+          <Meter
+            value={Math.min(healthCover, ideal)}
+            max={ideal}
+            color={gap > 0 ? "#DC2626" : "var(--color-teal-600)"}
+            track="rgba(15,23,42,0.08)"
+            height={8}
+          />
+        </div>
+      ) : (
+        <div className="mt-5 flex flex-col gap-3 rounded-xl bg-[var(--lob-health-wash)] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-main)]">
+            {t("pf.need_upload_d", { amount: formatINRShort(ideal) })}
+          </p>
+          <button
+            type="button"
+            onClick={onUpload}
+            className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--color-cta)] px-5 text-base font-semibold text-white transition-colors hover:bg-[#0F766E]"
+          >
+            <Upload className="h-4 w-4" aria-hidden="true" /> {t("pf.need_upload")}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
 
 function HeroStat({
   icon, label, value, hint, onClick,

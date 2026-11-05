@@ -170,5 +170,15 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:36:33.995Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 61,
+    "adult_max": null,
+    "segment": "senior",
+    "source": "insurer",
+    "ref": "https://www.universalsompo.com/assets/file/senior-citizen-health-insurance-policy/senior-citizen-health-insurance-policy-prospectus.pdf",
+    "quote": "You must be above 60 years of age ... There is no maximum entry age for you and your spouse.",
+    "note": "Broker sites say a maximum of 70; the insurer's prospectus says none.",
+    "checked": "2026-11-03"
+  }
 }

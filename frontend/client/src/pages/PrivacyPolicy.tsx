@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { useSEO } from "@/hooks/use-seo";
 import { seoFor } from "@/data/seo-pages";
 
-const LAST_UPDATED = "27 October 2026";
+const LAST_UPDATED = "2 November 2026";
 const EFFECTIVE_DATE = "27 October 2026";
 
 const sections = [
@@ -40,7 +40,7 @@ You are never required to provide health information to use IndSure. If you choo
       },
       {
         title: "2.3 Agent account data",
-        body: `If you register as an insurance agent on IndSure, we collect: full name, email address, mobile number, city, years of experience, invite code, firm name, and the names of insurers you are empanelled with. This data is used to create and manage your agent profile.`,
+        body: `If you register as an insurance agent on IndSure, we collect: full name, email address, mobile number, city, years of experience, invite code (if you joined with one), firm name, and the names of insurers you are empanelled with. This data is used to create and manage your agent profile.`,
       },
       {
         title: "2.3a Payments",

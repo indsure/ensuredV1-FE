@@ -153,15 +153,19 @@ export default function ComparisonView({ data, audience = "customer" }: { data: 
       <button
         type="button"
         {...tipProps(tp.title, tp.body)}
-        className={`min-h-[44px] w-full text-left inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[15px] leading-snug font-semibold cursor-help focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0D9488] ${TONE_CLASS[tone ?? "none"]}`}
+        className={`min-h-[44px] w-full text-left flex flex-col items-start justify-center gap-1.5 rounded-lg px-3 py-2 text-[15px] leading-snug font-semibold cursor-help focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0D9488] ${TONE_CLASS[tone ?? "none"]}`}
       >
-        {tone && <Dot color={TONE_DOT[tone]} />}
-        <span className="min-w-0 break-words">{shown(row.key, c.display, tone)}</span>
+        {/* The badge sits on its own line. Beside the text it squeezed a
+            ~200px column until words broke mid-word ("Optio nal"). */}
         {c.optional && (
-          <span className="ml-auto text-xs font-bold uppercase tracking-wide bg-white/70 border border-current/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+          <span className="text-xs font-bold uppercase tracking-wide bg-white/70 border border-current/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
             {t("compare_view.add_on")}
           </span>
         )}
+        <span className="flex w-full min-w-0 items-center gap-2">
+          {tone && <Dot color={TONE_DOT[tone]} />}
+          <span className="min-w-0 break-words">{shown(row.key, c.display, tone)}</span>
+        </span>
       </button>
     );
   }

@@ -90,26 +90,23 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         slug: "create-account",
         title: "Create your account",
-        description: "How to sign up for the IndSure advisor portal: the invite code, your details, choosing your insurers, and what happens next.",
+        description: "How to sign up for the IndSure advisor portal: your details, choosing your insurers, and what happens next.",
         lead: "Signing up takes a few minutes and two short screens.",
         blocks: [
           { t: "h2", text: "What you need", id: "what-you-need" },
           {
             t: "list",
             items: [
-              "An **invite code**. Sign-up asks for one. If you do not have one, see [below](#no-invite-code).",
               "Your full name, email address, 10-digit mobile number and city.",
               "A password of at least 8 characters, with one capital letter and one number.",
             ],
           },
           { t: "h2", text: "Step 1: Your details", id: "step-1" },
-          { t: "img", name: "signup-step1", alt: "The sign-up screen asking whether you are an individual advisor or an agency, then for an invite code and your details.", caption: "Step 1 of sign-up." },
           {
             t: "steps",
             items: [
               "Go to [indsure.in/agent](/agent) and press **Start free**.",
               "Choose **Individual advisor** if it is just you, or **Agency / Enterprise** if other advisors work under you.",
-              "Paste your invite code. It is checked as soon as you enter it, and a message tells you if there is a problem with it.",
               "Fill in your name, email, phone number and city, and choose a password.",
               "Tick the box to agree to the Terms of Service and Privacy Policy. The box for product updates is your choice.",
               "Press **Continue to Empanelment**.",
@@ -130,11 +127,6 @@ export const DOC_SECTIONS: DocSection[] = [
           {
             t: "p",
             text: "If you chose **Agency / Enterprise**, your account works straight away as well. Our team sets up your agency and confirms the number of seats with you.",
-          },
-          { t: "h2", text: "No invite code?", id: "no-invite-code" },
-          {
-            t: "p",
-            text: "Press **Don't have an invite code? Request access** on the sign-up screen, or message us on WhatsApp to ask for one.",
           },
           { t: "h2", text: "Joining an agency's team", id: "joining-a-team" },
           {
@@ -865,8 +857,8 @@ export const DOC_SECTIONS: DocSection[] = [
         slug: "plans",
         nav: "Plans and checks",
         title: "Plans and policy checks",
-        description: "How IndSure plans work for advisors: the free plan, what a policy check is, what is always free, and how to upgrade.",
-        lead: "What is free, what a policy check is, and how to get more.",
+        description: "How IndSure plans work for advisors: what the free plan includes, what a policy check is, and how to upgrade.",
+        lead: "What the free plan includes, what a policy check is, and how to get more.",
         blocks: [
           {
             t: "p",
@@ -875,17 +867,20 @@ export const DOC_SECTIONS: DocSection[] = [
           { t: "h2", text: "The free plan", id: "free" },
           {
             t: "p",
-            text: "The Free plan is free forever. It is not a trial, and you do not need a card. It includes a few policy checks so you can see the reports for yourself.",
+            text: "The Free plan is free forever. It is not a trial, and you do not need a card. It includes 3 health policy checks and 20 policy scans (motor, life, term and travel) so you can see the reports for yourself.",
           },
-          { t: "h2", text: "Always free, on every plan", id: "always-free" },
           {
             t: "list",
             items: [
-              "Leads, renewals and your customer list.",
-              "The Cover Calculator.",
-              "WhatsApp message drafts.",
-              "Comparing plans from our list.",
+              "Sharing a report with your client is free on every plan.",
+              "Comparing plans from our list is free on every plan.",
+              "Customers, leads, renewals, the Cover Calculator, WhatsApp drafts and every other tool are on the paid plan.",
             ],
+          },
+          {
+            t: "note",
+            tone: "tip",
+            text: "If you already had an IndSure account before this Free plan started, nothing changes for you: your Free plan keeps everything it had.",
           },
           { t: "h2", text: "What uses a policy check", id: "checks" },
           {
@@ -900,7 +895,7 @@ export const DOC_SECTIONS: DocSection[] = [
           { t: "h2", text: "Getting more", id: "more" },
           {
             t: "p",
-            text: "To move to a paid plan, or to buy more checks, message our team on WhatsApp from the [pricing page](/advisors/pricing). There is no card payment inside the portal. For agencies, each seat gets its own checks every month, and the owner can move unused ones between advisors.",
+            text: "To move to a paid plan, or to buy more checks, open **Plan & payments** in the portal and pay with UPI, card or net banking, or message our team on WhatsApp from the [pricing page](/advisors/pricing). For agencies, each seat gets its own checks every month, and the owner can move unused ones between advisors.",
           },
           { t: "cta", kind: "contact" },
         ],
@@ -940,7 +935,7 @@ export const DOC_SECTIONS: DocSection[] = [
           {
             t: "faq",
             items: [
-              { q: "Is IndSure free?", a: "There is a Free plan that is free forever, with no card needed. Leads, renewals, your customer list, the Cover Calculator and WhatsApp drafts are free on every plan. Paid plans add more policy checks. See [Plans and policy checks](/docs/plans)." },
+              { q: "Is IndSure free?", a: "There is a Free plan that is free forever, with no card needed. It includes 3 health policy checks and 20 policy scans. Customers, leads, renewals and the other tools are on the paid plan. See [Plans and policy checks](/docs/plans)." },
               { q: "Does IndSure take a commission on policies I sell?", a: "No. IndSure charges a flat subscription. We are not an IRDAI-registered broker or agent and do not earn commission." },
               { q: "Does IndSure sell insurance to my customers?", a: "No. We do not sell insurance. Your customers are yours." },
               { q: "Do I need to install an app?", a: "No. IndSure works in the browser on your phone and computer. On a phone, the main screens are in tabs at the bottom." },
@@ -975,8 +970,7 @@ export const DOC_SECTIONS: DocSection[] = [
             items: [
               { q: "Can my team share one login?", a: "No. Each advisor has their own login. For a team, use an agency account. See [Team, for agencies](/docs/team)." },
               { q: "What happens to my customers if I stop using IndSure?", a: "They stay yours. You can export everything to Excel or download your data at any time. Your data is kept or deleted as our Privacy Policy and India's DPDP Act require. Just ask us." },
-              { q: "How do I upgrade?", a: "Message our team on WhatsApp from the [pricing page](/advisors/pricing). There is no card payment inside the portal." },
-              { q: "I lost my invite code.", a: "Message us on WhatsApp to ask for a new one. See [Get help](/docs/get-help)." },
+              { q: "How do I upgrade?", a: "Open **Plan & payments** in the portal and pay with UPI, card or net banking, or message our team on WhatsApp from the [pricing page](/advisors/pricing)." },
             ],
           },
         ],
@@ -984,18 +978,9 @@ export const DOC_SECTIONS: DocSection[] = [
       {
         slug: "troubleshooting",
         title: "Troubleshooting",
-        description: "Fix common problems in the IndSure advisor portal: invite code errors, session expired, failed uploads, empty renewals and WhatsApp not opening.",
+        description: "Fix common problems in the IndSure advisor portal: session expired, failed uploads, empty renewals and WhatsApp not opening.",
         lead: "Something not working? Start here.",
         blocks: [
-          { t: "h2", text: "Invite code problems", id: "invite-code" },
-          {
-            t: "list",
-            items: [
-              "**Invite code not found**: check the code in your email or WhatsApp. Copy and paste it rather than typing it.",
-              "**This invite code is no longer valid**, **has already been used**, or **has reached its usage limit**: ask us for a new one.",
-              "**Could not check the code right now**: check your internet connection and try again.",
-            ],
-          },
           { t: "h2", text: "Session expired", id: "session" },
           { t: "p", text: "For your safety you are logged out after a while. Log in again at [indsure.in/agent/login](/agent/login). Anything you saved is still there." },
           { t: "h2", text: "A policy will not upload or check", id: "upload" },

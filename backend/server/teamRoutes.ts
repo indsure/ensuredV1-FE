@@ -61,10 +61,10 @@ function appOrigin(): string {
  * Mint the single-use `invite_codes` row that lets the invitee through agent
  * signup at all.
  *
- * Agent signup requires an invite code (SignupStep1.tsx validates one before it
- * will create an account), and someone invited to a team has no reason to hold
- * one. Rather than opening a second, less-guarded route into agent signup, the
- * team invite brings its own code along.
+ * Agent signup was invite-only when this was written, so the team invite
+ * carried its own code. Signup is open since 2026-11-02 and no longer needs
+ * one; the code is still minted and spent at signup, which records that the
+ * account came from this team invite.
  *
  * UPPERCASE because signup compares the typed value both raw and
  * `.toUpperCase()`; a lowercase code passes one check and fails the other.

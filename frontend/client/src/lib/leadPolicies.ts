@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { assertCrmWritable } from "@/lib/entitlement";
 import { getApiBase } from "@/lib/queryClient";
 import { apiFetch, apiOk } from "@/lib/api";
 import { isPlaygroundMode } from "@/lib/playground/mode";
@@ -99,6 +100,7 @@ export async function fetchDueLeadPolicies(agentId: string): Promise<LeadPolicyW
 /* ── Mutations (manual add + edits go straight through supabase) ────────── */
 
 export async function createLeadPolicy(leadId: string, agentId: string, draft: LeadPolicyDraft): Promise<LeadPolicy> {
+  assertCrmWritable();
   const { data, error } = await supabase
     .from("lead_policies")
     .insert({ lead_id: leadId, agent_id: agentId, ...clean(draft) })
@@ -109,6 +111,7 @@ export async function createLeadPolicy(leadId: string, agentId: string, draft: L
 }
 
 export async function updateLeadPolicy(id: string, draft: LeadPolicyDraft): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase
     .from("lead_policies")
     .update({ ...clean(draft), updated_at: new Date().toISOString() })
@@ -117,6 +120,7 @@ export async function updateLeadPolicy(id: string, draft: LeadPolicyDraft): Prom
 }
 
 export async function setLeadPolicySpoken(id: string, spoken: boolean): Promise<void> {
+  assertCrmWritable();
   const { error } = await supabase
     .from("lead_policies")
     .update({ spoken_to: spoken, updated_at: new Date().toISOString() })
@@ -127,6 +131,7 @@ export async function setLeadPolicySpoken(id: string, spoken: boolean): Promise<
 /** Through the backend, so the stored file goes too (the browser delete left it
  *  in storage). The playground has no backend and keeps the mock delete. */
 export async function deleteLeadPolicy(id: string): Promise<void> {
+  assertCrmWritable();
   if (isPlaygroundMode()) {
     const { error } = await supabase.from("lead_policies").delete().eq("id", id);
     if (error) throw new Error(error.message);
@@ -141,6 +146,7 @@ export async function uploadLeadPolicy(
   leadId: string,
   params: { file: File; type: LeadPolicyType; ocr: boolean; overrides?: LeadPolicyDraft }
 ): Promise<UploadedLeadPolicy> {
+  assertCrmWritable();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Please sign in again");
   const fd = new FormData();

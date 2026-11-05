@@ -616,7 +616,8 @@ export default function PolicyDetail() {
                 />
                 {/* Life and term policies also get the value schedule worked out
                     from those same fields — arithmetic only, no analysis run. */}
-                {(insuranceType === "life" || insuranceType === "term") && (
+                {/* Surrender Value is a paid feature (limited Free plan, 2026-11-02). */}
+                {!agent?.limitedFree && (insuranceType === "life" || insuranceType === "term") && (
                   <PolicyValueChart
                     clientId={policy.id}
                     insuranceType={insuranceType}
@@ -625,7 +626,7 @@ export default function PolicyDetail() {
                   />
                 )}
                 {/* Policy terms read from the document itself, for the advisor to review. */}
-                {(insuranceType === "life" || insuranceType === "term") && (
+                {!agent?.limitedFree && (insuranceType === "life" || insuranceType === "term") && (
                   <DocumentTerms clientId={policy.id} data={extractedData ?? {}} />
                 )}
               </div>
@@ -732,12 +733,15 @@ export default function PolicyDetail() {
             </div>
 
             <div className="space-y-6">
+              {/* Linking to a customer writes Customers, which is paid (limited Free plan). */}
+              {!agent?.limitedFree && (
               <CustomerTagCard
                 clientId={policy.id}
                 customerId={customerId}
                 hint={{ name: policy.client_name, phone: clientMeta.phone, email: clientMeta.email }}
                 onChanged={() => void loadDetail()}
               />
+              )}
 
               <Card className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>{t("policy_detail.upload_meta")}</CardTitle></CardHeader>

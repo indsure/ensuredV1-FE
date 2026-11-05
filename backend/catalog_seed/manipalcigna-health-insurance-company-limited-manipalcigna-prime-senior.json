@@ -170,5 +170,15 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:27:31.007Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 56,
+    "adult_max": 75,
+    "segment": "senior",
+    "source": "secondary",
+    "ref": "https://cafemutual.com/news/insurance/28586-manipalcigna-launches-health-plan-for-senior-citizens-with-maximum-entry-age-of-75-years",
+    "quote": "The plan offers a maximum entry age of 75 years.",
+    "note": "Minimum 56 from the Prime Senior Elite flyer copy on scribd.com.",
+    "checked": "2026-11-03"
+  }
 }

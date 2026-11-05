@@ -170,5 +170,15 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:33:57.937Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": null,
+    "adult_max": null,
+    "segment": "senior",
+    "source": null,
+    "ref": null,
+    "quote": null,
+    "note": "One catalogue row covers Platinum, Gold and Senior Citizen, which have different ages. Treated as a senior plan with ages unconfirmed until the row is split.",
+    "checked": "2026-11-03"
+  }
 }

@@ -136,5 +136,15 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T07:55:43.696Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 61,
+    "adult_max": null,
+    "segment": "senior",
+    "source": "secondary",
+    "ref": "https://www.fincover.com/insurance/health/care-health-senior-health-advantage-insurance-plan/",
+    "quote": "Entry age starts from 61 years, with no upper age limit.",
+    "note": "policybazaar.com also states no maximum entry age.",
+    "checked": "2026-11-03"
+  }
 }

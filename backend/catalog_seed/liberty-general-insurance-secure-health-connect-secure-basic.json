@@ -132,5 +132,14 @@
   "status": "audited",
   "extracted_by": "bedrock:global.anthropic.claude-sonnet-4-6",
   "extracted_at": "2026-09-20T08:04:42.882Z",
-  "audited_at": "2026-10-09"
+  "audited_at": "2026-10-09",
+  "entry_age": {
+    "adult_min": 18,
+    "adult_max": 65,
+    "segment": null,
+    "source": "wording",
+    "ref": "Secure Health Connect policy wordings p35",
+    "quote": "Minimum entry Age: Adult-18 years ... Maximum entry Age: 65 Years",
+    "checked": "2026-11-03"
+  }
 }

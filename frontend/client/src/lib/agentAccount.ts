@@ -10,8 +10,8 @@ import { supabase } from '@/lib/supabase'
  * a client account" and signed out, which left it with no way back in.
  *
  * Any read error is 'unknown', never "no row": treating a network blip as
- * "no profile" would put a real advisor on the finish-setup form, asking for
- * an invite code they no longer have.
+ * "no profile" would put a real advisor on the finish-setup form instead of
+ * into the portal they already have.
  *
  * Both reads run as the user under RLS (own row only: agents, and
  * individual_profiles via individuals_read_own_profile from migration 026).

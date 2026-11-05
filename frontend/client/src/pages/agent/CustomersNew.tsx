@@ -125,12 +125,13 @@ export default function CustomersNew() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("customers.title")}</h1>
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <button
+          {/* Adding is paid on the limited Free plan (2026-11-02); the list stays readable. */}
+          {!agent?.limitedFree && <button
             onClick={() => setCreateOpen(v => !v)}
             className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-[#0D9488] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#0f766e]"
           >
             {createOpen ? <X size={14} /> : <Plus size={14} />} {createOpen ? t("common.cancel") : t("customers.add")}
-          </button>
+          </button>}
           <button onClick={load} disabled={loading} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-[#0D9488] font-semibold hover:underline disabled:opacity-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> {t("common.refresh")}
           </button>
