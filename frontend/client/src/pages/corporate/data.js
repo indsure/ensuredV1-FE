@@ -44,7 +44,7 @@ export const FIELDS = [
   { key: "gstPct", label: "GST (%)", group: "Amounts", type: "pct" },
   { key: "gst", label: "GST amount", group: "Amounts", type: "money", req: true },
   { key: "stampDuty", label: "Stamp duty", group: "Amounts", type: "money" },
-  { key: "netPremium", label: "Net premium", group: "Amounts", type: "money", req: true, help: "Gross + GST, the final amount paid" },
+  { key: "netPremium", label: "Net premium", group: "Amounts", type: "money", req: true, help: "The final amount paid: gross + GST, plus stamp duty if the policy's total includes it" },
   { key: "excess", label: "Policy excess", group: "Amounts", type: "text" },
   { key: "location", label: "Location / Jurisdiction", group: "Other", type: "text" },
   { key: "share", label: "Our share (%)", group: "Other", type: "pct" },

@@ -164,8 +164,11 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     }
   });
   if (vals.riskStart && vals.riskEnd && vals.riskEnd <= vals.riskStart) errors.riskEnd = "Risk end must be after risk start";
-  const sumCheck = [vals.grossPremium, vals.gst, vals.netPremium].every(isNum) ? r2(+vals.grossPremium + +vals.gst) : null;
-  const grossMismatch = sumCheck != null && Math.abs(sumCheck - +vals.netPremium) > 0.01 && Math.abs(sumCheck + (+vals.stampDuty || 0) - +vals.netPremium) > 0.01;
+  // Gross + GST is the final amount on most policies; some totals add stamp duty too. Either can be right.
+  const sumCheck = [vals.grossPremium, vals.gst].every(isNum) ? r2(+vals.grossPremium + +vals.gst) : null;
+  const withStamp = sumCheck != null && +vals.stampDuty > 0 ? r2(sumCheck + +vals.stampDuty) : null;
+  const grossMismatch = sumCheck != null && isNum(vals.netPremium) && Math.abs(sumCheck - +vals.netPremium) > 0.01 && (withStamp == null || Math.abs(withStamp - +vals.netPremium) > 0.01);
+  const setNet = (v) => { setVals((p) => ({ ...p, netPremium: v })); setSrcs((p) => ({ ...p, netPremium: { conf: "calc" } })); };
   const lowConf = FIELDS.filter((f) => srcs[f.key]?.conf === "low" && !srcs[f.key]?.edited && !srcs[f.key]?.checked);
   const blockers = [...missing.map((f) => `${f.label} is missing`), ...Object.entries(errors).map(([k, e]) => `${FIELD[k].label}: ${e}`)];
   if (!brokOk) blockers.push("Tick the brokerage confirmation");
@@ -247,8 +250,9 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                       {s?.checked && <span className="src src-ok">Checked by reviewer</span>}
                       {f.key === "netPremium" && (
                         <div className="small">
-                          {grossMismatch && <div className="warn-text">Gross + GST = {fmtValue("netPremium", sumCheck, vals.currency)}, which differs from the net entered.</div>}
-                          <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => { setVals((p) => ({ ...p, netPremium: sumCheck })); setSrcs((p) => ({ ...p, netPremium: { conf: "calc" } })); }}>Calc net premium</button>
+                          {grossMismatch && <div className="warn-text">Gross + GST = {fmtValue("netPremium", sumCheck, vals.currency)}{withStamp != null && <>, or {fmtValue("netPremium", withStamp, vals.currency)} with stamp duty</>}, which differs from the net entered.</div>}
+                          {withStamp == null ? <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => setNet(sumCheck)}>Calc net premium</button>
+                            : <span className="row gap-s wrap"><button type="button" className="linkbtn" onClick={() => setNet(withStamp)}>Gross + GST + stamp duty = {fmtValue("netPremium", withStamp, vals.currency)}</button><button type="button" className="linkbtn" onClick={() => setNet(sumCheck)}>Gross + GST only = {fmtValue("netPremium", sumCheck, vals.currency)}</button></span>}
                         </div>
                       )}
                       {f.key === "gst" && (

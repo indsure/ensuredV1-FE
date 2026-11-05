@@ -696,7 +696,7 @@ function TotalsBlock({ T, consistent }) {
         <tbody>{Object.entries(T.native).map(([cur, n]) => <tr key={cur}><td>{cur}</td><td className="num">{n.count}</td><td className="num">{fmtNum(n.si, cur)}</td><td className="num">{fmtNum(n.gross, cur)}</td><td className="num">{fmtNum(n.gst, cur)}</td><td className="num">{fmtNum(n.net, cur)}</td><td className="num">{fmtNum(n.brokerage, cur)}</td></tr>)}</tbody>
         <tfoot><tr><td>All in INR</td><td className="num">{T.count - T.noRate}{T.noRate ? ` (+${T.noRate} no rate)` : ""}</td><td className="num">{fmtNum(T.siInr)}</td><td className="num">{fmtNum(T.grossInr)}</td><td className="num">{fmtNum(T.gstInr)}</td><td className="num">{fmtNum(T.netInr)}</td><td className="num">{fmtNum(T.brokerageInr)}</td></tr></tfoot></Table>
       {consistent != null && <p className={`small ${consistent ? "good-text" : "bad-text"}`}>{consistent ? "Check passed: group subtotals add up to the grand total." : "Check failed: group subtotals do not match the grand total."}</p>}
-      <p className="small muted">Gross premium + GST = net premium, the final amount paid. Stamp duty is shown separately.</p>
+      <p className="small muted">Net premium is the final amount paid: gross + GST, plus stamp duty where the policy's total includes it.</p>
     </Card>
   );
 }
