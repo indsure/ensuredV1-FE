@@ -8,7 +8,7 @@ const NOT_PREMIUM = /\b(paid|wages|past|previous|additional|deposit|refund|minim
 
 // ---- Premium. Gross premium + GST = net premium, the final amount paid. Policies use these words in opposite
 // ways ("Net Premium" before tax on one, "Gross Premium" before tax on another), so the figures decide, not the words.
-export function premiumFigures(lines, preCands = [], postCands = [], gstCands = []) {
+export function premiumFigures(lines, preCands = [], postCands = [], gstCands = [], stampCands = []) {
   const pre = [...preCands], post = [...postCands], tables = [];
   const parts = {};
   const nextRow = (i) => { for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) if (!lines[j].marker) return j; return -1; };
@@ -58,6 +58,14 @@ export function premiumFigures(lines, preCands = [], postCands = [], gstCands = 
     const half = partList[0];
     for (const n of N) for (const p of P) if (p.v < n.v && close(p.v + 2 * half.v, n.v)) return out(p, { v: 2 * half.v, ref: half.ref }, n, true);
   }
+  // Some totals include stamp duty: gross + GST + stamp = the final amount paid.
+  let stamp = stampCands.find((c) => c.v > 0);
+  if (!stamp) {
+    const i = lines.findIndex((l) => !l.marker && /\bstamp\s*duty\b/i.test(l.text) && !amounts(l.text).length && l.text.length < 90);
+    const a = i >= 0 ? [lines[i + 1], lines[i + 2]].filter((l) => l && !l.marker).map((l) => amounts(l.text)).find((x) => x.length) : null;
+    if (a) stamp = { v: a[0], ref: i + 1 };
+  }
+  if (T && stamp) for (const n of N) for (const p of P) if (p.v < n.v && close(p.v + T.v + stamp.v, n.v)) { const r = out(p, T, n, true, `The total includes stamp duty of ${stamp.v}.`); r.stamp = { v: stamp.v, ref: stamp.ref, conf: "high" }; return r; }
   if (T) {
     for (const n of [...N, ...P]) for (const p of [...P, ...N]) if (p.v < n.v && close(p.v + T.v, n.v)) return out(p, T, n, true);
   } else {
@@ -245,11 +253,13 @@ export function clientPlace(lines, nameRef, cities, areas) {
       t = flat(t).replace(/\s*\(GSTIN.*$/i, "").replace(/gstin\/uin\.?/i, "").replace(/^[\s:,]+|[\s:,]+$/g, "").trim();
       if (t && !/^address$/i.test(t)) parts.push(t);
     }
-    const text = parts.join(", ").replace(/^[,\s]+|[,\s]+$/g, "");
+    let lastGood = -1;
+    parts.forEach((p, i) => { if (/\b\d{3}\s?\d{3}\b/.test(p) || cities.some((c) => new RegExp("\\b" + c + "\\b", "i").test(p))) lastGood = i; });
+    const text = (lastGood >= 0 ? parts.slice(0, lastGood + 1) : parts).join(", ").replace(/^[,\s]+|[,\s]+$/g, "");
     if (!text || !/\d/.test(text) || /person in respect|complaints|zip code|admission|practitioner/i.test(text)) return null;
     const low = ` ${text.toLowerCase().replace(/[^a-z0-9]+/g, " ")} `;
     const at = (c) => low.lastIndexOf(` ${c.toLowerCase()} `);
-    let city = cities.map((c) => [c, at(c)]).filter((x) => x[1] >= 0).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+    let city = cities.map((c) => [c, at(c)]).filter((x) => x[1] >= 0).sort((a, b) => (b[1] + b[0].length) - (a[1] + a[0].length) || b[0].length - a[0].length)[0]?.[0] || "";
     if (!city && areas?.some((a) => at(a) >= 0)) city = "Mumbai";
     if (!city) city = (text.match(/([A-Za-z][A-Za-z ]{2,30}?)\s*[-,]?\s*\d{3}\s?\d{3}\b/)?.[1] || "").trim().split(/\s*,\s*/).pop();
     return city ? { address: text.slice(0, 200), city, ref: start + 1 } : null;

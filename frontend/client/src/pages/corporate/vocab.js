@@ -5,7 +5,7 @@
 export const VOCAB = {
   insured: [
     "name of the insured", "name of insured", "insured name", "insured's name", "insured",
-    "name of the assured", "name of assured", "assured name", "assured's name", "assured",
+    "name & address of the assured", "name and address of the assured", "name & address of the insured", "name and address of the insured", "name of the assured", "name of assured", "assured name", "assured's name", "assured",
     "name of the proposer", "name of proposer", "proposer name", "proposer's name", "proposer",
     "name of the policyholder", "name of policyholder", "policyholder name", "policyholder's name", "policyholder", "master policyholder",
     "customer name", "name of the customer", "client name", "name of the client", "original insured", "named insured",

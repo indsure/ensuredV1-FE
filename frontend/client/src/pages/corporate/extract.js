@@ -99,7 +99,10 @@ function loadTesseract() {
   if (!tess) tess = (async () => {
     if (!window.Tesseract) await loadScript(TESSERACT);
     if (!window.Tesseract) throw new Error("tesseract.js loaded but did not start");
-    return window.Tesseract.createWorker("eng", 1);
+    const worker = await window.Tesseract.createWorker("eng", 1);
+    // Find the layout automatically and keep the gaps between columns.
+    await worker.setParameters({ tessedit_pageseg_mode: "3", preserve_interword_spaces: "1" });
+    return worker;
   })().catch((e) => { tess = null; throw new ReadError("load", "The scan reader could not load. Check the internet connection and try again, or type the values in.", e?.message || String(e)); });
   return tess;
 }
@@ -108,14 +111,25 @@ async function ocrCanvas(canvas, page, multi) {
   const worker = await loadTesseract();
   const { data } = await worker.recognize(canvas);
   const out = multi ? [{ page, text: `[Page ${page}]`, segs: [], marker: true }] : [];
-  for (const ln of data.lines || []) {
-    const words = (ln.words || []).filter((w) => w.text && w.text.trim() && w.confidence > 20);
-    if (!words.length) continue;
-    const h = Math.max(8, ...words.map((w) => w.bbox.y1 - w.bbox.y0));
+  // OCR reports each table column as its own block, so a label and its value come back far apart. Rebuild
+  // the rows from where the words sit on the page, which gives the same shape as a digital PDF. Only the
+  // faintest words are dropped: a real label read with low confidence still matters.
+  const all = (data.lines || []).flatMap((ln) => ln.words || []).filter((w) => w.text && w.text.trim() && (w.confidence > 25 || (w.confidence > 5 && /[A-Za-z0-9]{2}/.test(w.text))));
+  const rows = [];
+  for (const w of [...all].sort((a, b) => a.bbox.y0 + a.bbox.y1 - b.bbox.y0 - b.bbox.y1)) {
+    const cy = (w.bbox.y0 + w.bbox.y1) / 2, wh = w.bbox.y1 - w.bbox.y0;
+    const row = rows.find((r) => Math.abs(r.cy - cy) <= Math.max(6, Math.min(r.h, wh) * 0.55));
+    if (row) { row.words.push(w); row.cy = (row.cy * (row.words.length - 1) + cy) / row.words.length; row.h = Math.max(row.h, wh); }
+    else rows.push({ cy, h: wh, words: [w] });
+  }
+  rows.sort((a, b) => a.cy - b.cy);
+  for (const ln of rows) {
+    const words = ln.words.sort((a, b) => a.bbox.x0 - b.bbox.x0);
+    const h = Math.max(8, ln.h);
     const segs = [];
     for (const w of words) {
       const last = segs[segs.length - 1];
-      if (last && w.bbox.x0 - last.x2 < h * 1.4) { last.s += " " + w.text; last.x2 = w.bbox.x1; }
+      if (last && w.bbox.x0 - last.x2 < h * 1.6) { last.s += " " + w.text; last.x2 = w.bbox.x1; }
       else segs.push({ x: w.bbox.x0, x2: w.bbox.x1, s: w.text });
     }
     // Table borders read as "|" and a scanned ":" often comes out as "©", "¢" or "+". Tidy both.
@@ -347,10 +361,17 @@ export function parseFields(lines, ocr = false) {
   for (const r of RULES) found[r.key] = (found[r.key] || []).concat(candidates(lines, r));
   for (const k of Object.keys(found)) { if (k[0] === "_" || k === "gst") continue; const p = pick(found[k], k, ocr); if (p) fields[k] = p; }
   // Gross premium + GST = net premium. Which is which comes from the figures, not the printed words.
-  const prem = premiumFigures(lines, found._pre, found._post, found.gst);
+  const prem = premiumFigures(lines, found._pre, found._post, found.gst, found.stampDuty);
   if (prem.gross) fields.grossPremium = prem.gross;
   if (prem.gst) fields.gst = prem.gst;
   if (prem.net) fields.netPremium = prem.net;
+  if (prem.stamp && !fields.stampDuty) fields.stampDuty = prem.stamp;
+  // "Place: MUMBAI" then "Date: 19/05/2025" at the foot of a schedule is the date it was issued.
+  if (!fields.issueDate) {
+    const i = lines.findIndex((l, k) => !l.marker && /^date\s*[:\-]/i.test(l.text.trim()) && [lines[k - 1], lines[k - 2]].some((x) => x && /^place\s*[:\-]/i.test(x.text.trim())));
+    const d = i >= 0 ? findDates(lines[i].text)[0] : null;
+    if (d) fields.issueDate = { v: d.iso, ref: i + 1, conf: "low", note: "The policy calls this just \"Date\", under the place of issue. Check it." };
+  }
   // Show the word the policy itself uses for the location field.
   if (fields.location) { const w = lines[fields.location.ref - 1]?.text.match(new RegExp(phraseRe(VOCAB.jurisdiction).source + "|" + phraseRe(VOCAB.location).source, "i")); if (w) fields.location.word = w[0].trim(); }
   // A schedule with one row of limits (MTO and similar).
@@ -433,7 +454,7 @@ const INSURED_RULE = { kind: "text", label: phraseRe(VOCAB.insured),
 const NOT_A_NAME = /\d{3,}|\b(rs\.?|inr|usd|amt|amount|sum|where|which|shall|will|whose|each|policy|period|premium|said\s+to|contain|limit)\b|;\s*$|^[^A-Za-z]|^[^(]*\)|^(mailing|address|contact|details|place|gstin|pan|mobile|e-?mail|date|holder)\b/i;
 function findInsured(lines) {
   for (const c of candidates(lines, INSURED_RULE)) {
-    const v = c.v.split(/\s{3,}|\s+[|]\s+/)[0].replace(/\s+(e-?mail|intermediary|address|gstin|pan|mobile|phone)\b.*$/i, "").trim();
+    const v = c.v.split(/\s{3,}|\s+[|]\s+/)[0].replace(/\s+(e-?mail|intermediary|address|gstin|pan|mobile|phone)\b.*$/i, "").replace(/[.,\s]*\bvessel\s*:.*$/i, ".").replace(/\.\.$/, ".").trim();
     if (INSURERS.some(([, re]) => re.test(v)) || /\b(insurance|assurance)\s+(company|co\.?)\b/i.test(v)) continue; // the insurer, not the insured
     if (v.length >= 3 && v.length <= 90 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && v.split(/\s+/).length <= 10) return { v, ref: c.ref };
   }

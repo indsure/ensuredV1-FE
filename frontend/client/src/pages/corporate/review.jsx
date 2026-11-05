@@ -165,7 +165,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   });
   if (vals.riskStart && vals.riskEnd && vals.riskEnd <= vals.riskStart) errors.riskEnd = "Risk end must be after risk start";
   const sumCheck = [vals.grossPremium, vals.gst, vals.netPremium].every(isNum) ? r2(+vals.grossPremium + +vals.gst) : null;
-  const grossMismatch = sumCheck != null && Math.abs(sumCheck - +vals.netPremium) > 0.01;
+  const grossMismatch = sumCheck != null && Math.abs(sumCheck - +vals.netPremium) > 0.01 && Math.abs(sumCheck + (+vals.stampDuty || 0) - +vals.netPremium) > 0.01;
   const lowConf = FIELDS.filter((f) => srcs[f.key]?.conf === "low" && !srcs[f.key]?.edited && !srcs[f.key]?.checked);
   const blockers = [...missing.map((f) => `${f.label} is missing`), ...Object.entries(errors).map(([k, e]) => `${FIELD[k].label}: ${e}`)];
   if (!brokOk) blockers.push("Tick the brokerage confirmation");
