@@ -48,5 +48,47 @@ export function placeOf(city) {
   if (MUMBAI.includes(key)) return { city: "Mumbai", state: "Maharashtra", country: "India" };
   return null;
 }
-export const CITY_NAMES = [...new Set(ROWS.map(([c]) => c))].sort();
-export const COUNTRIES = ["India", "UAE", "Singapore", "Sri Lanka", "Bangladesh", "Nepal", "United Kingdom", "United States", "Hong Kong", "Malaysia", "Saudi Arabia", "Qatar", "Oman", "Netherlands", "Belgium", "Germany", "Norway", "China"];
+export { COUNTRIES } from "./countries.js";
+
+// ---- The whole world, from GeoNames (every place of about 1,000 people or more).
+// The file is large, so it loads the first time someone types a city, not with the page.
+let world = null;
+export function loadWorld() {
+  if (!world) world = import("./world-cities.json").then((m) => {
+    const d = m.default || m;
+    const rows = d.rows.split("\n").map((l) => {
+      const [name, ascii, a, c] = l.split("|");
+      return { name, key: (ascii || name).toLowerCase(), alt: ascii ? name.toLowerCase() : "", state: d.admins[+a], country: d.countries[+c] };
+    });
+    return rows;
+  }).catch((e) => { world = null; throw e; });
+  return world;
+}
+const same = (a, b) => a.city.toLowerCase() === b.city.toLowerCase() && a.state === b.state && a.country === b.country;
+
+/** Up to "limit" places starting with what was typed: exact names first, then the largest places. */
+export async function searchCities(q, limit = 8) {
+  const key = String(q || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (key.length < 2) return [];
+  const out = [];
+  const add = (r) => { if (!out.some((x) => same(x, r))) out.push(r); };
+  for (const [city, state, country] of ROWS) if (city.toLowerCase() === key) add({ city, state, country });
+  const rows = await loadWorld();
+  const exact = [], starts = [];
+  for (const r of rows) {
+    if (r.key === key || r.alt === key) exact.push(r);
+    else if (starts.length < limit && (r.key.startsWith(key) || r.alt.startsWith(key))) starts.push(r);
+  }
+  for (const r of [...exact, ...starts]) add({ city: r.name, state: r.state, country: r.country });
+  return out.slice(0, limit);
+}
+/** The state and country of a city anywhere: our own list first, then the largest place of that name. */
+export async function lookupPlace(city) {
+  const own = placeOf(city);
+  if (own) return own;
+  const key = String(city || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (key.length < 2) return null;
+  const rows = await loadWorld();
+  const r = rows.find((x) => x.key === key || x.alt === key);
+  return r ? { city: r.name, state: r.state, country: r.country } : null;
+}

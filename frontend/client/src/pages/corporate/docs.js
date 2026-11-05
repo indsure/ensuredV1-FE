@@ -91,7 +91,7 @@ BROKERAGE QUERY: ${lines.length} POLIC${lines.length === 1 ? "Y" : "IES"}
 On reconciling your brokerage payments against our records, the ${lines.length === 1 ? "policy below has" : `${lines.length} policies below have`} not been paid in full. The total outstanding is ${total}.
 
 ${lines.map((l, i) => `${i + 1}. ${l.policyNo} (${l.insured}, ${l.type})
-   Net premium       ${fmtMoney(l.net, l.currency)} at ${l.pct}%
+   ${l.onNet ? "Net premium  " : "Gross premium"}       ${fmtMoney(l.gross, l.currency)} at ${l.pct}%
    Brokerage due     ${fmtMoney(l.expected, l.currency)}
    Received          ${fmtMoney(l.received, l.currency)}${l.refs ? ` (${l.refs})` : ""}
    Outstanding       ${fmtMoney(l.expected - l.received, l.currency)}`).join("\n\n")}

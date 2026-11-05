@@ -6,7 +6,7 @@ export const fmtDate = (iso) => {
   if (!iso) return "--";
   const [y, m, d] = String(iso).slice(0, 10).split("-");
   if (!y || !m || !d) return String(iso);
-  return `${d} ${MON[+m - 1]} ${y}`;
+  return `${d}/${m}/${y}`;
 };
 export const fmtStamp = (iso) => (iso ? `${fmtDate(iso)}, ${String(iso).slice(11, 16)}` : "--");
 export const fmtMonth = (ym) => { if (!ym) return "--"; const [y, m] = ym.split("-"); return `${MON[+m - 1]} ${y}`; };
@@ -58,7 +58,7 @@ export function coverage(term) {
 }
 export const instTotal = (i) => r2((+i.amount || 0) * (1 + (+i.taxPct || 0) / 100));
 export function paymentSummary(term) {
-  const due = term.instalments.length ? r2(term.instalments.reduce((a, i) => a + instTotal(i), 0)) : +term.values.grossPremium || 0;
+  const due = term.instalments.length ? r2(term.instalments.reduce((a, i) => a + instTotal(i), 0)) : +term.values.netPremium || 0;
   const received = r2(term.receipts.reduce((a, r) => a + (+r.amount || 0), 0));
   const outstanding = r2(due - received);
   let label = "Unpaid", tone = "bad";
@@ -141,16 +141,16 @@ export function businessRows(db, f) {
     const ins = insurerOf(db, p.insurerId), br = branchOf(db, p.insurerId, p.branchId);
     const month = basisDate.slice(0, 7);
     const fx = fxRate(db, month, v.currency);
-    const brokerage = r2((+v.netPremium || 0) * (+v.brokeragePct || 0) / 100);
+    const brokerage = brokerageOf(v);
     const toInr = (x) => (fx && isNum(x) ? r2(+x * fx.rate) : null);
     rows.push({
       termId: t.id, policyId: p.id, controlNo: p.controlNo, policyNo: v.policyNo, custCode: c.code, customer: c.name, vertical: c.vertical,
       dept: p.dept, type: p.type, insurer: ins?.name || "--", branch: br ? `${br.name}, ${br.city}` : "--", cse: teamName(db, c.cse), rm: c.rm ? teamName(db, c.rm) : "Not assigned",
       nr: t.nr, basisDate, month, proposalDate: v.proposalDate, issueDate: v.issueDate, riskStart: v.riskStart, riskEnd: v.riskEnd, bookDate: v.bookDate,
-      currency: v.currency, sumInsured: +v.sumInsured || 0, netPremium: +v.netPremium || 0, gst: +v.gst || 0, stampDuty: +v.stampDuty || 0, grossPremium: +v.grossPremium || 0,
+      currency: v.currency, sumInsured: +v.sumInsured || 0, grossPremium: +v.grossPremium || 0, gst: +v.gst || 0, stampDuty: +v.stampDuty || 0, netPremium: +v.netPremium || 0,
       brokeragePct: +v.brokeragePct || 0, brokerage, presetNote: t.brokerageSnap ? `Preset v${t.brokerageSnap.version}` : "Entered manually",
       fxMonth: month, fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
-      netInr: toInr(v.netPremium), gstInr: toInr(v.gst), grossInr: toInr(v.grossPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
+      grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
       ref: c.source === "Referral" ? c.referral || "Referral" : "Direct business", location: c.city,
     });
   }
@@ -159,15 +159,15 @@ export function businessRows(db, f) {
 }
 export const groupKey = (g, r) => ({ none: "All records", date: fmtDate(r.basisDate), insurer: r.insurer, rm: r.rm, cse: r.cse, policy: r.type, branch: r.branch, month: fmtMonth(r.month), ref: r.ref, client: `${r.customer} (${r.custCode})`, location: r.location }[g]);
 export function totals(rows) {
-  const t = { count: rows.length, netInr: 0, gstInr: 0, grossInr: 0, brokerageInr: 0, siInr: 0, noRate: 0, native: {} };
+  const t = { count: rows.length, grossInr: 0, gstInr: 0, netInr: 0, brokerageInr: 0, siInr: 0, noRate: 0, native: {} };
   for (const r of rows) {
-    const n = (t.native[r.currency] ||= { count: 0, net: 0, gst: 0, gross: 0, brokerage: 0, si: 0 });
-    n.count++; n.net += r.netPremium; n.gst += r.gst; n.gross += r.grossPremium; n.brokerage += r.brokerage; n.si += r.sumInsured;
+    const n = (t.native[r.currency] ||= { count: 0, gross: 0, gst: 0, net: 0, brokerage: 0, si: 0 });
+    n.count++; n.gross += r.grossPremium; n.gst += r.gst; n.net += r.netPremium; n.brokerage += r.brokerage; n.si += r.sumInsured;
     if (r.fxRate == null) { t.noRate++; continue; }
-    t.netInr += r.netInr; t.gstInr += r.gstInr; t.grossInr += r.grossInr; t.brokerageInr += r.brokerageInr; t.siInr += r.siInr;
+    t.grossInr += r.grossInr; t.gstInr += r.gstInr; t.netInr += r.netInr; t.brokerageInr += r.brokerageInr; t.siInr += r.siInr;
   }
-  ["netInr", "gstInr", "grossInr", "brokerageInr", "siInr"].forEach((k) => (t[k] = r2(t[k])));
-  Object.values(t.native).forEach((n) => ["net", "gst", "gross", "brokerage", "si"].forEach((k) => (n[k] = r2(n[k]))));
+  ["grossInr", "gstInr", "netInr", "brokerageInr", "siInr"].forEach((k) => (t[k] = r2(t[k])));
+  Object.values(t.native).forEach((n) => ["gross", "gst", "net", "brokerage", "si"].forEach((k) => (n[k] = r2(n[k]))));
   return t;
 }
 export function groupRows(rows, g) {
@@ -192,7 +192,7 @@ export function renewalRows(db, f) {
     out.push({
       termId: t.id, policyId: p.id, controlNo: p.controlNo, policyNo: v.policyNo, riskStart: v.riskStart, riskEnd: v.riskEnd, type: p.type, dept: p.dept,
       group: c.vertical, customer: c.name, custCode: c.code, insurer: insurerOf(db, p.insurerId)?.name, rm: c.rm ? teamName(db, c.rm) : "Not assigned", cse: teamName(db, c.cse),
-      currency: v.currency, sumInsured: +v.sumInsured || 0, grossPremium: +v.grossPremium || 0, brokerage: r2((+v.netPremium || 0) * (+v.brokeragePct || 0) / 100),
+      currency: v.currency, sumInsured: +v.sumInsured || 0, netPremium: +v.netPremium || 0, brokerage: brokerageOf(v),
       renewable: v.renewable || "Not entered", outcome: t.outcome, lossDetail: t.lossDetail, nextPolicyNo: next?.values.policyNo || "", draftInProgress: !!draftNext, location: c.city,
     });
   }
@@ -202,6 +202,22 @@ export function renewalRows(db, f) {
 
 // ---- CSV
 const esc = (x) => { const s = x == null ? "" : String(x); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+// Brokerage is on gross premium unless the policy is ticked "Brokerage on net premium".
+export const brokerageBase = (v) => (v.brokerageOnNet ? +v.netPremium || 0 : +v.grossPremium || 0);
+export const brokerageOf = (v) => r2(brokerageBase(v) * (+v.brokeragePct || 0) / 100);
+
+// Books saved when "net" meant before GST are converted once: gross + GST = net from then on.
+export function upgradeBook(d) {
+  if (!d || d.premiumModel === 2) return d;
+  const swap = { '"netPremium"': '"grossPremium"', '"grossPremium"': '"netPremium"', '"netInr"': '"grossInr"', '"grossInr"': '"netInr"', '"net":': '"gross":', '"gross":': '"net":' };
+  const out = JSON.parse(JSON.stringify(d).replace(/"netPremium"|"grossPremium"|"netInr"|"grossInr"|"net":|"gross":/g, (m) => swap[m]));
+  out.premiumModel = 2;
+  out.audit = [...(out.audit || []), { id: `A${(out.audit || []).length + 1}`, at: nowIso(), who: "System", action: "Premium terms changed", detail: "Gross premium is now the amount before GST and net premium the final amount paid. Saved figures were moved across; no amount changed." }];
+  return out;
+}
+
+const showDate = (x) => (typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x) ? fmtDate(x) : x);
 export function toCsv(labelRows, header, rows) {
+  rows = rows.map((r) => r.map(showDate));
   return [...labelRows.map((r) => r.map(esc).join(",")), "", header.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\r\n");
 }

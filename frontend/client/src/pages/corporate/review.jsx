@@ -2,8 +2,8 @@
 import { LIVE } from "./data.js";
 import { saveFile } from "./store.js";
 import { FIELDS, FIELD, CURRENCIES, NUMERIC } from "./data.js";
-import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf } from "./lib.js";
-import { useApp, Btn, Pill, Labeled, AskFirst, Confirm, Icon } from "./ui.jsx";
+import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf } from "./lib.js";
+import { useApp, Btn, Pill, Labeled, AskFirst, Confirm, Icon, DateInput } from "./ui.jsx";
 import { readPolicyPdf, readerSelfTest, ReadError } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -15,7 +15,7 @@ export function DocPane({ lines, title, highlight, generated, extracted, onLine 
     <div className="docpane">
       <div className="docpane-head">
         <strong>{title}</strong>
-        <span className="muted small">{extracted ? "Text read from your PDF inside this browser. The file itself is not uploaded or kept." : <>{generated ? "Sample generated for this demo." : "Sample document fixture."} Simulated scan, no real file is read.</>}</span>
+        <span className="muted small">{extracted ? "Text read from your file." : <>{generated ? "Sample generated for this demo." : "Sample document fixture."} Simulated scan, no real file is read.</>}</span>
       </div>
       <ol className="paper" ref={box}>
         {lines.map((l, i) => (
@@ -63,7 +63,7 @@ export function PdfAttach({ id, label = "Attach the policy PDF", onReady, ready,
         <span className="dz-icon"><Icon name="upload" size={26} /></span>
         <span className="attach-label">{label}</span>
         <span className="dz-sub">Drop the PDF or a photo of it here, or click to browse</span>
-        <span className="small muted">Digital PDFs from the insurer work best. Scanned PDFs and photos (JPG, PNG) are read too, more slowly, and every value is marked for checking. Everything is read inside this browser; nothing is uploaded.</span>
+        <span className="small muted">Digital PDFs from the insurer work best. Scanned PDFs and photos (JPG, PNG) are read too, more slowly, and every value is marked for checking. The text is read inside your browser. The original file is kept with your records.</span>
       </label>
       <ReaderStatus />
       {state.busy && <p className="small" role="status">{state.msg}</p>}
@@ -77,6 +77,7 @@ export function PdfAttach({ id, label = "Attach the policy PDF", onReady, ready,
 
 function SourceChip({ src, onShow, req }) {
   if (!src) return req ? <span className="src src-miss">Not found on document, please enter</span> : <span className="src">Not on document (optional)</span>;
+  if (src.conf === "issue") return <span className="src src-info">Same as the issue date. Change it if needed.</span>;
   if (src.conf === "preset") return <span className="src src-info">From brokerage preset v{src.version}</span>;
   if (src.conf === "manual") return <span className="src src-info">Entered by reviewer</span>;
   if (src.conf === "calc") return <span className="src src-info">Calculated by reviewer</span>;
@@ -117,6 +118,10 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
         vals[f.key] = "";
       }
     });
+    // Booked date starts as the issue date and stays editable.
+    if (!vals.bookDate && vals.issueDate) { vals.bookDate = vals.issueDate; srcs.bookDate = { conf: "issue" }; }
+    vals.brokerageOnNet = !!initial.brokerageOnNet;
+    vals.otherDetails = initial.otherDetails || fixture.other || [];
     if ((vals.brokeragePct === "" || vals.brokeragePct == null) && preset) {
       vals.brokeragePct = preset.pct;
       srcs.brokeragePct = { conf: "preset", version: preset.version, presetId: preset.presetId };
@@ -136,12 +141,13 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
 
   const set = (k, raw) => {
     const v = NUMERIC.has(k) ? (raw === "" ? "" : raw) : raw;
-    setVals((p) => ({ ...p, [k]: v }));
+    setVals((p) => ({ ...p, [k]: v, ...(k === "issueDate" && (p.bookDate === "" || p.bookDate == null || srcs.bookDate?.conf === "issue") ? { bookDate: v } : {}) }));
+    if (k === "issueDate" && (vals.bookDate === "" || vals.bookDate == null || srcs.bookDate?.conf === "issue")) setSrcs((p) => ({ ...p, bookDate: v ? { conf: "issue" } : undefined }));
     setSrcs((p) => {
       const s = p[k];
       if (s && s.ref && !s.edited) return { ...p, [k]: { ...s, edited: true, originalText: fmtValue(k, start.vals[k], vals.currency) } };
       if (s && s.edited && String(v) === String(start.vals[k])) { const { edited, originalText, ...rest } = s; return { ...p, [k]: rest }; }
-      if (!s || s.conf === "preset" || s.conf === "calc") return { ...p, [k]: { conf: "manual" } };
+      if (!s || s.conf === "preset" || s.conf === "calc" || s.conf === "issue") return { ...p, [k]: { conf: "manual" } };
       return p;
     });
   };
@@ -158,8 +164,8 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     }
   });
   if (vals.riskStart && vals.riskEnd && vals.riskEnd <= vals.riskStart) errors.riskEnd = "Risk end must be after risk start";
-  const sumCheck = [vals.netPremium, vals.gst, vals.grossPremium].every(isNum) ? r2(+vals.netPremium + +vals.gst + (+vals.stampDuty || 0)) : null;
-  const grossMismatch = sumCheck != null && Math.abs(sumCheck - +vals.grossPremium) > 0.01;
+  const sumCheck = [vals.grossPremium, vals.gst, vals.netPremium].every(isNum) ? r2(+vals.grossPremium + +vals.gst) : null;
+  const grossMismatch = sumCheck != null && Math.abs(sumCheck - +vals.netPremium) > 0.01;
   const lowConf = FIELDS.filter((f) => srcs[f.key]?.conf === "low" && !srcs[f.key]?.edited && !srcs[f.key]?.checked);
   const blockers = [...missing.map((f) => `${f.label} is missing`), ...Object.entries(errors).map(([k, e]) => `${FIELD[k].label}: ${e}`)];
   if (!brokOk) blockers.push("Tick the brokerage confirmation");
@@ -203,7 +209,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               const f = FIELD[k], id = `ask-${k}`, done = !(vals[k] === "" || vals[k] == null);
               return (
                 <Labeled key={k} label={<>{done && <span className="good-text">✓ </span>}{f.label}</>} htmlFor={id} req error={errors[k] || (tried && !done ? "Required before confirming" : null)} hint={f.help}>
-                  {f.type === "date" ? <input id={id} type="date" value={vals[k] || ""} onChange={(e) => set(k, e.target.value)} />
+                  {f.type === "date" ? <DateInput id={id} value={vals[k] || ""} onChange={(e) => set(k, e.target.value)} />
                     : f.type === "currency" ? <select id={id} value={vals[k] || ""} onChange={(e) => set(k, e.target.value)}><option value="">Choose</option>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
                       : f.type === "yesno" ? <select id={id} value={vals[k] || ""} onChange={(e) => set(k, e.target.value)}><option value="">Not entered</option><option>Yes</option><option>No</option></select>
                         : <input id={id} type="text" inputMode={NUMERIC.has(k) ? "decimal" : undefined} value={vals[k] ?? ""} onChange={(e) => set(k, e.target.value.replace(/,/g, ""))} />}
@@ -211,7 +217,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               );
             })}
           </div>
-          <p className="small muted">Is renewable and Business booked date are never read from documents; a person always enters them. You can save a draft with gaps, and a draft never counts as complete.</p>
+          <p className="small muted">Is renewable is never read from documents; a person always enters it. Business booked date starts as the issue date. You can save a draft with gaps, and a draft never counts as complete.</p>
         </section>
       )}
       <div className="review-grid">
@@ -228,7 +234,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                 return (
                   <div key={f.key} className={`rv-row ${f.req && (vals[f.key] === "" || vals[f.key] == null) ? "rv-miss" : ""} ${s?.conf === "low" && !s?.edited && !s?.checked ? "rv-low" : ""}`}>
                     <Labeled label={f.label} htmlFor={id} req={f.req} error={err} hint={s?.note || f.help}>
-                      {f.type === "date" ? <input id={id} type="date" value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
+                      {f.type === "date" ? <DateInput id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
                         : f.type === "currency" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Choose</option>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
                         : f.type === "yesno" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Not entered</option><option>Yes</option><option>No</option></select>
                         : <input id={id} type="text" inputMode={NUMERIC.has(f.key) ? "decimal" : undefined} value={vals[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value.replace(/,/g, ""))} />}
@@ -239,16 +245,16 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                         <button type="button" className="linkbtn" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...s, checked: true } }))}>Checked, value is right</button>
                       )}
                       {s?.checked && <span className="src src-ok">Checked by reviewer</span>}
-                      {f.key === "grossPremium" && (
+                      {f.key === "netPremium" && (
                         <div className="small">
-                          {grossMismatch && <div className="warn-text">Net + GST + stamp duty = {fmtValue("grossPremium", sumCheck, vals.currency)}, which differs from the gross entered.</div>}
-                          <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => { setVals((p) => ({ ...p, grossPremium: sumCheck })); setSrcs((p) => ({ ...p, grossPremium: { conf: "calc" } })); }}>Calc gross premium</button>
+                          {grossMismatch && <div className="warn-text">Gross + GST = {fmtValue("netPremium", sumCheck, vals.currency)}, which differs from the net entered.</div>}
+                          <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => { setVals((p) => ({ ...p, netPremium: sumCheck })); setSrcs((p) => ({ ...p, netPremium: { conf: "calc" } })); }}>Calc net premium</button>
                         </div>
                       )}
                       {f.key === "gst" && (
-                        <button type="button" className="linkbtn small" disabled={!isNum(vals.netPremium) || !isNum(vals.gstPct)} onClick={() => { setVals((p) => ({ ...p, gst: r2(+p.netPremium * +p.gstPct / 100) })); setSrcs((p) => ({ ...p, gst: { conf: "calc" } })); }}>Calculate from GST %</button>
+                        <button type="button" className="linkbtn small" disabled={!isNum(vals.grossPremium) || !isNum(vals.gstPct)} onClick={() => { setVals((p) => ({ ...p, gst: r2(+p.grossPremium * +p.gstPct / 100) })); setSrcs((p) => ({ ...p, gst: { conf: "calc" } })); }}>Calculate from GST %</button>
                       )}
-                      {f.key === "bookDate" && <span className="small muted">Booking rule open <Confirm /></span>}
+                      {f.key === "location" && fixture.fields.location?.word && <span className="src src-info">The policy calls this: {fixture.fields.location.word}</span>}
                     </div>
                   </div>
                 );
@@ -256,12 +262,28 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               {g === "Brokerage" && (
                 <div className="brok">
                   <p className="small">{preset ? <>Preset for {ins?.name} + {policyType}: <strong>{preset.pct}%</strong> (version {preset.version}). It loads as a starting value and stays editable.</> : <>No confirmed preset for this insurer and policy type. Enter brokerage by hand.</>} Preset keying is open <Confirm /></p>
-                  {isNum(vals.brokeragePct) && isNum(vals.netPremium) && <p className="small">Brokerage amount: <strong>{fmtValue("netPremium", r2(+vals.netPremium * +vals.brokeragePct / 100), vals.currency)}</strong> (net premium x brokerage %)</p>}
+                  <label className="check"><input id="rv-brok-net" type="checkbox" checked={!!vals.brokerageOnNet} onChange={(e) => setVals((p) => ({ ...p, brokerageOnNet: e.target.checked }))} /> Brokerage on net premium (leave unticked for gross)</label>
+                  {isNum(vals.brokeragePct) && isNum(vals.brokerageOnNet ? vals.netPremium : vals.grossPremium) && <p className="small">Brokerage amount: <strong>{fmtValue("grossPremium", brokerageOf(vals), vals.currency)}</strong> ({vals.brokerageOnNet ? "net" : "gross"} premium x brokerage %)</p>}
                   <label className="check"><input id="rv-brok-ok" type="checkbox" checked={brokOk} onChange={(e) => setBrokOk(e.target.checked)} /> I have checked the brokerage for this policy</label>
                 </div>
               )}
             </fieldset>
           ))}
+          <fieldset className="rv-group">
+            <legend>Other details</legend>
+            <p className="small muted">Extensions, special conditions and anything else on the policy without a box of its own. Change, remove or add as needed.</p>
+            {(vals.otherDetails || []).map((o, i) => {
+              const put = (k, x) => setVals((p) => ({ ...p, otherDetails: p.otherDetails.map((y, j) => (j === i ? { ...y, [k]: x } : y)) }));
+              return (
+                <div key={i} className="other-row">
+                  <input aria-label={`Other detail ${i + 1} name`} value={o.label} onChange={(e) => put("label", e.target.value)} />
+                  <input aria-label={`Other detail ${i + 1} value`} value={o.value} onChange={(e) => put("value", e.target.value)} />
+                  <span className="row gap-xs">{o.ref && <button type="button" className="src src-ok" onClick={() => show(o.ref)}>L{o.ref}</button>}<Btn onClick={() => setVals((p) => ({ ...p, otherDetails: p.otherDetails.filter((_, j) => j !== i) }))}>Remove</Btn></span>
+                </div>
+              );
+            })}
+            <Btn onClick={() => setVals((p) => ({ ...p, otherDetails: [...(p.otherDetails || []), { label: "", value: "" }] }))}>Add another detail</Btn>
+          </fieldset>
         </div>
       </div>
       <div className="review-actions">

@@ -364,3 +364,15 @@
 .ic-root .guide-steps { margin: 10px 0 0; padding-left: 22px; display: grid; gap: 6px; line-height: 1.5; }
 .ic-root .grow { flex: 1 1 260px; min-width: 0; }
 .ic-root .grow input { width: 100%; }
+.ic-root .dateinput { display: block; }
+.ic-root .dateinput input { width: 100%; }
+.ic-root .date-q { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-top: 6px; font-size: .85rem; font-weight: 500; }
+.ic-root .other-row { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr auto; gap: 8px; align-items: start; margin-bottom: 8px; }
+@media (max-width: 640px) { .ic-root .other-row { grid-template-columns: 1fr; } }
+.ic-root .corp-login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--s50); }
+.ic-root .corp-login-card { width: 100%; max-width: 400px; background: var(--white); border: 1px solid var(--s200); border-radius: 16px; padding: 28px; display: grid; gap: 14px; }
+.ic-root .corp-login-card h1 { margin: 0; font-size: 1.5rem; }
+.ic-root .corp-login-card p { margin: 0; }
+.ic-root .corp-login-field { display: grid; gap: 6px; font-weight: 600; }
+.ic-root .corp-login-field input { width: 100%; font-weight: 400; }
+.ic-root .corp-login-btn { width: 100%; justify-content: center; }

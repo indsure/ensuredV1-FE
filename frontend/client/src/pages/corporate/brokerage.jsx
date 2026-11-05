@@ -1,8 +1,8 @@
 // Brokerage received against brokerage expected, per insurer, with one query email per insurer for the gaps.
 import { useState } from "react";
 import { TODAY } from "./data.js";
-import { fmtDate, fmtMoney, fmtNum, isNum, r2, nowIso, fxRate } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, Confirm, DocModal } from "./ui.jsx";
+import { fmtDate, fmtMoney, fmtNum, isNum, r2, nowIso, fxRate, brokerageOf, brokerageBase } from "./lib.js";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, Confirm, DocModal, DateInput } from "./ui.jsx";
 import { brokerageQuery } from "./docs.js";
 
 const STATUS_TONE = { Paid: "good", "Short paid": "warn", "Not received": "bad", Overpaid: "info" };
@@ -13,13 +13,13 @@ export function brokerageLedger(db) {
     const p = db.policies.find((x) => x.id === t.policyId);
     const c = db.customers.find((x) => x.id === p.customerId);
     const v = t.values;
-    const expected = r2((+v.netPremium || 0) * (+v.brokeragePct || 0) / 100);
+    const expected = brokerageOf(v);
     const pays = (db.remittances || []).flatMap((r) => r.lines.filter((l) => l.termId === t.id).map((l) => ({ ...l, ref: r.ref, date: r.date })));
     const received = r2(pays.reduce((a, l) => a + l.amount, 0));
     const out = r2(expected - received);
     const status = received === 0 ? "Not received" : out > 0.5 ? "Short paid" : out < -0.5 ? "Overpaid" : "Paid";
     const fx = fxRate(db, (v.bookDate || v.issueDate || TODAY).slice(0, 7), v.currency);
-    return { t, p, c, insurerId: p.insurerId, policyNo: v.policyNo, controlNo: p.controlNo, insured: c.name, type: p.type, currency: v.currency, net: +v.netPremium || 0, pct: +v.brokeragePct || 0, expected, received, out, status, pays, rate: fx?.rate ?? null };
+    return { t, p, c, insurerId: p.insurerId, policyNo: v.policyNo, controlNo: p.controlNo, insured: c.name, type: p.type, currency: v.currency, gross: brokerageBase(v), onNet: !!v.brokerageOnNet, pct: +v.brokeragePct || 0, expected, received, out, status, pays, rate: fx?.rate ?? null };
   });
 }
 
@@ -52,7 +52,7 @@ function PaymentForm({ insurer, rows, onDone }) {
     <div className="boxed stack">
       <h4>Record a brokerage payment from {insurer.name}</h4>
       <div className="formgrid">
-        <Labeled label="Received on" htmlFor="bp-date" req error={tried && errs.date}><input id="bp-date" type="date" value={f.date} max={TODAY} onChange={(e) => setF({ ...f, date: e.target.value })} /></Labeled>
+        <Labeled label="Received on" htmlFor="bp-date" req error={tried && errs.date}><DateInput id="bp-date" value={f.date} max={TODAY} onChange={(e) => setF({ ...f, date: e.target.value })} /></Labeled>
         <Labeled label="Payment reference" htmlFor="bp-ref" req error={tried && errs.ref} hint="UTR or the insurer's advice number"><input id="bp-ref" value={f.ref} onChange={(e) => setF({ ...f, ref: e.target.value })} /></Labeled>
         <Labeled label="Note" htmlFor="bp-note"><input id="bp-note" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></Labeled>
       </div>
@@ -84,7 +84,7 @@ export function BrokerageView() {
   const groups = db.insurers.map((i) => ({ i, rows: rows.filter((r) => r.insurerId === i.id), allRows: all.filter((r) => r.insurerId === i.id) })).filter((g) => g.rows.length || paying === g.i.id);
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Brokerage received</h1><p className="muted">What each insurer owes in brokerage, what has arrived, and what to chase. Brokerage due is net premium times the brokerage rate on the policy.</p></div></header>
+      <header className="page-head"><div><h1>Brokerage received</h1><p className="muted">What each insurer owes in brokerage, what has arrived, and what to chase. Brokerage due is the gross premium times the rate on the policy, or the net premium where a policy is ticked for that.</p></div></header>
       <div className="stats">
         <div className="stat"><span>Brokerage due</span><strong>{fmtMoney(sum("expected"))}</strong><em>{all.length} confirmed policies, in INR</em></div>
         <div className="stat"><span>Received</span><strong>{fmtMoney(sum("received"))}</strong><em>{(db.remittances || []).length} payments recorded</em></div>
@@ -108,11 +108,11 @@ export function BrokerageView() {
               <Btn disabled={!owed.length} why="Nothing outstanding" onClick={() => setDoc(brokerageQuery({ insurer: i.name, lines: owed.map((r) => ({ ...r, refs: r.pays.map((x) => x.ref).join(", ") })) }))}>Draft query email{owed.length ? ` (${owed.length})` : ""}</Btn></>}>
             {paying === i.id && <PaymentForm insurer={i} rows={allRows} onDone={() => setPaying(null)} />}
             {gr.length > 0 && (
-              <Table><thead><tr><th>Policy</th><th>Insured</th><th className="num">Net premium</th><th className="num">Brokerage due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
+              <Table><thead><tr><th>Policy</th><th>Insured</th><th className="num">Brokerage on</th><th className="num">Brokerage due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
                 <tbody>{gr.map((r) => <tr key={r.t.id}>
                   <td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td>
                   <td>{r.insured}<div className="small muted">{r.type}</div></td>
-                  <td className="num">{fmtMoney(r.net, r.currency)}<div className="small muted">at {fmtNum(r.pct)}%</div></td>
+                  <td className="num">{fmtMoney(r.gross, r.currency)}<div className="small muted">{r.onNet ? "net" : "gross"}, at {fmtNum(r.pct)}%</div></td>
                   <td className="num">{fmtMoney(r.expected, r.currency)}</td>
                   <td className="num">{fmtMoney(r.received, r.currency)}{r.pays.length > 0 && <div className="small muted">{r.pays.map((x) => `${x.ref}, ${fmtDate(x.date)}`).join("; ")}</div>}</td>
                   <td className="num">{r.out > 0.5 ? <strong className="bad-text">{fmtMoney(r.out, r.currency)}</strong> : fmtMoney(Math.max(0, r.out), r.currency)}</td>
@@ -121,7 +121,7 @@ export function BrokerageView() {
           </Card>
         );
       })}
-      <p className="small muted">Whether brokerage is due on net premium or on another base, and how TDS and GST on brokerage are shown, is not decided <Confirm /></p>
+      <p className="small muted">How TDS and GST on brokerage are shown is not decided <Confirm /></p>
       {doc && <DocModal doc={doc} onClose={() => setDoc(null)} />}
     </div>
   );

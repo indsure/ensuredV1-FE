@@ -37,17 +37,17 @@ export const FIELDS = [
   { key: "issueDate", label: "Policy issue date", group: "Dates", type: "date", req: true, help: "Issued does not mean cover has started" },
   { key: "riskStart", label: "Risk start date", group: "Dates", type: "date", req: true, help: "Cover starts on this date" },
   { key: "riskEnd", label: "Risk end (expiry) date", group: "Dates", type: "date", req: true },
-  { key: "bookDate", label: "Business booked date", group: "Dates", type: "date", req: true, help: "Definition is open (decision 3)" },
+  { key: "bookDate", label: "Business booked date", group: "Dates", type: "date", req: true, help: "Starts as the policy issue date. Change it if needed." },
   { key: "currency", label: "Currency", group: "Amounts", type: "currency", req: true },
   { key: "sumInsured", label: "Sum insured / limit", group: "Amounts", type: "money", req: true },
   { key: "premiumRate", label: "Premium rate (%)", group: "Amounts", type: "pct" },
-  { key: "netPremium", label: "Net premium", group: "Amounts", type: "money", req: true },
+  { key: "grossPremium", label: "Gross premium", group: "Amounts", type: "money", req: true, help: "Before GST" },
   { key: "gstPct", label: "GST (%)", group: "Amounts", type: "pct" },
   { key: "gst", label: "GST amount", group: "Amounts", type: "money", req: true },
   { key: "stampDuty", label: "Stamp duty", group: "Amounts", type: "money" },
-  { key: "grossPremium", label: "Gross premium", group: "Amounts", type: "money", req: true },
+  { key: "netPremium", label: "Net premium", group: "Amounts", type: "money", req: true, help: "Gross + GST, the final amount paid" },
   { key: "excess", label: "Policy excess", group: "Amounts", type: "text" },
-  { key: "location", label: "Insured location", group: "Other", type: "text" },
+  { key: "location", label: "Location / Jurisdiction", group: "Other", type: "text" },
   { key: "share", label: "Our share (%)", group: "Other", type: "pct" },
   { key: "coBrokerShare", label: "Co-broker share (%)", group: "Other", type: "pct" },
   { key: "renewable", label: "Is renewable", group: "Other", type: "yesno", req: true, help: "Entered by a person. Never guessed." },
@@ -97,11 +97,11 @@ export const FIXTURES = [
       currency: { v: "USD", ref: 12, conf: "high" },
       sumInsured: { v: 2750000, ref: 12, conf: "high" },
       premiumRate: { v: 0.95, ref: 13, conf: "high" },
-      netPremium: { v: 26125, ref: 14, conf: "high" },
+      grossPremium: { v: 26125, ref: 14, conf: "high" },
       gstPct: { v: 18, ref: 15, conf: "high" },
       gst: { v: 4702.5, ref: 15, conf: "high" },
       stampDuty: { v: 0, ref: 16, conf: "high" },
-      grossPremium: { v: 30827.5, ref: 17, conf: "high" },
+      netPremium: { v: 30827.5, ref: 17, conf: "high" },
       excess: { v: "USD 25,000 each accident", ref: 18, conf: "high" },
       location: { v: "Indian coastal and Middle East", ref: 19, conf: "low" },
     },
@@ -118,7 +118,7 @@ export const FIXTURES = [
       "Date of issue: 2?-Oct-2026",
       "Period of insurance: 15-Nov-2026 to ##-###-2027",
       "Sum insured: Rs. 4,50,00,000",
-      "Net premium: Rs. 54,000",
+      "Gross premium: Rs. 54,000",
       "GST: [stamp covers this area]",
       "Total: Rs. 63,720",
       "Situation: Plot 14, GIDC (rest torn)",
@@ -129,8 +129,8 @@ export const FIXTURES = [
       riskStart: { v: "2026-11-15", ref: 7, conf: "high" },
       currency: { v: "INR", ref: 8, conf: "high" },
       sumInsured: { v: 45000000, ref: 8, conf: "high" },
-      netPremium: { v: 54000, ref: 9, conf: "high" },
-      grossPremium: { v: 63720, ref: 11, conf: "high" },
+      grossPremium: { v: 54000, ref: 9, conf: "high" },
+      netPremium: { v: 63720, ref: 11, conf: "high" },
       location: { v: "Plot 14, GIDC", ref: 12, conf: "low" },
     },
   },
@@ -152,7 +152,7 @@ export const FIXTURES = [
       "Aggregate sum insured: Rs. 1,92,00,000",
       "Premium: Rs. 4,48,000",
       "GST 18%: Rs. 80,640",
-      "Gross premium: Rs. 5,28,640",
+      "Net premium: Rs. 5,28,640",
     ],
     fields: {
       policyNo: { v: "SGI/GMC/2026/7710", ref: 4, conf: "high" },
@@ -164,10 +164,10 @@ export const FIXTURES = [
       riskEnd: { v: "2027-11-30", ref: 9, conf: "high" },
       currency: { v: "INR", ref: 12, conf: "high" },
       sumInsured: { v: 19200000, ref: 12, conf: "high" },
-      netPremium: { v: 448000, ref: 13, conf: "high" },
+      grossPremium: { v: 448000, ref: 13, conf: "high" },
       gstPct: { v: 18, ref: 14, conf: "high" },
       gst: { v: 80640, ref: 14, conf: "high" },
-      grossPremium: { v: 528640, ref: 15, conf: "high" },
+      netPremium: { v: 528640, ref: 15, conf: "high" },
     },
   },
   {
@@ -194,10 +194,10 @@ export const FIXTURES = [
       riskEnd: { v: "2027-10-31", ref: 6, conf: "high" },
       currency: { v: "INR", ref: 7, conf: "high" },
       sumInsured: { v: 60000000, ref: 7, conf: "high" },
-      netPremium: { v: 30000, ref: 9, conf: "high" },
+      grossPremium: { v: 30000, ref: 9, conf: "high" },
       gstPct: { v: 18, ref: 10, conf: "high" },
       gst: { v: 5400, ref: 10, conf: "high" },
-      grossPremium: { v: 35400, ref: 11, conf: "high" },
+      netPremium: { v: 35400, ref: 11, conf: "high" },
     },
   },
 ];
@@ -229,9 +229,9 @@ export function makeEndorsementFixture(kind, term, endoNo) {
   const cur = v.currency || "INR";
   const effective = TODAY;
   if (kind === "premium") {
-    const net = r2((+v.netPremium || 0) * 1.08);
-    const gst = r2(net * ((+v.gstPct || 0) / 100));
-    const gross = r2(net + gst + (+v.stampDuty || 0));
+    const gross = r2((+v.grossPremium || 0) * 1.08);
+    const gst = r2(gross * ((+v.gstPct || 0) / 100));
+    const net = r2(gross + gst + (+v.stampDuty || 0));
     return {
       id: `GEN-END-P-${term.id}-${endoNo}`, generated: true, kind: "Endorsement", title: `Premium revision endorsement ${endoNo} (generated sample)`,
       lines: [
@@ -240,15 +240,15 @@ export function makeEndorsementFixture(kind, term, endoNo) {
         `Attaching to policy: ${v.policyNo}`,
         `Effective from: ${fmtD(effective)}`,
         "Reason: revision of premium following insurer review",
-        `Revised net premium: ${cur} ${nf(net, cur)}`,
+        `Revised gross premium: ${cur} ${nf(gross, cur)}`,
         `Revised GST: ${cur} ${nf(gst, cur)}`,
-        `Revised total premium: ${cur} ${nf(gross, cur)}`,
+        `Revised total premium: ${cur} ${nf(net, cur)}`,
         `Sum insured: ${cur} ${nf(v.sumInsured, cur)} (unchanged)`,
         `Period: ${fmtD(v.riskStart)} to ${fmtD(v.riskEnd)} (unchanged)`,
         "Printed date: 30-Oct-2026",
       ],
       fields: {
-        netPremium: { v: net, ref: 6, conf: "high" }, gst: { v: gst, ref: 7, conf: "high" }, grossPremium: { v: gross, ref: 8, conf: "high" },
+        grossPremium: { v: gross, ref: 6, conf: "high" }, gst: { v: gst, ref: 7, conf: "high" }, netPremium: { v: net, ref: 8, conf: "high" },
         sumInsured: { v: +v.sumInsured, ref: 9, conf: "high" }, riskStart: { v: v.riskStart, ref: 10, conf: "high" }, riskEnd: { v: v.riskEnd, ref: 10, conf: "high" },
         issueDate: { v: "2026-10-30", ref: 11, conf: "low", note: "This is the endorsement's print date, not the policy issue date" },
       },
@@ -256,9 +256,9 @@ export function makeEndorsementFixture(kind, term, endoNo) {
     };
   }
   const si = r2((+v.sumInsured || 0) * 1.2);
-  const net = r2((+v.netPremium || 0) * 1.2);
-  const gst = r2(net * ((+v.gstPct || 0) / 100));
-  const gross = r2(net + gst + (+v.stampDuty || 0));
+  const gross = r2((+v.grossPremium || 0) * 1.2);
+  const gst = r2(gross * ((+v.gstPct || 0) / 100));
+  const net = r2(gross + gst + (+v.stampDuty || 0));
   return {
     id: `GEN-END-S-${term.id}-${endoNo}`, generated: true, kind: "Endorsement", title: `Sum insured increase endorsement ${endoNo} (generated sample)`,
     lines: [
@@ -268,14 +268,14 @@ export function makeEndorsementFixture(kind, term, endoNo) {
       `Effective from: ${fmtD(effective)}`,
       "Reason: increase in sum insured at insured's request",
       `Revised sum insured: ${cur} ${nf(si, cur)}`,
-      `Additional premium brings net premium to: ${cur} ${nf(net, cur)}`,
+      `Additional premium brings gross premium to: ${cur} ${nf(gross, cur)}`,
       `GST: ${cur} ${nf(gst, cur)}`,
-      `Total premium: ${cur} ${nf(gross, cur)}`,
+      `Total premium: ${cur} ${nf(net, cur)}`,
       `Insured location: ${v.location || "Not stated"}`,
     ],
     fields: {
-      sumInsured: { v: si, ref: 6, conf: "high" }, netPremium: { v: net, ref: 7, conf: "high" }, gst: { v: gst, ref: 8, conf: "high" },
-      grossPremium: { v: gross, ref: 9, conf: "high" }, location: { v: v.location || "", ref: 10, conf: "low" },
+      sumInsured: { v: si, ref: 6, conf: "high" }, grossPremium: { v: gross, ref: 7, conf: "high" }, gst: { v: gst, ref: 8, conf: "high" },
+      netPremium: { v: net, ref: 9, conf: "high" }, location: { v: v.location || "", ref: 10, conf: "low" },
     },
     effective,
   };
@@ -285,9 +285,9 @@ export function makeRenewalFixture(oldTerm, policy, insurerName) {
   const v = oldTerm.values;
   const cur = v.currency || "INR";
   const start = addYears(v.riskStart, 1), end = addYears(v.riskEnd, 1);
-  const net = r2((+v.netPremium || 0) * 1.05);
-  const gst = r2(net * ((+v.gstPct || 0) / 100));
-  const gross = r2(net + gst + (+v.stampDuty || 0));
+  const gross = r2((+v.grossPremium || 0) * 1.05);
+  const gst = r2(gross * ((+v.gstPct || 0) / 100));
+  const net = r2(gross + gst + (+v.stampDuty || 0));
   const pn = (v.policyNo || "NEW").replace(/\d{4}/, (y) => String(+y + 1));
   return {
     id: `GEN-REN-${oldTerm.id}`, generated: true, kind: "Renewal schedule", dept: policy.dept, type: policy.type,
@@ -299,15 +299,15 @@ export function makeRenewalFixture(oldTerm, policy, insurerName) {
       `Previous policy: ${v.policyNo}`,
       `Period: ${fmtD(start)} to ${fmtD(end)}`,
       `Sum insured: ${cur} ${nf(v.sumInsured, cur)}`,
-      `Net premium: ${cur} ${nf(net, cur)}`,
+      `Gross premium: ${cur} ${nf(gross, cur)}`,
       "GST: [not printed on this page]",
-      `Total premium: ${cur} ${nf(gross, cur)}`,
+      `Total premium: ${cur} ${nf(net, cur)}`,
       `Situation: ${v.location || "--"}`,
     ],
     fields: {
       policyNo: { v: pn, ref: 3, conf: "high" }, riskStart: { v: start, ref: 5, conf: "high" }, riskEnd: { v: end, ref: 5, conf: "high" },
-      currency: { v: cur, ref: 6, conf: "high" }, sumInsured: { v: +v.sumInsured || 0, ref: 6, conf: "high" }, netPremium: { v: net, ref: 7, conf: "high" },
-      grossPremium: { v: gross, ref: 9, conf: "high" }, ...(v.location ? { location: { v: v.location, ref: 10, conf: "low" } } : {}),
+      currency: { v: cur, ref: 6, conf: "high" }, sumInsured: { v: +v.sumInsured || 0, ref: 6, conf: "high" }, grossPremium: { v: gross, ref: 7, conf: "high" },
+      netPremium: { v: net, ref: 9, conf: "high" }, ...(v.location ? { location: { v: v.location, ref: 10, conf: "low" } } : {}),
     },
   };
 }
@@ -335,7 +335,7 @@ export function seed() {
 }
 function demoSeed() {
   const d = {
-    version: 2, seq: 500,
+    version: 2, premiumModel: 2, seq: 500,
     remittances: [],
     insurers: [
       { id: "INS1", name: "Bharat Shield General Insurance", branches: [
@@ -409,7 +409,7 @@ function demoSeed() {
 
   // P1: P&I fleet, USD, quarterly instalments, late receipt, one vessel added mid-term.
   const p1 = pol({ customerId: "C1", dept: "Marine", type: "Protection & Indemnity", insurerId: "INS2", branchId: "BR3", vesselMode: "Fleet" });
-  const t1 = term(p1, { values: { policyNo: "CGA/PI/2026/0457", planName: "P&I Entry, owners", uin: "", proposalDate: "2026-02-02", issueDate: "2026-02-18", riskStart: "2026-02-20", riskEnd: "2027-02-19", bookDate: "2026-04-08", currency: "USD", sumInsured: 5000000, premiumRate: "", netPremium: 48000, gstPct: 18, gst: 8640, stampDuty: 0, grossPremium: 56640, excess: "USD 10,000 per claim", location: "Worldwide trading", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 8 }, brokerageSnap: snap("PR1", 1, 8) });
+  const t1 = term(p1, { values: { policyNo: "CGA/PI/2026/0457", planName: "P&I Entry, owners", uin: "", proposalDate: "2026-02-02", issueDate: "2026-02-18", riskStart: "2026-02-20", riskEnd: "2027-02-19", bookDate: "2026-04-08", currency: "USD", sumInsured: 5000000, premiumRate: "", grossPremium: 48000, gstPct: 18, gst: 8640, stampDuty: 0, netPremium: 56640, excess: "USD 10,000 per claim", location: "Worldwide trading", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 8 }, brokerageSnap: snap("PR1", 1, 8) });
   t1.instalments = [
     { no: 1, due: "2026-02-20", amount: 12000, taxPct: 18 }, { no: 2, due: "2026-05-20", amount: 12000, taxPct: 18 },
     { no: 3, due: "2026-08-20", amount: 12000, taxPct: 18 }, { no: 4, due: "2026-11-20", amount: 12000, taxPct: 18 }];
@@ -429,21 +429,21 @@ function demoSeed() {
 
   // P2: H&M, individual vessel, USD, single payment.
   const p2 = pol({ customerId: "C1", dept: "Marine", type: "Marine Hull & Machinery", insurerId: "INS1", branchId: "BR1", vesselMode: "Individual vessel" });
-  const t2 = term(p2, { values: { policyNo: "BSG/HM/2026/1182", planName: "Hull ITC basis", uin: "", proposalDate: "2026-03-20", issueDate: "2026-03-28", riskStart: "2026-04-01", riskEnd: "2027-03-31", bookDate: "2026-04-02", currency: "USD", sumInsured: 3200000, premiumRate: 0.9, netPremium: 28800, gstPct: 18, gst: 5184, stampDuty: 0, grossPremium: 33984, excess: "USD 30,000 each accident", location: "Indian coastal", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 10 }, brokerageSnap: snap("PR2", 1, 10) });
+  const t2 = term(p2, { values: { policyNo: "BSG/HM/2026/1182", planName: "Hull ITC basis", uin: "", proposalDate: "2026-03-20", issueDate: "2026-03-28", riskStart: "2026-04-01", riskEnd: "2027-03-31", bookDate: "2026-04-02", currency: "USD", sumInsured: 3200000, premiumRate: 0.9, grossPremium: 28800, gstPct: 18, gst: 5184, stampDuty: 0, netPremium: 33984, excess: "USD 30,000 each accident", location: "Indian coastal", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 10 }, brokerageSnap: snap("PR2", 1, 10) });
   t2.vesselSchedules = [{ version: 1, effectiveFrom: "2026-04-01", vessels: [{ name: "MV Konkan Pride", imo: "9000001", gt: 32000 }], change: null, at: "2026-03-28T11:00:00", by: "Meera Joshi (CSC014)" }];
   t2.receipts = [{ id: "R4", instNo: null, date: "2026-04-10", amount: 33984, mode: "Bank transfer", ref: "UTR DEMO0410D", bank: "Demo Bank, Fort", remitDate: "2026-04-12", proofDocId: null }];
 
   // P3: Group Mediclaim: term 1 renewed, term 2 issued but not yet started, unpaid.
   const p3 = pol({ customerId: "C1", dept: "Health", type: "Group Mediclaim Policy", insurerId: "INS4", branchId: "BR7", cover: "Group" });
-  const t3a = term(p3, { values: { policyNo: "SGI/GMC/2025/5521", planName: "Group Health Secure", uin: "DEMO-GMC-0007", proposalDate: "2025-11-01", issueDate: "2025-11-10", riskStart: "2025-11-15", riskEnd: "2026-11-14", bookDate: "2025-11-10", currency: "INR", sumInsured: 5000000, premiumRate: "", netPremium: 600000, gstPct: 18, gst: 108000, stampDuty: 0, grossPremium: 708000, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 7.5 }, brokerageSnap: snap("PR5", 1, 7.5), outcome: "Renewed" });
+  const t3a = term(p3, { values: { policyNo: "SGI/GMC/2025/5521", planName: "Group Health Secure", uin: "DEMO-GMC-0007", proposalDate: "2025-11-01", issueDate: "2025-11-10", riskStart: "2025-11-15", riskEnd: "2026-11-14", bookDate: "2025-11-10", currency: "INR", sumInsured: 5000000, premiumRate: "", grossPremium: 600000, gstPct: 18, gst: 108000, stampDuty: 0, netPremium: 708000, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 7.5 }, brokerageSnap: snap("PR5", 1, 7.5), outcome: "Renewed" });
   t3a.receipts = [{ id: "R5", instNo: null, date: "2025-11-12", amount: 708000, mode: "Cheque", ref: "CHQ 000451", bank: "Demo Bank, Fort", remitDate: "2025-11-13", proofDocId: null }];
-  const t3b = term(p3, { nr: "Renewal", prevTermId: t3a.id, values: { policyNo: "SGI/GMC/2026/5521", planName: "Group Health Secure", uin: "DEMO-GMC-0007", proposalDate: "2026-10-20", issueDate: "2026-10-28", riskStart: "2026-11-15", riskEnd: "2027-11-14", bookDate: "2026-10-28", currency: "INR", sumInsured: 5000000, premiumRate: "", netPremium: 640000, gstPct: 18, gst: 115200, stampDuty: 0, grossPremium: 755200, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 7.5 }, brokerageSnap: snap("PR5", 1, 7.5) });
+  const t3b = term(p3, { nr: "Renewal", prevTermId: t3a.id, values: { policyNo: "SGI/GMC/2026/5521", planName: "Group Health Secure", uin: "DEMO-GMC-0007", proposalDate: "2026-10-20", issueDate: "2026-10-28", riskStart: "2026-11-15", riskEnd: "2027-11-14", bookDate: "2026-10-28", currency: "INR", sumInsured: 5000000, premiumRate: "", grossPremium: 640000, gstPct: 18, gst: 115200, stampDuty: 0, netPremium: 755200, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 7.5 }, brokerageSnap: snap("PR5", 1, 7.5) });
   t3a.nextTermId = t3b.id;
   log({ at: "2026-10-28T11:10:00", customerId: "C1", policyId: p3, termId: t3a.id, action: "Renewal confirmed", detail: `Linked forward to term 2 (${t3b.values.policyNo}). Term 1 and its documents kept.` });
 
   // P4: Cargo open policy with declarations (balance below the 30% example).
   const p4 = pol({ customerId: "C2", dept: "Marine", type: "Marine Cargo - Open Policy", insurerId: "INS3", branchId: "BR6" });
-  const t4 = term(p4, { values: { policyNo: "NGI/MOP/2026/1460", planName: "Export open cover", uin: "", proposalDate: "2026-05-20", issueDate: "2026-05-28", riskStart: "2026-06-01", riskEnd: "2027-05-31", bookDate: "2026-06-03", currency: "INR", sumInsured: 100000000, premiumRate: 0.05, netPremium: 50000, gstPct: 18, gst: 9000, stampDuty: 0, grossPremium: 59000, excess: "Rs. 25,000 each consignment", location: "Pune warehouse to world ports", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 }, brokerageSnap: snap("PR6", 1, 15) });
+  const t4 = term(p4, { values: { policyNo: "NGI/MOP/2026/1460", planName: "Export open cover", uin: "", proposalDate: "2026-05-20", issueDate: "2026-05-28", riskStart: "2026-06-01", riskEnd: "2027-05-31", bookDate: "2026-06-03", currency: "INR", sumInsured: 100000000, premiumRate: 0.05, grossPremium: 50000, gstPct: 18, gst: 9000, stampDuty: 0, netPremium: 59000, excess: "Rs. 25,000 each consignment", location: "Pune warehouse to world ports", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 }, brokerageSnap: snap("PR6", 1, 15) });
   t4.coverProfile = demoCargoProfile(100000000);
   t4.receipts = [{ id: "R6", instNo: null, date: "2026-06-05", amount: 59000, mode: "NEFT", ref: "UTR DEMO0605E", bank: "Demo Bank, Pune", remitDate: "2026-06-08", proofDocId: null }];
   const decl = (n, from, to, cert, vessel, pol_, pod, dest, bl, fcCur, fcVal, siInr, rate, prem, goods) => ({
@@ -458,24 +458,24 @@ function demoSeed() {
 
   // P5: Fire, expiring within 30 days, renewable, with a past endorsement.
   const p5 = pol({ customerId: "C3", dept: "Fire", type: "Standard Fire and Special Perils", insurerId: "INS3", branchId: "BR5" });
-  const t5 = term(p5, { values: { policyNo: "NGI/FIRE/2025/0812", planName: "Standard Fire and Special Perils", uin: "", proposalDate: "2025-11-20", issueDate: "2025-11-27", riskStart: "2025-12-01", riskEnd: "2026-11-30", bookDate: "2025-11-28", currency: "INR", sumInsured: 180000000, premiumRate: 0.12, netPremium: 216000, gstPct: 18, gst: 38880, stampDuty: 0, grossPremium: 254880, excess: "5% of claim, min Rs. 10,000", location: "Plot 22, GIDC Sachin, Surat", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 12.5 }, brokerageSnap: snap("PR4", 1, 12.5) });
+  const t5 = term(p5, { values: { policyNo: "NGI/FIRE/2025/0812", planName: "Standard Fire and Special Perils", uin: "", proposalDate: "2025-11-20", issueDate: "2025-11-27", riskStart: "2025-12-01", riskEnd: "2026-11-30", bookDate: "2025-11-28", currency: "INR", sumInsured: 180000000, premiumRate: 0.12, grossPremium: 216000, gstPct: 18, gst: 38880, stampDuty: 0, netPremium: 254880, excess: "5% of claim, min Rs. 10,000", location: "Plot 22, GIDC Sachin, Surat", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 12.5 }, brokerageSnap: snap("PR4", 1, 12.5) });
   const e1doc = doc({ customerId: "C3", policyId: p5, termId: t5.id, kind: "Endorsement", name: "Endorsement NGI-END-01 (stock increase).pdf", addedAt: "2026-03-10T12:00:00" });
   t5.endorsements = [{ id: "E1", no: "END-01", docId: e1doc, effDate: "2026-03-10", at: "2026-03-10T12:30:00", by: "Meera Joshi (CSC014)",
     changes: [
       { field: "sumInsured", before: 160000000, after: 180000000, beforeSrc: { docId: t5.docId, ref: 8 }, afterSrc: { docId: e1doc, ref: 6 } },
-      { field: "netPremium", before: 192000, after: 216000, beforeSrc: { docId: t5.docId, ref: 9 }, afterSrc: { docId: e1doc, ref: 7 } },
+      { field: "grossPremium", before: 192000, after: 216000, beforeSrc: { docId: t5.docId, ref: 9 }, afterSrc: { docId: e1doc, ref: 7 } },
       { field: "gst", before: 34560, after: 38880, beforeSrc: { docId: t5.docId, ref: 10 }, afterSrc: { docId: e1doc, ref: 8 } },
-      { field: "grossPremium", before: 226560, after: 254880, beforeSrc: { docId: t5.docId, ref: 11 }, afterSrc: { docId: e1doc, ref: 9 } }],
+      { field: "netPremium", before: 226560, after: 254880, beforeSrc: { docId: t5.docId, ref: 11 }, afterSrc: { docId: e1doc, ref: 9 } }],
     unchanged: ["riskStart", "riskEnd", "location"] }];
-  ["sumInsured", "netPremium", "gst", "grossPremium"].forEach((k, i) => { t5.sources[k] = { docId: e1doc, ref: 6 + i, conf: "high", via: "END-01" }; });
-  log({ at: "2026-03-10T12:30:00", customerId: "C3", policyId: p5, termId: t5.id, action: "Endorsement confirmed", detail: "END-01 changed 4 reviewed fields (sum insured, net premium, GST, gross premium). Earlier values kept." });
+  ["sumInsured", "grossPremium", "gst", "netPremium"].forEach((k, i) => { t5.sources[k] = { docId: e1doc, ref: 6 + i, conf: "high", via: "END-01" }; });
+  log({ at: "2026-03-10T12:30:00", customerId: "C3", policyId: p5, termId: t5.id, action: "Endorsement confirmed", detail: "END-01 changed 4 reviewed fields (sum insured, gross premium, GST, net premium). Earlier values kept." });
   t5.receipts = [{ id: "R7", instNo: null, date: "2025-11-29", amount: 226560, mode: "NEFT", ref: "UTR DEMO1129F", bank: "Demo Bank, Surat", remitDate: "2025-12-01", proofDocId: null },
     { id: "R8", instNo: null, date: "2026-03-18", amount: 28320, mode: "NEFT", ref: "UTR DEMO0318G", bank: "Demo Bank, Surat", remitDate: "2026-03-20", proofDocId: null }];
   doc({ customerId: "C3", kind: "Quote", name: "Renewal quote from Northstar (sample).pdf", addedAt: "2026-10-22T10:00:00", note: "Pre-renewal quote, not yet linked to a policy" });
 
   // P6: Charterers Liability, USD, Dubai branch.
   const p6 = pol({ customerId: "C4", dept: "Marine", type: "Charterers Liability", insurerId: "INS2", branchId: "BR4", vesselMode: "Fleet" });
-  const t6 = term(p6, { values: { policyNo: "CGA/CL/2026/0088", planName: "Charterers liability, time and voyage", uin: "", proposalDate: "2026-04-20", issueDate: "2026-04-28", riskStart: "2026-05-01", riskEnd: "2027-04-30", bookDate: "2026-05-06", currency: "USD", sumInsured: 10000000, premiumRate: "", netPremium: 22000, gstPct: 0, gst: 0, stampDuty: 0, grossPremium: 22000, excess: "USD 15,000", location: "Worldwide", share: 100, coBrokerShare: 20, renewable: "Yes", brokeragePct: 10 }, brokerageSnap: null });
+  const t6 = term(p6, { values: { policyNo: "CGA/CL/2026/0088", planName: "Charterers liability, time and voyage", uin: "", proposalDate: "2026-04-20", issueDate: "2026-04-28", riskStart: "2026-05-01", riskEnd: "2027-04-30", bookDate: "2026-05-06", currency: "USD", sumInsured: 10000000, premiumRate: "", grossPremium: 22000, gstPct: 0, gst: 0, stampDuty: 0, netPremium: 22000, excess: "USD 15,000", location: "Worldwide", share: 100, coBrokerShare: 20, renewable: "Yes", brokeragePct: 10 }, brokerageSnap: null });
   t6.sources.gst = { docId: null, ref: null, conf: "manual", note: "Entered by Arun Pillai. Tax treatment for this branch is not verified." };
   t6.sources.gstPct = { docId: null, ref: null, conf: "manual" };
   t6.vesselSchedules = [{ version: 1, effectiveFrom: "2026-05-01", vessels: [{ name: "MV Desert Falcon (chartered)", imo: "9000011", gt: 41000 }, { name: "MV Pearl Current (chartered)", imo: "9000012", gt: 36500 }], change: null, at: "2026-04-28T11:00:00", by: "Arun Pillai (CSC022)" }];
@@ -486,26 +486,26 @@ function demoSeed() {
 
   // P7: Event Cancellation, NOT renewable, expiring 20-Nov-2026.
   const p7 = pol({ customerId: "C5", dept: "Miscellaneous", type: "Event Cancellation Insurance", insurerId: "INS1", branchId: "BR1" });
-  const t7 = term(p7, { values: { policyNo: "BSG/EC/2026/0331", planName: "Event cancellation, single event", uin: "", proposalDate: "2026-08-01", issueDate: "2026-08-08", riskStart: "2026-08-15", riskEnd: "2026-11-20", bookDate: "2026-08-10", currency: "INR", sumInsured: 7500000, premiumRate: 1.5, netPremium: 112500, gstPct: 18, gst: 20250, stampDuty: 0, grossPremium: 132750, excess: "", location: "Exhibition centre, Goregaon", share: 100, coBrokerShare: 0, renewable: "No", brokeragePct: 10 }, brokerageSnap: null });
+  const t7 = term(p7, { values: { policyNo: "BSG/EC/2026/0331", planName: "Event cancellation, single event", uin: "", proposalDate: "2026-08-01", issueDate: "2026-08-08", riskStart: "2026-08-15", riskEnd: "2026-11-20", bookDate: "2026-08-10", currency: "INR", sumInsured: 7500000, premiumRate: 1.5, grossPremium: 112500, gstPct: 18, gst: 20250, stampDuty: 0, netPremium: 132750, excess: "", location: "Exhibition centre, Goregaon", share: 100, coBrokerShare: 0, renewable: "No", brokeragePct: 10 }, brokerageSnap: null });
   t7.receipts = [{ id: "R10", instNo: null, date: "2026-08-09", amount: 132750, mode: "UPI", ref: "UPI DEMO0809I", bank: "", remitDate: "2026-08-11", proofDocId: null }];
 
   // P8: Motor retail: term 1 renewed into an active term 2.
   const p8 = pol({ customerId: "C6", dept: "Motor", type: "Motor Private Car Package Policy", insurerId: "INS4", branchId: "BR7", cover: "Individual" });
-  const t8a = term(p8, { outcome: "Renewed", values: { policyNo: "SGI/MPC/2025/9001", planName: "Private car package", uin: "", proposalDate: "2025-10-05", issueDate: "2025-10-08", riskStart: "2025-10-12", riskEnd: "2026-10-11", bookDate: "2025-10-08", currency: "INR", sumInsured: 680000, premiumRate: "", netPremium: 17200, gstPct: 18, gst: 3096, stampDuty: 0, grossPremium: 20296, excess: "Rs. 1,000", location: "Pune", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
-  const t8b = term(p8, { nr: "Renewal", prevTermId: t8a.id, values: { policyNo: "SGI/MPC/2026/9001", planName: "Private car package", uin: "", proposalDate: "2026-10-05", issueDate: "2026-10-09", riskStart: "2026-10-12", riskEnd: "2027-10-11", bookDate: "2026-10-09", currency: "INR", sumInsured: 620000, premiumRate: "", netPremium: 18400, gstPct: 18, gst: 3312, stampDuty: 0, grossPremium: 21712, excess: "Rs. 1,000", location: "Pune", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
+  const t8a = term(p8, { outcome: "Renewed", values: { policyNo: "SGI/MPC/2025/9001", planName: "Private car package", uin: "", proposalDate: "2025-10-05", issueDate: "2025-10-08", riskStart: "2025-10-12", riskEnd: "2026-10-11", bookDate: "2025-10-08", currency: "INR", sumInsured: 680000, premiumRate: "", grossPremium: 17200, gstPct: 18, gst: 3096, stampDuty: 0, netPremium: 20296, excess: "Rs. 1,000", location: "Pune", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
+  const t8b = term(p8, { nr: "Renewal", prevTermId: t8a.id, values: { policyNo: "SGI/MPC/2026/9001", planName: "Private car package", uin: "", proposalDate: "2026-10-05", issueDate: "2026-10-09", riskStart: "2026-10-12", riskEnd: "2027-10-11", bookDate: "2026-10-09", currency: "INR", sumInsured: 620000, premiumRate: "", grossPremium: 18400, gstPct: 18, gst: 3312, stampDuty: 0, netPremium: 21712, excess: "Rs. 1,000", location: "Pune", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
   t8a.nextTermId = t8b.id;
   t8b.receipts = [{ id: "R11", instNo: null, date: "2026-10-09", amount: 21712, mode: "Debit card", ref: "AUTH DEMO1009J", bank: "Demo Bank", remitDate: "2026-10-10", proofDocId: null }];
 
   // P9: Health floater lost at renewal.
   const p9 = pol({ customerId: "C8", dept: "Health", type: "Health Family Floater Policy", insurerId: "INS1", branchId: "BR1", cover: "Individual" });
-  const t9 = term(p9, { outcome: "Lost", lossDetail: "Customer said he renewed through another intermediary (meaning of LossBy not confirmed)", values: { policyNo: "BSG/HFF/2025/4410", planName: "Family floater", uin: "", proposalDate: "2025-09-28", issueDate: "2025-10-02", riskStart: "2025-10-06", riskEnd: "2026-10-05", bookDate: "2025-10-02", currency: "INR", sumInsured: 1000000, premiumRate: "", netPremium: 24500, gstPct: 18, gst: 4410, stampDuty: 0, grossPremium: 28910, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
+  const t9 = term(p9, { outcome: "Lost", lossDetail: "Customer said he renewed through another intermediary (meaning of LossBy not confirmed)", values: { policyNo: "BSG/HFF/2025/4410", planName: "Family floater", uin: "", proposalDate: "2025-09-28", issueDate: "2025-10-02", riskStart: "2025-10-06", riskEnd: "2026-10-05", bookDate: "2025-10-02", currency: "INR", sumInsured: 1000000, premiumRate: "", grossPremium: 24500, gstPct: 18, gst: 4410, stampDuty: 0, netPremium: 28910, excess: "", location: "Mumbai", share: 100, coBrokerShare: 0, renewable: "Yes", brokeragePct: 15 } });
   log({ at: "2026-10-07T10:00:00", customerId: "C8", policyId: p9, termId: t9.id, action: "Marked lost", detail: "Renewal outcome set to Lost with detail entered by Arun Pillai." });
 
   // P10: draft from a poor scan, fields missing.
   const p10 = pol({ customerId: "C2", dept: "Miscellaneous", type: "Burglary Insurance", insurerId: "INS3", branchId: "BR6" });
   const fdoc = doc({ customerId: "C2", policyId: p10, kind: "Policy schedule", name: "Burglary schedule (faint scan).pdf", fixtureId: "FX-FIRE-POOR", addedAt: "2026-10-29T15:00:00", addedBy: "Arun Pillai (CSC022)" });
-  const t10 = term(p10, { status: "draft", docId: fdoc, values: { policyNo: "NGI/BUR/26/0#41", issueDate: "2026-10-27", riskStart: "2026-11-01", riskEnd: "", bookDate: "", currency: "INR", sumInsured: 12000000, netPremium: 18000, gstPct: "", gst: "", grossPremium: 21240, location: "", renewable: "", brokeragePct: "" }, brokerageConfirmed: false,
-    sources: { policyNo: { docId: fdoc, ref: 4, conf: "low" }, issueDate: { docId: fdoc, ref: 6, conf: "low" }, riskStart: { docId: fdoc, ref: 7, conf: "high" }, currency: { docId: fdoc, ref: 8, conf: "high" }, sumInsured: { docId: fdoc, ref: 8, conf: "high" }, netPremium: { docId: fdoc, ref: 9, conf: "high" }, grossPremium: { docId: fdoc, ref: 11, conf: "high" } } });
+  const t10 = term(p10, { status: "draft", docId: fdoc, values: { policyNo: "NGI/BUR/26/0#41", issueDate: "2026-10-27", riskStart: "2026-11-01", riskEnd: "", bookDate: "", currency: "INR", sumInsured: 12000000, grossPremium: 18000, gstPct: "", gst: "", netPremium: 21240, location: "", renewable: "", brokeragePct: "" }, brokerageConfirmed: false,
+    sources: { policyNo: { docId: fdoc, ref: 4, conf: "low" }, issueDate: { docId: fdoc, ref: 6, conf: "low" }, riskStart: { docId: fdoc, ref: 7, conf: "high" }, currency: { docId: fdoc, ref: 8, conf: "high" }, sumInsured: { docId: fdoc, ref: 8, conf: "high" }, grossPremium: { docId: fdoc, ref: 9, conf: "high" }, netPremium: { docId: fdoc, ref: 11, conf: "high" } } });
   d.documents.find((x) => x.id === fdoc).termId = t10.id;
 
   // Pre-policy documents for a prospect with no policy yet.

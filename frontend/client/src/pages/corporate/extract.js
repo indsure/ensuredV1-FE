@@ -1,5 +1,7 @@
 import { SELFTEST_PDF } from "./selftest.js";
 import { VOCAB, phraseRe, CITIES, MUMBAI_AREAS } from "./vocab.js";
+import { premiumFigures, clientGstin, liabilitySchedule, otherDetails, clientPlace } from "./extract-extra.js";
+export { parseDateText } from "./extract-extra.js";
 // Reads the text layer of a PDF in the browser (pdf.js) and finds register fields with fixed label rules.
 // Nothing is uploaded. Scanned PDFs and photos are read with OCR (tesseract.js), also inside the browser:
 // only the OCR program and its English word data are downloaded, the policy never leaves this computer.
@@ -181,7 +183,7 @@ export function findDates(s) {
   }
   return out;
 }
-const AMT_RE = /(?:(₹|rs\.?|inr|usd|us\$|\$|aed|eur|€)\s*)?(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)(\s*(?:lakhs?|lacs?|crores?|cr|millions?|mn|billions?|bn|thousand)\b\.?)?(\s*%|\s*\/-)?/gi;
+const AMT_RE = /(?:(₹|`|rs\.?|inr|usd|us\$|\$|aed|eur|€)\s*)?(\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)(\s*(?:lakhs?|lacs?|crores?|cr|millions?|mn|billions?|bn|thousand)\b\.?)?(\s*%|\s*\/-)?/gi;
 const UNIT = { lakh: 1e5, lakhs: 1e5, lac: 1e5, lacs: 1e5, crore: 1e7, crores: 1e7, cr: 1e7, million: 1e6, millions: 1e6, mn: 1e6, billion: 1e9, billions: 1e9, bn: 1e9, thousand: 1e3 };
 // "Rupees Forty Lakh Only", "Eight Thousand Seventeen", "USD Five Million". Indian and international scales.
 const SMALL = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fourty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
@@ -219,7 +221,7 @@ export function findAmounts(s) {
     const v = Math.round(+m[2].replace(/,/g, "") * unit * 100) / 100;
     if (!Number.isFinite(v)) continue;
     if (!m[1] && /^(19|20)\d{2}$/.test(m[2])) continue; // a bare year
-    if (!m[1] && !m[3] && !/[,.]/.test(m[2]) && v > 0 && v < 100) continue; // too small to be money without a currency mark
+    if (!m[1] && !m[3] && !m[4] && !/[,.]/.test(m[2]) && v > 0 && v < 100) continue; // too small to be money without a currency mark
     out.push({ v, cur: m[1] ? curOf(m[1]) : null });
   }
   if (!out.length) { const w = wordsToAmount(s); if (w) out.push(w); }
@@ -240,15 +242,17 @@ const RULES = [
   { key: "riskStart", kind: "date", label: phraseRe(VOCAB.riskStart), not: /endorsement/i },
   { key: "riskEnd", kind: "date", label: phraseRe(VOCAB.riskEnd), not: /endorsement|renewals*notice/i },
   { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum|%\s*of|per\s*(person|employee|member|vessel)|in\s*words/i },
-  { key: "netPremium", kind: "amount", label: new RegExp(phraseRe(VOCAB.netPremium).source + "|" + /total\s*premium\s*(before|excl)/i.source, "i") },
-  { key: "grossPremium", kind: "amount", label: new RegExp(phraseRe(VOCAB.grossPremium).source + "|" + /\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i.source, "i"), not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
+  { key: "_pre", kind: "amount", label: new RegExp(phraseRe(VOCAB.netPremium).source + "|" + /total\s*premium\s*(before|excl)/i.source, "i") },
+  { key: "_post", kind: "amount", label: new RegExp(phraseRe(VOCAB.grossPremium).source + "|" + /\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i.source, "i"), not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
   // A bare "Premium" label is the premium before tax. Only as a label in its own cell or before a colon.
-  { key: "netPremium", kind: "amount", label: /\bpremium\b/i, strict: true, not: /total|gross|\bnet\b|rate|payable|deposit|minimum|paid|refund|additional|due|cheque|tax|gst|words|details|head|share|basis|amount|annual|holiday/i },
+  { key: "_pre", kind: "amount", label: /\bpremium\b/i, strict: true, not: /total|gross|\bnet\b|rate|payable|deposit|minimum|paid|refund|additional|due|cheque|tax|gst|words|details|head|share|basis|amount|annual|holiday/i },
   { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl/i },
   { key: "stampDuty", kind: "amount", label: phraseRe(VOCAB.stampDuty), zeroOk: true },
   { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i },
   { key: "excess", kind: "text", label: phraseRe(VOCAB.excess), needDigit: true, not: /voluntary|discount/i },
   { key: "location", kind: "text", label: phraseRe(VOCAB.location) },
+  // Jurisdiction and its like are a kind of location, but the words also appear in legal clauses, so only as a label.
+  { key: "location", kind: "text", label: phraseRe(VOCAB.jurisdiction), strict: true, not: /court|subject\s+to|law|dispute|arbitration|exclusive/i, badValue: /court|subject\s+to|\blaws?\b|arbitration/i },
 ];
 const LABELS = { policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location" };
 
@@ -341,12 +345,31 @@ export function parseFields(lines, ocr = false) {
   const fields = {};
   const found = {};
   for (const r of RULES) found[r.key] = (found[r.key] || []).concat(candidates(lines, r));
-  for (const k of Object.keys(found)) { const p = pick(found[k], k, ocr); if (p) fields[k] = p; }
+  for (const k of Object.keys(found)) { if (k[0] === "_" || k === "gst") continue; const p = pick(found[k], k, ocr); if (p) fields[k] = p; }
+  // Gross premium + GST = net premium. Which is which comes from the figures, not the printed words.
+  const prem = premiumFigures(lines, found._pre, found._post, found.gst);
+  if (prem.gross) fields.grossPremium = prem.gross;
+  if (prem.gst) fields.gst = prem.gst;
+  if (prem.net) fields.netPremium = prem.net;
+  // Show the word the policy itself uses for the location field.
+  if (fields.location) { const w = lines[fields.location.ref - 1]?.text.match(new RegExp(phraseRe(VOCAB.jurisdiction).source + "|" + phraseRe(VOCAB.location).source, "i")); if (w) fields.location.word = w[0].trim(); }
+  // A schedule with one row of limits (MTO and similar).
+  const sch = liabilitySchedule(lines);
+  if (sch) {
+    fields.location = { v: sch.jurisdiction, ref: sch.ref, conf: "high", word: "Jurisdiction" };
+    if (!fields.sumInsured || fields.sumInsured.conf === "low") fields.sumInsured = { v: sch.aoy, ref: sch.ref, conf: "high", note: "AOY (any one year), the most the policy pays in a year." };
+    if (!fields.excess) fields.excess = { v: String(sch.deductible), ref: sch.ref, conf: "high" };
+  }
 
   // Period lines with two dates, e.g. "Period of insurance: 01/12/2026 to 30/11/2027"
   lines.forEach((ln, i) => {
     if (ln.marker || !/period|from\b.*\bto\b|\bfrom\b/i.test(ln.text)) return;
-    const ds = findDates(ln.text).filter((d) => +d.iso.slice(0, 4) >= oldest);
+    let ds = findDates(ln.text).filter((d) => +d.iso.slice(0, 4) >= oldest);
+    // "From: 14/08/2026 ... To:" with the end date wrapped onto the next line.
+    if (ds.length === 1 && /\bfrom\b/i.test(ln.text) && /\bto\b/i.test(ln.text.slice(ds[0].end)) && lines[i + 1]) {
+      const nx = findDates(lines[i + 1].text).filter((d) => d.index < 3 && +d.iso.slice(0, 4) >= oldest);
+      if (nx.length) ds = [ds[0], nx[0]];
+    }
     if (ds.length === 1 && /\bfrom\b/i.test(ln.text) && !fields.riskStart) { fields.riskStart = { v: ds[0].iso, ref: i + 1, conf: "low", note: "Only a start date is given on this line. Check the end date." }; return; }
     if (ds.length < 2 || !/period|from|to|till/i.test(ln.text)) return;
     const [a, b] = [ds[0].iso, ds[1].iso];
@@ -384,10 +407,10 @@ export function parseFields(lines, ocr = false) {
 
   // Sanity checks that lower confidence, never change values
   const n = fields.netPremium, g = fields.grossPremium;
-  if (n && g && n.v > g.v) { n.conf = g.conf = "low"; n.note = g.note = "Net premium is larger than gross premium on the document. Check both."; }
-  else if (n && g && n.v === g.v) { g.conf = "low"; g.note = "Gross premium is the same as net premium. Check whether tax is included."; }
+  if (n && g && g.v > n.v) { n.conf = g.conf = "low"; n.note = g.note = "Gross premium is larger than net premium on the document. Check both."; }
+  else if (n && g && n.v === g.v) { n.conf = "low"; n.note = "Net premium is the same as gross premium. Check whether GST is included."; }
   const tax = fields.gst;
-  if (tax && g && tax.v >= g.v) { tax.conf = g.conf = "low"; tax.note = g.note = "GST is not smaller than the gross premium, so one of them is misread. Check both."; }
+  if (tax && n && tax.v >= n.v) { tax.conf = n.conf = "low"; tax.note = n.note = "GST is not smaller than the net premium, so one of them is misread. Check both."; }
   if (fields.riskStart && fields.riskEnd && fields.riskEnd.v <= fields.riskStart.v) { fields.riskEnd.conf = "low"; fields.riskEnd.note = "End date is not after the start date. Check it."; }
   Object.values(fields).forEach((f) => { delete f.noteSet; if (!f.note) delete f.note; });
 
@@ -533,7 +556,12 @@ export function parseCustomer(lines) {
   }
   const cityLine = lines.findIndex((l) => !l.marker && /\bcity\s*[:\-]/i.test(l.text) && !INSURER_LINE.test(l.text));
   if (cityLine >= 0) { const v = cleanText(lines[cityLine].text.replace(/.*?\bcity\s*[:\-]/i, "").replace(/^[\s:\-]+/, "").split(/\s{3,}|,/)[0]); if (/^[A-Za-z][A-Za-z .'-]{1,39}$/.test(v)) out.city = { v, ref: cityLine + 1, conf: "high" }; }
-  const gst = contactPick(lines, GSTIN_RE, null);
+  const place = clientPlace(lines, ins?.ref, CITIES, MUMBAI_AREAS);
+  if (place) {
+    out.address = { v: place.address, ref: place.ref, conf: ins ? "high" : "low", ...(ins ? {} : { note: "Check this is the customer's address, not the insurer's." }) };
+    if (!out.city && place.city) out.city = { v: place.city.replace(/w/g, (c) => c.toUpperCase()).replace(/Bw+/g, (w) => w.toLowerCase()), ref: place.ref, conf: "high", note: "Read from the customer's address." };
+  }
+  const gst = clientGstin(lines, out.name?.v);
   if (gst) out.gst = gst;
   const email = contactPick(lines, EMAIL_RE, null, (x) => x.toLowerCase());
   if (email) out.email = email;
@@ -562,6 +590,9 @@ export async function readPolicyPdf(file, onProgress = () => {}) {
   const customer = parseCustomer(lines);
   // A scan can misread a letter or digit, so every value read from one is marked for checking.
   if (ocr) for (const set of [fields, customer]) for (const k of Object.keys(set)) set[k] = { ...set[k], conf: "low", note: [set[k].note, "Read from a scan. Check it against the document."].filter(Boolean).join(" ") };
-  return { ...base, lines: lines.map((l) => l.text), fields, info, customer };
+  const other = otherDetails(lines);
+  const sch = liabilitySchedule(lines);
+  if (sch) other.unshift({ label: "AOA (any one accident)", value: String(sch.aoa), ref: sch.ref }, { label: "AOY (any one year)", value: String(sch.aoy), ref: sch.ref }, { label: "AOA to AOY ratio", value: sch.ratio, ref: sch.ref }, { label: "Deductible", value: String(sch.deductible), ref: sch.ref }, { label: "Retroactive date", value: sch.retro, ref: sch.ref });
+  return { ...base, lines: lines.map((l) => l.text), fields, info, customer, other: other.filter((x, i, a) => a.findIndex((y) => y.label === x.label) === i) };
 }
 export { LABELS as EXTRACT_LABELS };

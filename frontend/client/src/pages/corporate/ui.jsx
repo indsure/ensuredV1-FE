@@ -1,6 +1,8 @@
 // Small shared UI pieces.
 import { useState, useEffect, useLayoutEffect, useRef, createContext, useContext } from "react";
-import { placeOf, CITY_NAMES, COUNTRIES } from "./places.js";
+import { placeOf, searchCities, lookupPlace, COUNTRIES } from "./places.js";
+import { parseDateText } from "./extract.js";
+import { fmtDate } from "./lib.js";
 
 export const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -226,17 +228,103 @@ export function DocModal({ doc, onClose }) {
 
 // City, State and Country together. Choosing a known city fills State and Country; all three stay editable.
 // value = { city, state, country }; onChange receives the whole updated object.
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const inWords = (iso) => { const [y, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]} ${y}`; };
+// A date box that takes what people paste from a policy: 14/08/26, 14-Aug-2026, 140826. Reads day first and
+// asks when a date was pasted. Values stay as YYYY-MM-DD underneath; on screen it is always DD/MM/YYYY.
+export function DateInput({ id, value, onChange, disabled, max, min, ...rest }) {
+  const [text, setText] = useState(value ? fmtDate(value) : "");
+  const [ask, setAsk] = useState(null);
+  const [bad, setBad] = useState(false);
+  const sent = useRef(value || "");
+  useEffect(() => { if ((value || "") !== sent.current) { sent.current = value || ""; setText(value ? fmtDate(value) : ""); setAsk(null); setBad(false); } }, [value]);
+  const emit = (iso) => { sent.current = iso; onChange({ target: { value: iso } }); };
+  const take = (raw, pasted) => {
+    setText(raw);
+    const r = parseDateText(raw);
+    if (r) { setBad(false); emit(r.iso); setAsk(pasted || r.monthFirst ? r : null); }
+    else { setAsk(null); setBad(raw.trim().length >= 8); if (sent.current) emit(""); }
+  };
+  const blur = () => { const r = parseDateText(text); if (r) setText(fmtDate(r.iso)); else if (text.trim()) setBad(true); };
+  const swap = () => { const r = { iso: ask.swapped, swapped: ask.iso, ambiguous: true }; emit(r.iso); setText(fmtDate(r.iso)); setAsk(r); };
+  return (
+    <span className="dateinput">
+      <input id={id} type="text" inputMode="text" placeholder="DD/MM/YYYY" autoComplete="off" value={text} disabled={disabled} {...rest}
+        onChange={(e) => take(e.target.value, false)} onBlur={blur}
+        onPaste={(e) => { const t = e.clipboardData.getData("text"); if (t) { e.preventDefault(); take(t, true); } }} />
+      {bad && <span className="date-q err-text" role="alert">Enter the date as DD/MM/YYYY</span>}
+      {ask && (
+        <span className="date-q" role="status">
+          Read as <strong>{inWords(ask.iso)}</strong>. Is this right?
+          <button type="button" className="linkbtn" onClick={() => setAsk(null)}>Yes</button>
+          {ask.swapped && <button type="button" className="linkbtn" onClick={swap}>No, it is {inWords(ask.swapped)}</button>}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function PlaceFields({ id, value, onChange, req, cityError, cityHint, countryReq }) {
+  const latest = useRef(value); latest.current = value;
+  const send = useRef(onChange); send.current = onChange;
+  const autoState = useRef(""); // the state we filled ourselves, so a changed city can replace it
+  const [focus, setFocus] = useState(false);
+  const [list, setList] = useState([]);
+  const [hi, setHi] = useState(0);
+  const [filled, setFilled] = useState(false);
+  const asked = useRef(0);
+  const fill = (p, city) => { autoState.current = p.state; setFilled(true); send.current({ ...latest.current, city, state: p.state, country: p.country }); };
   const setCity = (city) => {
     const p = placeOf(city);
-    onChange(p ? { ...value, city, state: p.state, country: p.country } : { ...value, city });
+    if (p) fill(p, city);
+    else {
+      const stale = latest.current.state && latest.current.state === autoState.current;
+      if (stale) { autoState.current = ""; setFilled(false); }
+      onChange({ ...value, city, ...(stale ? { state: "" } : {}) });
+    }
+    const n = ++asked.current;
+    setHi(0);
+    if (city.trim().length < 2) { setList([]); return; }
+    searchCities(city).then((r) => { if (n === asked.current) setList(r); }).catch(() => setList([]));
   };
+  const pick = (p) => { asked.current++; setList([]); fill(p, p.city); };
+  // A city typed by hand or read from a document, with no state yet: look it up once the person has left the box.
+  useEffect(() => {
+    const city = (value.city || "").trim();
+    if (focus || !city || (value.state || "").trim()) return;
+    let on = true;
+    lookupPlace(city).then((p) => { if (on && p && !(latest.current.state || "").trim() && latest.current.city === value.city) fill(p, value.city); }).catch(() => {});
+    return () => { on = false; };
+  }, [value.city, value.state, focus]);
+  const open = focus && list.length > 0;
+  const key = (e) => {
+    if (!open) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, list.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); pick(list[hi]); }
+    else if (e.key === "Escape") setList([]);
+  };
+  const lid = `${id}-city-list`;
   return (
     <>
-      <Labeled label="City" htmlFor={`${id}-city`} req={req} error={cityError} hint={cityHint}>
-        <input id={`${id}-city`} list="ic-cities" value={value.city || ""} autoComplete="off" onChange={(e) => setCity(e.target.value)} />
+      <Labeled label="City" htmlFor={`${id}-city`} req={req} error={cityError} hint={cityHint || "Any city in the world. Pick from the list, or just type it."}>
+        <div className="spick">
+          <input id={`${id}-city`} type="text" role="combobox" aria-expanded={open} aria-controls={lid} aria-autocomplete="list" autoComplete="off" value={value.city || ""}
+            onFocus={() => setFocus(true)} onBlur={() => { setFocus(false); setList([]); }} onChange={(e) => setCity(e.target.value)} onKeyDown={key} />
+          {open && (
+            <ul id={lid} role="listbox" className="spick-list">
+              {list.map((p, i) => (
+                <li key={`${p.city}|${p.state}|${p.country}`} role="option" aria-selected={i === hi} className={`spick-opt ${i === hi ? "hi" : ""}`}
+                  onMouseDown={(e) => { e.preventDefault(); pick(p); }} onMouseEnter={() => setHi(i)}>
+                  <strong>{p.city}</strong>{[p.state, p.country].filter(Boolean).length ? <span className="muted">, {[p.state, p.country].filter(Boolean).join(", ")}</span> : null}
+                </li>
+              ))}
+              <li role="presentation" className="spick-none small">City data: GeoNames (CC BY 4.0)</li>
+            </ul>
+          )}
+        </div>
       </Labeled>
-      <Labeled label="State" htmlFor={`${id}-state`} hint={value.city && placeOf(value.city) && value.state === placeOf(value.city).state ? "Filled from the city" : ""}>
+      <Labeled label="State" htmlFor={`${id}-state`} hint={filled && value.state && value.state === autoState.current ? "Filled from the city" : ""}>
         <input id={`${id}-state`} value={value.state || ""} onChange={(e) => onChange({ ...value, state: e.target.value })} />
       </Labeled>
       <Labeled label="Country" htmlFor={`${id}-country`} req={countryReq}>
@@ -249,7 +337,6 @@ export function PlaceFields({ id, value, onChange, req, cityError, cityHint, cou
 export function PlaceLists() {
   return (
     <>
-      <datalist id="ic-cities">{CITY_NAMES.map((c) => <option key={c} value={c} />)}</datalist>
       <datalist id="ic-countries">{COUNTRIES.map((c) => <option key={c} value={c} />)}</datalist>
     </>
   );

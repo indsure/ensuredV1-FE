@@ -114,13 +114,6 @@ export default function AgentLanding() {
                 {t("agent_landing.nav_playground")}
               </span>
             </Link>
-            {import.meta.env.VITE_CORPORATE_PORTAL === "on" && (
-              <Link href="/corporate">
-                <span className="px-2.5 py-1.5 text-sm font-medium rounded-lg bg-[#EFF6FF] text-[#1D4ED8] hover:bg-[#DBEAFE] transition-colors cursor-pointer">
-                  Corporate (beta)
-                </span>
-              </Link>
-            )}
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
@@ -169,13 +162,6 @@ export default function AgentLanding() {
               {t("agent_landing.nav_playground")}
             </span>
           </Link>
-          {import.meta.env.VITE_CORPORATE_PORTAL === "on" && (
-            <Link href="/corporate">
-              <span className="shrink-0 px-2 py-1 text-sm font-medium rounded-lg bg-[#EFF6FF] text-[#1D4ED8] cursor-pointer">
-                Corporate (beta)
-              </span>
-            </Link>
-          )}
           <button
             onClick={openCalendly}
             className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"

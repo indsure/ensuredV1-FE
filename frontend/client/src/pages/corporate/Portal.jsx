@@ -1,12 +1,13 @@
 // IndSure Commercial demo prototype: shell, workspaces and the views that are not about one policy.
 import "./commercial.css";
 import { seed, TODAY, LIVE, DEPARTMENTS, NOTES_LOB, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
-import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate } from "./lib.js";
-import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy } from "./ui.jsx";
+import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook } from "./lib.js";
+import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy, DateInput } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
-import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved } from "./store.js";
+import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut } from "./store.js";
+import { CorpLogin } from "./login.jsx";
 import { QuickAdd, createPolicy } from "./add.jsx";
 import { Guide } from "./guide.jsx";
 import { placeOf } from "./places.js";
@@ -43,8 +44,9 @@ const NAV = [
 ];
 
 
-export function App() {
+export function App({ onSignedOut }) {
   const [db, setDb] = useState(null);
+  const [loadErr, setLoadErr] = useState(false);
   const [saveState, setSaveState] = useState({ state: "idle" });
   const loaded = useRef(null);
   const [role, setRole] = useState("ops");
@@ -67,15 +69,18 @@ export function App() {
   // Load once. A book that has never been saved (a fresh seed) is saved straight away.
   useEffect(() => {
     onSaveStatus(setSaveState);
-    openStore(STORE, seed).then((d) => {
+    openStore(STORE, seed).then((raw) => {
+      let d = upgradeBook(raw);
+      const upgraded = d !== raw;
       // The role once called CSE is now CSC. Books saved before the rename are brought up to date once.
       const old = (d.team || []).filter((t) => t.role === "CSE");
       if (old.length) {
         d = { ...d, team: d.team.map((t) => (t.role === "CSE" ? { ...t, role: "CSC" } : t)), audit: [...d.audit, { id: `A${d.audit.length + 1}`, at: nowIso(), who: "System", action: "Role renamed", detail: `CSE is now called CSC (${old.length} team member${old.length === 1 ? "" : "s"}).` }] };
         loaded.current = null; // save the updated book
       } else loaded.current = storeInfo().version ? d : null;
+      if (upgraded) loaded.current = null;
       setDb(d);
-    });
+    }).catch((e) => { if (e instanceof SignedOut) onSignedOut?.(); else setLoadErr(true); });
   }, []);
   // Every change is saved shortly after it is made. The book exactly as loaded is not re-saved.
   useEffect(() => {
@@ -99,7 +104,9 @@ export function App() {
   const R = ROLES[role];
   const can = (a) => R.perms === "*" || R.perms.includes(a);
   const log = (d, o) => d.audit.push({ id: `A${++d.seq}`, at: nowIso(), who: R.who, ...o });
-  const update = (fn) => setDb((prev) => { const d = structuredClone(prev); fn(d); return d; });
+  // Runs straight away, so code after update() can use what it produced (a new customer's id, say).
+  const latestDb = useRef(db); latestDb.current = db;
+  const update = (fn) => { const d = structuredClone(latestDb.current); fn(d); latestDb.current = d; setDb(d); };
   const toast = (msg, tone = "good") => { const id = Math.random(); setToasts((t) => [...t, { id, msg, tone }]); setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3600); };
   const go = (r) => { setRoute(r); setMenu(false); mainRef.current?.scrollTo?.(0, 0); window.scrollTo(0, 0); };
   const visible = (key) => NAV.flatMap((g) => g.items).find((i) => i.key === key)?.roles.includes(role);
@@ -110,6 +117,7 @@ export function App() {
     if (!keep) setRoute({ view: first.key });
   };
   const reset = () => { setDb(seed()); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast(LIVE ? "All records in this browser were deleted" : "Demo reset to the starting example data"); };
+  if (loadErr) return <div className="ic-loading" role="alert"><p>Your records could not be opened just now. Nothing was changed.</p><button className="btn btn-primary" onClick={() => window.location.reload()}>Try again</button></div>;
   if (!db) return <div className="ic-loading" role="status">Opening your records...</div>;
   const ctx = { db, update, can, log, toast, who: R.who, role, fy, go };
 
@@ -150,20 +158,21 @@ export function App() {
         </aside>
         <div className="content">
           <div className="demo-banner">
-            <span className="row gap-xs"><Icon name="sparkle" size={16} /> {!LIVE ? "Demo prototype: fictional data, nothing leaves this browser." : storeInfo().kind === "server" ? "Your records are saved on this computer, not online." : "Beta: your records are kept in this browser only. Download a backup regularly."}</span>
+            <span className="row gap-xs"><Icon name="sparkle" size={16} /> {!LIVE ? "Demo prototype: fictional data, nothing leaves this browser." : isRemote() ? "Beta: your records are saved securely online." : storeInfo().kind === "server" ? "Your records are saved on this computer, not online." : "Beta: your records are kept in this browser only. Download a backup regularly."}</span>
             <div className="banner-ctl">
               <label className="pillsel"><span className="sr">Role</span><select id="role" value={role} onChange={(e) => switchRole(e.target.value)}>{Object.entries(ROLES).map(([k, x]) => <option key={k} value={k}>Role: {x.label}</option>)}</select></label>
               <label className="pillsel"><span className="sr">Financial year</span><select id="fy" value={fy} onChange={(e) => setFy(e.target.value)}>{FY_OPTIONS.map((f) => <option key={f} value={f}>F.Y. {f}</option>)}</select></label>
               {import.meta.env.DEV && <a className="btn btn-banner" href={LIVE ? "?demo" : "?"}>{LIVE ? "Open the demo" : "Back to my records"}</a>}
               <Btn kind="banner" onClick={() => setBackup(true)}>Backup</Btn>
-              {LIVE ? <AskFirst label="Clear all data" question="Delete every record in this browser? Download a backup first." yes="Delete everything" onYes={reset} kind="banner" />
+              {isRemote() && <Btn kind="banner" onClick={() => { logout(); onSignedOut?.(); }}>Sign out</Btn>}
+              {isRemote() ? null : LIVE ? <AskFirst label="Clear all data" question="Delete every record in this browser? Download a backup first." yes="Delete everything" onYes={reset} kind="banner" />
                 : <AskFirst label="Reset demo" question="Put all example data back?" yes="Reset" onYes={reset} kind="banner" />}
             </div>
           </div>
           <p className="rolebar">{LIVE ? "Today" : "Today in this demo"}: {fmtDate(TODAY)}. Roles are for {LIVE ? "testing" : "the demo"}, not security <Confirm />. <SaveLine s={saveState} /></p>
           <main className="main" ref={mainRef}>{view}</main>
-          <footer className="foot">{LIVE ? `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
-          {backup && <BackupModal db={db} onRestore={(d) => { setDb(d); setBackup(false); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
+          <footer className="foot">{LIVE ? isRemote() ? "IndSure Commercial beta. Records and original files are saved online behind this sign-in. No email or payment is sent from here." : `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
+          {backup && <BackupModal db={db} onRestore={(d) => { setDb(upgradeBook(d)); setBackup(false); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
         </div>
         <PlaceLists />
         <div className="toasts" aria-live="polite">{toasts.map((t) => <div key={t.id} className={`toast toast-${t.tone}`}>{t.msg}</div>)}</div>
@@ -178,8 +187,9 @@ function SaveLine({ s }) {
   const at = s.at ? ` at ${String(s.at.getHours()).padStart(2, "0")}:${String(s.at.getMinutes()).padStart(2, "0")}` : "";
   if (k === "server") {
     if (s.state === "offline") return <span className="save-line bad-text">Local server not answering. Changes will save when it is back; keep this tab open.</span>;
-    return <span className="save-line" title={`Saved in ${storeInfo().dataDir}`}>{s.state === "saving" ? "Saving on this computer..." : `Saved on this computer${at}.`}</span>;
+    return <span className="save-line" title={isRemote() ? "Saved online" : `Saved in ${storeInfo().dataDir}`}>{s.state === "saving" ? (isRemote() ? "Saving..." : "Saving on this computer...") : isRemote() ? `Saved${at}.` : `Saved on this computer${at}.`}</span>;
   }
+  if (s.state === "signedout") return <span className="save-line bad-text">Your sign-in has ended and recent changes are NOT saved. Download a backup, then sign in again.</span>;
   if (s.state === "error") return <span className="save-line bad-text">{s.reason === "full" ? "This browser's storage is full: recent changes are not saved. Download a backup." : "This browser blocked storage: changes last until you reload."}</span>;
   if (k === "browser-fallback") return <span className="save-line warn-text">The local server is not running, so records are kept in this browser only. Start it with the launcher.</span>;
   return <span className="save-line">Changes stay in this browser.</span>;
@@ -190,7 +200,7 @@ function EarlierSaves({ onRestore }) {
   const [rows, setRows] = useState(null);
   useEffect(() => { listVersions().then(setRows).catch(() => setRows([])); }, []);
   return (
-    <Card title="Earlier saves" sub="Every change is kept as a numbered save on this computer (the last 200). Go back to one if something went wrong.">
+    <Card title="Earlier saves" sub={`Every change is kept as a numbered save (the last ${isRemote() ? 60 : 200}). Go back to one if something went wrong.`}>
       {rows == null ? <p className="small muted">Loading...</p> : !rows.length ? <p className="small muted">No earlier saves yet.</p> : (
         <Table><thead><tr><th>Save</th><th>When</th><th /></tr></thead>
           <tbody>{rows.slice(0, 15).map((r, i) => <tr key={r.version}><td>#{r.version}{i === 0 && <Pill tone="good">Current</Pill>}</td><td>{fmtStamp(r.savedAt.slice(0, 19))}</td>
@@ -222,9 +232,9 @@ function BackupModal({ db, onRestore, onClose }) {
   };
   return (
     <Modal title="Backup and restore" onClose={onClose}>
-      <p>{!LIVE ? "Saves or restores everything in this browser." : storeInfo().kind === "server" ? `Your records and original PDFs are saved in ${storeInfo().dataDir} on this computer. Copy that folder, or download a backup file, to keep a copy elsewhere.` : "Your records live only in this browser. Clearing browser data, or using another browser or laptop, starts empty. Keep a backup file somewhere safe."}</p>
+      <p>{!LIVE ? "Saves or restores everything in this browser." : isRemote() ? "Your records are saved online. Download a backup file too, to keep your own copy." : storeInfo().kind === "server" ? `Your records and original PDFs are saved in ${storeInfo().dataDir} on this computer. Copy that folder, or download a backup file, to keep a copy elsewhere.` : "Your records live only in this browser. Clearing browser data, or using another browser or laptop, starts empty. Keep a backup file somewhere safe."}</p>
       <Card title="Download a backup" sub={`Now: ${counts}.`}><Btn kind="primary" onClick={download}>Download backup</Btn></Card>
-      <Card title="Restore from a backup" sub="Replaces everything in this browser with the file's contents.">
+      <Card title="Restore from a backup" sub="Replaces all current records with the file's contents.">
         <input id="bk-file" type="file" accept=".json,application/json" onChange={(e) => { read(e.target.files[0]); e.target.value = ""; }} />
         {pending && <div className="row gap-s wrap"><span className="small">Backup from {fmtStamp(pending.savedAt)}: {pending.counts}.</span><AskFirst label="Restore this backup" question="Replace everything in this browser?" yes="Replace" onYes={() => onRestore(pending.d)} /></div>}
       </Card>
@@ -533,8 +543,8 @@ function RegisterView() {
         <Labeled label="Record" htmlFor="rg-rec"><Select id="rg-rec" value={rec} onChange={setRec} placeholder="All" options={["Draft", "Complete"]} /></Labeled>
         <Labeled label="Cover" htmlFor="rg-cov"><Select id="rg-cov" value={cov} onChange={setCov} placeholder="All" options={["Scheduled", "Active", "Expired", "Cancelled", "Not confirmed"]} /></Labeled>
       </div>
-      {rows.length ? <Table className="register"><thead><tr><th>Policy</th><th>Insured</th><th>Risk period</th><th className="num">Gross premium</th><th>Record · cover · payment</th><th>Renewal</th></tr></thead>
-        <tbody>{rows.map(({ p, t, c }) => { const pay = paymentSummary(t); return <tr key={p.id} className="clickrow" onClick={() => go({ view: "policy", id: p.id })}><td><button className="linkbtn">{t.values.policyNo || "No policy no. yet"}</button><div className="small muted">{p.controlNo} · issued {fmtDate(t.values.issueDate)}</div></td><td><strong>{c.name}</strong><div className="small muted">{p.type}</div></td><td className="nowrap">{fmtDate(t.values.riskStart)}<div className="small muted">to {fmtDate(t.values.riskEnd)}</div></td><td className="num">{fmtMoney(t.values.grossPremium, t.values.currency)}</td><td><div className="pills"><Pill tone={completeness(t).tone}>{completeness(t).label}</Pill><Pill tone={coverage(t).tone}>{coverage(t).label}</Pill>{t.status !== "draft" && <Pill tone={pay.tone}>{pay.label}</Pill>}</div></td><td className="small">{t.outcome}<div className="muted">Renewable: {t.values.renewable || "not entered"}</div></td></tr>; })}</tbody></Table>
+      {rows.length ? <Table className="register"><thead><tr><th>Policy</th><th>Insured</th><th>Risk period</th><th className="num">Net premium</th><th>Record · cover · payment</th><th>Renewal</th></tr></thead>
+        <tbody>{rows.map(({ p, t, c }) => { const pay = paymentSummary(t); return <tr key={p.id} className="clickrow" onClick={() => go({ view: "policy", id: p.id })}><td><button className="linkbtn">{t.values.policyNo || "No policy no. yet"}</button><div className="small muted">{p.controlNo} · issued {fmtDate(t.values.issueDate)}</div></td><td><strong>{c.name}</strong><div className="small muted">{p.type}</div></td><td className="nowrap">{fmtDate(t.values.riskStart)}<div className="small muted">to {fmtDate(t.values.riskEnd)}</div></td><td className="num">{fmtMoney(t.values.netPremium, t.values.currency)}</td><td><div className="pills"><Pill tone={completeness(t).tone}>{completeness(t).label}</Pill><Pill tone={coverage(t).tone}>{coverage(t).label}</Pill>{t.status !== "draft" && <Pill tone={pay.tone}>{pay.label}</Pill>}</div></td><td className="small">{t.outcome}<div className="muted">Renewable: {t.values.renewable || "not entered"}</div></td></tr>; })}</tbody></Table>
         : <Empty title="No policies match these filters">Clear a filter to see more.</Empty>}
     </div>
   );
@@ -598,7 +608,7 @@ function ReportFilters({ f, setF, withBasis = true, extra }) {
       <div className="filters">
         {withBasis && <Labeled label="Date basis" htmlFor="bf-basis" req hint="Every total follows this date"><Select id="bf-basis" value={f.basis} onChange={set("basis")} options={DATE_BASES.map((b) => ({ value: b.key, label: b.label }))} /></Labeled>}
         <Labeled label="Period" htmlFor="bf-range"><Select id="bf-range" value={f.useRange ? "range" : "fy"} onChange={(v) => setF((x) => ({ ...x, useRange: v === "range" }))} options={[{ value: "fy", label: `F.Y. ${fy} (from the top bar)` }, { value: "range", label: "Custom date range" }]} /></Labeled>
-        {f.useRange && <><Labeled label="From" htmlFor="bf-from" error={f.from && f.to && f.to < f.from ? "End is before start" : null}><input id="bf-from" type="date" value={f.from} onChange={(e) => set("from")(e.target.value)} /></Labeled><Labeled label="To" htmlFor="bf-to"><input id="bf-to" type="date" value={f.to} onChange={(e) => set("to")(e.target.value)} /></Labeled></>}
+        {f.useRange && <><Labeled label="From" htmlFor="bf-from" error={f.from && f.to && f.to < f.from ? "End is before start" : null}><DateInput id="bf-from" value={f.from} onChange={(e) => set("from")(e.target.value)} /></Labeled><Labeled label="To" htmlFor="bf-to"><DateInput id="bf-to" value={f.to} onChange={(e) => set("to")(e.target.value)} /></Labeled></>}
         <fieldset className="fld radios"><legend>Vertical <Legacy /></legend>{["ALL", "Corporate", "Retail"].map((x) => <label key={x} className="check"><input type="radio" name="vertical" checked={f.vertical === x} onChange={() => set("vertical")(x)} /> {x === "ALL" ? "All" : x}</label>)}</fieldset>
         <Labeled label="Insurer" htmlFor="bf-ins"><Select id="bf-ins" value={f.insurer} onChange={set("insurer")} placeholder="All insurers" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
         {extra}
@@ -618,16 +628,16 @@ function BusinessReport() {
   const { rows, drafts, from, to } = businessRows(db, fl);
   const groups = groupRows(rows, g);
   const T = totals(rows);
-  const groupSum = r2(groups.reduce((a, x) => a + x.totals.grossInr, 0));
-  const consistent = Math.abs(groupSum - T.grossInr) < 0.01 && groups.reduce((a, x) => a + x.totals.count, 0) === T.count;
+  const groupSum = r2(groups.reduce((a, x) => a + x.totals.netInr, 0));
+  const consistent = Math.abs(groupSum - T.netInr) < 0.01 && groups.reduce((a, x) => a + x.totals.count, 0) === T.count;
   const basisLabel = DATE_BASES.find((b) => b.key === f.basis).label;
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   const missingRate = [...new Set(rows.filter((r) => r.fxRate == null).map((r) => `${r.currency} ${fmtMonth(r.fxMonth)}`))];
   const filterText = [`Vertical: ${f.vertical}`, f.insurer && `Insurer: ${insurerOf(db, f.insurer).name}`, f.dept && `Department: ${f.dept}`, f.cse && `CSC: ${teamName(db, f.cse)}`, f.rm && `RM: ${teamName(db, f.rm)}`, f.nr && `N/R: ${f.nr}`, f.currency && `Currency: ${f.currency}`].filter(Boolean).join("; ");
-  const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSC", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Net premium", "GST", "Stamp duty", "Gross premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Net premium INR", "GST INR", "Gross premium INR", "Brokerage INR"];
+  const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSC", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Gross premium", "GST", "Stamp duty", "Net premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Gross premium INR", "GST INR", "Net premium INR", "Brokerage INR"];
   const csv = () => toCsv([
     ["Report", LIVE ? "Business report, IndSure Commercial beta" : "Business report, IndSure Commercial demo prototype (fictional data)"], ["Financial year", f.useRange ? "Custom range" : `F.Y. ${fy}`], ["Period", `${from} to ${to}`], ["Date basis", basisLabel], ["Filters", filterText], ["Grouping", GROUPINGS.find((x) => x.key === g).label], ["Printed", printedAt.replace("T", " ")], ["Excluded drafts", String(drafts)], ["FX", "Demo monthly rates, not market data. Month follows the date basis (open decision)."]],
-    header, groups.flatMap((gr) => gr.rows.map((r) => [gr.key, r.controlNo, r.policyNo, r.custCode, r.customer, r.vertical, r.dept, r.type, r.insurer, r.branch, r.cse, r.rm, r.nr, r.basisDate, r.proposalDate, r.issueDate, r.riskStart, r.riskEnd, r.bookDate, r.currency, r.sumInsured, r.netPremium, r.gst, r.stampDuty, r.grossPremium, r.brokeragePct, r.brokerage, r.presetNote, r.fxMonth, r.fxRate ?? "NO RATE", r.fxVersion ?? "", r.netInr ?? "", r.gstInr ?? "", r.grossInr ?? "", r.brokerageInr ?? ""])).concat([["TOTAL (INR, rows with a rate)", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", T.netInr, T.gstInr, T.grossInr, T.brokerageInr]]));
+    header, groups.flatMap((gr) => gr.rows.map((r) => [gr.key, r.controlNo, r.policyNo, r.custCode, r.customer, r.vertical, r.dept, r.type, r.insurer, r.branch, r.cse, r.rm, r.nr, r.basisDate, r.proposalDate, r.issueDate, r.riskStart, r.riskEnd, r.bookDate, r.currency, r.sumInsured, r.grossPremium, r.gst, r.stampDuty, r.netPremium, r.brokeragePct, r.brokerage, r.presetNote, r.fxMonth, r.fxRate ?? "NO RATE", r.fxVersion ?? "", r.grossInr ?? "", r.gstInr ?? "", r.netInr ?? "", r.brokerageInr ?? ""])).concat([["TOTAL (INR, rows with a rate)", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", T.grossInr, T.gstInr, T.netInr, T.brokerageInr]]));
   const finalize = () => {
     update((d) => { d.snapshots.push({ id: `S${++d.seq}`, at: nowIso(), by: who, title: `Business report, ${f.useRange ? `${from} to ${to}` : `F.Y. ${fy}`}, ${basisLabel}`, basisLabel, filterText, grouping: GROUPINGS.find((x) => x.key === g).label, rows, totals: T, groupKey: g }); log(d, { action: "Report finalized", detail: `Business report frozen with ${rows.length} rows and the FX rates used at the time.` }); });
     toast("Report finalized. Later FX edits will not change it");
@@ -660,9 +670,9 @@ function BusinessReport() {
             {groups.map((gr) => (
               <div key={gr.key} className="rgroup">
                 {g !== "none" && <h4>{gr.key} <span className="muted small">({gr.rows.length})</span></h4>}
-                <Table className="rtable"><thead><tr><th>Policy</th><th>Insured</th>{g !== "insurer" && <th>Insurer</th>}<th>N/R</th><th>Basis date</th><th className="num">Gross (native)</th><th className="num">Brokerage (native)</th><th className="num">Gross INR</th><th className="num">Brokerage INR</th></tr></thead>
-                  <tbody>{gr.rows.map((r) => <tr key={r.termId}><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td>{r.customer}<div className="small muted">{r.type}</div></td>{g !== "insurer" && <td>{r.insurer}</td>}<td>{r.nr}</td><td>{fmtDate(r.basisDate)}</td><td className="num">{fmtMoney(r.grossPremium, r.currency)}</td><td className="num">{fmtMoney(r.brokerage, r.currency)}<div className="small muted">{r.brokeragePct}% · {r.presetNote}</div></td><td className="num">{r.grossInr == null ? "No rate" : fmtNum(r.grossInr)}{r.currency !== "INR" && <div className="small">{r.fxRate == null ? <span className="bad-text">No rate for {fmtMonth(r.fxMonth)}</span> : <span className="muted">{fmtMonth(r.fxMonth)} @ {r.fxRate} (v{r.fxVersion})</span>}</div>}</td><td className="num">{r.brokerageInr == null ? "No rate" : fmtNum(r.brokerageInr)}</td></tr>)}</tbody>
-                  {g !== "none" && <tfoot><tr><td colSpan={g !== "insurer" ? 7 : 6}>Subtotal {gr.key}</td><td className="num">{fmtNum(gr.totals.grossInr)}</td><td className="num">{fmtNum(gr.totals.brokerageInr)}</td></tr></tfoot>}
+                <Table className="rtable"><thead><tr><th>Policy</th><th>Insured</th>{g !== "insurer" && <th>Insurer</th>}<th>N/R</th><th>Basis date</th><th className="num">Net (native)</th><th className="num">Brokerage (native)</th><th className="num">Net INR</th><th className="num">Brokerage INR</th></tr></thead>
+                  <tbody>{gr.rows.map((r) => <tr key={r.termId}><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td>{r.customer}<div className="small muted">{r.type}</div></td>{g !== "insurer" && <td>{r.insurer}</td>}<td>{r.nr}</td><td>{fmtDate(r.basisDate)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="num">{fmtMoney(r.brokerage, r.currency)}<div className="small muted">{r.brokeragePct}% · {r.presetNote}</div></td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}{r.currency !== "INR" && <div className="small">{r.fxRate == null ? <span className="bad-text">No rate for {fmtMonth(r.fxMonth)}</span> : <span className="muted">{fmtMonth(r.fxMonth)} @ {r.fxRate} (v{r.fxVersion})</span>}</div>}</td><td className="num">{r.brokerageInr == null ? "No rate" : fmtNum(r.brokerageInr)}</td></tr>)}</tbody>
+                  {g !== "none" && <tfoot><tr><td colSpan={g !== "insurer" ? 7 : 6}>Subtotal {gr.key}</td><td className="num">{fmtNum(gr.totals.netInr)}</td><td className="num">{fmtNum(gr.totals.brokerageInr)}</td></tr></tfoot>}
                 </Table>
               </div>
             ))}
@@ -678,11 +688,11 @@ function BusinessReport() {
 function TotalsBlock({ T, consistent }) {
   return (
     <Card title="Totals" sub="Native currency totals are kept as they are. INR uses the monthly rate shown on each row.">
-      <Table><thead><tr><th>Currency</th><th className="num">Records</th><th className="num">Sum insured</th><th className="num">Net premium</th><th className="num">GST</th><th className="num">Gross premium</th><th className="num">Brokerage</th></tr></thead>
-        <tbody>{Object.entries(T.native).map(([cur, n]) => <tr key={cur}><td>{cur}</td><td className="num">{n.count}</td><td className="num">{fmtNum(n.si, cur)}</td><td className="num">{fmtNum(n.net, cur)}</td><td className="num">{fmtNum(n.gst, cur)}</td><td className="num">{fmtNum(n.gross, cur)}</td><td className="num">{fmtNum(n.brokerage, cur)}</td></tr>)}</tbody>
-        <tfoot><tr><td>All in INR</td><td className="num">{T.count - T.noRate}{T.noRate ? ` (+${T.noRate} no rate)` : ""}</td><td className="num">{fmtNum(T.siInr)}</td><td className="num">{fmtNum(T.netInr)}</td><td className="num">{fmtNum(T.gstInr)}</td><td className="num">{fmtNum(T.grossInr)}</td><td className="num">{fmtNum(T.brokerageInr)}</td></tr></tfoot></Table>
+      <Table><thead><tr><th>Currency</th><th className="num">Records</th><th className="num">Sum insured</th><th className="num">Gross premium</th><th className="num">GST</th><th className="num">Net premium</th><th className="num">Brokerage</th></tr></thead>
+        <tbody>{Object.entries(T.native).map(([cur, n]) => <tr key={cur}><td>{cur}</td><td className="num">{n.count}</td><td className="num">{fmtNum(n.si, cur)}</td><td className="num">{fmtNum(n.gross, cur)}</td><td className="num">{fmtNum(n.gst, cur)}</td><td className="num">{fmtNum(n.net, cur)}</td><td className="num">{fmtNum(n.brokerage, cur)}</td></tr>)}</tbody>
+        <tfoot><tr><td>All in INR</td><td className="num">{T.count - T.noRate}{T.noRate ? ` (+${T.noRate} no rate)` : ""}</td><td className="num">{fmtNum(T.siInr)}</td><td className="num">{fmtNum(T.grossInr)}</td><td className="num">{fmtNum(T.gstInr)}</td><td className="num">{fmtNum(T.netInr)}</td><td className="num">{fmtNum(T.brokerageInr)}</td></tr></tfoot></Table>
       {consistent != null && <p className={`small ${consistent ? "good-text" : "bad-text"}`}>{consistent ? "Check passed: group subtotals add up to the grand total." : "Check failed: group subtotals do not match the grand total."}</p>}
-      <p className="small muted">Net premium definitions on the current reports disagree; these totals are not yet reconciled with accounts <Confirm /></p>
+      <p className="small muted">Gross premium + GST = net premium, the final amount paid. Stamp duty is shown separately.</p>
     </Card>
   );
 }
@@ -695,11 +705,11 @@ function RenewalsReport() {
   const [printedAt] = useState(nowIso());
   const rows = renewalRows(db, { ...f, fy });
   const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(fy);
-  const byIns = groupRows(rows.map((r) => ({ ...r, basisDate: r.riskEnd, month: r.riskEnd.slice(0, 7), fxRate: 1, netInr: 0, gstInr: 0, grossInr: 0, brokerageInr: 0, siInr: 0, netPremium: 0, gst: 0, brokerage: 0 })), "insurer");
+  const byIns = groupRows(rows.map((r) => ({ ...r, basisDate: r.riskEnd, month: r.riskEnd.slice(0, 7), fxRate: 1, grossInr: 0, gstInr: 0, netInr: 0, brokerageInr: 0, siInr: 0, grossPremium: 0, gst: 0, brokerage: 0 })), "insurer");
   const count = (o) => rows.filter((r) => r.outcome === o).length;
-  const header = ["Insurer", "S.No", "Control no", "Policy no", "Start date", "Expiry date", "Policy type", "Customer group", "Insured (customer)", "Cust code", "Location", "Currency", "Sum insured", "Gross premium", "Brokerage", "RM", "CSC", "Renewable", "Outcome", "Renewed as", "Loss detail (LossBy meaning open)"];
+  const header = ["Insurer", "S.No", "Control no", "Policy no", "Start date", "Expiry date", "Policy type", "Customer group", "Insured (customer)", "Cust code", "Location", "Currency", "Sum insured", "Net premium", "Brokerage", "RM", "CSC", "Renewable", "Outcome", "Renewed as", "Loss detail (LossBy meaning open)"];
   const csv = () => toCsv([["Report", LIVE ? "Renewals report, IndSure Commercial beta" : "Renewals report, IndSure Commercial demo prototype (fictional data)"], ["Date basis", "Risk end (expiry) date"], ["Period", `${from} to ${to}`], ["Printed", printedAt.replace("T", " ")], ["Counts", `Renewed ${count("Renewed")}, Lost ${count("Lost")}, Open ${count("Open")}`]], header,
-    byIns.flatMap((g) => g.rows.map((r, i) => [g.key, i + 1, r.controlNo, r.policyNo, r.riskStart, r.riskEnd, r.type, r.group, r.customer, r.custCode, r.location, r.currency, r.sumInsured, r.grossPremium, r.brokerage, r.rm, r.cse, r.renewable, r.outcome, r.nextPolicyNo, r.lossDetail])));
+    byIns.flatMap((g) => g.rows.map((r, i) => [g.key, i + 1, r.controlNo, r.policyNo, r.riskStart, r.riskEnd, r.type, r.group, r.customer, r.custCode, r.location, r.currency, r.sumInsured, r.netPremium, r.brokerage, r.rm, r.cse, r.renewable, r.outcome, r.nextPolicyNo, r.lossDetail])));
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Renewals report</h1><p className="muted">Policies by expiry date, grouped Insurer Wise, with achieved and lost renewals. Includes non-renewable policies.</p></div></header>
@@ -708,8 +718,8 @@ function RenewalsReport() {
       <div className="reportmeta"><span>Date basis: <strong>Risk end (expiry) date</strong></span><span>Period: <strong>{fmtDate(from)} to {fmtDate(to)}</strong></span><span>Printed {fmtStamp(printedAt)}</span>{can("export") ? <Btn kind="primary" disabled={!rows.length} why="No rows" onClick={() => saveCsv(`renewals-report-${f.useRange ? "range" : fy}.csv`, csv(), toast, setFallback)}>Download CSV</Btn> : <span className="small">Export not allowed for this role</span>}</div>
       {!rows.length ? <Empty title="No policies end in this period" /> : byIns.map((g) => (
         <div key={g.key} className="rgroup"><h4>{g.key} <span className="muted small">({g.rows.length})</span></h4>
-          <Table><thead><tr><th>S.No</th><th>Policy</th><th>Expiry</th><th>Insured</th><th className="num">Sum insured</th><th className="num">Gross premium</th><th>RM</th><th>Renewal</th></tr></thead>
-            <tbody>{g.rows.map((r, i) => <tr key={r.termId} className={r.renewable === "No" ? "row-nonrenew" : ""}><td>{i + 1}</td><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td className="nowrap">{fmtDate(r.riskEnd)}</td><td>{r.customer}<div className="small muted">{r.type}{r.group ? ` · ${r.group}` : ""}</div></td><td className="num">{fmtMoney(r.sumInsured, r.currency)}</td><td className="num">{fmtMoney(r.grossPremium, r.currency)}</td><td>{r.rm}</td><td><div className="pills"><Pill tone={r.outcome === "Renewed" ? "good" : r.outcome === "Lost" ? "bad" : "muted"}>{r.outcome}</Pill>{r.draftInProgress && <Pill tone="info">Draft in progress</Pill>}</div><div className="small muted">Renewable: {r.renewable}{r.outcome === "Renewed" ? `. Renewed as ${r.nextPolicyNo}` : r.lossDetail ? `. ${r.lossDetail}` : ""}</div></td></tr>)}</tbody></Table></div>))}
+          <Table><thead><tr><th>S.No</th><th>Policy</th><th>Expiry</th><th>Insured</th><th className="num">Sum insured</th><th className="num">Net premium</th><th>RM</th><th>Renewal</th></tr></thead>
+            <tbody>{g.rows.map((r, i) => <tr key={r.termId} className={r.renewable === "No" ? "row-nonrenew" : ""}><td>{i + 1}</td><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td className="nowrap">{fmtDate(r.riskEnd)}</td><td>{r.customer}<div className="small muted">{r.type}{r.group ? ` · ${r.group}` : ""}</div></td><td className="num">{fmtMoney(r.sumInsured, r.currency)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td>{r.rm}</td><td><div className="pills"><Pill tone={r.outcome === "Renewed" ? "good" : r.outcome === "Lost" ? "bad" : "muted"}>{r.outcome}</Pill>{r.draftInProgress && <Pill tone="info">Draft in progress</Pill>}</div><div className="small muted">Renewable: {r.renewable}{r.outcome === "Renewed" ? `. Renewed as ${r.nextPolicyNo}` : r.lossDetail ? `. ${r.lossDetail}` : ""}</div></td></tr>)}</tbody></Table></div>))}
       <p className="small muted">The legacy renewal report action reads "...el/Achieved/Lost"; its full label and the meaning of LossBy are open <Confirm /></p>
       {fallback && <CsvFallback data={fallback} onClose={() => setFallback(null)} />}
     </div>
@@ -724,16 +734,16 @@ function Snapshots({ openId }) {
     <div className="stack">
       <header className="page-head"><div><h1>Finalized reports</h1><p className="muted">Frozen copies. Later changes to FX rates, presets or records do not rewrite them.</p></div></header>
       {!db.snapshots.length ? <Empty title="No finalized reports yet">Finalize one from the Business report (Accounts or Admin role).</Empty> : (
-        <Table><thead><tr><th>Report</th><th>Finalized</th><th className="num">Rows</th><th className="num">Gross INR at the time</th><th /></tr></thead>
-          <tbody>{db.snapshots.map((x) => <tr key={x.id}><td>{x.title}<div className="small muted">{x.filterText} · {x.grouping}</div></td><td>{fmtStamp(x.at)} by {x.by}</td><td className="num">{x.rows.length}</td><td className="num">{fmtNum(x.totals.grossInr)}</td><td><Btn onClick={() => setOpen(x.id)}>Open</Btn></td></tr>)}</tbody></Table>)}
+        <Table><thead><tr><th>Report</th><th>Finalized</th><th className="num">Rows</th><th className="num">Net INR at the time</th><th /></tr></thead>
+          <tbody>{db.snapshots.map((x) => <tr key={x.id}><td>{x.title}<div className="small muted">{x.filterText} · {x.grouping}</div></td><td>{fmtStamp(x.at)} by {x.by}</td><td className="num">{x.rows.length}</td><td className="num">{fmtNum(x.totals.netInr)}</td><td><Btn onClick={() => setOpen(x.id)}>Open</Btn></td></tr>)}</tbody></Table>)}
       {s && (() => {
         const live = totals(businessRows(db, { ...FILTER0, fy: "2026-27", basis: DATE_BASES.find((b) => b.label === s.basisLabel)?.key || "bookDate" }).rows.filter((r) => s.rows.some((y) => y.termId === r.termId)));
         return (
           <Card title={s.title} sub={`Frozen ${fmtStamp(s.at)} by ${s.by}`}>
-            <Table><thead><tr><th>Control no.</th><th>Insured</th><th>Policy type</th><th className="num">Gross (native)</th><th>FX used then</th><th className="num">Gross INR then</th></tr></thead>
-              <tbody>{s.rows.map((r) => <tr key={r.termId}><td>{r.controlNo}</td><td>{r.customer}</td><td>{r.type}</td><td className="num">{fmtMoney(r.grossPremium, r.currency)}</td><td className="small">{r.currency === "INR" ? "INR" : r.fxRate == null ? "No rate" : `${fmtMonth(r.fxMonth)} @ ${r.fxRate} (v${r.fxVersion})`}</td><td className="num">{r.grossInr == null ? "No rate" : fmtNum(r.grossInr)}</td></tr>)}</tbody></Table>
+            <Table><thead><tr><th>Control no.</th><th>Insured</th><th>Policy type</th><th className="num">Net (native)</th><th>FX used then</th><th className="num">Net INR then</th></tr></thead>
+              <tbody>{s.rows.map((r) => <tr key={r.termId}><td>{r.controlNo}</td><td>{r.customer}</td><td>{r.type}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="small">{r.currency === "INR" ? "INR" : r.fxRate == null ? "No rate" : `${fmtMonth(r.fxMonth)} @ ${r.fxRate} (v${r.fxVersion})`}</td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}</td></tr>)}</tbody></Table>
             <TotalsBlock T={s.totals} consistent={null} />
-            <div className={`note ${Math.abs(live.grossInr - s.totals.grossInr) > 0.01 ? "note-warn" : ""}`}>Same records valued with today's rates and values: gross INR {fmtNum(live.grossInr)}. {Math.abs(live.grossInr - s.totals.grossInr) > 0.01 ? "This differs from the frozen figure, which is kept as finalized." : "No difference so far."}</div>
+            <div className={`note ${Math.abs(live.netInr - s.totals.netInr) > 0.01 ? "note-warn" : ""}`}>Same records valued with today's rates and values: net INR {fmtNum(live.netInr)}. {Math.abs(live.netInr - s.totals.netInr) > 0.01 ? "This differs from the frozen figure, which is kept as finalized." : "No difference so far."}</div>
           </Card>);
       })()}
     </div>
@@ -1009,9 +1019,9 @@ function Reminders() {
 const DECISIONS = [
   ["CSE or CSC", "CSC. It is one role: the customer service coordinator who looks after the customer. Reports group it as \"CSC Wise\".", "built", "Renamed everywhere. Team members saved as CSE were changed to CSC."],
   ["Departments and policy types", "One list. Every policy type sits under one department only. Where the notes and the old system disagree, the old system's name is kept and the duplicate is merged into it.", "partly", "Masters shows both lists and flags duplicates. Merging is done by hand in Masters for now."],
-  ["Date definitions", "Every date is kept separately. Business is booked on the risk start date (that is when the cover and our brokerage begin). Brokerage received is counted on the date the money arrives. Remittance is its own date.", "partly", "All dates are stored and every report lets you pick the date to use. Use risk start for the business report and receipt date for brokerage received."],
-  ["Report totals", "The portal's totals are the only totals: the sum of net premium (without GST) from the policy records. The two figures on the old photographed report are not copied.", "built", "Totals are worked out from the records, with a note saying how."],
-  ["Brokerage presets", "\"Company\" means the insurer. A rate is set per insurer and policy type. Accounts and Admin can change it. Every change is saved as a new version and each policy keeps the rate it was made with. No separate approval step for now.", "built", "Presets are per insurer and policy type, with versions."],
+  ["Date definitions", "Every date is kept separately and shown as DD/MM/YYYY. The business booked date starts as the policy issue date and can be changed. Brokerage received is counted on the date the money arrives. Remittance is its own date.", "built", "Booked date fills from the issue date. Every report lets you pick the date to use."],
+  ["Report totals", "The portal's totals are the only totals, worked out from the policy records. Gross premium + GST = net premium, the final amount paid. Brokerage is on gross, unless a policy is ticked for brokerage on net.", "built", "Reports show gross, GST and net separately."],
+  ["Brokerage presets", "\"Company\" means the insurer. A rate is set per insurer and policy type, charged on gross premium unless the policy is ticked for net. Accounts and Admin can change it. Every change is saved as a new version and each policy keeps the rate it was made with. No separate approval step for now.", "built", "Presets are per insurer and policy type, with versions."],
   ["PAN and record keeping", "Do not collect PAN: the insurer does KYC, we do not need it. Keep business contacts only. Keep policy records for at least 10 years after the policy ends, and never delete them earlier.", "check", "PAN is not collected and nothing is deleted. Ask your compliance adviser to confirm the 10-year period against the IRDAI broker rules before going live."],
   ["Reminders", "Renewal reminders 60, 30 and 15 days before the risk end date, to the CSC first. Open-policy balance reminder when less than 30% of the sum insured is left. Messages to customers only after the wording is approved.", "partly", "Reminders preview shows who would be reminded. Set the 30% threshold there (Admin). Sending email or WhatsApp is not built."],
   ["Team and permissions", "Four roles: Operations / BD (CSC), Accounts, Admin, Read-only. Each customer has one CSC and one RM; the RM who brought the business is kept on each policy. Only Accounts and Admin export. After a report is finalized only Admin can correct it.", "partly", "The roles and their screens exist. They are a role switch, not logins: everyone on this computer can switch. Real logins are needed before more than one person uses it."],
@@ -1038,5 +1048,16 @@ function Decisions() {
 
 // Scoped root: every rule in commercial.css sits under .ic-root, so nothing leaks into the rest of the app.
 export default function CommercialPortal() {
-  return <div className="ic-root"><App /></div>;
+  const [locked, setLocked] = useState(needsLogin());
+  const [notice, setNotice] = useState("");
+  // Hidden page: nothing links here and search engines are told to stay away.
+  useEffect(() => {
+    const m = document.createElement("meta");
+    m.name = "robots"; m.content = "noindex, nofollow";
+    document.head.appendChild(m);
+    const was = document.title; document.title = "IndSure Commercial";
+    return () => { m.remove(); document.title = was; };
+  }, []);
+  if (locked) return <div className="ic-root"><CorpLogin notice={notice} onDone={() => { setNotice(""); setLocked(false); }} /></div>;
+  return <div className="ic-root"><App onSignedOut={() => { setNotice("Please sign in again."); setLocked(true); }} /></div>;
 }

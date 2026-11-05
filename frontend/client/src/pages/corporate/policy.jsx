@@ -1,7 +1,7 @@
 // One policy, its terms, and every tab that hangs off a term.
 import { FIELDS, FIELD, TODAY, LIVE, PLAIN_SAMPLES, fixtureById, makeEndorsementFixture, makeRenewalFixture, isVesselType, isCargoOpen, isCharterers, CURRENCIES } from "./data.js";
-import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy, Icon, DocModal } from "./ui.jsx";
+import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf } from "./lib.js";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Confirm, Proposed, Legacy, Icon, DocModal, DateInput } from "./ui.jsx";
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
@@ -15,11 +15,11 @@ export function docLines(doc) {
   return null;
 }
 
-// Downloads the original file kept on this computer. Files attached before files were kept cannot be.
+// Downloads the kept original file. Files attached before files were kept cannot be.
 export function DownloadDoc({ doc, label = "Download PDF", kind = "secondary" }) {
   const id = doc?.userFile?.fileId;
-  if (!id) return <Btn disabled why={doc?.userFile ? "The original file was not kept: it was attached before files were saved on this computer" : "Sample document, no file to download"}>{label}</Btn>;
-  return <a className={`btn btn-${kind}`} href={fileUrl(id) + "?download=1"} download={doc.userFile.name}>{label}</a>;
+  if (!id) return <Btn disabled why={doc?.userFile ? "The original file was not kept when this document was added" : "Sample document, no file to download"}>{label}</Btn>;
+  return <a className={`btn btn-${kind}`} href={fileUrl(id, true)} download={doc.userFile.name}>{label}</a>;
 }
 
 export function DocViewer({ doc, onClose }) {
@@ -29,7 +29,7 @@ export function DocViewer({ doc, onClose }) {
       {doc.userFile?.fileId && <div className="row gap-s wrap"><a className="btn btn-primary" href={fileUrl(doc.userFile.fileId)} target="_blank" rel="noreferrer">{/\.pdf$/i.test(doc.userFile.name) ? "Open the original PDF" : "Open the original file"}</a><DownloadDoc doc={doc} /></div>}
       <KV items={[["Type", doc.kind], ["Added", `${fmtStamp(doc.addedAt)} by ${doc.addedBy}`], ["Note", doc.note || "--"]]} />
       {lines ? <DocPane lines={lines} title={doc.name} generated={!!doc.lines && !doc.extracted} extracted={doc.extracted} />
-        : doc.userFile ? <div className="note">{doc.userFile.fileId ? <>Kept on this computer: "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB).</> : <>Your file "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB) is listed only; the file itself was not kept.</>}</div>
+        : doc.userFile ? <div className="note">{doc.userFile.fileId ? <>Original kept: "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB).</> : <>Your file "{doc.userFile.name}" ({Math.ceil(doc.userFile.size / 1024)} KB) is listed only; the file itself was not kept.</>}</div>
           : <div className="note">Sample attachment with no preview in this demo.</div>}
     </Modal>
   );
@@ -167,11 +167,18 @@ function Overview({ p, term, go, openDoc }) {
                   </tr>
                 );
               })}
-              {g === "Brokerage" && <tr><td>Brokerage amount</td><td className="num-l">{fmtMoney(r2((+v.netPremium || 0) * (+v.brokeragePct || 0) / 100), v.currency)}</td><td className="small">{term.brokerageSnap ? `Loaded from preset v${term.brokerageSnap.version} at ${term.brokerageSnap.pct}% and kept with this term` : "Entered by hand"}{term.brokerageConfirmed ? ", confirmed by reviewer" : ", not confirmed"}</td></tr>}
+              {g === "Brokerage" && <tr><td>Brokerage amount</td><td className="num-l">{fmtMoney(brokerageOf(v), v.currency)}</td><td className="small">{v.brokerageOnNet ? "On net premium. " : "On gross premium. "}{term.brokerageSnap ? `Loaded from preset v${term.brokerageSnap.version} at ${term.brokerageSnap.pct}% and kept with this term` : "Entered by hand"}{term.brokerageConfirmed ? ", confirmed by reviewer" : ", not confirmed"}</td></tr>}
+              {g === "Brokerage" && <tr><td colSpan={3}><label className="check"><input id="pv-brok-net" type="checkbox" checked={!!v.brokerageOnNet} disabled={!can("editDraft")} onChange={(e) => { const on = e.target.checked; update((d) => { const t = d.terms.find((x) => x.id === term.id); t.values.brokerageOnNet = on; log(d, { customerId: p.customerId, policyId: p.id, termId: term.id, action: "Brokerage base changed", detail: on ? "Brokerage now on net premium" : "Brokerage now on gross premium" }); }); toast(on ? "Brokerage is now on net premium" : "Brokerage is now on gross premium"); }} /> Brokerage on net premium (leave unticked for gross)</label></td></tr>}
             </tbody>
           </Table>
         </Card>
       ))}
+      {(v.otherDetails || []).length > 0 && (
+        <Card title="Other details">
+          <Table><thead><tr><th>Detail</th><th>What the policy says</th></tr></thead>
+            <tbody>{v.otherDetails.map((o, i) => <tr key={i}><td>{o.label}</td><td>{o.value}</td></tr>)}</tbody></Table>
+        </Card>
+      )}
     </div>
   );
 }
@@ -293,7 +300,7 @@ function EndorsementsTab({ p, term, openDoc }) {
           <div className="review-grid">
             <DocPane lines={fx.lines} title={fx.title} generated={!fx.extracted} extracted={fx.extracted} />
             <div className="review-fields">
-              <Labeled label="Effective date" htmlFor="en-eff" req error={tried && !eff ? "Enter the effective date" : null}><input id="en-eff" type="date" value={eff} onChange={(e) => setEff(e.target.value)} /></Labeled>
+              <Labeled label="Effective date" htmlFor="en-eff" req error={tried && !eff ? "Enter the effective date" : null}><DateInput id="en-eff" value={eff} onChange={(e) => setEff(e.target.value)} /></Labeled>
               <Table><thead><tr><th>Change?</th><th>Field</th><th>Current value</th><th>On endorsement</th></tr></thead>
                 <tbody>{!Object.keys(fx.fields).length && <tr><td colSpan={4}><Empty title="No values could be read from this PDF">{fx.noText ? "No text could be read, even as a scan." : "None of the known labels were found."} Cancel and check the document, or record the change from a sample.</Empty></td></tr>}{Object.entries(fx.fields).filter(([k]) => FIELD[k]).map(([k, x]) => {
                   const same = String(x.v) === String(v[k]);
@@ -330,7 +337,7 @@ function PaymentsTab({ p, term, openDoc }) {
     <div className="stack">
       <div className="note small">Receipts and debit notes are stored next to the policy. They never change premium, dates or sum insured.</div>
       <div className="stats">
-        <div className="stat"><span>Due on this term</span><strong>{fmtMoney(pay.due, cur)}</strong><em>{term.instalments.length ? `${term.instalments.length} instalments` : "Gross premium, single payment"}</em></div>
+        <div className="stat"><span>Due on this term</span><strong>{fmtMoney(pay.due, cur)}</strong><em>{term.instalments.length ? `${term.instalments.length} instalments` : "Net premium, single payment"}</em></div>
         <div className="stat"><span>Received</span><strong>{fmtMoney(pay.received, cur)}</strong><em>{term.receipts.length} receipt(s)</em></div>
         <div className="stat"><span>Outstanding</span><strong className={pay.outstanding > 0 ? "bad-text" : ""}>{fmtMoney(pay.outstanding, cur)}</strong><em>{pay.label}</em></div>
       </div>
@@ -339,7 +346,7 @@ function PaymentsTab({ p, term, openDoc }) {
         {editSched ? <ScheduleEditor p={p} term={term} onDone={() => setEditSched(false)} /> : rows.length ? (
           <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Amount</th><th className="num">Tax</th><th className="num">Total due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
             <tbody>{rows.map((r) => <tr key={r.no}><td>{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtNum(r.amount, cur)}</td><td className="num">{fmtNum(r.tax, cur)} <span className="muted small">({r.taxPct}%)</span></td><td className="num">{fmtNum(r.total, cur)}</td><td className="num">{fmtNum(r.got, cur)}{r.recs.length > 0 && <div className="small muted">{r.recs.map((x) => fmtDate(x.date)).join(", ")}</div>}</td><td className="num">{fmtNum(r.out, cur)}</td><td><Pill tone={r.tone}>{r.status}</Pill></td></tr>)}</tbody></Table>
-        ) : <Empty title="Single payment">This term has no instalment schedule. The gross premium is due as one amount.</Empty>}
+        ) : <Empty title="Single payment">This term has no instalment schedule. The net premium is due as one amount.</Empty>}
         {term.scheduleHistory?.length > 0 && <details className="small"><summary>{term.scheduleHistory.length} earlier schedule version(s) kept</summary>{term.scheduleHistory.map((h, i) => <div key={i} className="muted">Version {i + 1}, replaced {fmtStamp(h.at)} by {h.by}: {h.rows.map((r) => `#${r.no} ${fmtDate(r.due)} ${fmtNum(instTotal(r), cur)}`).join("; ") || "no rows"}</div>)}</details>}
       </Card>
       <Card title="Receipts" sub="Each receipt can be linked to an instalment. Repeat as many payment blocks as needed." actions={can("receipt") && !addRec && <Btn kind="primary" onClick={() => setAddRec(true)}>Record receipt</Btn>}>
@@ -363,7 +370,7 @@ function ScheduleEditor({ p, term, onDone }) {
   const [gen, setGen] = useState({ first: term.values.riskStart || TODAY, freq: 3, count: 4 });
   const [tried, setTried] = useState(false);
   const cur = term.values.currency;
-  const gross = +term.values.grossPremium || 0;
+  const net = +term.values.netPremium || 0;
   const total = r2(rows.reduce((a, r) => a + instTotal(r), 0));
   const setRow = (i, k, v) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
   const errs = rows.map((r) => (!r.due ? "Due date needed" : !isNum(r.amount) || +r.amount <= 0 ? "Amount must be more than 0" : !isNum(r.taxPct) || +r.taxPct < 0 ? "Tax % must be 0 or more" : null));
@@ -378,7 +385,7 @@ function ScheduleEditor({ p, term, onDone }) {
     const free = rows.filter((r) => !paidNos.has(r.no));
     if (!free.length) return;
     const paid = r2(rows.filter((r) => paidNos.has(r.no)).reduce((a, r) => a + instTotal(r), 0));
-    setRows((rs) => rs.map((r) => (paidNos.has(r.no) ? r : { ...r, amount: r2((gross - paid) / free.length / (1 + (+r.taxPct || 0) / 100)) })));
+    setRows((rs) => rs.map((r) => (paidNos.has(r.no) ? r : { ...r, amount: r2((net - paid) / free.length / (1 + (+r.taxPct || 0) / 100)) })));
   };
   const save = () => {
     setTried(true);
@@ -395,22 +402,22 @@ function ScheduleEditor({ p, term, onDone }) {
   return (
     <div className="stack">
       <div className="formgrid">
-        <Labeled label="First due date" htmlFor="sg-first"><input id="sg-first" type="date" value={gen.first} onChange={(e) => setGen({ ...gen, first: e.target.value })} /></Labeled>
+        <Labeled label="First due date" htmlFor="sg-first"><DateInput id="sg-first" value={gen.first} onChange={(e) => setGen({ ...gen, first: e.target.value })} /></Labeled>
         <Labeled label="Frequency of payment (months)" htmlFor="sg-freq"><input id="sg-freq" type="number" min="1" value={gen.freq} onChange={(e) => setGen({ ...gen, freq: e.target.value })} /></Labeled>
         <Labeled label="No. of instalments" htmlFor="sg-count"><input id="sg-count" type="number" min="1" max="24" value={gen.count} onChange={(e) => setGen({ ...gen, count: e.target.value })} /></Labeled>
-        <div className="row gap-s fld-wide wrap"><Btn onClick={generate}>Make rows</Btn><Btn onClick={split} disabled={!rows.length}>Split remaining gross equally (editable)</Btn><span className="small muted">Rows with receipts are locked so their due dates stay as they were.</span></div>
+        <div className="row gap-s fld-wide wrap"><Btn onClick={generate}>Make rows</Btn><Btn onClick={split} disabled={!rows.length}>Split remaining net equally (editable)</Btn><span className="small muted">Rows with receipts are locked so their due dates stay as they were.</span></div>
       </div>
       <Table><thead><tr><th>No.</th><th>Due date</th><th>Amount (before tax)</th><th>Tax %</th><th className="num">Total</th><th /></tr></thead>
         <tbody>{rows.map((r, i) => { const locked = paidNos.has(r.no); return (
           <tr key={i}><td>{i + 1}</td>
-            <td><input aria-label={`Instalment ${i + 1} due date`} type="date" value={r.due} disabled={locked} onChange={(e) => setRow(i, "due", e.target.value)} /></td>
+            <td><DateInput aria-label={`Instalment ${i + 1} due date`} value={r.due} disabled={locked} onChange={(e) => setRow(i, "due", e.target.value)} /></td>
             <td><input aria-label={`Instalment ${i + 1} amount`} inputMode="decimal" value={r.amount} disabled={locked} onChange={(e) => setRow(i, "amount", e.target.value.replace(/,/g, ""))} />{tried && errs[i] && <div className="err-text">{errs[i]}</div>}</td>
             <td><input aria-label={`Instalment ${i + 1} tax percent`} inputMode="decimal" value={r.taxPct} disabled={locked} onChange={(e) => setRow(i, "taxPct", e.target.value)} /></td>
             <td className="num">{fmtNum(instTotal(r), cur)}</td>
             <td>{locked ? <span className="small muted">Has receipt</span> : <Btn onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}>Remove</Btn>}</td></tr>); })}
           {!rows.length && <tr><td colSpan={6}><Empty title="No rows">Make rows above, or add one.</Empty></td></tr>}</tbody></Table>
       <div className="row gap-s wrap"><Btn onClick={() => setRows((rs) => [...rs, { no: rs.length + 1, due: "", amount: "", taxPct: term.values.gstPct || 0 }])}>Add row</Btn></div>
-      <div className={`note ${Math.abs(total - gross) > 0.01 ? "note-warn" : ""}`}>Schedule total {fmtMoney(total, cur)} vs gross premium {fmtMoney(gross, cur)}{Math.abs(total - gross) > 0.01 ? `: differs by ${fmtMoney(r2(total - gross), cur)}. Saving is allowed; check against the insurer schedule.` : ": matches."}</div>
+      <div className={`note ${Math.abs(total - net) > 0.01 ? "note-warn" : ""}`}>Schedule total {fmtMoney(total, cur)} vs net premium {fmtMoney(net, cur)}{Math.abs(total - net) > 0.01 ? `: differs by ${fmtMoney(r2(total - net), cur)}. Saving is allowed; check against the insurer schedule.` : ": matches."}</div>
       <div className="row gap-s"><Btn onClick={onDone}>Cancel</Btn><Btn kind="primary" onClick={save}>Save schedule</Btn></div>
     </div>
   );
@@ -440,12 +447,12 @@ function ReceiptForm({ p, term, onDone }) {
   return (
     <div className="formgrid boxed">
       <Labeled label="Against instalment" htmlFor="rc-inst"><Select id="rc-inst" value={f.instNo} onChange={(v) => { set("instNo")(v); const r = rows.find((x) => String(x.no) === v); if (r) set("amount")(String(r.out)); }} options={rows.map((r) => ({ value: String(r.no), label: `Instalment ${r.no}, due ${fmtDate(r.due)}, ${fmtNum(r.out, term.values.currency)} outstanding` }))} placeholder="Not linked to an instalment" /></Labeled>
-      <Labeled label="Received on" htmlFor="rc-date" req error={tried && errs.date} hint={inst && f.date > inst.due ? `Later than the due date (${fmtDate(inst.due)}). Both dates are kept.` : null}><input id="rc-date" type="date" value={f.date} onChange={(e) => set("date")(e.target.value)} /></Labeled>
+      <Labeled label="Received on" htmlFor="rc-date" req error={tried && errs.date} hint={inst && f.date > inst.due ? `Later than the due date (${fmtDate(inst.due)}). Both dates are kept.` : null}><DateInput id="rc-date" value={f.date} onChange={(e) => set("date")(e.target.value)} /></Labeled>
       <Labeled label={`Amount (${term.values.currency})`} htmlFor="rc-amt" req error={tried && errs.amount}><input id="rc-amt" inputMode="decimal" value={f.amount} onChange={(e) => set("amount")(e.target.value.replace(/,/g, ""))} /></Labeled>
       <Labeled label="Payment mode" htmlFor="rc-mode"><Select id="rc-mode" value={f.mode} onChange={set("mode")} options={["Bank transfer", "NEFT", "RTGS", "Cheque", "Demand draft", "UPI", "Debit card", "SWIFT"]} /></Labeled>
       <Labeled label="Cheque / DD / transaction no. or UTR" htmlFor="rc-ref"><input id="rc-ref" value={f.ref} onChange={(e) => set("ref")(e.target.value)} /></Labeled>
       <Labeled label="Bank and branch" htmlFor="rc-bank"><input id="rc-bank" value={f.bank} onChange={(e) => set("bank")(e.target.value)} /></Labeled>
-      <Labeled label="Remitted to insurer on" htmlFor="rc-remit" error={tried && errs.remitDate}><input id="rc-remit" type="date" value={f.remitDate} onChange={(e) => set("remitDate")(e.target.value)} /></Labeled>
+      <Labeled label="Remitted to insurer on" htmlFor="rc-remit" error={tried && errs.remitDate}><DateInput id="rc-remit" value={f.remitDate} onChange={(e) => set("remitDate")(e.target.value)} /></Labeled>
       <div className="fld"><label className="check"><input id="rc-proof" type="checkbox" checked={f.proof} onChange={(e) => set("proof")(e.target.checked)} /> Attach a sample payment proof</label></div>
       <div className="row gap-s fld-wide"><Btn onClick={onDone}>Cancel</Btn><Btn kind="primary" onClick={save}>Save receipt</Btn></div>
     </div>
@@ -512,7 +519,7 @@ function VesselSection({ p, term, openDoc }) {
                   <Labeled label="IMO number" htmlFor="fl-imo"><input id="fl-imo" value={f.imo} onChange={(e) => set("imo")(e.target.value)} /></Labeled>
                   <Labeled label="Gross tonnage" htmlFor="fl-gt"><input id="fl-gt" inputMode="numeric" value={f.gt} onChange={(e) => set("gt")(e.target.value)} /></Labeled>
                 </> : <Labeled label="Vessel to remove" htmlFor="fl-rem" req error={tried && errs.remove}><Select id="fl-rem" value={f.remove} onChange={set("remove")} placeholder="Choose" options={current.vessels.map((v) => v.name)} /></Labeled>}
-                <Labeled label="Effective date" htmlFor="fl-eff" req error={tried && errs.effDate}><input id="fl-eff" type="date" value={f.effDate} onChange={(e) => set("effDate")(e.target.value)} /></Labeled>
+                <Labeled label="Effective date" htmlFor="fl-eff" req error={tried && errs.effDate}><DateInput id="fl-eff" value={f.effDate} onChange={(e) => set("effDate")(e.target.value)} /></Labeled>
                 <Labeled label={`Premium adjustment (${cur}), minus for refund`} htmlFor="fl-padj" req error={tried && errs.premiumAdj}><input id="fl-padj" inputMode="decimal" value={f.premiumAdj} onChange={(e) => set("premiumAdj")(e.target.value)} /></Labeled>
                 <Labeled label={`Brokerage adjustment (${cur})`} htmlFor="fl-badj" req error={tried && errs.brokerageAdj}><input id="fl-badj" inputMode="decimal" value={f.brokerageAdj} onChange={(e) => set("brokerageAdj")(e.target.value)} /></Labeled>
                 <Labeled label="Reviewer note" htmlFor="fl-note" wide><input id="fl-note" value={f.note} onChange={(e) => set("note")(e.target.value)} placeholder="For example: as per insurer endorsement no." /></Labeled>
@@ -577,8 +584,8 @@ function CarrierNoticeForm({ decl, insured, onDoc, onClose }) {
       <p className="small">Hidden damage must be notified to the carrier within three days of delivery, or the recovery is at risk.</p>
       <div className="formgrid">
         <Labeled label="Carrier (shipping line or transporter)" htmlFor="cn-carrier" req error={tried && errs.carrier}><input id="cn-carrier" value={f.carrier} onChange={set("carrier")} /></Labeled>
-        <Labeled label="Delivered on" htmlFor="cn-del" req error={tried && errs.deliveredOn}><input id="cn-del" type="date" value={f.deliveredOn} onChange={set("deliveredOn")} /></Labeled>
-        <Labeled label="Damage found on" htmlFor="cn-disc" req error={tried && errs.discoveredOn}><input id="cn-disc" type="date" value={f.discoveredOn} onChange={set("discoveredOn")} /></Labeled>
+        <Labeled label="Delivered on" htmlFor="cn-del" req error={tried && errs.deliveredOn}><DateInput id="cn-del" value={f.deliveredOn} onChange={set("deliveredOn")} /></Labeled>
+        <Labeled label="Damage found on" htmlFor="cn-disc" req error={tried && errs.discoveredOn}><DateInput id="cn-disc" value={f.discoveredOn} onChange={set("discoveredOn")} /></Labeled>
         <Labeled label="Estimated loss (INR)" htmlFor="cn-loss" req error={tried && errs.lossInr}><input id="cn-loss" inputMode="decimal" value={f.lossInr} onChange={set("lossInr")} /></Labeled>
         <Labeled label="What was damaged" htmlFor="cn-dmg" req error={tried && errs.damage}><input id="cn-dmg" value={f.damage} placeholder="For example: water damage to 12 bags" onChange={set("damage")} /></Labeled>
       </div>

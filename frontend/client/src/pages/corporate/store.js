@@ -5,8 +5,34 @@ import { LIVE } from "./data.js";
 
 const params = typeof location !== "undefined" ? new URLSearchParams(location.search) : new URLSearchParams();
 // ?server=5429 points a test run at its own server instance; ?local forces browser storage.
-export const SERVER = `http://127.0.0.1:${(import.meta.env.DEV && params.get("server")) || "5420"}`;
-const useServer = LIVE && import.meta.env.DEV && !params.has("local");
+// Built portals (beta) use the IndSure backend and need a sign-in. ?api=<url> tries that against a test server.
+const devApi = import.meta.env.DEV ? params.get("api") : null;
+const REMOTE = LIVE && (!import.meta.env.DEV || !!devApi);
+const API = devApi || import.meta.env.VITE_API_URL || "https://api.indsure.in";
+export const SERVER = REMOTE ? API : `http://127.0.0.1:${(import.meta.env.DEV && params.get("server")) || "5420"}`;
+const useServer = REMOTE || (LIVE && import.meta.env.DEV && !params.has("local"));
+
+// ---- Sign-in (built portals only)
+const SESSION = "indsure-commercial-session";
+export class SignedOut extends Error {}
+function session() {
+  try { const s = JSON.parse(localStorage.getItem(SESSION) || "null"); return s && s.exp > Date.now() ? s : null; } catch (e) { return null; }
+}
+export const needsLogin = () => REMOTE && !session();
+export const isRemote = () => REMOTE;
+export function logout() { try { localStorage.removeItem(SESSION); } catch (e) { /* storage blocked */ } }
+export async function login(email, password) {
+  try {
+    const r = await fetch(`${API}/api/corp/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
+    if (r.status === 401) return { ok: false, reason: "wrong" };
+    if (r.status === 429) return { ok: false, reason: "limit" };
+    if (!r.ok) return { ok: false, reason: "down" };
+    const j = await r.json();
+    localStorage.setItem(SESSION, JSON.stringify(j));
+    return { ok: true };
+  } catch (e) { return { ok: false, reason: "down" }; }
+}
+const auth = () => { const s = REMOTE ? session() : null; return s ? { authorization: `Bearer ${s.token}` } : {}; };
 
 let kind = "browser"; // "server" | "browser" | "browser-fallback"
 let version = 0;
@@ -15,15 +41,23 @@ let status = () => {};
 export const storeInfo = () => ({ kind, dataDir, version });
 export const onSaveStatus = (fn) => { status = fn; };
 
-async function getJson(url, ms = 2500) {
+async function getJson(url, ms = REMOTE ? 30000 : 2500) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
-  try { const r = await fetch(url, { signal: ctl.signal }); return { status: r.status, body: r.status === 204 ? null : await r.json() }; } finally { clearTimeout(t); }
+  try { const r = await fetch(url, { signal: ctl.signal, headers: auth() }); return { status: r.status, body: r.status === 204 ? null : await r.json() }; } finally { clearTimeout(t); }
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Loads the book. seed() gives the starting book when nothing has been saved yet.
 export async function openStore(key, seed) {
+  if (REMOTE) {
+    kind = "server";
+    const b = await getJson(`${SERVER}/api/corp/book`);
+    if (b.status === 401) { logout(); throw new SignedOut(); }
+    if (b.status === 200) { version = b.body.version; return b.body.db; }
+    if (b.status === 404) { version = 0; return seed(); }
+    throw new Error(`records unavailable (${b.status})`);
+  }
   if (useServer) {
     try {
       const h = await getJson(`${SERVER}/api/corp/health`, 1500);
@@ -58,7 +92,8 @@ async function flush() {
     const job = pending; pending = null;
     status({ state: "saving" });
     try {
-      const r = await fetch(`${SERVER}/api/corp/book`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ baseVersion: version, db: job.d, note: job.note }) });
+      const r = await fetch(`${SERVER}/api/corp/book`, { method: "PUT", headers: { "content-type": "application/json", ...auth() }, body: JSON.stringify({ baseVersion: version, db: job.d, note: job.note }) });
+      if (r.status === 401) { pending = job; status({ state: "signedout" }); break; }
       if (r.status === 409) { status({ state: "conflict" }); break; }
       if (!r.ok) throw new Error(`save failed ${r.status}`);
       const j = await r.json();
@@ -91,8 +126,11 @@ export async function saveFile(file) {
     const h = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     const pdf = String.fromCharCode(...h.slice(0, 5)) === "%PDF-", png = h[0] === 0x89 && h[1] === 0x50, jpg = h[0] === 0xff && h[1] === 0xd8;
     if (!pdf && !png && !jpg) return null;
-    const r = await fetch(`${SERVER}/api/corp/files`, { method: "POST", headers: { "x-file-name": encodeURIComponent(file.name) }, body: file });
+    const r = await fetch(`${SERVER}/api/corp/files`, { method: "POST", headers: { "x-file-name": encodeURIComponent(file.name), ...auth() }, body: file });
     return r.ok ? (await r.json()).id : null;
   } catch (e) { return null; }
 }
-export const fileUrl = (id) => `${SERVER}/api/corp/files/${id}`;
+export const fileUrl = (id, download = false) => {
+  const q = [REMOTE && session() ? `t=${encodeURIComponent(session().fileKey)}` : "", download ? "download=1" : ""].filter(Boolean).join("&");
+  return `${SERVER}/api/corp/files/${id}${q ? `?${q}` : ""}`;
+};

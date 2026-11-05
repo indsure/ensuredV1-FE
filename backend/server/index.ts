@@ -14,6 +14,7 @@ globalThis.Headers = NodeFetchHeaders as any;
 globalThis.Request = NodeFetchRequest as any;
 globalThis.Response = NodeFetchResponse as any;
 
+import { registerCorporateRoutes } from "./corporateRoutes";
 import { registerRoutes, analysisJobs, getUserIdFromToken, sweepInterruptedJobs } from "./routes";
 import { serveStatic } from "./static";
 import { pool } from "./lib/db";
@@ -356,6 +357,9 @@ app.post("/api/pay/cashfree/webhook", express.raw({ type: "*/*", limit: "1mb" })
     if (!res.headersSent) res.status(500).json({ error: "Internal Server Error" });
   });
 });
+
+/* ---------------- CORPORATE PORTAL (before body parsing: its book can exceed 2 MB) ---------------- */
+registerCorporateRoutes(app);
 
 /* ---------------- BODY PARSING ---------------- */
 

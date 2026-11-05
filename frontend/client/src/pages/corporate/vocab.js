@@ -41,7 +41,7 @@ export const VOCAB = {
     "sum insured", "total sum insured", "TSI", "SI", "sum assured", "insured value", "value insured", "amount insured",
     "total amount insured", "insured declared value", "IDV", "agreed value", "capital sum insured", "CSI", "total CSI",
     "limit of liability", "limits of liability", "limit of indemnity", "indemnity limit", "aggregate limit", "total limit",
-    "any one accident", "AOA", "cover amount", "coverage amount",
+    "any one accident", "AOA", "any one year", "AOY", "cover amount", "coverage amount",
   ],
   netPremium: [
     "net premium", "basic premium", "base premium", "own premium", "taxable value", "taxable premium", "taxable amount",
@@ -62,6 +62,8 @@ export const VOCAB = {
     "risk location", "location of risk", "insured location", "risk address", "address of risk", "situation of risk", "risk situation",
     "situation", "premises", "insured premises", "address of the premises", "premises address", "location address", "place of risk", "situated at",
   ],
+  // A kind of location: where the cover applies rather than an address.
+  jurisdiction: ["jurisdiction", "territorial limits", "territorial limit", "territory", "geographical limits", "geographical limit", "geographical area", "geographical scope", "area of operation", "area of cover", "applicable zones", "trading limits", "trading limit"],
   premiumRate: ["rate", "premium rate", "rate per mille", "rate per cent"],
   // The insurer's office that issued or services the policy.
   branchName: ["office name", "branch name", "issuing office name", "branch office", "servicing branch", "issued at", "area code", "branch"],
