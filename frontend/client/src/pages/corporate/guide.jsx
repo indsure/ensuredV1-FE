@@ -15,7 +15,7 @@ const FIRST_DAY = [
   { title: "Add one policy", text: "Click Add a policy and drop the PDF. The portal reads what it can.", go: "add", label: "Add a policy" },
   { title: "Check what was read", text: "The policy shows beside the form. Green was read clearly; amber needs your eye. Click any tag to see the line it came from. Reading can make mistakes, especially on scans, so this check matters.", },
   { title: "Fill the gaps and confirm", text: "Type in anything missing and choose whether it is renewable, then click Confirm. Not sure yet? Save as draft and come back.", },
-  { title: "Record the money", text: "When the customer pays, open the policy, go to Payments, and click Record receipt. Paid in one go? Tick Received full payment.", go: "register", label: "Policy register" },
+  { title: "Record the money", text: "When the customer pays, open the policy, go to Payments, and click Record receipt. Paid in one go? Click Paid in full.", go: "register", label: "Policy register" },
   { title: "Look at Today each morning", text: "It lists drafts to finish, overdue instalments and policies ending soon. Each item opens the record.", go: "home", label: "Today" },
 ];
 
@@ -52,8 +52,8 @@ export const GUIDE = [
   { group: "Money", id: "premium", title: "Gross, GST and net premium", roles: ALL, words: "gross net premium gst total final paid stamp duty difference confused",
     when: "Policies use these words differently, and the same word can mean different things.",
     steps: ["Gross premium is the amount before GST.", "Net premium is the final amount paid: gross + GST, plus stamp duty if the policy's total includes it.", "The portal goes by the figures, not the printed word. A policy printing \"Net Premium 44,916\" before GST shows here as gross 44,916.", "Amber means the figures did not add up. Check them against the policy."] },
-  { group: "Money", id: "full-payment", title: "Record a full payment", roles: MONEY, go: "register", words: "full payment received paid receipt whole amount premium one go",
-    steps: ["Open the policy, go to Payments and click \"Record receipt\".", "Tick \"Received full payment\". The amount fills in, and every open instalment is cleared.", "Add the date and reference, then click \"Save receipt\"."] },
+  { group: "Money", id: "full-payment", title: "Mark a policy as paid in full", roles: MONEY, go: "register", words: "full payment paid in full received receipt whole amount premium one go",
+    steps: ["Open the policy, go to Payments and click \"Paid in full\".", "The full amount is filled in, and every open instalment will be cleared.", "Check the date, add the reference if you have it, then click \"Save receipt\"."] },
   { group: "Money", id: "payment", title: "Record a part payment or one instalment", roles: MONEY, go: "register", words: "payment premium paid received instalment overdue part receipt cheque neft",
     steps: ["Open the policy, go to Payments and click \"Record receipt\".", "Pick the instalment it is for. The amount fills in; change it if less came in.", "Enter the date it arrived, the payment mode and the reference, then click \"Save receipt\"."],
     tip: "Paid after the due date? Enter the real date. The portal keeps both dates and shows it as paid late." },

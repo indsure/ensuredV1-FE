@@ -423,7 +423,7 @@ function CustomerView({ id }) {
         </div>
       )}
       <Card title={`Policies (${pols.length})`} sub="Each policy keeps its terms. Renewal adds a linked term.">
-        {pols.length ? <Table><thead><tr><th>Control no.<Tip k="Control no." /></th><th>Policy type</th><th>Latest policy no.</th><th>Insurer</th><th>Terms</th><th>Record</th><th>Cover</th><th>Payment</th></tr></thead>
+        {pols.length ? <Table><thead><tr><th>Control no.<Tip k="Control no." /></th><th>Policy type</th><th>Latest policy no.</th><th>Insurer</th><th>Policy years</th><th>Record</th><th>Cover</th><th>Payment</th></tr></thead>
           <tbody>{pols.map((p) => { const t = latestTerm(db, p); const pay = paymentSummary(t); return <tr key={p.id} className="clickrow" onClick={() => go({ view: "policy", id: p.id })}><td>{p.controlNo}</td><td><button className="linkbtn">{p.type}</button><div className="small muted">{p.dept}</div></td><td>{t.values.policyNo || "--"}</td><td>{insurerOf(db, p.insurerId)?.name}</td><td>{p.termIds.length}</td><td><Pill tone={completeness(t).tone}>{completeness(t).label}</Pill></td><td><Pill tone={coverage(t).tone}>{coverage(t).label}</Pill></td><td>{t.status === "draft" ? "--" : <Pill tone={pay.tone}>{pay.label}</Pill>}</td></tr>; })}</tbody></Table>
           : <Empty title="No policies yet">Documents such as quotes and KYC can sit here before any policy exists.</Empty>}
       </Card>
