@@ -1,11 +1,12 @@
 // Add a policy, PDF first: read the document, match the insured, insurer, branch and policy type, ask only
 // for what is missing, then review the values. The step-by-step wizard stays for anyone who prefers it.
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DEPARTMENTS, FIXTURES, fixtureById, isVesselType, LIVE } from "./data.js";
 import { nowIso, missingFields, insurerOf } from "./lib.js";
 import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
 import { placeOf } from "./places.js";
+import { loadTexts, docText, fileBlobUrl } from "./store.js";
 
 // Saves a new policy and its first term. Shared by this screen and the step-by-step wizard.
 // Everything happens in ONE update: React may run a second queued update later, after we navigate.
@@ -20,7 +21,7 @@ export function createPolicy({ update, log, toast, go, who }, s0, fx, pl, confir
     const docId = `DOC${++d.seq}`;
     const n = d.policies.length + 1;
     d.documents.push(fx.extracted
-      ? { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: fx.fileName, fixtureId: null, lines: fx.lines, fixtureFields: fx.fields, info: fx.info, extracted: true, userFile: { name: fx.fileName, size: fx.fileSize, fileId: fx.fileId || null }, addedAt: nowIso(), addedBy: who, note: fx.noText ? "No readable text; values entered by hand" : fx.ocr ? "Scan read with OCR in the browser" : "Text read in the browser" }
+      ? { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: fx.fileName, fixtureId: null, lines: fx.lines, textId: fx.textId, fixtureFields: fx.fields, info: fx.info, extracted: true, userFile: { name: fx.fileName, size: fx.fileSize, fileId: fx.fileId || null }, addedAt: nowIso(), addedBy: who, note: fx.noText ? "No readable text; values entered by hand" : fx.ocr ? "Scan read with OCR in the browser" : "Text read in the browser" }
       : { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: `${fx.title}.pdf`, fixtureId: fx.id, addedAt: nowIso(), addedBy: who, note: "" });
     d.policies.push({ id: pid, controlNo: `CN-${String(n).padStart(4, "0")}`, customerId: s.customerId, dept: s.dept, type: s.type, insurerId: s.insurerId, branchId: s.branchId, cover: s.cover || "", vesselMode: s.vesselMode || "", termIds: [tid] });
     d.terms.push({ id: tid, policyId: pid, termNo: 1, prevTermId: null, nextTermId: null, status: confirm ? "confirmed" : "draft", cancelled: false, nr: "New", outcome: "Open", lossDetail: "", instalments: [], receipts: [], endorsements: [], vesselSchedules: [], cargoDecls: [], charterDecls: [], docId, ...pl });
@@ -88,14 +89,14 @@ export function suggestFromDocument(db, fx) {
   return out;
 }
 
-const cleanInsurer = (s) => String(s).replace(/\((fictional|sample)\)/gi, "").replace(/[\s,]*\b(co\.?|company)?\s*\b(ltd|limited)\b\.?\s*$/i, "").replace(/[\s,.-]+$/, "").replace(/\s+/g, " ").trim().replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase());
+export const cleanInsurer = (s) => String(s).replace(/\((fictional|sample)\)/gi, "").replace(/[\s,]*\b(co\.?|company)?\s*\b(ltd|limited)\b\.?\s*$/i, "").replace(/[\s,.-]+$/, "").replace(/\s+/g, " ").trim().replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase());
 
 // A tag saying where a value came from. With a line number it jumps to that line in the document beside it.
 const Found = ({ ok, children, line, onShow }) => (line && onShow
   ? <button type="button" className={`src src-btn ${ok ? "src-ok" : "src-miss"}`} title="Show this line on the policy" onClick={() => onShow(line)}>{children} · line {line}</button>
   : <span className={`src ${ok ? "src-ok" : "src-miss"}`}>{children}</span>);
 
-export function QuickAdd() {
+export function QuickAdd({ inboxId }) {
   const app = useApp();
   const { db, can, go, log, update, toast } = app;
   const [fx, setFx] = useState(null);
@@ -107,7 +108,22 @@ export function QuickAdd() {
   const [extra, setExtra] = useState({ insName: "", brName: "", brCity: "", cseCode: "", cseName: "" });
   const [extraErr, setExtraErr] = useState("");
   const [reviewing, setReviewing] = useState(false);
+  const draft = inboxId ? (db.inbox || []).find((x) => x.id === inboxId) : null;
+  const waiting = db.inbox || [];
+  // Opened from Drafts: bring back its text and original file, then carry on as if it had just been read.
+  useEffect(() => {
+    if (!draft) return;
+    let on = true;
+    (async () => {
+      await loadTexts([draft.id]);
+      if (!on) return;
+      start({ ...draft, inboxId: draft.id, textId: draft.id, lines: docText(draft) || [], extracted: true, title: draft.fileName });
+      if (draft.fileId) { const url = await fileBlobUrl(draft.fileId); if (on && url) setFx((x) => (x ? { ...x, localUrl: url, localIsImage: !/\.pdf$/i.test(draft.fileName) } : x)); }
+    })();
+    return () => { on = false; };
+  }, [inboxId]);
   if (!can("newBusiness")) return <div className="stack"><h1>Add a policy</h1><p>Your role cannot add policies.</p></div>;
+  if (inboxId && !draft) return <div className="stack"><h1>Draft not found</h1><p>It may already have been approved or deleted.</p><div><Btn onClick={() => go({ view: "drafts" })}>Back to Drafts</Btn></div></div>;
 
   const start = (x) => {
     const g = suggestFromDocument(db, x);
@@ -177,9 +193,17 @@ export function QuickAdd() {
     log(d, { customerId: cid, action: "Customer created", detail: `${nc.name.trim()} created as ${code} from ${fx.fileName || fx.title}.` });
     return cid;
   };
-  const finish = (pl, confirm) => createPolicy(app, s, fx, pl, confirm, isNew ? addCustomer : null);
+  // From a draft: approving takes you straight to the next one.
+  const nextAfter = () => { const i = waiting.findIndex((x) => x.id === inboxId); return waiting[i + 1] || waiting[i - 1] || null; };
+  const finish = (pl, confirm) => {
+    if (!inboxId) return createPolicy(app, s, fx, pl, confirm, isNew ? addCustomer : null);
+    const next = nextAfter();
+    createPolicy({ ...app, go: () => {} }, s, fx, pl, confirm, isNew ? addCustomer : null);
+    update((d) => { d.inbox = (d.inbox || []).filter((x) => x.id !== inboxId); });
+    go(next ? { view: "add", inboxId: next.id, nonce: Date.now() } : { view: "drafts" });
+  };
 
-  if (reviewing) return <OcrReview fixture={fx} customerName={customerName} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`Add a policy: ${customerName}, ${s.type}`} onCancel={() => setReviewing(false)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
+  if (reviewing) return <OcrReview fixture={fx} customerName={customerName} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`Add a policy: ${customerName}, ${s.type}`} confirmLabel={inboxId ? (waiting.length > 1 ? "Confirm and next" : "Confirm record") : undefined} onCancel={() => setReviewing(false)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
 
   // Which line each value came from, for the tags.
   const lineOf = (text) => { const t = String(text || "").toLowerCase().trim(); if (!t) return null; const i = (fx?.lines || []).findIndex((l) => String(l).toLowerCase().includes(t)); return i >= 0 ? i + 1 : null; };
@@ -188,19 +212,20 @@ export function QuickAdd() {
   const hasDoc = !!(fx?.lines?.length);
   return (
     <div className="stack">
+      {inboxId && <div className="note row between wrap gap-s"><span><strong>Draft {waiting.findIndex((x) => x.id === inboxId) + 1} of {waiting.length}:</strong> {draft?.fileName}</span><div className="row gap-s wrap"><Btn onClick={() => go({ view: "drafts" })}>Back to Drafts</Btn>{nextAfter() && <Btn onClick={() => go({ view: "add", inboxId: nextAfter().id, nonce: Date.now() })}>Skip to next</Btn>}</div></div>}
       <header className="page-head"><div><h1>Add a policy</h1><p className="muted">Drop the policy here. We read what we can; you check it and fill any gaps. Nothing is saved until you confirm.</p></div>
-        <div className="row gap-s">{fx && <AskFirst label="Start again" question="Clear this document?" yes="Clear" onYes={() => { setFx(null); setS(null); }} />}<Btn onClick={() => go({ view: "new" })}>Fill in step by step</Btn></div></header>
-      <Card title="1. The policy document">
+        <div className="row gap-s">{fx && !inboxId && <AskFirst label="Start again" question="Clear this document?" yes="Clear" onYes={() => { setFx(null); setS(null); }} />}{!inboxId && <Btn onClick={() => go({ view: "new" })}>Fill in step by step</Btn>}</div></header>
+      {!inboxId && <Card title="1. The policy document">
         <PdfAttach id="ap-file" ready={fx?.extracted ? fx : null} onReady={start} />
         {!LIVE && <div className="row gap-xs wrap small"><span className="muted">No PDF to hand? Try a sample:</span>{FIXTURES.filter((x) => x.kind === "Policy schedule").map((x) => <button key={x.id} className={`chipbtn ${fx?.id === x.id ? "on" : ""}`} onClick={() => start(fixtureById(x.id))}>{x.title}</button>)}</div>}
-      </Card>
+      </Card>}
       {fx && s && (
         <div className={hasDoc ? "review-grid" : ""}>
         {hasDoc && <DocPane lines={fx.lines} title={fx.title || fx.fileName} highlight={hl} generated={fx.generated} extracted={fx.extracted} onLine={setHl} localUrl={fx.localUrl} localIsImage={fx.localIsImage} />}
-        <Card title="2. Check what we read" sub={todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} to fill before checking the values.` : "All filled. Check it against the policy, then go on."}
+        <Card title={inboxId ? "Check what we read" : "2. Check what we read"} sub={todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} to fill before checking the values.` : "All filled. Check it against the policy, then go on."}
           actions={<Pill tone={todo.length ? "warn" : "good"}>{todo.length ? `${todo.length} to fill` : "Ready"}</Pill>}>
           <div className="formgrid">
-            <Labeled label="Insured (customer)" htmlFor="ap-cust" req error={tried && errs.customer} hint={!fx ? null : guess.customerId ? <Found ok line={lines.insured} onShow={setHl}>Already one of your customers</Found> : isNew && guess.insuredName ? <span className="src src-info">Not an existing customer. It will be added</span> : <Found ok={false}>Not found on the document, please choose</Found>}>
+            <Labeled label="Insured (customer)" htmlFor="ap-cust" req error={tried && errs.customer} hint={!fx ? null : guess.customerId ? <Found ok line={lines.insured} onShow={setHl}>Already one of your customers</Found> : isNew && guess.insuredName ? <span className="src src-info">Not an existing customer. It will be added</span> : <Found ok={false}>Not on the policy, please choose</Found>}>
               <Select id="ap-cust" value={s.customerId} onChange={set("customerId")} placeholder="Choose customer" options={[...(guess.insuredName ? [{ value: "NEW", label: `New customer: ${guess.insuredName}` }] : [{ value: "NEW", label: "New customer" }]), ...db.customers.map((c) => ({ value: c.id, label: `${c.name} (${c.code})` }))]} />
             </Labeled>
             {isNew && <>

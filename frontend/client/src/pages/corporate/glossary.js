@@ -35,7 +35,7 @@ export const GLOSSARY = [
   { word: "Endorsement", also: "amendment change midterm", text: "The insurer's written change to a policy during its period, such as a higher sum insured. The old values are kept." },
   { word: "Renewal", text: "A new policy period that continues an expiring one. It is linked to the year before, which stays unchanged." },
   { word: "Policy year", also: "term", text: "One period of a policy, usually twelve months. A renewal adds another policy year to the same policy." },
-  { word: "Draft", text: "A record saved with gaps or not yet checked. Drafts do not count in reports. Open one and confirm it when ready." },
+  { word: "Draft", also: "bulk upload approve pending", text: "A policy waiting for someone to check it. Drafts do not count in reports. Open one and confirm it when ready." },
   { word: "Confirmed", text: "A record someone has checked. It counts in reports, and after this its values change only through an endorsement." },
   { word: "Debit note", text: "The document asking the customer to pay the premium. It is kept for reference and changes no figures." },
   { word: "Instalment", also: "emi part payment installment", text: "One part of a premium paid in parts. Each has its own due date, so the portal can show what is overdue." },

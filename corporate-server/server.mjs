@@ -26,6 +26,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, data TEXT NOT NULL, saved_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS book_versions (version INTEGER PRIMARY KEY, data TEXT NOT NULL, saved_at TEXT NOT NULL, note TEXT);
   CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, name TEXT NOT NULL, size INTEGER NOT NULL, saved_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS doc_text (id TEXT PRIMARY KEY, lines TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, message TEXT, page TEXT, file_id TEXT, saved_at TEXT NOT NULL);
 `);
 const now = () => new Date().toISOString();
@@ -125,6 +126,17 @@ const server = http.createServer(async (req, res) => {
       const how = url.searchParams.has("download") ? "attachment" : "inline";
       res.writeHead(200, { ...cors, "content-type": TYPES[ext], "content-disposition": `${how}; filename="${row.name.replace(/"/g, "")}"` });
       return fs.createReadStream(file).pipe(res);
+    }
+    if (req.method === "GET" && p === "/api/corp/doctext") {
+      const ids = String(url.searchParams.get("ids") || "").split(",").filter(Boolean).slice(0, 100);
+      const out = {};
+      for (const id of ids) { const r = db.prepare("SELECT lines FROM doc_text WHERE id = ?").get(id); if (r) out[id] = JSON.parse(r.lines); }
+      return send(res, 200, out, cors);
+    }
+    if (req.method === "POST" && p === "/api/corp/doctext") {
+      const b = JSON.parse((await readBody(req, MAX_BOOK)).toString("utf8"));
+      for (const it of b.items || []) db.prepare("INSERT INTO doc_text (id, lines) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET lines = excluded.lines").run(String(it.id), JSON.stringify(it.lines));
+      return send(res, 200, { ok: true }, cors);
     }
     if (req.method === "POST" && p === "/api/corp/feedback") {
       const f = JSON.parse((await readBody(req, 64 * 1024)).toString("utf8"));

@@ -6,10 +6,11 @@ import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Emp
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
-import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent } from "./store.js";
+import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText } from "./store.js";
 import { CorpLogin } from "./login.jsx";
 import { QuickAdd, createPolicy } from "./add.jsx";
 import { Guide } from "./guide.jsx";
+import { BulkPage, DraftsPage, bindBulk, bulkBusy } from "./bulk.jsx";
 import { FeedbackPage } from "./feedback.jsx";
 import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
@@ -28,6 +29,8 @@ const NAV = [
     { key: "home", label: "Today", icon: "home", roles: ["ops", "admin"] },
     { key: "customers", label: "Customers", icon: "users", roles: ["ops", "accounts", "admin", "readonly"] },
     { key: "new", label: "New business", icon: "plus", roles: ["ops", "admin"] },
+    { key: "bulk", label: "Bulk upload", icon: "upload", roles: ["ops", "admin"] },
+    { key: "drafts", label: "Drafts", icon: "list", roles: ["ops", "admin"] },
     { key: "register", label: "Policy register", icon: "file", roles: ["ops", "accounts", "admin", "readonly"] },
     { key: "expiry", label: "Renewals due", icon: "refresh", roles: ["ops", "admin", "readonly"] }] },
   { group: "Accounts", items: [
@@ -95,7 +98,7 @@ export function App({ onSignedOut }) {
   }, [db]);
   // Closing the tab while a change is still on its way to the local server asks first.
   useEffect(() => {
-    const warn = (e) => { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ""; } };
+    const warn = (e) => { if (hasUnsaved() || bulkBusy()) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
@@ -123,17 +126,18 @@ export function App({ onSignedOut }) {
   const reset = () => { setDb(seed()); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast(LIVE ? "All records in this browser were deleted" : "Demo reset to the starting example data"); };
   if (loadErr) return <div className="ic-loading" role="alert"><p>Your records could not be opened just now. Nothing was changed.</p><button className="btn btn-primary" onClick={() => window.location.reload()}>Try again</button></div>;
   if (!db) return <div className="ic-loading" role="status">Opening your records...</div>;
-  const ctx = { db, update, can, log, toast, who: R.who, role, fy, go };
+  const ctx = { db, update, can, log, toast, who: R.who, role, fy, go, latest: () => latestDb.current };
+  bindBulk(ctx);
 
   let view;
   const v = route.view;
   if (v === "policy") view = <PolicyView key={route.id + (route.termId || "")} policyId={route.id} termId={route.termId} tab={route.tab} go={go} />;
   else if (v === "customer") view = <CustomerView id={route.id} />;
-  else if (v === "add") view = <QuickAdd key={route.nonce || "add"} />;
+  else if (v === "add") view = <QuickAdd key={route.nonce || "add"} inboxId={route.inboxId} />;
   else if (!visible(v)) view = <Empty title="Not available for this role">Switch role at the top, or pick a page from the menu.</Empty>;
   else view = {
     home: <HomeView />, customers: <CustomersView />, new: <NewBusiness key={(route.customerId || "new") + (route.fx?.id || "")} presetCustomer={route.customerId} presetFx={route.fx} />, register: <RegisterView />, expiry: <ExpiryView />,
-    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, feedback: <FeedbackPage page={lastPage.current} />,
+    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, bulk: <BulkPage />, drafts: <DraftsPage />, feedback: <FeedbackPage page={lastPage.current} />,
   }[v];
 
   return (
@@ -217,8 +221,10 @@ function BackupModal({ db, onRestore, onClose }) {
   const [msg, setMsg] = useState("");
   const [pending, setPending] = useState(null);
   const counts = `${db.customers.length} customers, ${db.policies.length} policies, ${db.documents.length} documents`;
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ kind: "indsure-commercial-backup", mode: LIVE ? "live" : "demo", savedAt: nowIso(), db })], { type: "application/json" }));
+  const download = async () => {
+    await loadTexts([...db.documents, ...(db.inbox || [])].filter((d) => d.hasText).map((d) => d.textId || d.id));
+    const withText = (x) => { const t = docText(x); return t ? { ...x, lines: t } : x; };
+    const url = URL.createObjectURL(new Blob([JSON.stringify({ kind: "indsure-commercial-backup", mode: LIVE ? "live" : "demo", savedAt: nowIso(), db: { ...db, documents: db.documents.map(withText), inbox: (db.inbox || []).map(withText) } })], { type: "application/json" }));
     const a = document.createElement("a"); a.href = url; a.download = `indsure-commercial-backup-${TODAY}.json`; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000); setMsg(`Downloaded a backup of ${counts}.`);
   };
@@ -265,6 +271,7 @@ function HomeView() {
           <div className="row gap-s wrap" style={{ marginTop: 12 }}><Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy</Btn><Btn onClick={() => go({ view: "guide" })}>Open the How to guide</Btn></div>
         </Card>
       )}
+      {(db.inbox || []).length > 0 && can("newBusiness") && <div className="note row between wrap gap-s"><span><strong>{db.inbox.length} draft{db.inbox.length === 1 ? "" : "s"} waiting for approval</strong> from bulk upload.</span><Btn onClick={() => go({ view: "drafts" })}>Open Drafts</Btn></div>}
       <div className="grid3">
         <Card title={`Drafts to finish (${drafts.length})`} sub="Saved from a document, still missing something.">
           {drafts.length ? drafts.map((t) => <button key={t.id} className="listrow" onClick={() => go({ view: "policy", id: t.policyId, termId: t.id })}><strong>{C(t).name}</strong><span>{P(t).type}{t.prevTermId ? " (renewal)" : ""}</span><span className="small warn-text">Missing: {missingFields(t).join(", ")}</span></button>) : <Empty title="No drafts" />}

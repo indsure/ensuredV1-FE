@@ -7,11 +7,13 @@ import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
 import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
 import { instalmentTable } from "./extract-extra.js";
-import { useState } from "react";
+import { docText, loadTexts } from "./store.js";
+import { useState, useEffect } from "react";
 
 export function docLines(doc) {
   if (!doc) return null;
-  if (doc.lines) return doc.lines;
+  const t = docText(doc);
+  if (t) return t;
   if (doc.fixtureId) return fixtureById(doc.fixtureId)?.lines || null;
   return null;
 }
@@ -24,6 +26,8 @@ export function DownloadDoc({ doc, label = "Download PDF", kind = "secondary" })
 }
 
 export function DocViewer({ doc, onClose }) {
+  const [, setLoaded] = useState(false);
+  useEffect(() => { if (doc?.hasText) loadTexts([doc.textId || doc.id]).finally(() => setLoaded(true)); }, [doc?.id]);
   const lines = docLines(doc);
   return (
     <Modal title={doc.name} onClose={onClose} wide>
@@ -52,8 +56,12 @@ export function StatePills({ term }) {
 
 export function PolicyView({ policyId, termId, tab = "overview", go }) {
   const { db, update, can, log, toast } = useApp();
+  // Bring in this policy's document text before showing it.
+  const [textReady, setTextReady] = useState(false);
+  useEffect(() => { let on = true; loadTexts(db.documents.filter((d) => d.policyId === policyId && d.hasText).map((d) => d.textId || d.id)).finally(() => on && setTextReady(true)); return () => { on = false; }; }, [policyId]);
   const p = db.policies.find((x) => x.id === policyId);
   const [viewDoc, setViewDoc] = useState(null);
+  if (!textReady) return <div className="ic-loading" role="status">Opening the policy...</div>;
   if (!p) return <Empty title="Policy not found">It may have been removed by Reset demo. <button className="linkbtn" onClick={() => go({ view: "register" })}>Go to the policy register</button></Empty>;
   const terms = p.termIds.map((id) => db.terms.find((t) => t.id === id));
   const term = terms.find((t) => t.id === termId) || terms.filter((t) => t.status === "confirmed").pop() || terms[terms.length - 1];
@@ -334,7 +342,7 @@ function PaymentsTab({ p, term, openDoc }) {
   const rows = instalmentRows(term);
   const debitNotes = db.documents.filter((d) => d.termId === term.id && d.kind === "Debit note");
   if (term.status === "draft") return <div className="note">Payments start once this record is confirmed.</div>;
-  const found = !term.instalments.length ? db.documents.filter((d) => d.termId === term.id && d.lines?.length).map((d) => instalmentTable(d.lines)).find(Boolean) : null;
+  const found = !term.instalments.length ? db.documents.filter((d) => d.termId === term.id && docText(d)?.length).map((d) => instalmentTable(docText(d))).find(Boolean) : null;
   const useFound = () => {
     update((d) => {
       const t = d.terms.find((x) => x.id === term.id);
@@ -863,7 +871,7 @@ function RenewalsTab({ p, term, terms, go }) {
   };
   if (reviewing && draft) {
     const doc = db.documents.find((x) => x.id === draft.docId);
-    return <OcrReview fixture={{ id: doc.id, title: doc.name, lines: doc.lines, fields: doc.fixtureFields || {}, info: doc.info, generated: !doc.extracted, extracted: doc.extracted, fileName: doc.name }} customerName={db.customers.find((x) => x.id === p.customerId)?.name} initial={draft.values} initialSources={draft.sources} initialBrokerageConfirmed={draft.brokerageConfirmed}
+    return <OcrReview fixture={{ id: doc.id, title: doc.name, lines: docText(doc) || [], fields: doc.fixtureFields || {}, info: doc.info, generated: !doc.extracted, extracted: doc.extracted, fileName: doc.name }} customerName={db.customers.find((x) => x.id === p.customerId)?.name} initial={draft.values} initialSources={draft.sources} initialBrokerageConfirmed={draft.brokerageConfirmed}
       insurerId={p.insurerId} branchId={p.branchId} policyType={p.type} heading={`Renewal review: term ${draft.termNo}`} confirmLabel="Confirm renewal"
       onCancel={() => setReviewing(false)} onSaveDraft={(pl) => saveRenewal(pl, false)} onConfirm={(pl) => saveRenewal(pl, true)} />;
   }

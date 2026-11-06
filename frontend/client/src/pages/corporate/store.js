@@ -48,21 +48,63 @@ async function getJson(url, ms = REMOTE ? 30000 : 2500) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ---- Document text. Each document's lines are most of a record's size, and every save sends the whole
+// book, so online the text is stored once on its own and fetched only when a document is opened.
+const texts = new Map();
+const sent = new Set();
+const toSend = new Map();
+let textStore = false;
+const stripOne = (x) => {
+  if (!x.lines) return x;
+  const id = x.textId || x.id;
+  texts.set(id, x.lines);
+  if (!sent.has(id)) toSend.set(id, x.lines);
+  const { lines, ...rest } = x;
+  return { ...rest, hasText: true };
+};
+const stripBook = (d) => (textStore ? { ...d, documents: d.documents.map(stripOne), inbox: (d.inbox || []).map(stripOne) } : d);
+async function sendTexts() {
+  while (toSend.size) {
+    const batch = [...toSend].slice(0, 40);
+    const r = await fetch(`${SERVER}/api/corp/doctext`, { method: "POST", headers: { "content-type": "application/json", ...auth() }, body: JSON.stringify({ items: batch.map(([id, lines]) => ({ id, lines })) }) });
+    if (!r.ok) throw new Error(`text save failed ${r.status}`);
+    batch.forEach(([id]) => { toSend.delete(id); sent.add(id); });
+  }
+}
+/** The lines of a document or draft, if they are here. Call loadTexts first for one opened from a saved book. */
+export const docText = (d) => (d ? d.lines || texts.get(d.textId || d.id) || null : null);
+/** Fetches any text not already here. Never rejects: a document without text simply shows none. */
+export async function loadTexts(ids) {
+  const need = [...new Set(ids.filter(Boolean))].filter((id) => !texts.has(id));
+  if (!textStore || !need.length) return;
+  for (let i = 0; i < need.length; i += 40) {
+    try {
+      const b = await getJson(`${SERVER}/api/corp/doctext?ids=${encodeURIComponent(need.slice(i, i + 40).join(","))}`, 30000);
+      if (b.status === 200) Object.entries(b.body).forEach(([id, lines]) => { texts.set(id, lines); sent.add(id); });
+    } catch (e) { /* shown as no text; opening again retries */ }
+  }
+}
+export async function fileBlobUrl(id) {
+  try { const r = await fetch(fileUrl(id)); return r.ok ? URL.createObjectURL(await r.blob()) : null; } catch (e) { return null; }
+}
+// The text store may not be on the server yet: until it is, text simply stays inside the book, as before.
+async function checkTextStore() { try { const b = await getJson(`${SERVER}/api/corp/doctext?ids=`, 8000); textStore = b.status === 200; } catch (e) { textStore = false; } }
+
 // Loads the book. seed() gives the starting book when nothing has been saved yet.
 export async function openStore(key, seed) {
   if (REMOTE) {
     kind = "server";
     const b = await getJson(`${SERVER}/api/corp/book`);
     if (b.status === 401) { logout(); throw new SignedOut(); }
-    if (b.status === 200) { version = b.body.version; return b.body.db; }
-    if (b.status === 404) { version = 0; return seed(); }
+    if (b.status === 200) { version = b.body.version; await checkTextStore(); return b.body.db; }
+    if (b.status === 404) { version = 0; await checkTextStore(); return seed(); }
     throw new Error(`records unavailable (${b.status})`);
   }
   if (useServer) {
     try {
       const h = await getJson(`${SERVER}/api/corp/health`, 1500);
       if (h.status === 200) {
-        kind = "server"; dataDir = h.body.dataDir;
+        kind = "server"; dataDir = h.body.dataDir; await checkTextStore();
         const b = await getJson(`${SERVER}/api/corp/book`);
         if (b.status === 200) { version = b.body.version; return b.body.db; }
         const d = seed(); version = 0; return d;
@@ -92,7 +134,9 @@ async function flush() {
     const job = pending; pending = null;
     status({ state: "saving" });
     try {
-      const r = await fetch(`${SERVER}/api/corp/book`, { method: "PUT", headers: { "content-type": "application/json", ...auth() }, body: JSON.stringify({ baseVersion: version, db: job.d, note: job.note }) });
+      const small = stripBook(job.d);
+      await sendTexts();
+      const r = await fetch(`${SERVER}/api/corp/book`, { method: "PUT", headers: { "content-type": "application/json", ...auth() }, body: JSON.stringify({ baseVersion: version, db: small, note: job.note }) });
       if (r.status === 401) { pending = job; status({ state: "signedout" }); break; }
       if (r.status === 409) { status({ state: "conflict" }); break; }
       if (!r.ok) throw new Error(`save failed ${r.status}`);

@@ -3,7 +3,7 @@
 // Registered ABOVE express.json() in index.ts because the book can be far larger than the app's 2 MB
 // body limit. Separate from the rest of the API on purpose: its own logins (passwords exist only as
 // scrypt hashes, in the server's .env for the owner and in corp_users for everyone else, never in this
-// public repo), its own tables (corp_*, migrations 036 and 037, no browser access through RLS) and a
+// public repo), its own tables (corp_*, migrations 036 to 038, no browser access through RLS) and a
 // private storage bucket.
 //
 //   CORP_LOGIN_EMAIL     the owner login (always an Admin)
@@ -205,6 +205,25 @@ export function registerCorporateRoutes(app: Express) {
       if (!rows.length) return res.status(404).json({ error: "no book yet" });
       res.json({ version: rows[0].version, savedAt: rows[0].saved_at, db: rows[0].data });
     } catch (e) { fail(res, e, "read book"); }
+  });
+
+  // Each document's text, kept out of the book so a save stays small.
+  app.get("/api/corp/doctext", ready, apiLimit, signedIn, async (req, res) => {
+    const ids = String(req.query.ids || "").split(",").filter((x) => /^[\w-]{1,64}$/.test(x)).slice(0, 100);
+    if (!ids.length) { try { await pool.query("SELECT 1 FROM corp_doc_text LIMIT 1"); return res.json({}); } catch (e) { return fail(res, e, "check text"); } }
+    try {
+      const { rows } = await pool.query("SELECT id, lines FROM corp_doc_text WHERE id = ANY($1)", [ids]);
+      res.json(Object.fromEntries(rows.map((r) => [r.id, r.lines])));
+    } catch (e) { fail(res, e, "read text"); }
+  });
+  app.post("/api/corp/doctext", ready, apiLimit, signedIn, express.json({ limit: MAX_BOOK }), async (req, res) => {
+    if ((req as any).corpUser?.role === "readonly") return res.status(403).json({ error: "read only" });
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    if (items.some((x: any) => !/^[\w-]{1,64}$/.test(String(x?.id)) || !Array.isArray(x?.lines))) return res.status(400).json({ error: "check the details" });
+    try {
+      for (const it of items) await pool.query("INSERT INTO corp_doc_text (id, lines) VALUES ($1, $2::jsonb) ON CONFLICT (id) DO UPDATE SET lines = EXCLUDED.lines", [it.id, JSON.stringify(it.lines)]);
+      res.json({ ok: true });
+    } catch (e) { fail(res, e, "save text"); }
   });
 
   // baseVersion must match what is stored, so two people cannot silently overwrite each other.
