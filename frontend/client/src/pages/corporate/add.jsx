@@ -221,7 +221,7 @@ export function QuickAdd({ inboxId }) {
       </Card>}
       {fx && s && (
         <div className={hasDoc ? "review-grid" : ""}>
-        {hasDoc && <DocPane lines={fx.lines} title={fx.title || fx.fileName} highlight={hl} generated={fx.generated} extracted={fx.extracted} onLine={setHl} localUrl={fx.localUrl} localIsImage={fx.localIsImage} />}
+        {hasDoc && <DocPane lines={fx.lines} title={fx.title || fx.fileName} highlight={hl} generated={fx.generated} extracted={fx.extracted} onLine={setHl} localUrl={fx.localUrl} localIsImage={fx.localIsImage} readPages={fx.readPages} pages={fx.pages} />}
         <Card title={inboxId ? "Check what we read" : "2. Check what we read"} sub={todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} to fill before checking the values.` : "All filled. Check it against the policy, then go on."}
           actions={<Pill tone={todo.length ? "warn" : "good"}>{todo.length ? `${todo.length} to fill` : "Ready"}</Pill>}>
           <div className="formgrid">
@@ -244,7 +244,7 @@ export function QuickAdd({ inboxId }) {
           </div>
           {canAdd && fx && !s.insurerId && (
             <div className="boxed stack inline-add">
-              <div className="small"><strong>Insurer not in your list?</strong> {fx.info?.insurer ? <>The policy names <em>{fx.info.insurer.replace(/.$/, "")}</em>.</> : "Add it here."}</div>
+              <div className="small"><strong>Insurer not in your list?</strong> {fx.info?.insurer ? <>The policy names <em>{fx.info.insurer.replace(/\.$/, "")}</em>.</> : "Add it here."}</div>
               <div className="row gap-s wrap" style={{ alignItems: "flex-end" }}>
                 <Labeled label="Insurer name" htmlFor="ap-new-ins"><input id="ap-new-ins" value={extra.insName} onChange={(e) => setExtra({ ...extra, insName: e.target.value })} /></Labeled>
                 <Btn onClick={addInsurer}>Add insurer</Btn>

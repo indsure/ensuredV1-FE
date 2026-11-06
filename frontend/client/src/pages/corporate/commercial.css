@@ -407,3 +407,11 @@
 .ic-root .guide-path > li::marker { font-weight: 700; }
 .ic-root .guide-search input { border: 1.5px solid var(--s200); border-radius: 14px; background: var(--white); }
 .ic-root .guide-search input:focus { border-color: var(--teal-700); outline: none; }
+.ic-root .doc-search { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ic-root .doc-search input { flex: 1 1 160px; min-width: 0; padding: 8px 12px; border: 1.5px solid var(--s200); border-radius: 10px; background: var(--white); font-size: .9rem; }
+.ic-root .doc-search input:focus { border-color: var(--teal-700); outline: none; }
+.ic-root .doc-search-count { font-weight: 600; white-space: nowrap; }
+.ic-root .doc-search-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--s200); background: var(--white); cursor: pointer; color: var(--s700); }
+.ic-root .paper mark { background: #FDE68A; color: inherit; border-radius: 3px; padding: 0 1px; }
+.ic-root .paper li.hit-on { box-shadow: inset 3px 0 0 var(--teal-700); background: var(--teal-50); }
+.ic-root .paper li.hit-on mark { background: #F59E0B; }

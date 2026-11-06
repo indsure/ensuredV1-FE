@@ -9,9 +9,33 @@ import { useState, useMemo, useRef, useEffect } from "react";
 
 const GROUPS = ["Identification", "Dates", "Amounts", "Other", "Brokerage"];
 
-export function DocPane({ lines, title, highlight, generated, extracted, onLine, localUrl, localIsImage }) {
+// A line with what was searched for marked. Plain text only: nothing in a document is treated as code.
+function Marked({ text, find }) {
+  if (!find) return <span>{text}</span>;
+  const low = text.toLowerCase(), out = [];
+  let at = 0;
+  for (let i = low.indexOf(find, at); i >= 0; i = low.indexOf(find, at)) {
+    if (i > at) out.push(text.slice(at, i));
+    out.push(<mark key={i}>{text.slice(i, i + find.length)}</mark>);
+    at = i + find.length;
+  }
+  out.push(text.slice(at));
+  return <span>{out}</span>;
+}
+
+export function DocPane({ lines, title, highlight, generated, extracted, onLine, localUrl, localIsImage, readPages, pages }) {
   const box = useRef(null);
   const [view, setView] = useState("text");
+  const [q, setQ] = useState("");
+  const [at, setAt] = useState(0);
+  const find = q.trim().toLowerCase().replace(/\s+/g, " ");
+  // Spaces in a read line vary, so they are evened out before comparing. Line numbers stay the document's own.
+  const shown = useMemo(() => lines.map((l) => String(l).replace(/\s+/g, " ")), [lines]);
+  const hits = useMemo(() => (find ? shown.flatMap((l, i) => (l.toLowerCase().includes(find) ? [i] : [])) : []), [shown, find]);
+  const current = hits.length ? hits[Math.min(at, hits.length - 1)] : -1;
+  const goTo = (i) => { const n = hits.length; if (n) setAt((i + n) % n); };
+  useEffect(() => { setAt(0); }, [find]);
+  useEffect(() => { if (current >= 0) { setView("text"); box.current?.querySelector(`[data-line="${current + 1}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); } }, [current]);
   // Asked to show a line: go back to the text so the line can be seen.
   useEffect(() => { if (highlight) { setView("text"); document.getElementById(`line-${highlight}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); } }, [highlight]);
   return (
@@ -19,12 +43,21 @@ export function DocPane({ lines, title, highlight, generated, extracted, onLine,
       <div className="docpane-head">
         <strong>{title}</strong>
         <span className="muted small">{extracted ? (view === "text" ? "The text we read, line by line. Click a green or amber tag to jump to its line." : "Your file as it is. Trust this over the text if they differ.") : <>{generated ? "Sample generated for this demo." : "Sample document fixture."} Simulated scan, no real file is read.</>}</span>
+        <div className="doc-search" role="search">
+          <label className="sr" htmlFor="doc-search">Search this document</label>
+          <input id="doc-search" type="search" placeholder="Search this document" autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); goTo(at + (e.shiftKey ? -1 : 1)); } else if (e.key === "Escape") setQ(""); }} />
+          {find && <span className="small doc-search-count" role="status">{hits.length ? `${Math.min(at, hits.length - 1) + 1} of ${hits.length}` : "Not found"}</span>}
+          {hits.length > 1 && <span className="row gap-xs"><button type="button" className="doc-search-btn" aria-label="Previous match" onClick={() => goTo(at - 1)}>&#8593;</button><button type="button" className="doc-search-btn" aria-label="Next match" onClick={() => goTo(at + 1)}>&#8595;</button></span>}
+        </div>
+        {readPages < pages && <span className="small muted">We read the first {readPages} of {pages} pages, so search covers those. The rest are in the Original file.</span>}
+        {find && !hits.length && <span className="small muted">Not in the text we read.{localUrl ? " Reading can miss words, so check the Original file too." : ""}</span>}
         {localUrl && <div className="doc-tabs" role="group" aria-label="What to show"><button type="button" className={view === "text" ? "on" : ""} onClick={() => setView("text")}>Text we read</button><button type="button" className={view === "file" ? "on" : ""} onClick={() => setView("file")}>Original file</button></div>}
       </div>
       {view === "file" && localUrl ? (localIsImage ? <img className="doc-original" src={localUrl} alt={`${title}, the original file`} /> : <iframe className="doc-original" src={localUrl} title={`${title}, the original file`} />) : <ol className="paper" ref={box}>
         {lines.map((l, i) => (
-          <li key={i} id={`line-${i + 1}`} className={highlight === i + 1 ? "hl" : ""} onClick={() => onLine && onLine(i + 1)}>
-            <span className="ln">L{i + 1}</span><span>{l}</span>
+          <li key={i} id={`line-${i + 1}`} data-line={i + 1} className={`${highlight === i + 1 ? "hl" : ""} ${current === i ? "hit-on" : ""}`} onClick={() => onLine && onLine(i + 1)}>
+            <span className="ln">L{i + 1}</span><Marked text={find ? shown[i] : l} find={find} />
           </li>
         ))}
       </ol>}
@@ -230,7 +263,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
       )}
       <div className="legend note small"><strong>How to read this:</strong> <span className="src src-ok">read clearly</span> <span className="src src-low">please check</span> Click a tag to see its line on the policy. <span className="src">Not on the policy</span></div>
       <div className="review-grid">
-        <DocPane lines={fixture.lines} title={fixture.title} highlight={hl} generated={fixture.generated} extracted={fixture.extracted} onLine={setHl} localUrl={fixture.localUrl} localIsImage={fixture.localIsImage} />
+        <DocPane lines={fixture.lines} title={fixture.title} highlight={hl} generated={fixture.generated} extracted={fixture.extracted} onLine={setHl} localUrl={fixture.localUrl} localIsImage={fixture.localIsImage} readPages={fixture.readPages} pages={fixture.pages} />
         <div className="review-fields">
           <div className="note small">Insurer and branch from step 3: <strong>{ins?.name}, {branchOf(db, insurerId, branchId)?.name || "selected branch"}</strong>. Policy type: <strong>{policyType}</strong>.</div>
           {GROUPS.map((g) => (
