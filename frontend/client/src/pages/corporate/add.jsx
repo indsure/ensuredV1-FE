@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DEPARTMENTS, FIXTURES, fixtureById, isVesselType, LIVE } from "./data.js";
 import { nowIso, missingFields, insurerOf } from "./lib.js";
 import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
-import { OcrReview, PdfAttach, sameName } from "./review.jsx";
+import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
 import { placeOf } from "./places.js";
 
 // Saves a new policy and its first term. Shared by this screen and the step-by-step wizard.
@@ -90,7 +90,10 @@ export function suggestFromDocument(db, fx) {
 
 const cleanInsurer = (s) => String(s).replace(/\((fictional|sample)\)/gi, "").replace(/[\s,]*\b(co\.?|company)?\s*\b(ltd|limited)\b\.?\s*$/i, "").replace(/[\s,.-]+$/, "").replace(/\s+/g, " ").trim().replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase());
 
-const Found = ({ ok, children }) => <span className={`src ${ok ? "src-ok" : "src-miss"}`}>{children}</span>;
+// A tag saying where a value came from. With a line number it jumps to that line in the document beside it.
+const Found = ({ ok, children, line, onShow }) => (line && onShow
+  ? <button type="button" className={`src src-btn ${ok ? "src-ok" : "src-miss"}`} title="Show this line on the policy" onClick={() => onShow(line)}>{children} · line {line}</button>
+  : <span className={`src ${ok ? "src-ok" : "src-miss"}`}>{children}</span>);
 
 export function QuickAdd() {
   const app = useApp();
@@ -98,6 +101,7 @@ export function QuickAdd() {
   const [fx, setFx] = useState(null);
   const [s, setS] = useState(null);
   const [guess, setGuess] = useState({});
+  const [hl, setHl] = useState(null);
   const [nc, setNc] = useState({ name: "", city: "", state: "", country: "India", vertical: "Corporate" });
   const [tried, setTried] = useState(false);
   const [extra, setExtra] = useState({ insName: "", brName: "", brCity: "", cseCode: "", cseName: "" });
@@ -177,39 +181,45 @@ export function QuickAdd() {
 
   if (reviewing) return <OcrReview fixture={fx} customerName={customerName} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`Add a policy: ${customerName}, ${s.type}`} onCancel={() => setReviewing(false)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
 
-  const hintFor = (key, ok, label) => (fx ? <Found ok={ok}>{ok ? label : "Not found on the document, please choose"}</Found> : null);
+  // Which line each value came from, for the tags.
+  const lineOf = (text) => { const t = String(text || "").toLowerCase().trim(); if (!t) return null; const i = (fx?.lines || []).findIndex((l) => String(l).toLowerCase().includes(t)); return i >= 0 ? i + 1 : null; };
+  const lines = { insured: fx?.customer?.name?.ref || lineOf(guess?.insuredName), insurer: lineOf(String(fx?.info?.insurer || "").split(/\s+/).filter((w) => !/^the$/i.test(w)).slice(0, 2).join(" ")), branch: fx?.info?.branch?.ref || null, city: fx?.customer?.city?.ref || lineOf(guess?.city), type: lineOf(guess?.type) };
+  const hintFor = (key, ok, label) => (fx ? <Found ok={ok} line={ok ? lines[key] : null} onShow={setHl}>{ok ? label : "Not on the policy, please choose"}</Found> : null);
+  const hasDoc = !!(fx?.lines?.length);
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Add a policy</h1><p className="muted">Drop the policy PDF. The insured, insurer, branch and policy type are read from it; you confirm, fill any gaps, then check the values.</p></div>
-        <div className="row gap-s">{fx && <AskFirst label="Start again" question="Clear this document?" yes="Clear" onYes={() => { setFx(null); setS(null); }} />}<Btn onClick={() => go({ view: "new" })}>Step-by-step instead</Btn></div></header>
+      <header className="page-head"><div><h1>Add a policy</h1><p className="muted">Drop the policy here. We read what we can; you check it and fill any gaps. Nothing is saved until you confirm.</p></div>
+        <div className="row gap-s">{fx && <AskFirst label="Start again" question="Clear this document?" yes="Clear" onYes={() => { setFx(null); setS(null); }} />}<Btn onClick={() => go({ view: "new" })}>Fill in step by step</Btn></div></header>
       <Card title="1. The policy document">
         <PdfAttach id="ap-file" ready={fx?.extracted ? fx : null} onReady={start} />
         {!LIVE && <div className="row gap-xs wrap small"><span className="muted">No PDF to hand? Try a sample:</span>{FIXTURES.filter((x) => x.kind === "Policy schedule").map((x) => <button key={x.id} className={`chipbtn ${fx?.id === x.id ? "on" : ""}`} onClick={() => start(fixtureById(x.id))}>{x.title}</button>)}</div>}
       </Card>
       {fx && s && (
-        <Card title="2. What the document says" sub={todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} to fill before checking the values.` : "Everything needed is filled. Check it, then continue."}
+        <div className={hasDoc ? "review-grid" : ""}>
+        {hasDoc && <DocPane lines={fx.lines} title={fx.title || fx.fileName} highlight={hl} generated={fx.generated} extracted={fx.extracted} onLine={setHl} localUrl={fx.localUrl} localIsImage={fx.localIsImage} />}
+        <Card title="2. Check what we read" sub={todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} to fill before checking the values.` : "All filled. Check it against the policy, then go on."}
           actions={<Pill tone={todo.length ? "warn" : "good"}>{todo.length ? `${todo.length} to fill` : "Ready"}</Pill>}>
           <div className="formgrid">
-            <Labeled label="Insured (customer)" htmlFor="ap-cust" req error={tried && errs.customer} hint={!fx ? null : guess.customerId ? <Found ok>Matched an existing customer</Found> : isNew && guess.insuredName ? <span className="src src-info">Not an existing customer. It will be added</span> : <Found ok={false}>Not found on the document, please choose</Found>}>
+            <Labeled label="Insured (customer)" htmlFor="ap-cust" req error={tried && errs.customer} hint={!fx ? null : guess.customerId ? <Found ok line={lines.insured} onShow={setHl}>Already one of your customers</Found> : isNew && guess.insuredName ? <span className="src src-info">Not an existing customer. It will be added</span> : <Found ok={false}>Not found on the document, please choose</Found>}>
               <Select id="ap-cust" value={s.customerId} onChange={set("customerId")} placeholder="Choose customer" options={[...(guess.insuredName ? [{ value: "NEW", label: `New customer: ${guess.insuredName}` }] : [{ value: "NEW", label: "New customer" }]), ...db.customers.map((c) => ({ value: c.id, label: `${c.name} (${c.code})` }))]} />
             </Labeled>
             {isNew && <>
-              <Labeled label="Insured name" htmlFor="ap-nname" req error={tried && (errs.customer && isNew ? errs.customer : null)} hint={guess.insuredName ? <Found ok>Read from the document</Found> : null}><input id="ap-nname" value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} /></Labeled>
+              <Labeled label="Insured name" htmlFor="ap-nname" req error={tried && (errs.customer && isNew ? errs.customer : null)} hint={guess.insuredName ? <Found ok line={lines.insured} onShow={setHl}>Read from the policy</Found> : null}><input id="ap-nname" value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} /></Labeled>
               <PlaceFields id="ap-n" value={{ city: nc.city, state: nc.state, country: nc.country }} req cityError={tried && errs.city}
-                cityHint={nc.city && nc.city === guess.city ? <Found ok>Read from the document</Found> : null} onChange={(p) => setNc({ ...nc, ...p })} />
-              <Labeled label="Vertical" htmlFor="ap-nvert"><Select id="ap-nvert" value={nc.vertical} onChange={(v) => setNc({ ...nc, vertical: v })} options={["Corporate", "Retail"]} /></Labeled>
+                cityHint={nc.city && nc.city === guess.city ? <Found ok line={lines.city} onShow={setHl}>Read from the policy</Found> : null} onChange={(p) => setNc({ ...nc, ...p })} />
+              <Labeled label="Customer type" htmlFor="ap-nvert"><Select id="ap-nvert" value={nc.vertical} onChange={(v) => setNc({ ...nc, vertical: v })} options={["Corporate", "Retail"]} /></Labeled>
             </>}
-            <Labeled label="CSC" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From the customer record" : "Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
+            <Labeled label="CSC" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From this customer's record" : "Who looks after this customer? Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
             <Labeled label="RM" htmlFor="ap-rm" hint="Optional"><SearchPick id="ap-rm" value={s.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
-            <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={!guess.insurerId && !s.insurerId && fx?.info?.insurer ? <Found ok>Read from the document: {fx.info.insurer.replace(/\.$/, "")}. Not in your list yet, add it below.</Found> : hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the document")}><Select id="ap-ins" value={s.insurerId} onChange={set("insurerId")} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
-            <Labeled label="Insurer branch" htmlFor="ap-br" req error={tried && errs.branch} hint={s.insurerId ? hintFor("branch", !!guess.branchId && s.branchId === guess.branchId, "Read from the document") : null}><Select id="ap-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
+            <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={!guess.insurerId && !s.insurerId && fx?.info?.insurer ? <Found ok line={lines.insurer} onShow={setHl}>The policy says {fx.info.insurer.replace(/\.$/, "")}. Not in your list yet, add it below</Found> : hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the policy")}><Select id="ap-ins" value={s.insurerId} onChange={set("insurerId")} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
+            <Labeled label="Insurer branch" htmlFor="ap-br" req error={tried && errs.branch} hint={s.insurerId ? hintFor("branch", !!guess.branchId && s.branchId === guess.branchId, "Read from the policy") : null}><Select id="ap-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
             <Labeled label="Department" htmlFor="ap-dept" req error={tried && !s.dept ? errs.type : null}><Select id="ap-dept" value={s.dept} onChange={set("dept")} placeholder="Choose department" options={Object.keys(DEPARTMENTS)} /></Labeled>
-            <Labeled label="Policy type" htmlFor="ap-type" req error={tried && s.dept && !s.type ? errs.type : null} hint={hintFor("type", !!guess.type && s.type === guess.type, guess.typeFrom === "sample" ? "From the sample" : "Suggested from the document title")}><Select id="ap-type" value={s.type} onChange={set("type")} disabled={!s.dept} placeholder={s.dept ? "Choose policy type" : "Choose department first"} options={DEPARTMENTS[s.dept] || []} /></Labeled>
+            <Labeled label="Policy type" htmlFor="ap-type" req error={tried && s.dept && !s.type ? errs.type : null} hint={hintFor("type", !!guess.type && s.type === guess.type, guess.typeFrom === "sample" ? "From the sample" : "Suggested from the policy")}><Select id="ap-type" value={s.type} onChange={set("type")} disabled={!s.dept} placeholder={s.dept ? "Choose policy type" : "Choose department first"} options={DEPARTMENTS[s.dept] || []} /></Labeled>
             {isVesselType(s.type) && <Labeled label="Vessel cover" htmlFor="ap-vm"><Select id="ap-vm" value={s.vesselMode} onChange={set("vesselMode")} placeholder="Choose" options={["Individual vessel", "Fleet"]} /></Labeled>}
           </div>
           {canAdd && fx && !s.insurerId && (
             <div className="boxed stack inline-add">
-              <div className="small"><strong>Insurer not in your list?</strong> {fx.info?.insurer ? <>The document names <em>{fx.info.insurer}</em>.</> : "Add it here."}</div>
+              <div className="small"><strong>Insurer not in your list?</strong> {fx.info?.insurer ? <>The policy names <em>{fx.info.insurer.replace(/.$/, "")}</em>.</> : "Add it here."}</div>
               <div className="row gap-s wrap" style={{ alignItems: "flex-end" }}>
                 <Labeled label="Insurer name" htmlFor="ap-new-ins"><input id="ap-new-ins" value={extra.insName} onChange={(e) => setExtra({ ...extra, insName: e.target.value })} /></Labeled>
                 <Btn onClick={addInsurer}>Add insurer</Btn>
@@ -217,7 +227,7 @@ export function QuickAdd() {
             </div>)}
           {canAdd && ins && !s.branchId && (
             <div className="boxed stack inline-add">
-              <div className="small"><strong>Branch not listed for {ins.name}?</strong> Add the issuing office.</div>
+              <div className="small"><strong>Branch not listed for {ins.name}?</strong> Add the office that issued this policy.</div>
               <div className="row gap-s wrap" style={{ alignItems: "flex-end" }}>
                 <Labeled label="Branch" htmlFor="ap-new-br"><input id="ap-new-br" value={extra.brName} onChange={(e) => setExtra({ ...extra, brName: e.target.value })} /></Labeled>
                 <Labeled label="City" htmlFor="ap-new-brcity"><input id="ap-new-brcity" value={extra.brCity} onChange={(e) => setExtra({ ...extra, brCity: e.target.value })} /></Labeled>
@@ -226,7 +236,7 @@ export function QuickAdd() {
             </div>)}
           {canAdd && !team("CSC").length && (
             <div className="boxed stack inline-add">
-              <div className="small"><strong>No CSCs yet.</strong> Add one here, or your whole team under Masters, Team (Admin role).</div>
+              <div className="small"><strong>No CSCs yet.</strong> Add one here, or your whole team under Lists and team (Admin only).</div>
               <div className="row gap-s wrap" style={{ alignItems: "flex-end" }}>
                 <Labeled label="CSC code" htmlFor="ap-new-csecode"><input id="ap-new-csecode" value={extra.cseCode} onChange={(e) => setExtra({ ...extra, cseCode: e.target.value })} /></Labeled>
                 <Labeled label="Name" htmlFor="ap-new-csename"><input id="ap-new-csename" value={extra.cseName} onChange={(e) => setExtra({ ...extra, cseName: e.target.value })} /></Labeled>
@@ -235,9 +245,10 @@ export function QuickAdd() {
             </div>)}
           {extraErr && <div className="err-text small" role="alert">{extraErr}</div>}
           {tried && todo.length > 0 && <div className="note note-warn small"><strong>Still needed:</strong> {todo.join("; ")}.</div>}
-          <div className="row gap-s wrap"><Btn kind="primary" onClick={toReview}>Continue to the values</Btn><span className="small muted">Next: policy number, dates and amounts read from the same document, for you to check.</span></div>
-          <p className="small muted">Matching uses the names in the masters. A wrong match is easy to change here; nothing is saved until the review screen</p>
+          <div className="row gap-s wrap"><Btn kind="primary" onClick={toReview}>Next: check the figures</Btn><span className="small muted">Policy number, dates and amounts come next.</span></div>
+          <p className="small muted">Picked the wrong one? Just change it here.</p>
         </Card>
+        </div>
       )}
     </div>
   );

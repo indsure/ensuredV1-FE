@@ -2,7 +2,7 @@
 import "./commercial.css";
 import { seed, TODAY, LIVE, DEPARTMENTS, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook } from "./lib.js";
-import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, DateInput } from "./ui.jsx";
+import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, DateInput, Tip } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
@@ -34,11 +34,11 @@ const NAV = [
     { key: "business", label: "Business report", icon: "chart", roles: ["accounts", "admin", "readonly"] },
     { key: "brokerage", label: "Brokerage received", icon: "wallet", roles: ["accounts", "admin", "readonly"] },
     { key: "renewreport", label: "Renewals report", icon: "list", roles: ["accounts", "admin", "readonly"] },
-    { key: "snapshots", label: "Finalized reports", icon: "lock", roles: ["accounts", "admin"] }] },
+    { key: "snapshots", label: "Locked reports", icon: "lock", roles: ["accounts", "admin"] }] },
   { group: "Admin", items: [
-    { key: "masters", label: "Masters", icon: "db", roles: ["admin"] },
-    { key: "fx", label: "FX rates", icon: "rupee", roles: ["accounts", "admin"] },
-    { key: "presets", label: "Brokerage presets", icon: "percent", roles: ["accounts", "admin"] },
+    { key: "masters", label: "Lists and team", icon: "db", roles: ["admin"] },
+    { key: "fx", label: "Exchange rates", icon: "rupee", roles: ["accounts", "admin"] },
+    { key: "presets", label: "Brokerage rates", icon: "percent", roles: ["accounts", "admin"] },
     { key: "reminders", label: "Reminders", icon: "bell", roles: ["ops", "admin"] }] },
   { group: "Help", items: [
     { key: "guide", label: "How to", icon: "help", roles: ["ops", "accounts", "admin", "readonly"] },
@@ -258,7 +258,13 @@ function HomeView() {
   const C = (t) => db.customers.find((c) => c.id === P(t).customerId);
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Today</h1><p className="muted">What needs a person's attention. Each item opens the record.</p></div>{can("newBusiness") && <Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy from a PDF</Btn>}</header>
+      <header className="page-head"><div><h1>Today</h1><p className="muted">What needs doing today. Click anything to open it.</p></div>{can("newBusiness") && <Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy</Btn>}</header>
+      {!db.policies.length && can("newBusiness") && (
+        <Card title="New here? Start with one policy" sub="It takes about ten minutes.">
+          <ol className="guide-steps"><li>Click <strong>Add a policy</strong> and drop a policy PDF.</li><li>Check what was read against the policy, beside it on the same screen.</li><li>Fill any gaps and confirm.</li></ol>
+          <div className="row gap-s wrap" style={{ marginTop: 12 }}><Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy</Btn><Btn onClick={() => go({ view: "guide" })}>Open the How to guide</Btn></div>
+        </Card>
+      )}
       <div className="grid3">
         <Card title={`Drafts to finish (${drafts.length})`} sub="Saved from a document, still missing something.">
           {drafts.length ? drafts.map((t) => <button key={t.id} className="listrow" onClick={() => go({ view: "policy", id: t.policyId, termId: t.id })}><strong>{C(t).name}</strong><span>{P(t).type}{t.prevTermId ? " (renewal)" : ""}</span><span className="small warn-text">Missing: {missingFields(t).join(", ")}</span></button>) : <Empty title="No drafts" />}
@@ -347,7 +353,7 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
       )}
       <Labeled label="Insured name (customer)" htmlFor="cf-name" req error={tried && errs.name} hint={hint("name")}><input id="cf-name" value={f.name} onChange={set("name")} /></Labeled>
       {tried && dup && onUseExisting && <div className="fld"><Btn onClick={() => onUseExisting(dup.id, fx)}>Use {dup.code} instead</Btn></div>}
-      <Labeled label="Vertical" htmlFor="cf-vert" hint="Corporate or Retail, as in current reports"><Select id="cf-vert" value={f.vertical} onChange={set("vertical")} options={["Corporate", "Retail"]} /></Labeled>
+      <Labeled label="Customer type" htmlFor="cf-vert" hint="Corporate or Retail"><Select id="cf-vert" value={f.vertical} onChange={set("vertical")} options={["Corporate", "Retail"]} /></Labeled>
       <Labeled label="Address" htmlFor="cf-addr" hint={hint("address")}><input id="cf-addr" value={f.address} onChange={set("address")} /></Labeled>
       <PlaceFields id="cf" value={{ city: f.city, state: f.state, country: f.country }} req cityError={tried && errs.city} cityHint={hint("city")}
         onChange={(p) => { if (p.city !== f.city) set("city")(p.city); setF((x) => ({ ...x, state: p.state, country: p.country })); }} />
@@ -381,7 +387,7 @@ function CustomersView() {
       {adding && <Card title="New customer"><CustomerForm offerPolicy onDone={(id, fx) => { setAdding(false); if (id) go(fx ? { view: "new", customerId: id, fx } : { view: "customer", id }); }} onUseExisting={(id, fx) => { setAdding(false); go(fx && !fx.noText ? { view: "new", customerId: id, fx } : { view: "customer", id }); }} /></Card>}
       <div className="searchbar"><label htmlFor="cs-q" className="sr">Search customers</label><input id="cs-q" type="search" placeholder="Search by insured name, code, city, GSTIN, CSC or RM" value={q} onChange={(e) => setQ(e.target.value)} /></div>
       {list.length ? (
-        <Table><thead><tr><th>Code</th><th>Insured</th><th>Vertical</th><th>City</th><th>CSC</th><th>RM</th><th className="num">Policies</th></tr></thead>
+        <Table><thead><tr><th>Code</th><th>Insured</th><th>Customer type</th><th>City</th><th>CSC</th><th>RM</th><th className="num">Policies</th></tr></thead>
           <tbody>{list.map((c) => <tr key={c.id} className="clickrow" onClick={() => go({ view: "customer", id: c.id })}><td>{c.code}</td><td><button className="linkbtn">{c.name}</button></td><td>{c.vertical}</td><td>{[c.city, c.state].filter(Boolean).join(", ")}<div className="small muted">{c.country}</div></td><td>{teamName(db, c.cse)}</td><td>{c.rm ? teamName(db, c.rm) : "--"}</td><td className="num">{db.policies.filter((p) => p.customerId === c.id).length}</td></tr>)}</tbody></Table>
       ) : <Empty title={`No customer matches "${q}"`}>Check the spelling, or add a new customer.</Empty>}
     </div>
@@ -410,7 +416,7 @@ function CustomerView({ id }) {
         </div>
       )}
       <Card title={`Policies (${pols.length})`} sub="Each policy keeps its terms. Renewal adds a linked term.">
-        {pols.length ? <Table><thead><tr><th>Control no.</th><th>Policy type</th><th>Latest policy no.</th><th>Insurer</th><th>Terms</th><th>Record</th><th>Cover</th><th>Payment</th></tr></thead>
+        {pols.length ? <Table><thead><tr><th>Control no.<Tip k="Control no." /></th><th>Policy type</th><th>Latest policy no.</th><th>Insurer</th><th>Terms</th><th>Record</th><th>Cover</th><th>Payment</th></tr></thead>
           <tbody>{pols.map((p) => { const t = latestTerm(db, p); const pay = paymentSummary(t); return <tr key={p.id} className="clickrow" onClick={() => go({ view: "policy", id: p.id })}><td>{p.controlNo}</td><td><button className="linkbtn">{p.type}</button><div className="small muted">{p.dept}</div></td><td>{t.values.policyNo || "--"}</td><td>{insurerOf(db, p.insurerId)?.name}</td><td>{p.termIds.length}</td><td><Pill tone={completeness(t).tone}>{completeness(t).label}</Pill></td><td><Pill tone={coverage(t).tone}>{coverage(t).label}</Pill></td><td>{t.status === "draft" ? "--" : <Pill tone={pay.tone}>{pay.label}</Pill>}</td></tr>; })}</tbody></Table>
           : <Empty title="No policies yet">Documents such as quotes and KYC can sit here before any policy exists.</Empty>}
       </Card>
@@ -474,7 +480,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
         {step === 1 && (
           <div className="stack"><h2>Who looks after {c.name}?</h2>
             <div className="formgrid">
-              <Labeled label="CSC" htmlFor="nb-cse" req error={tried && stepErr} hint="Mandatory. Type a name or code, then pick from the list"><SearchPick id="nb-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
+              <Labeled label="CSC" htmlFor="nb-cse" req error={tried && stepErr} hint="Needed. Type a name or code, then pick from the list"><SearchPick id="nb-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
               <Labeled label="RM" htmlFor="nb-rm" hint="Optional. Type a name or code"><SearchPick id="nb-rm" value={s.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
             </div>
             <p className="small muted">Changing these updates the customer record, with history.</p></div>)}
@@ -547,7 +553,7 @@ function RegisterView() {
         <Labeled label="Record" htmlFor="rg-rec"><Select id="rg-rec" value={rec} onChange={setRec} placeholder="All" options={["Draft", "Complete"]} /></Labeled>
         <Labeled label="Cover" htmlFor="rg-cov"><Select id="rg-cov" value={cov} onChange={setCov} placeholder="All" options={["Scheduled", "Active", "Expired", "Cancelled", "Not confirmed"]} /></Labeled>
       </div>
-      {rows.length ? <Table className="register"><thead><tr><th>Policy</th><th>Insured</th><th>Risk period</th><th className="num">Net premium</th><th>Record · cover · payment</th><th>Renewal</th></tr></thead>
+      {rows.length ? <Table className="register"><thead><tr><th>Policy</th><th>Insured</th><th>Risk period</th><th className="num">Net premium<Tip k="Net premium" /></th><th>Status</th><th>Renewal</th></tr></thead>
         <tbody>{rows.map(({ p, t, c }) => { const pay = paymentSummary(t); return <tr key={p.id} className="clickrow" onClick={() => go({ view: "policy", id: p.id })}><td><button className="linkbtn">{t.values.policyNo || "No policy no. yet"}</button><div className="small muted">{p.controlNo} · issued {fmtDate(t.values.issueDate)}</div></td><td><strong>{c.name}</strong><div className="small muted">{p.type}</div></td><td className="nowrap">{fmtDate(t.values.riskStart)}<div className="small muted">to {fmtDate(t.values.riskEnd)}</div></td><td className="num">{fmtMoney(t.values.netPremium, t.values.currency)}</td><td><div className="pills"><Pill tone={completeness(t).tone}>{completeness(t).label}</Pill><Pill tone={coverage(t).tone}>{coverage(t).label}</Pill>{t.status !== "draft" && <Pill tone={pay.tone}>{pay.label}</Pill>}</div></td><td className="small">{t.outcome}<div className="muted">Renewable: {t.values.renewable || "not entered"}</div></td></tr>; })}</tbody></Table>
         : <Empty title="No policies match these filters">Clear a filter to see more.</Empty>}
     </div>
@@ -608,12 +614,12 @@ function ReportFilters({ f, setF, withBasis = true, extra }) {
   const { db, fy } = useApp();
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   return (
-    <Card title="1. Filters: which records">
+    <Card title="1. Which policies">
       <div className="filters">
-        {withBasis && <Labeled label="Date basis" htmlFor="bf-basis" req hint="Every total follows this date"><Select id="bf-basis" value={f.basis} onChange={set("basis")} options={DATE_BASES.map((b) => ({ value: b.key, label: b.label }))} /></Labeled>}
+        {withBasis && <Labeled label="Which date to use" htmlFor="bf-basis" req hint="Every total follows this date"><Select id="bf-basis" value={f.basis} onChange={set("basis")} options={DATE_BASES.map((b) => ({ value: b.key, label: b.label }))} /></Labeled>}
         <Labeled label="Period" htmlFor="bf-range"><Select id="bf-range" value={f.useRange ? "range" : "fy"} onChange={(v) => setF((x) => ({ ...x, useRange: v === "range" }))} options={[{ value: "fy", label: `F.Y. ${fy} (from the top bar)` }, { value: "range", label: "Custom date range" }]} /></Labeled>
         {f.useRange && <><Labeled label="From" htmlFor="bf-from" error={f.from && f.to && f.to < f.from ? "End is before start" : null}><DateInput id="bf-from" value={f.from} onChange={(e) => set("from")(e.target.value)} /></Labeled><Labeled label="To" htmlFor="bf-to"><DateInput id="bf-to" value={f.to} onChange={(e) => set("to")(e.target.value)} /></Labeled></>}
-        <fieldset className="fld radios"><legend>Vertical</legend>{["ALL", "Corporate", "Retail"].map((x) => <label key={x} className="check"><input type="radio" name="vertical" checked={f.vertical === x} onChange={() => set("vertical")(x)} /> {x === "ALL" ? "All" : x}</label>)}</fieldset>
+        <fieldset className="fld radios"><legend>Customer type</legend>{["ALL", "Corporate", "Retail"].map((x) => <label key={x} className="check"><input type="radio" name="vertical" checked={f.vertical === x} onChange={() => set("vertical")(x)} /> {x === "ALL" ? "All" : x}</label>)}</fieldset>
         <Labeled label="Insurer" htmlFor="bf-ins"><Select id="bf-ins" value={f.insurer} onChange={set("insurer")} placeholder="All insurers" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
         {extra}
       </div>
@@ -648,7 +654,7 @@ function BusinessReport() {
   };
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Business report</h1><p className="muted">Pick filters, grouping and output separately. Confirmed records only.</p></div></header>
+      <header className="page-head"><div><h1>Business report</h1><p className="muted">Choose the policies, how to group them, and how to see them. Drafts are left out.</p></div></header>
       <ReportFilters f={f} setF={setF} extra={<>
         <Labeled label="Department" htmlFor="bf-dept"><Select id="bf-dept" value={f.dept} onChange={set("dept")} placeholder="All" options={Object.keys(DEPARTMENTS)} /></Labeled>
         <Labeled label="CSC" htmlFor="bf-cse"><SearchPick id="bf-cse" value={f.cse} onChange={set("cse")} noun="CSC" emptyLabel="All CSCs" placeholder="All CSCs" options={db.team.filter((t) => t.role === "CSC").map((t) => ({ value: t.code, label: `${t.name} (${t.code})${t.active === false ? " (inactive)" : ""}` }))} /></Labeled>
@@ -657,12 +663,12 @@ function BusinessReport() {
         <Labeled label="Currency" htmlFor="bf-cur"><Select id="bf-cur" value={f.currency} onChange={set("currency")} placeholder="All" options={CURRENCIES} /></Labeled>
         <div className="fld"><Btn onClick={() => setF(FILTER0)} disabled={JSON.stringify(f) === JSON.stringify(FILTER0)} why="No filters set">Clear filters</Btn></div></>} />
       <div className="grid2">
-        <Card title="2. Grouping: how rows are organised"><Labeled label="Group by" htmlFor="bf-group"><Select id="bf-group" value={g} onChange={setG} options={GROUPINGS.map((x) => ({ value: x.key, label: x.label }))} /></Labeled></Card>
-        <Card title="3. Output">
+        <Card title="2. Group them by"><Labeled label="Group by" htmlFor="bf-group"><Select id="bf-group" value={g} onChange={setG} options={GROUPINGS.map((x) => ({ value: x.key, label: x.label }))} /></Labeled></Card>
+        <Card title="3. See or download">
           <div className="seg" role="radiogroup" aria-label="Output">{[["screen", "On screen"], ["print", "Print view"], ["csv", "CSV file"]].map(([k, l]) => <button key={k} role="radio" aria-checked={out === k} className={out === k ? "on" : ""} onClick={() => setOut(k)}>{l}</button>)}</div>
-          {out === "csv" && <div className="stack" style={{ marginTop: 10 }}>{can("export") ? <><p className="small">Downloads exactly the rows on screen, with the date basis, filters, FX rates and print date written at the top.</p><Btn kind="primary" disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`business-report-${f.useRange ? "range" : fy}-${f.basis}.csv`, csv(), toast, setFallback)}>Download CSV</Btn></> : <p className="small">Your role cannot export.</p>}</div>}
+          {out === "csv" && <div className="stack" style={{ marginTop: 10 }}>{can("export") ? <><p className="small">Downloads exactly the rows on screen, with the date basis, filters, FX rates and print date written at the top.</p><Btn kind="primary" disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`business-report-${f.useRange ? "range" : fy}-${f.basis}.csv`, csv(), toast, setFallback)}>Download CSV</Btn></> : <p className="small">Your role cannot download reports.</p>}</div>}
           {out === "print" && <div className="row gap-s wrap" style={{ marginTop: 10 }}><Btn kind="primary" onClick={() => window.print()}><Icon name="file" size={16} /> Print or save as PDF</Btn><span className="small muted">Prints only the report, with letterhead and print date.</span></div>}
-          {can("finalize") && <div style={{ marginTop: 10 }}><AskFirst label="Finalize this report" question="Freeze these rows and FX rates?" yes="Finalize" onYes={finalize} disabled={!rows.length} why="No rows" /></div>}
+          {can("finalize") && <div style={{ marginTop: 10 }}><AskFirst label="Lock this report" question="Save a copy of this report as it stands, with these exchange rates?" yes="Lock" onYes={finalize} disabled={!rows.length} why="No rows" /></div>}
         </Card>
       </div>
       <div className={out === "print" ? "printsheet" : ""}>
@@ -674,7 +680,7 @@ function BusinessReport() {
             {groups.map((gr) => (
               <div key={gr.key} className="rgroup">
                 {g !== "none" && <h4>{gr.key} <span className="muted small">({gr.rows.length})</span></h4>}
-                <Table className="rtable"><thead><tr><th>Policy</th><th>Insured</th>{g !== "insurer" && <th>Insurer</th>}<th>N/R</th><th>Basis date</th><th className="num">Net (native)</th><th className="num">Brokerage (native)</th><th className="num">Net INR</th><th className="num">Brokerage INR</th></tr></thead>
+                <Table className="rtable"><thead><tr><th>Policy</th><th>Insured</th>{g !== "insurer" && <th>Insurer</th>}<th>New / Renewal</th><th>Date used<Tip k="Date used" /></th><th className="num">Net (policy currency)</th><th className="num">Brokerage (policy currency)</th><th className="num">Net INR</th><th className="num">Brokerage INR</th></tr></thead>
                   <tbody>{gr.rows.map((r) => <tr key={r.rowKey || r.termId}><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td>{r.customer}<div className="small muted">{r.type}</div></td>{g !== "insurer" && <td>{r.insurer}</td>}<td>{r.nr}</td><td>{fmtDate(r.basisDate)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="num">{fmtMoney(r.brokerage, r.currency)}<div className="small muted">{r.brokeragePct}% · {r.presetNote}</div></td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}{r.currency !== "INR" && <div className="small">{r.fxRate == null ? <span className="bad-text">No rate for {fmtMonth(r.fxMonth)}</span> : <span className="muted">{fmtMonth(r.fxMonth)} @ {r.fxRate} (v{r.fxVersion})</span>}</div>}</td><td className="num">{r.brokerageInr == null ? "No rate" : fmtNum(r.brokerageInr)}</td></tr>)}</tbody>
                   {g !== "none" && <tfoot><tr><td colSpan={g !== "insurer" ? 7 : 6}>Subtotal {gr.key}</td><td className="num">{fmtNum(gr.totals.netInr)}</td><td className="num">{fmtNum(gr.totals.brokerageInr)}</td></tr></tfoot>}
                 </Table>
@@ -691,8 +697,8 @@ function BusinessReport() {
 
 function TotalsBlock({ T, consistent }) {
   return (
-    <Card title="Totals" sub="Native currency totals are kept as they are. INR uses the monthly rate shown on each row.">
-      <Table><thead><tr><th>Currency</th><th className="num">Records</th><th className="num">Sum insured</th><th className="num">Gross premium</th><th className="num">GST</th><th className="num">Net premium</th><th className="num">Brokerage</th></tr></thead>
+    <Card title="Totals" sub="Totals stay in each policy's own currency. The rupee figure uses that month's rate.">
+      <Table><thead><tr><th>Currency</th><th className="num">Records</th><th className="num">Sum insured<Tip k="Sum insured / limit" /></th><th className="num">Gross premium<Tip k="Gross premium" /></th><th className="num">GST</th><th className="num">Net premium<Tip k="Net premium" /></th><th className="num">Brokerage</th></tr></thead>
         <tbody>{Object.entries(T.native).map(([cur, n]) => <tr key={cur}><td>{cur}</td><td className="num">{n.count}</td><td className="num">{fmtNum(n.si, cur)}</td><td className="num">{fmtNum(n.gross, cur)}</td><td className="num">{fmtNum(n.gst, cur)}</td><td className="num">{fmtNum(n.net, cur)}</td><td className="num">{fmtNum(n.brokerage, cur)}</td></tr>)}</tbody>
         <tfoot><tr><td>All in INR</td><td className="num">{T.count - T.noRate}{T.noRate ? ` (+${T.noRate} no rate)` : ""}</td><td className="num">{fmtNum(T.siInr)}</td><td className="num">{fmtNum(T.grossInr)}</td><td className="num">{fmtNum(T.gstInr)}</td><td className="num">{fmtNum(T.netInr)}</td><td className="num">{fmtNum(T.brokerageInr)}</td></tr></tfoot></Table>
       {consistent != null && <p className={`small ${consistent ? "good-text" : "bad-text"}`}>{consistent ? "Check passed: group subtotals add up to the grand total." : "Check failed: group subtotals do not match the grand total."}</p>}
@@ -722,7 +728,7 @@ function RenewalsReport() {
       <div className="reportmeta"><span>Date basis: <strong>Risk end (expiry) date</strong></span><span>Period: <strong>{fmtDate(from)} to {fmtDate(to)}</strong></span><span>Printed {fmtStamp(printedAt)}</span>{can("export") ? <Btn kind="primary" disabled={!rows.length} why="No rows" onClick={() => saveCsv(`renewals-report-${f.useRange ? "range" : fy}.csv`, csv(), toast, setFallback)}>Download CSV</Btn> : <span className="small">Export not allowed for this role</span>}</div>
       {!rows.length ? <Empty title="No policies end in this period" /> : byIns.map((g) => (
         <div key={g.key} className="rgroup"><h4>{g.key} <span className="muted small">({g.rows.length})</span></h4>
-          <Table><thead><tr><th>S.No</th><th>Policy</th><th>Expiry</th><th>Insured</th><th className="num">Sum insured</th><th className="num">Net premium</th><th>RM</th><th>Renewal</th></tr></thead>
+          <Table><thead><tr><th>S.No</th><th>Policy</th><th>Expiry</th><th>Insured</th><th className="num">Sum insured<Tip k="Sum insured / limit" /></th><th className="num">Net premium<Tip k="Net premium" /></th><th>RM</th><th>Renewal</th></tr></thead>
             <tbody>{g.rows.map((r, i) => <tr key={r.termId} className={r.renewable === "No" ? "row-nonrenew" : ""}><td>{i + 1}</td><td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td><td className="nowrap">{fmtDate(r.riskEnd)}</td><td>{r.customer}<div className="small muted">{r.type}{r.group ? ` · ${r.group}` : ""}</div></td><td className="num">{fmtMoney(r.sumInsured, r.currency)}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td>{r.rm}</td><td><div className="pills"><Pill tone={r.outcome === "Renewed" ? "good" : r.outcome === "Lost" ? "bad" : "muted"}>{r.outcome}</Pill>{r.draftInProgress && <Pill tone="info">Draft in progress</Pill>}</div><div className="small muted">Renewable: {r.renewable}{r.outcome === "Renewed" ? `. Renewed as ${r.nextPolicyNo}` : r.lossDetail ? `. ${r.lossDetail}` : ""}</div></td></tr>)}</tbody></Table></div>))}
       {fallback && <CsvFallback data={fallback} onClose={() => setFallback(null)} />}
     </div>
@@ -735,15 +741,15 @@ function Snapshots({ openId }) {
   const s = db.snapshots.find((x) => x.id === open);
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Finalized reports</h1><p className="muted">Frozen copies. Later changes to FX rates, presets or records do not rewrite them.</p></div></header>
-      {!db.snapshots.length ? <Empty title="No finalized reports yet">Finalize one from the Business report (Accounts or Admin role).</Empty> : (
-        <Table><thead><tr><th>Report</th><th>Finalized</th><th className="num">Rows</th><th className="num">Net INR at the time</th><th /></tr></thead>
+      <header className="page-head"><div><h1>Locked reports</h1><p className="muted">Frozen copies. Later changes to FX rates, presets or records do not rewrite them.</p></div></header>
+      {!db.snapshots.length ? <Empty title="No locked reports yet">Lock one from the Business report (Accounts or Admin only).</Empty> : (
+        <Table><thead><tr><th>Report</th><th>Locked</th><th className="num">Rows</th><th className="num">Net INR at the time</th><th /></tr></thead>
           <tbody>{db.snapshots.map((x) => <tr key={x.id}><td>{x.title}<div className="small muted">{x.filterText} · {x.grouping}</div></td><td>{fmtStamp(x.at)} by {x.by}</td><td className="num">{x.rows.length}</td><td className="num">{fmtNum(x.totals.netInr)}</td><td><Btn onClick={() => setOpen(x.id)}>Open</Btn></td></tr>)}</tbody></Table>)}
       {s && (() => {
         const live = totals(businessRows(db, { ...FILTER0, fy: "2026-27", basis: DATE_BASES.find((b) => b.label === s.basisLabel)?.key || "bookDate" }).rows.filter((r) => s.rows.some((y) => y.termId === r.termId)));
         return (
           <Card title={s.title} sub={`Frozen ${fmtStamp(s.at)} by ${s.by}`}>
-            <Table><thead><tr><th>Control no.</th><th>Insured</th><th>Policy type</th><th className="num">Net (native)</th><th>FX used then</th><th className="num">Net INR then</th></tr></thead>
+            <Table><thead><tr><th>Control no.<Tip k="Control no." /></th><th>Insured</th><th>Policy type</th><th className="num">Net (policy currency)</th><th>FX used then</th><th className="num">Net INR then</th></tr></thead>
               <tbody>{s.rows.map((r) => <tr key={r.rowKey || r.termId}><td>{r.controlNo}</td><td>{r.customer}</td><td>{r.type}</td><td className="num">{fmtMoney(r.netPremium, r.currency)}</td><td className="small">{r.currency === "INR" ? "INR" : r.fxRate == null ? "No rate" : `${fmtMonth(r.fxMonth)} @ ${r.fxRate} (v${r.fxVersion})`}</td><td className="num">{r.netInr == null ? "No rate" : fmtNum(r.netInr)}</td></tr>)}</tbody></Table>
             <TotalsBlock T={s.totals} consistent={null} />
             <div className={`note ${Math.abs(live.netInr - s.totals.netInr) > 0.01 ? "note-warn" : ""}`}>Same records valued with today's rates and values: net INR {fmtNum(live.netInr)}. {Math.abs(live.netInr - s.totals.netInr) > 0.01 ? "This differs from the frozen figure, which is kept as finalized." : "No difference so far."}</div>
@@ -806,7 +812,7 @@ function Masters() {
   const addBr = () => { if (!nb.ins || !nb.name.trim() || !nb.city.trim() || !nb.country.trim()) return setErr("Choose an insurer and fill branch, city and country"); const ins = insurerOf(db, nb.ins); if (ins.branches.some((b) => b.name.toLowerCase() === nb.name.trim().toLowerCase())) return setErr("That branch already exists"); update((d) => { d.insurers.find((i) => i.id === nb.ins).branches.push({ id: `BR${++d.seq}`, name: nb.name.trim(), city: nb.city.trim(), state: (nb.state || "").trim(), country: nb.country.trim() }); log(d, { action: "Branch added", detail: `${nb.name} (${nb.city}) for ${ins.name}` }); }); setNb({ ...nb, name: "", city: "", state: "" }); setErr(""); toast("Branch added"); };
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Masters</h1><p className="muted">Lists that feed every entry screen.</p></div></header>
+      <header className="page-head"><div><h1>Lists and team</h1><p className="muted">Your insurers, policy types and team. Every screen picks from these.</p></div></header>
       <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {tab === "insurers" && <>
@@ -873,7 +879,7 @@ function TeamMaster() {
     });
     setEdit({ ...edit, moveTo: "", err: "" }); toast(`Customers moved to ${to.name}`);
   };
-  const setActive = (t, active) => { update((d) => { d.team.find((x) => x.code === t.code).active = active; log(d, { action: active ? "Team member reactivated" : "Team member deactivated", detail: `${t.name} (${t.code}). ${active ? "Back in the pickers." : "Kept on existing records and reports; no longer offered for new assignments."}` }); }); toast(active ? "Reactivated" : "Deactivated"); };
+  const setActive = (t, active) => { update((d) => { d.team.find((x) => x.code === t.code).active = active; log(d, { action: active ? "Team member reactivated" : "Team member deactivated", detail: `${t.name} (${t.code}). ${active ? "Back in the pickers." : "Kept on existing records and reports; no longer offered for new assignments."}` }); }); toast(active ? "Reactivated" : "Switch offd"); };
   const remove = (t) => { update((d) => { d.team = d.team.filter((x) => x.code !== t.code); log(d, { action: "Team member removed", detail: `${t.name} (${t.code}), ${t.role}. Was not assigned to any customer.` }); }); setEdit(null); toast("Team member removed"); };
   const rows = db.team.filter((t) => showInactive || t.active !== false);
   return (<>
@@ -917,9 +923,9 @@ function TeamMaster() {
         )}
         <div className="row gap-s wrap">
           {t0.active === false ? <Btn onClick={() => setActive(t0, true)}>Reactivate</Btn>
-            : <AskFirst label="Deactivate" question={`Stop offering ${t0.name} for new work?`} yes="Deactivate" onYes={() => setActive(t0, false)} />}
+            : <AskFirst label="Switch off" question={`Stop offering ${t0.name} for new work?`} yes="Switch off" onYes={() => setActive(t0, false)} />}
           <AskFirst label="Remove" question={`Remove ${t0.name} for good?`} yes="Remove" onYes={() => remove(t0)} disabled={assigned > 0} why="Move their customers first, or deactivate instead" />
-          <span className="small muted">{assigned > 0 ? "Remove is available once nobody is assigned to them. Deactivate keeps them on past records and reports." : "Deactivate keeps them on past records; Remove deletes them from the list."}</span>
+          <span className="small muted">{assigned > 0 ? "Remove is available once nobody is assigned to them. Switch off keeps them on past records and reports." : "Switch off keeps them on past records; Remove deletes them from the list."}</span>
         </div>
       </Card>
     )}
@@ -943,7 +949,7 @@ function FxView() {
   const allMonths = [...new Set([...months, ...(edit ? [newMonth] : [])])].sort();
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>FX rates</h1><p className="muted">Monthly rates used to show INR to accounts. {LIVE ? "Enter the rates your accounts team uses." : "Demo values only, not market data."}</p></div></header>
+      <header className="page-head"><div><h1>Exchange rates</h1><p className="muted">Monthly rates used to show INR to accounts. {LIVE ? "Enter the rates your accounts team uses." : "Demo values only, not market data."}</p></div></header>
       <div className="note small">A report uses the rate for the month of the date it is based on.</div>
       {edit && <div className="row gap-s wrap"><Labeled label="Show an extra month" htmlFor="fx-new"><input id="fx-new" type="month" value={newMonth} onChange={(e) => setNewMonth(e.target.value)} /></Labeled></div>}
       <Table><thead><tr><th>Month</th>{["USD", "AED", "EUR"].map((c) => <th key={c} className="num">INR per {c}</th>)}</tr></thead>
@@ -970,7 +976,7 @@ function PresetsView() {
   const addPreset = () => { if (!np.ins || !np.type || !isNum(np.pct)) return setErr("Choose insurer, policy type and %"); if (db.presets.some((p) => p.insurerId === np.ins && p.policyType === np.type)) return setErr("A preset already exists for that pair; add a version instead"); update((d) => { d.presets.push({ id: `PR${++d.seq}`, insurerId: np.ins, policyType: np.type, versions: [{ v: 1, pct: +np.pct, status: "draft", at: nowIso(), by: who }] }); log(d, { action: "Preset draft saved", detail: `New preset ${np.type}, ${np.pct}% (draft).` }); }); setNp({ ins: "", type: "", pct: "" }); setErr(""); toast("Preset saved as draft"); };
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Brokerage presets</h1><p className="muted">Load by insurer + policy type, stay editable on each policy, and need a reviewer to confirm. A policy keeps the % it was confirmed with.</p></div></header>
+      <header className="page-head"><div><h1>Brokerage rates</h1><p className="muted">Load by insurer + policy type, stay editable on each policy, and need a reviewer to confirm. A policy keeps the % it was confirmed with.</p></div></header>
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {edit && <Card title="New preset"><div className="filters"><Labeled label="Insurer" htmlFor="pr-ins"><Select id="pr-ins" value={np.ins} onChange={(v) => setNp({ ...np, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Policy type" htmlFor="pr-type"><Select id="pr-type" value={np.type} onChange={(v) => setNp({ ...np, type: v })} placeholder="Choose" options={[...new Set(Object.values(DEPARTMENTS).flat())].sort()} /></Labeled><Labeled label="Brokerage %" htmlFor="pr-pct"><input id="pr-pct" inputMode="decimal" value={np.pct} onChange={(e) => setNp({ ...np, pct: e.target.value })} /></Labeled><div className="fld"><Btn kind="primary" onClick={addPreset}>Save as draft</Btn></div></div></Card>}
       {db.presets.map((p) => { const act = activePreset(db, p.insurerId, p.policyType); return (
@@ -1011,7 +1017,7 @@ function Reminders() {
           <Labeled label="Remind when less than this % of sum insured is left" htmlFor="rm-th"><input id="rm-th" inputMode="decimal" value={th} onChange={(e) => setTh(e.target.value)} disabled={role !== "admin"} /></Labeled>
           {role === "admin" && <Btn onClick={() => { if (!isNum(th) || +th < 0 || +th > 100) { toast("Enter a number from 0 to 100", "bad"); return; } update((d) => { d.settings.balanceThresholdPct = +th; log(d, { action: "Reminder level saved", detail: th + "% of sum insured" }); }); toast("Reminder level saved"); }}>Save</Btn>}
         </div>
-        {bal.length ? <Table><thead><tr><th>Insured</th><th>Policy</th><th className="num">Balanced SI</th><th className="num">% left</th><th>Below the level?</th><th>Goes to</th></tr></thead><tbody>{bal.map(({ t, pct, bal: b }) => <tr key={t.id}><td>{C(t).name}</td><td>{t.values.policyNo}</td><td className="num">{fmtMoney(b)}</td><td className="num">{pct}%</td><td>{pct < level ? <Pill tone="warn">Yes</Pill> : "No"}</td><td>{goesTo(t)}</td></tr>)}</tbody></Table> : <Empty title="No cargo open policies" />}
+        {bal.length ? <Table><thead><tr><th>Insured</th><th>Policy</th><th className="num">Sum insured left<Tip k="Sum insured left" /></th><th className="num">% left</th><th>Below the level?</th><th>Goes to</th></tr></thead><tbody>{bal.map(({ t, pct, bal: b }) => <tr key={t.id}><td>{C(t).name}</td><td>{t.values.policyNo}</td><td className="num">{fmtMoney(b)}</td><td className="num">{pct}%</td><td>{pct < level ? <Pill tone="warn">Yes</Pill> : "No"}</td><td>{goesTo(t)}</td></tr>)}</tbody></Table> : <Empty title="No cargo open policies" />}
       </Card>
     </div>
   );

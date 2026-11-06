@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { TODAY } from "./data.js";
 import { fmtDate, fmtMoney, fmtNum, isNum, r2, nowIso, fxRate, brokerageOf, brokerageBase } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, DocModal, DateInput } from "./ui.jsx";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, DocModal, DateInput, Tip } from "./ui.jsx";
 import { brokerageQuery } from "./docs.js";
 
 const STATUS_TONE = { Paid: "good", "Short paid": "warn", "Not received": "bad", Overpaid: "info" };
@@ -84,7 +84,7 @@ export function BrokerageView() {
   const groups = db.insurers.map((i) => ({ i, rows: rows.filter((r) => r.insurerId === i.id), allRows: all.filter((r) => r.insurerId === i.id) })).filter((g) => g.rows.length || paying === g.i.id);
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Brokerage received</h1><p className="muted">What each insurer owes in brokerage, what has arrived, and what to chase. Brokerage due is the gross premium times the rate on the policy, or the net premium where a policy is ticked for that.</p></div></header>
+      <header className="page-head"><div><h1>Brokerage received</h1><p className="muted">What each insurer owes you, what has arrived, and what to chase. Brokerage due is the gross premium times the rate on the policy, or the net premium where a policy is ticked for that.</p></div></header>
       <div className="stats">
         <div className="stat"><span>Brokerage due</span><strong>{fmtMoney(sum("expected"))}</strong><em>{all.length} confirmed policies, in INR</em></div>
         <div className="stat"><span>Received</span><strong>{fmtMoney(sum("received"))}</strong><em>{(db.remittances || []).length} payments recorded</em></div>
@@ -108,7 +108,7 @@ export function BrokerageView() {
               <Btn disabled={!owed.length} why="Nothing outstanding" onClick={() => setDoc(brokerageQuery({ insurer: i.name, lines: owed.map((r) => ({ ...r, refs: r.pays.map((x) => x.ref).join(", ") })) }))}>Draft query email{owed.length ? ` (${owed.length})` : ""}</Btn></>}>
             {paying === i.id && <PaymentForm insurer={i} rows={allRows} onDone={() => setPaying(null)} />}
             {gr.length > 0 && (
-              <Table><thead><tr><th>Policy</th><th>Insured</th><th className="num">Brokerage on</th><th className="num">Brokerage due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
+              <Table><thead><tr><th>Policy</th><th>Insured</th><th className="num">Brokerage on<Tip k="Brokerage (%)" /></th><th className="num">Brokerage due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
                 <tbody>{gr.map((r) => <tr key={r.t.id}>
                   <td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td>
                   <td>{r.insured}<div className="small muted">{r.type}</div></td>

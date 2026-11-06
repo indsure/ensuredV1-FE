@@ -3,6 +3,7 @@ import { useState, useEffect, useLayoutEffect, useRef, createContext, useContext
 import { placeOf, searchCities, lookupPlace, COUNTRIES } from "./places.js";
 import { parseDateText } from "./extract.js";
 import { fmtDate } from "./lib.js";
+import { tipFor } from "./glossary.js";
 
 export const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
@@ -16,7 +17,7 @@ export function Card({ title, actions, children, className = "", sub }) {
     <section className={`card ${className}`}>
       {(title || actions) && (
         <header className="card-head">
-          <div><h3>{title}</h3>{sub && <p className="muted small">{sub}</p>}</div>
+          <div><h3>{title}{typeof title === "string" && <Tip k={title} />}</h3>{sub && <p className="muted small">{sub}</p>}</div>
           {actions && <div className="row gap-s wrap">{actions}</div>}
         </header>
       )}
@@ -37,10 +38,31 @@ export function Btn({ kind = "secondary", children, disabled, why, ...rest }) {
   );
 }
 
+// The (i) beside a word. It explains the word in plain language on hover, focus or tap.
+export function Tip({ k, text }) {
+  const body = text || tipFor(k);
+  const btn = useRef(null);
+  const [pos, setPos] = useState(null);
+  useEffect(() => {
+    if (!pos) return;
+    const close = (e) => { if (e.type !== "keydown" || e.key === "Escape") setPos(null); };
+    window.addEventListener("scroll", close, true); window.addEventListener("keydown", close); window.addEventListener("mousedown", close);
+    return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("keydown", close); window.removeEventListener("mousedown", close); };
+  }, [pos]);
+  if (!body) return null;
+  const show = () => { const r = btn.current.getBoundingClientRect(); const w = Math.min(300, window.innerWidth - 24); setPos({ left: Math.max(12, Math.min(r.left - 8, window.innerWidth - w - 12)), top: r.bottom + 6, below: r.bottom + 170 < window.innerHeight, up: window.innerHeight - r.top + 6, width: w }); };
+  return (
+    <>
+      <button type="button" ref={btn} className="tip" aria-label={`What does ${k || "this"} mean?`} aria-expanded={!!pos} onMouseEnter={show} onMouseLeave={() => setPos(null)} onFocus={show} onBlur={() => setPos(null)} onMouseDown={(e) => e.stopPropagation()} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!pos) show(); }}>i</button>
+      {pos && <span role="tooltip" className="tip-pop" style={pos.below ? { left: pos.left, top: pos.top, width: pos.width } : { left: pos.left, bottom: pos.up, width: pos.width }}>{body}</span>}
+    </>
+  );
+}
+
 export function Labeled({ label, htmlFor, children, hint, error, req, wide }) {
   return (
     <div className={`fld ${wide ? "fld-wide" : ""} ${error ? "fld-err" : ""}`}>
-      <label htmlFor={htmlFor}>{label}{req && <span className="req"> *</span>}</label>
+      <div className="fld-top"><label htmlFor={htmlFor}>{label}{req && <span className="req"> *</span>}</label><Tip k={typeof label === "string" ? label : ""} /></div>
       {children}
       {hint && !error && <div className="hint">{hint}</div>}
       {error && <div className="err-text" role="alert">{error}</div>}

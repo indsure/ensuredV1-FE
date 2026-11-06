@@ -1,7 +1,7 @@
 // One policy, its terms, and every tab that hangs off a term.
 import { FIELDS, FIELD, TODAY, LIVE, PLAIN_SAMPLES, fixtureById, makeEndorsementFixture, makeRenewalFixture, isVesselType, isCargoOpen, isCharterers, CURRENCIES } from "./data.js";
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Icon, DocModal, DateInput } from "./ui.jsx";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Icon, DocModal, DateInput, Tip } from "./ui.jsx";
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
@@ -41,11 +41,11 @@ export function StatePills({ term }) {
   const ren = term.values.renewable;
   return (
     <div className="statepills">
-      <div><span className="axis">Record</span><Pill tone={c.tone}>{c.label}</Pill></div>
-      <div><span className="axis">Cover</span><Pill tone={cov.tone} title={cov.why}>{cov.label}</Pill></div>
-      <div><span className="axis">Payment</span><Pill tone={term.status === "draft" ? "muted" : pay.tone}>{term.status === "draft" ? "Not tracked yet" : pay.label}</Pill></div>
-      <div><span className="axis">Renewable</span><Pill tone={ren ? "muted" : "warn"}>{ren || "Not entered"}</Pill></div>
-      <div><span className="axis">Renewal outcome</span><Pill tone={term.outcome === "Renewed" ? "good" : term.outcome === "Lost" ? "bad" : "muted"}>{term.outcome}</Pill></div>
+      <div><span className="axis">Record<Tip k="Record" /></span><Pill tone={c.tone}>{c.label}</Pill></div>
+      <div><span className="axis">Cover<Tip k="Cover" /></span><Pill tone={cov.tone} title={cov.why}>{cov.label}</Pill></div>
+      <div><span className="axis">Payment<Tip k="Payment" /></span><Pill tone={term.status === "draft" ? "muted" : pay.tone}>{term.status === "draft" ? "Not tracked yet" : pay.label}</Pill></div>
+      <div><span className="axis">Renewable<Tip k="Is renewable" /></span><Pill tone={ren ? "muted" : "warn"}>{ren || "Not entered"}</Pill></div>
+      <div><span className="axis">Renewal outcome<Tip k="Renewal outcome" /></span><Pill tone={term.outcome === "Renewed" ? "good" : term.outcome === "Lost" ? "bad" : "muted"}>{term.outcome}</Pill></div>
     </div>
   );
 }
@@ -78,7 +78,7 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
       <div className="crumbs"><button className="linkbtn" onClick={() => go({ view: "customer", id: c.id })}>{c.name}</button> / {p.type}</div>
       <header className="page-head">
         <div>
-          <p className="eyebrow">{p.dept} · Control no. {p.controlNo}</p>
+          <p className="eyebrow">{p.dept} · Control no. {p.controlNo}<Tip k="Control no." /></p>
           <h1>{term.values.policyNo || "Policy number not entered"}</h1>
           <p className="muted">{p.type} · {ins?.name}, {br?.name} ({br?.city}, {br?.country}){p.vesselMode ? ` · ${p.vesselMode}` : ""}{p.cover ? ` · ${p.cover}` : ""}</p>
         </div>
@@ -229,7 +229,7 @@ function DocumentsTab({ p, term, terms, openDoc }) {
   };
   return (
     <div className="stack">
-      <Card title="Documents on this policy" sub="Every term keeps its own documents. Adding a debit note or proof never changes policy values."
+      <Card title="Documents on this policy" sub="Adding a document never changes the policy's figures."
         actions={can("addDoc") && !adding && <Btn kind="primary" onClick={() => setAdding(true)}>Add document</Btn>}>
         {adding && <AddDocForm customerId={p.customerId} policyId={p.id} termId={term.id} kinds={["Debit note", "Supporting document", "Receipt proof", "Endorsement"]} onDone={() => setAdding(false)} />}
         {docs.length ? (
@@ -280,7 +280,7 @@ function EndorsementsTab({ p, term, openDoc }) {
   return (
     <div className="stack">
       {!kind && (
-        <Card title="Endorsements" sub="An endorsement changes only the fields a reviewer ticks. Both value sets and both documents are kept."
+        <Card title="Endorsements" sub="Only the fields you tick change. The old values and both documents are kept."
           actions={canEndorse && !LIVE && <><Btn onClick={() => start("premium")}>New endorsement: premium revision (sample)</Btn><Btn onClick={() => start("si")}>New endorsement: sum insured increase (sample)</Btn></>}>
           {!canEndorse && term.status === "draft" && <div className="note">Confirm this term before recording endorsements.</div>}
           {canEndorse && <PdfAttach id="en-file" label="Attach an endorsement PDF" onReady={(x) => { setOwnFx({ ...x, title: x.fileName }); start("own"); }} />}
@@ -333,7 +333,7 @@ function PaymentsTab({ p, term, openDoc }) {
   const pay = paymentSummary(term);
   const rows = instalmentRows(term);
   const debitNotes = db.documents.filter((d) => d.termId === term.id && d.kind === "Debit note");
-  if (term.status === "draft") return <div className="note">Payments are tracked once the term is confirmed.</div>;
+  if (term.status === "draft") return <div className="note">Payments start once this record is confirmed.</div>;
   const found = !term.instalments.length ? db.documents.filter((d) => d.termId === term.id && d.lines?.length).map((d) => instalmentTable(d.lines)).find(Boolean) : null;
   const useFound = () => {
     update((d) => {
@@ -345,9 +345,9 @@ function PaymentsTab({ p, term, openDoc }) {
   };
   return (
     <div className="stack">
-      <div className="note small">Receipts and debit notes are stored next to the policy. They never change premium, dates or sum insured.</div>
+      <div className="note small">Recording money here never changes the policy's premium, dates or sum insured.</div>
       <div className="stats">
-        <div className="stat"><span>Due on this term</span><strong>{fmtMoney(pay.due, cur)}</strong><em>{term.instalments.length ? `${term.instalments.length} instalments` : "Net premium, single payment"}</em></div>
+        <div className="stat"><span>Due on this policy</span><strong>{fmtMoney(pay.due, cur)}</strong><em>{term.instalments.length ? `${term.instalments.length} instalments` : "Net premium, single payment"}</em></div>
         <div className="stat"><span>Received</span><strong>{fmtMoney(pay.received, cur)}</strong><em>{term.receipts.length} receipt(s)</em></div>
         <div className="stat"><span>Outstanding</span><strong className={pay.outstanding > 0 ? "bad-text" : ""}>{fmtMoney(pay.outstanding, cur)}</strong><em>{pay.label}</em></div>
       </div>
@@ -356,26 +356,26 @@ function PaymentsTab({ p, term, openDoc }) {
         {!editSched && found && can("schedule") && (
           <div className="note" style={{ marginBottom: 12 }}>
             <strong>This policy's document has {found.rows.length} instalments.</strong> Check them against the document, then use them.
-            <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Premium</th><th className="num">GST</th><th className="num">Stamp duty</th><th className="num">Amount</th></tr></thead>
+            <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Premium</th><th className="num">GST</th><th className="num">Stamp duty<Tip k="Stamp duty" /></th><th className="num">Amount</th></tr></thead>
               <tbody>{found.rows.map((r) => <tr key={r.no}><td>{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtNum(r.amount, cur)}</td><td className="num">{fmtNum(r.gst, cur)}</td><td className="num">{r.stampDuty ? fmtNum(r.stampDuty, cur) : "--"}</td><td className="num">{fmtNum(r.total, cur)}</td></tr>)}</tbody></Table>
             {!found.adds && <p className="warn-text small">Some rows do not add up, so a figure may be misread. Check them.</p>}
             <div className="row gap-s" style={{ marginTop: 8 }}><Btn kind="primary" onClick={useFound}>Use this schedule</Btn></div>
           </div>
         )}
         {editSched ? <ScheduleEditor p={p} term={term} onDone={() => setEditSched(false)} /> : rows.length ? (
-          <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Amount</th><th className="num">Tax</th><th className="num">Stamp duty</th><th className="num">Total due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
+          <Table><thead><tr><th>No.</th><th>Due date</th><th className="num">Amount</th><th className="num">Tax</th><th className="num">Stamp duty<Tip k="Stamp duty" /></th><th className="num">Total due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
             <tbody>{rows.map((r) => <tr key={r.no}><td>{r.no}</td><td>{fmtDate(r.due)}</td><td className="num">{fmtNum(r.amount, cur)}</td><td className="num">{fmtNum(r.tax, cur)} <span className="muted small">({r.taxPct}%)</span></td><td className="num">{r.stampDuty ? fmtNum(r.stampDuty, cur) : "--"}</td><td className="num">{fmtNum(r.total, cur)}</td><td className="num">{fmtNum(r.got, cur)}{r.recs.length > 0 && <div className="small muted">{r.recs.map((x) => fmtDate(x.date)).join(", ")}</div>}</td><td className="num">{fmtNum(r.out, cur)}</td><td><Pill tone={r.tone}>{r.status}</Pill></td></tr>)}</tbody></Table>
-        ) : <Empty title="Single payment">This term has no instalment schedule. The net premium is due as one amount.</Empty>}
+        ) : <Empty title="Single payment">No instalments on this policy, so the net premium is due in one go.</Empty>}
         {term.scheduleHistory?.length > 0 && <details className="small"><summary>{term.scheduleHistory.length} earlier schedule version(s) kept</summary>{term.scheduleHistory.map((h, i) => <div key={i} className="muted">Version {i + 1}, replaced {fmtStamp(h.at)} by {h.by}: {h.rows.map((r) => `#${r.no} ${fmtDate(r.due)} ${fmtNum(instTotal(r), cur)}`).join("; ") || "no rows"}</div>)}</details>}
       </Card>
-      <Card title="Receipts" sub="Each receipt can be linked to an instalment. Repeat as many payment blocks as needed." actions={can("receipt") && !addRec && <Btn kind="primary" onClick={() => setAddRec(true)}>Record receipt</Btn>}>
+      <Card title="Receipts" sub="Money received from the customer. Link it to an instalment if there are any." actions={can("receipt") && !addRec && <Btn kind="primary" onClick={() => setAddRec(true)}>Record receipt</Btn>}>
         {addRec && <ReceiptForm p={p} term={term} onDone={() => setAddRec(false)} />}
         {term.receipts.length ? (
-          <Table><thead><tr><th>Received on</th><th className="num">Amount</th><th>Against</th><th>Mode</th><th>Reference / UTR</th><th>Bank</th><th>Remitted to insurer</th><th>Proof</th></tr></thead>
+          <Table><thead><tr><th>Received on</th><th className="num">Amount</th><th>Against</th><th>Mode</th><th>Reference / UTR</th><th>Bank</th><th>Remitted to insurer<Tip k="Remitted to insurer on" /></th><th>Proof</th></tr></thead>
             <tbody>{term.receipts.map((r) => { const proof = db.documents.find((d) => d.id === r.proofDocId); const inst = term.instalments.find((i) => i.no === r.instNo); return <tr key={r.id}><td>{fmtDate(r.date)}</td><td className="num">{fmtMoney(r.amount, cur)}</td><td>{inst ? `Instalment ${inst.no} (due ${fmtDate(inst.due)})` : "Not linked to an instalment"}</td><td>{r.mode}</td><td>{r.ref || "--"}</td><td>{r.bank || "--"}</td><td>{r.remitDate ? fmtDate(r.remitDate) : <span className="muted">Not yet</span>}</td><td>{proof ? <button className="linkbtn" onClick={() => openDoc(proof)}>View</button> : "--"}</td></tr>; })}</tbody></Table>
-        ) : <Empty title="No receipts recorded">Nothing has been received against this term yet. Issued cover does not mean paid.</Empty>}
+        ) : <Empty title="No receipts recorded">Nothing received yet. A policy being issued does not mean it is paid.</Empty>}
       </Card>
-      <Card title="Debit notes" sub="Stored for reference. A debit note does not overwrite policy values.">
+      <Card title="Debit notes" sub="Kept for reference. A debit note does not change the policy's figures.">
         {debitNotes.length ? debitNotes.map((d) => <div key={d.id} className="row between"><span>{d.name}</span><Btn onClick={() => openDoc(d)}>View</Btn></div>) : <Empty title="No debit note attached">Add one from the Documents tab.</Empty>}
       </Card>
     </div>
@@ -440,7 +440,7 @@ function ScheduleEditor({ p, term, onDone }) {
         <Labeled label="No. of instalments" htmlFor="sg-count"><input id="sg-count" type="number" min="1" max="24" value={gen.count} onChange={(e) => setGen({ ...gen, count: e.target.value })} /></Labeled>
         <div className="row gap-s fld-wide wrap"><Btn onClick={generate}>Make rows</Btn><Btn onClick={split} disabled={!rows.length}>Split remaining net equally (editable)</Btn><span className="small muted">Rows with receipts are locked so their due dates stay as they were.</span></div>
       </div>
-      <Table><thead><tr><th>No.</th><th>Due date</th><th>Amount (before tax)</th><th>Tax %</th><th>Stamp duty</th><th className="num">Total</th><th /></tr></thead>
+      <Table><thead><tr><th>No.</th><th>Due date</th><th>Amount (before tax)</th><th>Tax %</th><th>Stamp duty<Tip k="Stamp duty" /></th><th className="num">Total</th><th /></tr></thead>
         <tbody>{rows.map((r, i) => { const locked = paidNos.has(r.no); return (
           <tr key={i}><td>{i + 1}</td>
             <td><DateInput aria-label={`Instalment ${i + 1} due date`} value={r.due} disabled={locked} onChange={(e) => setRow(i, "due", e.target.value)} /></td>
@@ -565,7 +565,7 @@ function VesselSection({ p, term, openDoc }) {
                 <Labeled label="Effective date" htmlFor="fl-eff" req error={tried && errs.effDate}><DateInput id="fl-eff" value={f.effDate} onChange={(e) => set("effDate")(e.target.value)} /></Labeled>
                 <Labeled label={`Premium adjustment (${cur}), minus for refund`} htmlFor="fl-padj" req error={tried && errs.premiumAdj}><input id="fl-padj" inputMode="decimal" value={f.premiumAdj} onChange={(e) => set("premiumAdj")(e.target.value)} /></Labeled>
                 <Labeled label={`Brokerage adjustment (${cur})`} htmlFor="fl-badj" req error={tried && errs.brokerageAdj}><input id="fl-badj" inputMode="decimal" value={f.brokerageAdj} onChange={(e) => set("brokerageAdj")(e.target.value)} /></Labeled>
-                <Labeled label="Reviewer note" htmlFor="fl-note" wide><input id="fl-note" value={f.note} onChange={(e) => set("note")(e.target.value)} placeholder="For example: as per insurer endorsement no." /></Labeled>
+                <Labeled label="Note" htmlFor="fl-note" wide><input id="fl-note" value={f.note} onChange={(e) => set("note")(e.target.value)} placeholder="For example: as per insurer endorsement no." /></Labeled>
                 <div className="fld"><label className="check"><input type="checkbox" checked={f.withDoc} onChange={(e) => set("withDoc")(e.target.checked)} /> Attach a sample endorsement document</label></div>
               </div>
               <div className="row gap-s"><Btn onClick={() => { setOpen(false); setTried(false); }}>Cancel</Btn><Btn kind="primary" onClick={() => { setTried(true); if (ok) setStep("review"); }}>Review change</Btn></div>
@@ -689,13 +689,13 @@ function CargoSection({ p, term }) {
   const F = ({ k, label, type = "text", req, hint, mode }) => <Labeled label={label} htmlFor={`dc-${k}`} req={req} hint={hint} error={tried && errs[k]}><input id={`dc-${k}`} type={type} inputMode={mode} value={f[k]} onChange={set(k)} /></Labeled>;
   const S = ({ k, label, options }) => <Labeled label={label} htmlFor={`dc-${k}`}><select id={`dc-${k}`} value={f[k]} onChange={set(k)}>{options.map((o) => <option key={o}>{o}</option>)}</select></Labeled>;
   return (
-    <Card title="Marine cargo open policy: declarations" sub="Each shipment is checked against the policy conditions before it is declared. A declaration outside the terms would be void."
+    <Card title="Marine cargo open policy: declarations" sub="Each shipment is checked against the policy's conditions before you declare it. A declaration outside them could be void."
       actions={can("declare") && profile && !open && <Btn kind="primary" onClick={() => setOpen(true)}>Add declaration</Btn>}>
       <div className="stats">
         <div className="stat"><span>Sum insured</span><strong>{fmtMoney(si)}</strong></div>
         <div className="stat"><span>Sum insured used</span><strong>{fmtMoney(used)}</strong><em>{live.length} declarations{term.cargoDecls.length > live.length ? `, ${term.cargoDecls.length - live.length} held back` : ""}</em></div>
         <div className="stat"><span>Premium used</span><strong>{fmtMoney(premUsed)}</strong></div>
-        <div className="stat"><span>Balanced SI</span><strong>{fmtMoney(bal)}</strong><em>{pct}% of sum insured left</em></div>
+        <div className="stat"><span>Sum insured left</span><strong>{fmtMoney(bal)}</strong><em>{pct}% of sum insured left</em></div>
       </div>
       <div className="meter" role="img" aria-label={`${pct}% remaining`}><div style={{ width: `${Math.max(0, Math.min(100, 100 - pct))}%` }} /></div>
       <p className="small">{bal / si * 100 < th ? <Pill tone="warn">Below the reminder level of {th}%</Pill> : <>Above the reminder level of {th}%.</>}</p>
@@ -798,7 +798,7 @@ function CharterSection({ p, term }) {
           <div className="row gap-s fld-wide"><Btn onClick={() => { setOpen(false); setTried(false); }}>Cancel</Btn><Btn kind="primary" onClick={save}>Save declaration</Btn></div>
         </div>
       )}
-      {term.charterDecls.length ? <Table><thead><tr><th>Period</th><th>Reference</th><th>Vessel</th><th>Charter dates</th><th className="num">GRT</th><th className="num">Premium</th><th>Remarks</th><th>Recorded</th></tr></thead>
+      {term.charterDecls.length ? <Table><thead><tr><th>Period</th><th>Reference</th><th>Vessel</th><th>Charter dates</th><th className="num">GRT<Tip k="GRT" /></th><th className="num">Premium</th><th>Remarks</th><th>Recorded</th></tr></thead>
         <tbody>{term.charterDecls.map((x) => <tr key={x.id}><td>{x.period}</td><td>{x.reference}</td><td>{x.vessel || "--"}</td><td className="small">{x.from || x.to ? `${fmtDate(x.from)} to ${fmtDate(x.to)}` : "--"}</td><td className="num">{x.grt || "--"}</td><td className="num">{x.premium ? fmtMoney(+x.premium, term.values.currency) : "--"}</td><td>{x.remarks || "--"}</td><td className="small">{fmtStamp(x.at)} by {x.by}</td></tr>)}</tbody></Table> : <Empty title="No charterers declarations yet" />}
     </Card>
   );
@@ -869,7 +869,7 @@ function RenewalsTab({ p, term, terms, go }) {
   }
   return (
     <div className="stack">
-      <Card title="Linked terms" sub="Each renewal is a new term linked to the one before. Earlier terms and their documents are never changed.">
+      <Card title="Linked policy years" sub="Each renewal is a new policy year linked to the one before. Earlier years never change.">
         <ol className="chain">
           {terms.map((t) => (
             <li key={t.id} className={t.id === term.id ? "on" : ""}>

@@ -4,26 +4,30 @@ import { saveFile } from "./store.js";
 import { FIELDS, FIELD, CURRENCIES, NUMERIC } from "./data.js";
 import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf } from "./lib.js";
 import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput } from "./ui.jsx";
-import { readPolicyPdf, readerSelfTest, ReadError } from "./extract.js";
+import { readPolicyPdf, readerSelfTest, ReadError, isImage } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
 
 const GROUPS = ["Identification", "Dates", "Amounts", "Other", "Brokerage"];
 
-export function DocPane({ lines, title, highlight, generated, extracted, onLine }) {
+export function DocPane({ lines, title, highlight, generated, extracted, onLine, localUrl, localIsImage }) {
   const box = useRef(null);
+  const [view, setView] = useState("text");
+  // Asked to show a line: go back to the text so the line can be seen.
+  useEffect(() => { if (highlight) { setView("text"); document.getElementById(`line-${highlight}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); } }, [highlight]);
   return (
     <div className="docpane">
       <div className="docpane-head">
         <strong>{title}</strong>
-        <span className="muted small">{extracted ? "Text read from your file." : <>{generated ? "Sample generated for this demo." : "Sample document fixture."} Simulated scan, no real file is read.</>}</span>
+        <span className="muted small">{extracted ? (view === "text" ? "The text we read, line by line. Click a green or amber tag to jump to its line." : "Your file as it is. Trust this over the text if they differ.") : <>{generated ? "Sample generated for this demo." : "Sample document fixture."} Simulated scan, no real file is read.</>}</span>
+        {localUrl && <div className="doc-tabs" role="group" aria-label="What to show"><button type="button" className={view === "text" ? "on" : ""} onClick={() => setView("text")}>Text we read</button><button type="button" className={view === "file" ? "on" : ""} onClick={() => setView("file")}>Original file</button></div>}
       </div>
-      <ol className="paper" ref={box}>
+      {view === "file" && localUrl ? (localIsImage ? <img className="doc-original" src={localUrl} alt={`${title}, the original file`} /> : <iframe className="doc-original" src={localUrl} title={`${title}, the original file`} />) : <ol className="paper" ref={box}>
         {lines.map((l, i) => (
           <li key={i} id={`line-${i + 1}`} className={highlight === i + 1 ? "hl" : ""} onClick={() => onLine && onLine(i + 1)}>
             <span className="ln">L{i + 1}</span><span>{l}</span>
           </li>
         ))}
-      </ol>
+      </ol>}
     </div>
   );
 }
@@ -47,6 +51,7 @@ export function PdfAttach({ id, label = "Attach the policy PDF", onReady, ready,
     try {
       const fx = await readPolicyPdf(file, (p, n, ocr) => setState({ busy: true, msg: ocr ? `This is a scan, reading it page by page: page ${p} of ${n} (about 10 seconds a page)...` : `Reading page ${p} of ${n}...`, err: "", detail: "" }));
       fx.fileId = await saveFile(file);
+      fx.localUrl = URL.createObjectURL(file); fx.localIsImage = isImage(file);
       setState({ busy: false, msg: "", err: "", detail: "" });
       onReady(fx);
     } catch (e) {
@@ -62,32 +67,32 @@ export function PdfAttach({ id, label = "Attach the policy PDF", onReady, ready,
       <label htmlFor={id} className="dropzone">
         <span className="dz-icon"><Icon name="upload" size={26} /></span>
         <span className="attach-label">{label}</span>
-        <span className="dz-sub">Drop the PDF or a photo of it here, or click to browse</span>
-        <span className="small muted">Digital PDFs from the insurer work best. Scanned PDFs and photos (JPG, PNG) are read too, more slowly, and every value is marked for checking. The text is read inside your browser. The original file is kept with your records.</span>
+        <span className="dz-sub">Drop the PDF or a photo of it here, or click to choose</span>
+        <span className="small muted">The insurer's PDF works best. Scans and photos (JPG, PNG) work too, but take longer and need more checking.</span>
       </label>
       <ReaderStatus />
       {state.busy && <p className="small" role="status">{state.msg}</p>}
       {state.err && <div className="err-text" role="alert">{state.err}{state.detail && <div className="small muted">Technical detail: {state.detail}</div>}</div>}
       {ready && !state.busy && (
-        <p className="small" role="status">{describe ? describe(ready) : ready.noText ? <><strong>{ready.fileName}</strong>: no readable text, even read as a scan. You will be asked to enter the values.</> : <><strong>{ready.fileName}</strong>: found {n} field{n === 1 ? "" : "s"} on {ready.readPages} page{ready.readPages === 1 ? "" : "s"}{ready.ocr ? " (read as a scan, so check each value)" : ""}. Anything not found will be asked for on the next screen.</>}</p>
+        <p className="small" role="status">{describe ? describe(ready) : ready.noText ? <><strong>{ready.fileName}</strong>: no readable text, even read as a scan. You will be asked to enter the values.</> : <><strong>{ready.fileName}</strong>: found {n} field{n === 1 ? "" : "s"} on {ready.readPages} page{ready.readPages === 1 ? "" : "s"}{ready.ocr ? " (read as a scan, so check each value)" : ""}. You will be asked for anything we could not find.</>}</p>
       )}
     </div>
   );
 }
 
 function SourceChip({ src, onShow, req }) {
-  if (!src) return req ? <span className="src src-miss">Not found on document, please enter</span> : <span className="src">Not on document (optional)</span>;
+  if (!src) return req ? <span className="src src-miss">Not on the policy, please enter</span> : <span className="src">Not on the policy (optional)</span>;
   if (src.conf === "issue") return <span className="src src-info">Same as the issue date. Change it if needed.</span>;
-  if (src.conf === "preset") return <span className="src src-info">From brokerage preset v{src.version}</span>;
-  if (src.conf === "manual") return <span className="src src-info">Entered by reviewer</span>;
-  if (src.conf === "calc") return <span className="src src-info">Calculated by reviewer</span>;
-  const label = `${src.docLabel || "Document"} L${src.ref}`;
+  if (src.conf === "preset") return <span className="src src-info">From your brokerage rates</span>;
+  if (src.conf === "manual") return <span className="src src-info">Typed in</span>;
+  if (src.conf === "calc") return <span className="src src-info">Worked out here</span>;
+  const label = `Line ${src.ref}`;
   return (
     <span className="row gap-xs wrap">
       <button type="button" className={`src ${src.conf === "low" ? "src-low" : "src-ok"}`} onClick={() => onShow(src.ref)} title="Show this line on the document">
-        {label} · {src.conf === "low" ? "low confidence, please check" : "read clearly"}
+        {label} · {src.conf === "low" ? "please check" : "read clearly"}
       </button>
-      {src.edited && <span className="src src-edit">Edited (document said {src.originalText})</span>}
+      {src.edited && <span className="src src-edit">Changed (the policy said {src.originalText})</span>}
     </span>
   );
 }
@@ -195,7 +200,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
       </div>
       <div className="note small" role="status">
         {fixture.noText ? <><strong>No text could be read from {fixture.fileName}.</strong> It was read as a scan but the text was too faint or blurred. Please enter the values below.</>
-          : <>Filled <strong>{found}</strong> field{found === 1 ? "" : "s"} from {fixture.extracted ? <strong>{fixture.fileName}</strong> : "the document"}{fixture.ocr ? " (read as a scan: every value is amber, check each one)" : ""}{fixture.extracted && fixture.readPages < fixture.pages ? ` (first ${fixture.readPages} of ${fixture.pages} pages)` : ""}. Click a green or amber tag to see the line it came from.</>}
+          : <>Filled <strong>{found}</strong> field{found === 1 ? "" : "s"} from {fixture.extracted ? <strong>{fixture.fileName}</strong> : "the document"}{fixture.ocr ? " (read as a scan: every value is amber, check each one)" : ""}{fixture.extracted && fixture.readPages < fixture.pages ? ` (first ${fixture.readPages} of ${fixture.pages} pages)` : ""}. Check the amber ones against the policy, then fill the gaps.</>}
         {fixture.info?.insured && (!customerName ? <div>Insured name on the document: <strong>{fixture.info.insured}</strong>. Check it is the right customer.</div>
           : sameName(fixture.info.insured, customerName) ? <div className="ins-ok">Insured on the document: <strong>{fixture.info.insured}</strong>. Matches the customer.</div>
           : <div className="ins-diff"><strong>Insured on the document is {fixture.info.insured}</strong>, but this record is for {customerName}. Check you picked the right customer before saving.</div>)}
@@ -220,11 +225,12 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               );
             })}
           </div>
-          <p className="small muted">Is renewable is never read from documents; a person always enters it. Business booked date starts as the issue date. You can save a draft with gaps, and a draft never counts as complete.</p>
+          <p className="small muted">We never guess Is renewable, so please answer it. Business booked date starts as the issue date. You can save a draft with gaps and finish it later.</p>
         </section>
       )}
+      <div className="legend note small"><strong>How to read this:</strong> <span className="src src-ok">read clearly</span> <span className="src src-low">please check</span> Click a tag to see its line on the policy. <span className="src">Not on the policy</span></div>
       <div className="review-grid">
-        <DocPane lines={fixture.lines} title={fixture.title} highlight={hl} generated={fixture.generated} extracted={fixture.extracted} onLine={setHl} />
+        <DocPane lines={fixture.lines} title={fixture.title} highlight={hl} generated={fixture.generated} extracted={fixture.extracted} onLine={setHl} localUrl={fixture.localUrl} localIsImage={fixture.localIsImage} />
         <div className="review-fields">
           <div className="note small">Insurer and branch from step 3: <strong>{ins?.name}, {branchOf(db, insurerId, branchId)?.name || "selected branch"}</strong>. Policy type: <strong>{policyType}</strong>.</div>
           {GROUPS.map((g) => (
@@ -245,18 +251,18 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                     <div className="rv-src">
                       <SourceChip src={s} onShow={show} req={f.req} />
                       {s?.conf === "low" && !s?.edited && !s?.checked && (
-                        <button type="button" className="linkbtn" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...s, checked: true } }))}>Checked, value is right</button>
+                        <button type="button" className="linkbtn" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...s, checked: true } }))}>This is right</button>
                       )}
-                      {s?.checked && <span className="src src-ok">Checked by reviewer</span>}
+                      {s?.checked && <span className="src src-ok">You checked this</span>}
                       {f.key === "netPremium" && (
                         <div className="small">
                           {grossMismatch && <div className="warn-text">Gross + GST = {fmtValue("netPremium", sumCheck, vals.currency)}{withStamp != null && <>, or {fmtValue("netPremium", withStamp, vals.currency)} with stamp duty</>}, which differs from the net entered.</div>}
-                          {withStamp == null ? <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => setNet(sumCheck)}>Calc net premium</button>
+                          {withStamp == null ? <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => setNet(sumCheck)}>Work out net premium</button>
                             : <span className="row gap-s wrap"><button type="button" className="linkbtn" onClick={() => setNet(withStamp)}>Gross + GST + stamp duty = {fmtValue("netPremium", withStamp, vals.currency)}</button><button type="button" className="linkbtn" onClick={() => setNet(sumCheck)}>Gross + GST only = {fmtValue("netPremium", sumCheck, vals.currency)}</button></span>}
                         </div>
                       )}
                       {f.key === "gst" && (
-                        <button type="button" className="linkbtn small" disabled={!isNum(vals.grossPremium) || !isNum(vals.gstPct)} onClick={() => { setVals((p) => ({ ...p, gst: r2(+p.grossPremium * +p.gstPct / 100) })); setSrcs((p) => ({ ...p, gst: { conf: "calc" } })); }}>Calculate from GST %</button>
+                        <button type="button" className="linkbtn small" disabled={!isNum(vals.grossPremium) || !isNum(vals.gstPct)} onClick={() => { setVals((p) => ({ ...p, gst: r2(+p.grossPremium * +p.gstPct / 100) })); setSrcs((p) => ({ ...p, gst: { conf: "calc" } })); }}>Work out from GST %</button>
                       )}
                       {f.key === "location" && fixture.fields.location?.word && <span className="src src-info">The policy calls this: {fixture.fields.location.word}</span>}
                     </div>
@@ -265,7 +271,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               })}
               {g === "Brokerage" && (
                 <div className="brok">
-                  <p className="small">{preset ? <>Preset for {ins?.name} + {policyType}: <strong>{preset.pct}%</strong> (version {preset.version}). It loads as a starting value and stays editable.</> : <>No confirmed preset for this insurer and policy type. Enter brokerage by hand.</>}</p>
+                  <p className="small">{preset ? <>Your rate for {ins?.name}, {policyType}: <strong>{preset.pct}%</strong>. You can change it for this policy.</> : <>No saved rate for this insurer and policy type, so please enter it.</>}</p>
                   <label className="check"><input id="rv-brok-net" type="checkbox" checked={!!vals.brokerageOnNet} onChange={(e) => setVals((p) => ({ ...p, brokerageOnNet: e.target.checked }))} /> Brokerage on net premium (leave unticked for gross)</label>
                   {isNum(vals.brokeragePct) && isNum(vals.brokerageOnNet ? vals.netPremium : vals.grossPremium) && <p className="small">Brokerage amount: <strong>{fmtValue("grossPremium", brokerageOf(vals), vals.currency)}</strong> ({vals.brokerageOnNet ? "net" : "gross"} premium x brokerage %)</p>}
                   <label className="check"><input id="rv-brok-ok" type="checkbox" checked={brokOk} onChange={(e) => setBrokOk(e.target.checked)} /> I have checked the brokerage for this policy</label>
