@@ -1,9 +1,9 @@
 // Side-by-side review of simulated OCR output. People correct and confirm; nothing is guessed.
-import { LIVE } from "./data.js";
+import { LIVE, TODAY } from "./data.js";
 import { saveFile } from "./store.js";
 import { FIELDS, FIELD, CURRENCIES, NUMERIC } from "./data.js";
 import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf } from "./lib.js";
-import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput } from "./ui.jsx";
+import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput, MoneyInput, Select } from "./ui.jsx";
 import { readPolicyPdf, readerSelfTest, ReadError, isImage } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -139,8 +139,10 @@ const NAME_NOISE = /\b(messrs|the|pvt|private|ltd|limited|llp|co|company|inc|cor
 const nameKey = (n) => String(n || "").toLowerCase().replace(/\bm\/s\b/g, " ").replace(/[^a-z0-9 ]/g, " ").replace(NAME_NOISE, " ").replace(/\s+/g, " ").trim();
 export const sameName = (a, b) => { const x = nameKey(a), y = nameKey(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
 
-export function OcrReview({ fixture, initial = {}, initialSources = {}, initialBrokerageConfirmed = false, insurerId, branchId, policyType, heading, customerName, onCancel, onSaveDraft, onConfirm, confirmLabel = "Confirm record" }) {
-  const { db, can } = useApp();
+export function OcrReview({ fixture, initial = {}, initialSources = {}, initialBrokerageConfirmed = false, insurerId, branchId, policyType, heading, customerName, onCancel, onSaveDraft, onConfirm, confirmLabel = "Confirm record", askPayment = false, selfPolicyId = null }) {
+  const { db, can, go } = useApp();
+  const [showRate, setShowRate] = useState(false);
+  const [paid, setPaid] = useState({ how: "no", date: TODAY, mode: "Bank transfer", ref: "" });
   const preset = activePreset(db, insurerId, policyType);
   const start = useMemo(() => {
     const vals = {}, srcs = {};
@@ -159,6 +161,8 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     // Booked date starts as the issue date and stays editable.
     if (!vals.bookDate && vals.issueDate) { vals.bookDate = vals.issueDate; srcs.bookDate = { conf: "issue" }; }
     vals.brokerageOnNet = !!initial.brokerageOnNet;
+    // A policy that ends when the voyage or transit completes has no calendar end date.
+    vals.noFixedEnd = initial.noFixedEnd ?? (!vals.riskEnd && !!fixture.info?.noFixedEnd);
     vals.otherDetails = initial.otherDetails || fixture.other || [];
     if ((vals.brokeragePct === "" || vals.brokeragePct == null) && preset) {
       vals.brokeragePct = preset.pct;
@@ -192,7 +196,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   const show = (ref) => { setHl(ref); document.getElementById(`line-${ref}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); };
 
   // checks
-  const missing = FIELDS.filter((f) => f.req && (vals[f.key] === "" || vals[f.key] == null));
+  const missing = FIELDS.filter((f) => f.req && !(f.key === "riskEnd" && vals.noFixedEnd) && (vals[f.key] === "" || vals[f.key] == null));
   const errors = {};
   FIELDS.forEach((f) => {
     const v = vals[f.key];
@@ -202,6 +206,12 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     }
   });
   if (vals.riskStart && vals.riskEnd && vals.riskEnd <= vals.riskStart) errors.riskEnd = "Risk end must be after risk start";
+  FIELDS.filter((f) => f.type === "pct").forEach((f) => { if (isNum(vals[f.key]) && +vals[f.key] > 100) errors[f.key] = "Cannot be more than 100%"; });
+  if (isNum(vals.share) && isNum(vals.coBrokerShare) && +vals.share + +vals.coBrokerShare > 100) errors.coBrokerShare = `Our share and co-broker share add up to ${r2(+vals.share + +vals.coBrokerShare)}%. Together they cannot be more than 100%.`;
+  // The same policy number already in the register is the same policy: open that one instead.
+  const norm = (x) => String(x || "").toUpperCase().replace(/[\s.]/g, "");
+  const twin = vals.policyNo ? db.terms.find((t) => t.policyId !== selfPolicyId && norm(t.values?.policyNo) === norm(vals.policyNo)) : null;
+  const twinPolicy = twin && db.policies.find((p) => p.id === twin.policyId);
   // Gross + GST is the final amount on most policies; some totals add stamp duty too. Either can be right.
   const sumCheck = [vals.grossPremium, vals.gst].every(isNum) ? r2(+vals.grossPremium + +vals.gst) : null;
   const withStamp = sumCheck != null && +vals.stampDuty > 0 ? r2(sumCheck + +vals.stampDuty) : null;
@@ -210,13 +220,15 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   const lowConf = FIELDS.filter((f) => srcs[f.key]?.conf === "low" && !srcs[f.key]?.edited && !srcs[f.key]?.checked);
   const blockers = [...missing.map((f) => `${f.label} is missing`), ...Object.entries(errors).map(([k, e]) => `${FIELD[k].label}: ${e}`)];
   if (!brokOk) blockers.push("Tick the brokerage confirmation");
+  if (twinPolicy) blockers.push(`Policy number ${vals.policyNo} is already in your register as ${twinPolicy.controlNo}`);
   if (lowConf.length) blockers.push(`${lowConf.length} low-confidence value${lowConf.length > 1 ? "s" : ""} not yet checked`);
 
   const payload = () => {
     const clean = {};
     FIELDS.forEach((f) => { const v = vals[f.key]; clean[f.key] = NUMERIC.has(f.key) && isNum(v) ? +v : v; });
     const snap = srcs.brokeragePct?.conf === "preset" ? { presetId: srcs.brokeragePct.presetId, version: srcs.brokeragePct.version, pct: +vals.brokeragePct } : null;
-    return { values: clean, sources: srcs, brokerageConfirmed: brokOk, brokerageSnap: snap };
+    clean.noFixedEnd = !!vals.noFixedEnd; if (clean.noFixedEnd) clean.riskEnd = "";
+    return { values: clean, sources: srcs, brokerageConfirmed: brokOk, brokerageSnap: snap, ...(askPayment && paid.how === "full" ? { payment: { date: paid.date, mode: paid.mode, ref: paid.ref.trim() } } : {}) };
   };
 
   return (
@@ -246,7 +258,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
             <Pill tone={askKeys.some((k) => vals[k] === "" || vals[k] == null) ? "warn" : "good"}>{askKeys.filter((k) => !(vals[k] === "" || vals[k] == null)).length} of {askKeys.length} entered</Pill>
           </div>
           <div className="formgrid">
-            {askKeys.map((k) => {
+            {askKeys.filter((k) => !(k === "riskEnd" && vals.noFixedEnd)).map((k) => {
               const f = FIELD[k], id = `ask-${k}`, done = !(vals[k] === "" || vals[k] == null);
               return (
                 <Labeled key={k} label={<>{done && <span className="good-text">✓ </span>}{f.label}</>} htmlFor={id} req error={errors[k] || (tried && !done ? "Required before confirming" : null)} hint={f.help}>
@@ -270,6 +282,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
             <fieldset key={g} className="fgroup">
               <legend>{g}</legend>
               {FIELDS.filter((f) => f.group === g).map((f) => {
+                if (f.key === "premiumRate" && !showRate && (vals.premiumRate === "" || vals.premiumRate == null) && !srcs.premiumRate) return <div key={f.key} className="small"><button type="button" className="linkbtn" onClick={() => setShowRate(true)}>Add a premium rate</button> <span className="muted">(only if the policy states one)</span></div>;
                 const id = `rv-${f.key}`;
                 const err = errors[f.key] || (tried && f.req && (vals[f.key] === "" || vals[f.key] == null) ? "Required before confirming" : null);
                 const s = srcs[f.key];
@@ -279,7 +292,11 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                       {f.type === "date" ? <DateInput id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
                         : f.type === "currency" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Choose</option>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
                         : f.type === "yesno" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Not entered</option><option>Yes</option><option>No</option></select>
+                        : f.type === "select" ? <Select id={id} value={vals[f.key] || ""} onChange={(v) => set(f.key, v)} placeholder="Not entered" options={f.options} />
+                        : f.type === "money" ? <MoneyInput id={id} value={vals[f.key] ?? ""} onChange={(v) => set(f.key, v)} />
                         : <input id={id} type="text" inputMode={NUMERIC.has(f.key) ? "decimal" : undefined} value={vals[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value.replace(/,/g, ""))} />}
+                      {f.key === "riskEnd" && <label className="check small" style={{ marginTop: 6 }}><input id="rv-noend" type="checkbox" checked={!!vals.noFixedEnd} onChange={(e) => setVals((p) => ({ ...p, noFixedEnd: e.target.checked, ...(e.target.checked ? { riskEnd: "" } : {}) }))} /> No fixed end date: it ends when the voyage or transit completes</label>}
+                      {f.key === "netPremium" && fixture.info?.premiumInAnnexure && !vals.netPremium && <div className="small warn-text">The policy says the premium is in an annexure (line {fixture.info.premiumInAnnexure.ref}).{fixture.readPages < fixture.pages ? ` We read ${fixture.readPages} of ${fixture.pages} pages, so it may be in a page we did not read: check the Original file.` : " Search the document for it."}</div>}
                     </Labeled>
                     <div className="rv-src">
                       <SourceChip src={s} onShow={show} req={f.req} />
@@ -329,6 +346,25 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
           </fieldset>
         </div>
       </div>
+      {twinPolicy && <div className="note note-bad row between wrap gap-s" role="alert"><span><strong>This policy is already in your register.</strong> Policy number {vals.policyNo} is {twinPolicy.controlNo}. Open it instead of adding it again. If it is a renewal with the same number, renew that policy.</span><Btn onClick={() => go({ view: "policy", id: twinPolicy.id })}>Open {twinPolicy.controlNo}</Btn></div>}
+      {askPayment && (
+        <fieldset className="fgroup review-pay">
+          <legend>Payment (optional)</legend>
+          <p className="small muted">Already paid? Record it now and skip the Payments tab. Paying in instalments? Set them up on the policy after saving.</p>
+          <div className="row gap-s wrap">
+            <label className="check"><input type="radio" name="rv-pay" checked={paid.how === "no"} onChange={() => setPaid({ ...paid, how: "no" })} /> Not paid yet, or in instalments</label>
+            <label className="check"><input id="rv-paid-full" type="radio" name="rv-pay" checked={paid.how === "full"} onChange={() => setPaid({ ...paid, how: "full" })} /> Paid in full{isNum(vals.netPremium) ? ` (${fmtValue("netPremium", vals.netPremium, vals.currency)})` : ""}</label>
+          </div>
+          {paid.how === "full" && (
+            <div className="filters" style={{ marginTop: 8 }}>
+              <Labeled label="Received on" htmlFor="rv-paid-date"><DateInput id="rv-paid-date" value={paid.date} onChange={(e) => setPaid({ ...paid, date: e.target.value })} /></Labeled>
+              <Labeled label="Payment mode" htmlFor="rv-paid-mode"><Select id="rv-paid-mode" value={paid.mode} onChange={(v) => setPaid({ ...paid, mode: v })} options={["Bank transfer", "NEFT", "RTGS", "Cheque", "Demand draft", "UPI", "Debit card", "SWIFT"]} /></Labeled>
+              <Labeled label="Reference / UTR" htmlFor="rv-paid-ref"><input id="rv-paid-ref" value={paid.ref} onChange={(e) => setPaid({ ...paid, ref: e.target.value })} /></Labeled>
+            </div>
+          )}
+          {paid.how === "full" && !isNum(vals.netPremium) && <p className="small warn-text">Enter the net premium above first.</p>}
+        </fieldset>
+      )}
       <div className="review-actions">
         {tried && blockers.length > 0 && (
           <div className="note note-bad" role="alert"><strong>Cannot confirm yet.</strong><ul>{blockers.map((b) => <li key={b}>{b}</li>)}</ul>Save as draft to keep your work.</div>

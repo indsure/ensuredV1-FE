@@ -6,8 +6,9 @@ export { parseDateText } from "./extract-extra.js";
 // Nothing is uploaded. Scanned PDFs and photos are read with OCR (tesseract.js), also inside the browser:
 // only the OCR program and its English word data are downloaded, the policy never leaves this computer.
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
-const MAX_PAGES = 20;
-const MAX_LINES = 600;
+// The insurer's PDFs are read up to 60 pages, so premium tables in an annexure near the end are found.
+const MAX_PAGES = 60;
+const MAX_LINES = 3000;
 const OCR_PAGES = 6;
 const TESSERACT = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
 const IMAGE_RE = /\.(jpe?g|png|webp|bmp|gif)$/i;
@@ -263,10 +264,10 @@ const RULES = [
   { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl/i },
   { key: "stampDuty", kind: "amount", label: phraseRe(VOCAB.stampDuty), zeroOk: true },
   { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i },
-  { key: "excess", kind: "text", label: phraseRe(VOCAB.excess), needDigit: true, not: /voluntary|discount/i },
-  { key: "location", kind: "text", label: phraseRe(VOCAB.location) },
+  { key: "excess", kind: "text", label: phraseRe(VOCAB.excess), needDigit: true, not: /voluntary|discount/i, badValue: /^\d+(\.\d+)+\s+[A-Za-z]|^(clause|section|item)\b/i },
+  { key: "location", kind: "text", label: phraseRe(VOCAB.location), badValue: /^(address|e-?\s*mail|phone|name|details?|jurisdiction|city|state|country)\b\s*$|@|\bwww\.|\.(com|co\.in|in|org)\b/i },
   // Jurisdiction and its like are a kind of location, but the words also appear in legal clauses, so only as a label.
-  { key: "location", kind: "text", label: phraseRe(VOCAB.jurisdiction), strict: true, not: /court|subject\s+to|law|dispute|arbitration|exclusive/i, badValue: /court|subject\s+to|\blaws?\b|arbitration/i },
+  { key: "location", kind: "text", label: phraseRe(VOCAB.jurisdiction), strict: true, not: /court|subject\s+to|law|dispute|arbitration|exclusive/i, badValue: /court|subject\s+to|\blaws?\b|arbitration|^(address|e-?\s*mail|phone|name)\b|@|\bwww\.|\.(com|co\.in|in|org)\b/i },
 ];
 const LABELS = { policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location" };
 
@@ -435,8 +436,23 @@ export function parseFields(lines, ocr = false) {
   if (fields.riskStart && fields.riskEnd && fields.riskEnd.v <= fields.riskStart.v) { fields.riskEnd.conf = "low"; fields.riskEnd.note = "End date is not after the start date. Check it."; }
   Object.values(fields).forEach((f) => { delete f.noteSet; if (!f.note) delete f.note; });
 
+  // Issue date read from the same line as the start date is often the start date again. Ask.
+  if (fields.issueDate && fields.riskStart && fields.issueDate.ref === fields.riskStart.ref) { fields.issueDate.conf = "low"; fields.issueDate.note = "Read from the same line as the risk start date. Check the issue date is really this."; }
+  // "Valid for 90 days from the policy inception date": the end date is worked out, and marked for checking.
+  if (fields.riskStart && !fields.riskEnd) {
+    const i = lines.findIndex((l) => !l.marker && /\bvalid\s+(?:for\s+)?(\d{1,3})\s*days?\s+(?:from|after)\b/i.test(l.text));
+    if (i >= 0) {
+      const n = +lines[i].text.match(/\bvalid\s+(?:for\s+)?(\d{1,3})\s*days?/i)[1];
+      const d = new Date(fields.riskStart.v + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n - 1);
+      fields.riskEnd = { v: d.toISOString().slice(0, 10), ref: i + 1, conf: "low", note: `Worked out: ${n} days counting the start day, from line ${i + 1}.${/extend|extension/i.test(lines[i].text) ? " The policy can be extended, so check for an extension." : ""}` };
+    }
+  }
   // Information only, never written into fields
   const info = {};
+  { const i = lines.findIndex((l) => !l.marker && /\b(till|until|up\s*to)\b[^.]{0,40}\b(voyage|transit|journey|delivery|arrival)\b[^.]{0,30}\b(complet|end|over|destination)|\b(on|till|until|up\s*to)\s+(the\s+)?(completion|end|termination|arrival)\s+of\s+(the\s+)?(voyage|transit|journey|shipment)/i.test(l.text)); if (i >= 0 && !fields.riskEnd) info.noFixedEnd = { ref: i + 1 }; }
+  { const i = lines.findIndex((l) => !l.marker && /premium[^\n]{0,20}as\s+per\s+(the\s+)?(annexure|schedule\s+attached|attached\s+annexure)/i.test(l.text)); if (i >= 0) info.premiumInAnnexure = { ref: i + 1 }; }
+  // "100,000 per employee": what the limit applies to.
+  if (fields.sumInsured) { const t = lines[fields.sumInsured.ref - 1]?.text || ""; const basis = /per\s+(employee|person|workman|member|life)/i.test(t) ? "Per employee or person" : /any\s+one\s+accident|\bAOA\b/i.test(t) ? "Any one accident" : /any\s+one\s+year|\bAOY\b|aggregate/i.test(t) ? "Any one year" : null; if (basis) fields.siBasis = { v: basis, ref: fields.sumInsured.ref, conf: "low", note: "Read from the line with the limit. Check it." }; }
   const ins = findInsured(lines);
   if (ins) info.insured = ins.v;
   const insurer = findInsurer(lines);

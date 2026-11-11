@@ -38,6 +38,39 @@ export function Btn({ kind = "secondary", children, disabled, why, ...rest }) {
   );
 }
 
+// A money box that shows 1,50,00,000 rather than 15000000, also while typing. The value kept is the plain number.
+export const groupIN = (raw) => {
+  const s = String(raw ?? "");
+  if (!s) return "";
+  const neg = s.startsWith("-") ? "-" : "";
+  const [int, dec] = s.replace(/^-/, "").split(".");
+  const n = int.replace(/^0+(?=\d)/, "");
+  const last3 = n.slice(-3), rest = n.slice(0, -3);
+  const grouped = rest ? rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + last3 : last3;
+  return neg + grouped + (dec !== undefined ? "." + dec : "");
+};
+export function MoneyInput({ id, value, onChange, ...rest }) {
+  const ref = useRef(null);
+  const caret = useRef(null);
+  const shown = groupIN(value);
+  useLayoutEffect(() => {
+    if (caret.current == null || !ref.current || document.activeElement !== ref.current) return;
+    // Put the cursor back after the same number of digits it was after, whatever commas moved.
+    let seen = 0, pos = 0;
+    while (pos < shown.length && seen < caret.current) { if (/[\d.\-]/.test(shown[pos])) seen++; pos++; }
+    ref.current.setSelectionRange(pos, pos);
+    caret.current = null;
+  });
+  return <input ref={ref} id={id} type="text" inputMode="decimal" autoComplete="off" value={shown} {...rest}
+    onChange={(e) => {
+      const t = e.target.value, at = e.target.selectionStart ?? t.length;
+      caret.current = t.slice(0, at).replace(/[^\d.\-]/g, "").length;
+      let raw = t.replace(/[^\d.\-]/g, "").replace(/(?!^)-/g, "");
+      const dot = raw.indexOf("."); if (dot >= 0) raw = raw.slice(0, dot + 1) + raw.slice(dot + 1).replace(/\./g, "");
+      onChange(raw);
+    }} />;
+}
+
 // The (i) beside a word. It explains the word in plain language on hover, focus or tap.
 export function Tip({ k, text }) {
   const body = text || tipFor(k);

@@ -89,8 +89,11 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
           <p className="eyebrow">{p.dept} · Control no. {p.controlNo}<Tip k="Control no." /></p>
           <h1>{term.values.policyNo || "Policy number not entered"}</h1>
           <p className="muted">{p.type} · {ins?.name}, {br?.name} ({br?.city}, {br?.country}){p.vesselMode ? ` · ${p.vesselMode}` : ""}{p.cover ? ` · ${p.cover}` : ""}</p>
+          {(can("*") || (can("editDraft") && terms.every((t) => t.status === "draft"))) && <div style={{ marginTop: 10 }}><AskFirst label="Delete policy" kind="danger"
+            question={`Delete ${term.values.policyNo || p.controlNo} with its ${terms.length} year${terms.length === 1 ? "" : "s"}, ${db.documents.filter((d) => d.policyId === p.id).length} document(s) and ${terms.reduce((a, t) => a + t.receipts.length, 0)} receipt(s)? The customer stays. An Admin can bring it back from Earlier saves.`}
+            yes="Delete policy" onYes={() => { update((d) => { const tids = new Set(p.termIds); d.terms = d.terms.filter((t) => !tids.has(t.id)); d.documents = d.documents.filter((x) => x.policyId !== p.id); d.policies = d.policies.filter((x) => x.id !== p.id); log(d, { customerId: p.customerId, action: "Policy deleted", detail: `${p.controlNo}, policy number ${term.values.policyNo || "none"}, ${p.type}, with ${tids.size} year(s).` }); }); toast("Policy deleted"); go({ view: "register" }); }} /></div>}
         </div>
-        <div className="termsel" aria-label="Terms of this policy">
+        <div className="termsel" aria-label="Policy years">
           <span className="axis">Policy years</span>
           <div className="row gap-xs wrap">
             {terms.map((t) => (
@@ -139,7 +142,7 @@ function Overview({ p, term, go, openDoc }) {
       toast(confirm ? "Record confirmed" : "Draft saved");
       setEditing(false);
     };
-    return <OcrReview fixture={fixture} initial={term.values} initialSources={term.sources} initialBrokerageConfirmed={term.brokerageConfirmed} customerName={db.customers.find((x) => x.id === p.customerId)?.name} insurerId={p.insurerId} branchId={p.branchId} policyType={p.type}
+    return <OcrReview selfPolicyId={p.id} fixture={fixture} initial={term.values} initialSources={term.sources} initialBrokerageConfirmed={term.brokerageConfirmed} customerName={db.customers.find((x) => x.id === p.customerId)?.name} insurerId={p.insurerId} branchId={p.branchId} policyType={p.type}
       heading={`Review draft: ${p.type}`} onCancel={() => setEditing(false)} onSaveDraft={(pl) => save(pl, false)} onConfirm={(pl) => save(pl, true)} />;
   }
   const v = term.values;
@@ -875,7 +878,7 @@ function RenewalsTab({ p, term, terms, go }) {
   };
   if (reviewing && draft) {
     const doc = db.documents.find((x) => x.id === draft.docId);
-    return <OcrReview fixture={{ id: doc.id, title: doc.name, lines: docText(doc) || [], fields: doc.fixtureFields || {}, info: doc.info, generated: !doc.extracted, extracted: doc.extracted, fileName: doc.name }} customerName={db.customers.find((x) => x.id === p.customerId)?.name} initial={draft.values} initialSources={draft.sources} initialBrokerageConfirmed={draft.brokerageConfirmed}
+    return <OcrReview selfPolicyId={p.id} fixture={{ id: doc.id, title: doc.name, lines: docText(doc) || [], fields: doc.fixtureFields || {}, info: doc.info, generated: !doc.extracted, extracted: doc.extracted, fileName: doc.name }} customerName={db.customers.find((x) => x.id === p.customerId)?.name} initial={draft.values} initialSources={draft.sources} initialBrokerageConfirmed={draft.brokerageConfirmed}
       insurerId={p.insurerId} branchId={p.branchId} policyType={p.type} heading={`Renewal review: year ${draft.termNo}`} confirmLabel="Confirm renewal"
       onCancel={() => setReviewing(false)} onSaveDraft={(pl) => saveRenewal(pl, false)} onConfirm={(pl) => saveRenewal(pl, true)} />;
   }

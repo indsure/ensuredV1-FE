@@ -39,7 +39,7 @@ export const FY_OPTIONS = ["2025-26", "2026-27"];
 // ---- the four state axes, each derived separately
 export function missingFields(term) {
   const v = term.values || {};
-  const miss = FIELDS.filter((f) => f.req && (v[f.key] === "" || v[f.key] == null)).map((f) => f.label);
+  const miss = FIELDS.filter((f) => f.req && !(f.key === "riskEnd" && v.noFixedEnd) && (v[f.key] === "" || v[f.key] == null)).map((f) => f.label);
   if (!term.brokerageConfirmed) miss.push("Brokerage confirmation");
   return miss;
 }
@@ -51,6 +51,7 @@ export function coverage(term) {
   if (term.status === "draft") return { label: "Not confirmed", tone: "muted", why: "Coverage is shown once the record is confirmed" };
   if (term.cancelled) return { label: "Cancelled", tone: "bad" };
   const { riskStart: s, riskEnd: e } = term.values;
+  if (s && !e && term.values.noFixedEnd) return TODAY < s ? { label: "Scheduled", tone: "info", why: `Cover starts ${fmtDate(s)}` } : { label: "Active", tone: "good", why: "Until the voyage or transit completes" };
   if (!s || !e) return { label: "Dates missing", tone: "warn" };
   if (TODAY < s) return { label: "Scheduled", tone: "info", why: `Cover starts ${fmtDate(s)}` };
   if (TODAY > e) return { label: "Expired", tone: "muted", why: `Ended ${fmtDate(e)}` };

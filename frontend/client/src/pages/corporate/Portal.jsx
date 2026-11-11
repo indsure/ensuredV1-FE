@@ -467,7 +467,7 @@ function NewBusiness({ presetCustomer, presetFx }) {
   const app = useApp();
   const finish = (pl, confirm) => createPolicy(app, s, fx, pl, confirm);
   const cancel = () => go({ view: presetCustomer ? "customer" : "home", id: presetCustomer });
-  if (step === 5) return <OcrReview fixture={fx} customerName={c.name} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`New business: ${c.name}, ${s.type}`} onCancel={() => setStep(4)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
+  if (step === 5) return <OcrReview fixture={fx} customerName={c.name} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`New business: ${c.name}, ${s.type}`} askPayment onCancel={() => setStep(4)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
   const s_ = q.trim().toLowerCase();
   const matches = db.customers.filter((x) => !s_ || `${x.name} ${x.code} ${x.city}`.toLowerCase().includes(s_)).slice(0, 8);
   const team = (role) => db.team.filter((t) => t.role === role && t.active !== false).map((t) => ({ value: t.code, label: `${t.name} (${t.code})` }));
@@ -549,13 +549,15 @@ function RegisterView() {
   const [dept, setDept] = useState("");
   const [rec, setRec] = useState("");
   const [cov, setCov] = useState("");
+  const [vert, setVert] = useState("");
   const rows = db.policies.map((p) => ({ p, t: latestTerm(db, p), c: db.customers.find((x) => x.id === p.customerId) }))
-    .filter(({ p, t, c }) => (!dept || p.dept === dept) && (!rec || completeness(t).label === rec) && (!cov || coverage(t).label === cov) && (!q.trim() || `${c.name} ${c.code} ${p.controlNo} ${t.values.policyNo} ${p.type}`.toLowerCase().includes(q.trim().toLowerCase())));
+    .filter(({ p, t, c }) => (!vert || c.vertical === vert) && (!dept || p.dept === dept) && (!rec || completeness(t).label === rec) && (!cov || coverage(t).label === cov) && (!q.trim() || `${c.name} ${c.code} ${p.controlNo} ${t.values.policyNo} ${p.type}`.toLowerCase().includes(q.trim().toLowerCase())));
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Policy register</h1><p className="muted">Latest term of every policy. Record, cover, payment, renewable and renewal outcome are separate facts.</p></div></header>
+      <header className="page-head"><div><h1>Policy register</h1><p className="muted">The latest year of every policy. Search, or filter by customer type, department or status.</p></div></header>
       <div className="filters">
         <Labeled label="Search" htmlFor="rg-q"><input id="rg-q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Insured, code, policy or control no." /></Labeled>
+        <Labeled label="Customer type" htmlFor="rg-vert"><Select id="rg-vert" value={vert} onChange={setVert} placeholder="All" options={["Corporate", "Retail"]} /></Labeled>
         <Labeled label="Department" htmlFor="rg-dept"><Select id="rg-dept" value={dept} onChange={setDept} placeholder="All" options={Object.keys(DEPARTMENTS)} /></Labeled>
         <Labeled label="Record" htmlFor="rg-rec"><Select id="rg-rec" value={rec} onChange={setRec} placeholder="All" options={["Draft", "Complete"]} /></Labeled>
         <Labeled label="Cover" htmlFor="rg-cov"><Select id="rg-cov" value={cov} onChange={setCov} placeholder="All" options={["Scheduled", "Active", "Expired", "Cancelled", "Not confirmed"]} /></Labeled>

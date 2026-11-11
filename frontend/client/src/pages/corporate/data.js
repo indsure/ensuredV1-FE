@@ -39,6 +39,7 @@ export const FIELDS = [
   { key: "bookDate", label: "Business booked date", group: "Dates", type: "date", req: true, help: "Starts as the policy issue date. Change it if needed." },
   { key: "currency", label: "Currency", group: "Amounts", type: "currency", req: true },
   { key: "sumInsured", label: "Sum insured / limit", group: "Amounts", type: "money", req: true },
+  { key: "siBasis", label: "Limit applies", group: "Amounts", type: "select", options: ["Whole policy", "Per employee or person", "Any one accident", "Any one year", "Per vessel", "Per shipment"], help: "For example, a WC policy with 1,00,000 per employee" },
   { key: "premiumRate", label: "Premium rate (%)", group: "Amounts", type: "pct" },
   { key: "grossPremium", label: "Gross premium", group: "Amounts", type: "money", req: true, help: "Before GST" },
   { key: "gstPct", label: "GST (%)", group: "Amounts", type: "pct" },

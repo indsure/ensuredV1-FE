@@ -11,8 +11,9 @@ import { loadTexts, docText, fileBlobUrl } from "./store.js";
 // Saves a new policy and its first term. Shared by this screen and the step-by-step wizard.
 // Everything happens in ONE update: React may run a second queued update later, after we navigate.
 // newCustomer(d) creates the customer in that same update and returns its id.
-export function createPolicy({ update, log, toast, go, who }, s0, fx, pl, confirm, newCustomer) {
+export function createPolicy({ update, log, toast, go, who }, s0, fx, pl0, confirm, newCustomer) {
   let pid, tid;
+  const { payment, ...pl } = pl0;
   update((d) => {
     const s = newCustomer ? { ...s0, customerId: newCustomer(d) } : s0;
     const cust = d.customers.find((x) => x.id === s.customerId);
@@ -25,6 +26,10 @@ export function createPolicy({ update, log, toast, go, who }, s0, fx, pl, confir
       : { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: `${fx.title}.pdf`, fixtureId: fx.id, addedAt: nowIso(), addedBy: who, note: "" });
     d.policies.push({ id: pid, controlNo: `CN-${String(n).padStart(4, "0")}`, customerId: s.customerId, dept: s.dept, type: s.type, insurerId: s.insurerId, branchId: s.branchId, cover: s.cover || "", vesselMode: s.vesselMode || "", termIds: [tid] });
     d.terms.push({ id: tid, policyId: pid, termNo: 1, prevTermId: null, nextTermId: null, status: confirm ? "confirmed" : "draft", cancelled: false, nr: "New", outcome: "Open", lossDetail: "", instalments: [], receipts: [], endorsements: [], vesselSchedules: [], cargoDecls: [], charterDecls: [], docId, ...pl });
+    if (confirm && payment && +pl.values?.netPremium > 0) {
+      d.terms[d.terms.length - 1].receipts.push({ id: `R${++d.seq}`, instNo: null, date: payment.date, amount: +pl.values.netPremium, mode: payment.mode, ref: payment.ref, bank: "", remitDate: "", proofDocId: null });
+      log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: "Full payment recorded", detail: `Paid in full when the policy was added: ${pl.values.netPremium} on ${payment.date}.` });
+    }
     log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: confirm ? "Term confirmed" : "Draft saved", detail: confirm ? `New business confirmed after review of ${fx.title || fx.fileName}.` : `Draft saved from ${fx.title || fx.fileName}. Missing: ${missingFields(d.terms[d.terms.length - 1]).join(", ") || "none"}` });
   });
   toast(confirm ? "Policy confirmed and added to the register" : "Draft saved. It is listed under Today until complete");
@@ -203,7 +208,7 @@ export function QuickAdd({ inboxId }) {
     go(next ? { view: "add", inboxId: next.id, nonce: Date.now() } : { view: "drafts" });
   };
 
-  if (reviewing) return <OcrReview fixture={fx} customerName={customerName} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`Add a policy: ${customerName}, ${s.type}`} confirmLabel={inboxId ? (waiting.length > 1 ? "Confirm and next" : "Confirm record") : undefined} onCancel={() => setReviewing(false)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
+  if (reviewing) return <OcrReview fixture={fx} customerName={customerName} insurerId={s.insurerId} branchId={s.branchId} policyType={s.type} heading={`Add a policy: ${customerName}, ${s.type}`} askPayment confirmLabel={inboxId ? (waiting.length > 1 ? "Confirm and next" : "Confirm record") : undefined} onCancel={() => setReviewing(false)} onSaveDraft={(pl) => finish(pl, false)} onConfirm={(pl) => finish(pl, true)} />;
 
   // Which line each value came from, for the tags.
   const lineOf = (text) => { const t = String(text || "").toLowerCase().trim(); if (!t) return null; const i = (fx?.lines || []).findIndex((l) => String(l).toLowerCase().includes(t)); return i >= 0 ? i + 1 : null; };
