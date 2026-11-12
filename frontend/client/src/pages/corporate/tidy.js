@@ -8,6 +8,9 @@ const NOISE = /\b(the|general|insurance|assurance|insurer|company|co|corporation
 export const insurerKey = (name) => String(name || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9 ]/g, " ").replace(NOISE, " ").replace(/\s+/g, "");
 const branchKey = (b) => `${String(b.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}|${String(b.city || "").toLowerCase().trim()}`;
 
+/** The listed insurer with the same name once "Ltd", "Insurance Company" and the like are ignored. */
+export const sameInsurer = (insurers, name) => { const k = insurerKey(name); return k ? insurers.find((i) => insurerKey(i.name) === k) : undefined; };
+
 /** Groups of insurers that look like the same company. */
 export function duplicateInsurers(db) {
   const by = {};

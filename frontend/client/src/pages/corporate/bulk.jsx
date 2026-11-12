@@ -6,6 +6,7 @@ import { FIELDS } from "./data.js";
 import { readPolicyPdf, ReadError } from "./extract.js";
 import { saveFile, loadTexts, docText } from "./store.js";
 import { fmtStamp, fmtMoney, activePreset, nowIso } from "./lib.js";
+import { sameInsurer } from "./tidy.js";
 import { suggestFromDocument, createPolicy, cleanInsurer } from "./add.jsx";
 import { sameName } from "./review.jsx";
 import { placeOf } from "./places.js";
@@ -155,8 +156,9 @@ export function DraftsPage() {
   const addInsurer = (r) => {
     const office = r.item.info?.branch;
     update((d) => {
-      let ins = d.insurers.find((i) => i.id === r.guess.insurerId);
       const name = cleanInsurer(r.item.info?.insurer || "");
+      // Match by name too: several drafts from one insurer, or a second click, must not add it twice.
+      let ins = d.insurers.find((i) => i.id === r.guess.insurerId) || (name ? sameInsurer(d.insurers, name) : undefined);
       if (!ins && name) { ins = { id: `INS${++d.seq}`, name, branches: [] }; d.insurers.push(ins); log(d, { action: "Insurer added", detail: `${name}, from ${r.item.fileName}.` }); }
       if (ins && office?.name && !ins.branches.some((b) => b.name.toLowerCase() === office.name.toLowerCase())) {
         const place = placeOf(office.city);

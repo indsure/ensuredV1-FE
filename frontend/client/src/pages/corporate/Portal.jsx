@@ -14,7 +14,7 @@ import { BulkPage, DraftsPage, bindBulk, bulkBusy } from "./bulk.jsx";
 import { FeedbackPage } from "./feedback.jsx";
 import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
-import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch } from "./tidy.js";
+import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch, sameInsurer } from "./tidy.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
 // Live and demo records never share storage.
@@ -868,9 +868,16 @@ function Masters() {
   const [err, setErr] = useState("");
   const [edit, setEdit] = useState(null);
   const dups = duplicateInsurers(db);
+  // In each group keep the insurer with the most policies (the first listed when tied).
+  const dupPlan = dups.map((g) => { const [keep, ...rest] = [...g].sort((a, b) => insurerUse(db, b.id).policies - insurerUse(db, a.id).policies); return { keep, rest }; });
+  const dupCount = dupPlan.reduce((n, x) => n + x.rest.length, 0);
+  const mergeAll = () => {
+    update((d) => { for (const { keep, rest } of dupPlan) for (const r of rest) log(d, { action: "Insurer merged", detail: mergeInsurer(d, r.id, keep.id) }); });
+    toast(`${plural(dupCount, "duplicate insurer")} merged`);
+  };
   const typeCount = {};
   Object.values(DEPARTMENTS).flat().forEach((t) => (typeCount[t] = (typeCount[t] || 0) + 1));
-  const addIns = () => { if (!ni.trim()) return setErr("Enter the insurer name"); if (db.insurers.some((i) => i.name.toLowerCase() === ni.trim().toLowerCase())) return setErr("That insurer already exists"); update((d) => { d.insurers.push({ id: `INS${++d.seq}`, name: ni.trim(), branches: [] }); log(d, { action: "Insurer added", detail: ni.trim() }); }); setNi(""); setErr(""); toast("Insurer added"); };
+  const addIns = () => { if (!ni.trim()) return setErr("Enter the insurer name"); { const same = sameInsurer(db.insurers, ni.trim()); if (same) return setErr(`That insurer is already listed as ${same.name}`); } update((d) => { d.insurers.push({ id: `INS${++d.seq}`, name: ni.trim(), branches: [] }); log(d, { action: "Insurer added", detail: ni.trim() }); }); setNi(""); setErr(""); toast("Insurer added"); };
   const addBr = () => { if (!nb.ins || !nb.name.trim() || !nb.city.trim() || !nb.country.trim()) return setErr("Choose an insurer and fill branch, city and country"); const ins = insurerOf(db, nb.ins); if (ins.branches.some((b) => b.name.toLowerCase() === nb.name.trim().toLowerCase())) return setErr("That branch already exists"); update((d) => { d.insurers.find((i) => i.id === nb.ins).branches.push({ id: `BR${++d.seq}`, name: nb.name.trim(), city: nb.city.trim(), state: (nb.state || "").trim(), country: nb.country.trim() }); log(d, { action: "Branch added", detail: `${nb.name} (${nb.city}) for ${ins.name}` }); }); setNb({ ...nb, name: "", city: "", state: "" }); setErr(""); toast("Branch added"); };
   return (
     <div className="stack">
@@ -881,7 +888,8 @@ function Masters() {
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
         <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><PlaceFields id="ms-b" value={nb} req countryReq onChange={(x) => setNb({ ...nb, ...x })} /><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
         {dups.length > 0 && !edit && <div className="note note-warn" role="status"><strong>Possible duplicates.</strong> These look like the same insurer. Merge them so every policy and report uses one name.
-          {dups.map((g) => { const [keep, ...rest] = [...g].sort((a, b) => insurerUse(db, b.id).policies - insurerUse(db, a.id).policies); return <div key={keep.id} className="row gap-s wrap" style={{ marginTop: 6 }}><span>{g.map((i) => i.name).join(" / ")}</span>{rest.map((r) => <Btn key={r.id} onClick={() => setEdit({ kind: "insurer", insId: r.id, name: r.name, mergeTo: keep.id })}>Merge {r.name} into {keep.name}</Btn>)}</div>; })}</div>}
+          {dupPlan.map(({ keep, rest }) => <div key={keep.id} className="row gap-s wrap" style={{ marginTop: 6 }}><span>{[keep, ...rest].map((i) => `${i.name} (${plural(insurerUse(db, i.id).policies, "policy", "policies")})`).join(" / ")}</span>{rest.map((r) => <Btn key={r.id} onClick={() => setEdit({ kind: "insurer", insId: r.id, name: r.name, mergeTo: keep.id })}>Choose what to keep</Btn>).slice(0, 1)}</div>)}
+          <div className="row gap-s wrap" style={{ marginTop: 10 }}><AskFirst kind="primary" label={`Merge all duplicates (${plural(dupCount, "insurer")})`} question={`Merge ${plural(dupCount, "duplicate insurer")} into ${plural(dupPlan.length, "insurer")}? In each group the one with the most policies is kept, and everything moves to it. This cannot be undone, except from an earlier save.`} yes="Merge all" onYes={mergeAll} /></div></div>}
         {edit && <RenameMaster key={(edit.brId || edit.insId) + (edit.mergeTo || "")} edit={edit} onClose={() => setEdit(null)} />}
         <Table><thead><tr><th>Insurer</th><th>Branch</th><th>City</th><th>State</th><th>Country</th></tr></thead><tbody>{db.insurers.flatMap((i) => (i.branches.length ? i.branches : [null]).map((b, j) => <tr key={i.id + (b?.id || "none")}>
           <td>{j === 0 && <div className="row gap-s wrap"><span>{i.name}</span><Btn onClick={() => setEdit({ kind: "insurer", insId: i.id, name: i.name })}>Edit</Btn></div>}</td>

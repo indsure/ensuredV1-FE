@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { DEPARTMENTS, FIXTURES, fixtureById, isVesselType, LIVE } from "./data.js";
 import { nowIso, missingFields, insurerOf } from "./lib.js";
+import { sameInsurer, insurerKey } from "./tidy.js";
 import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
 import { placeOf } from "./places.js";
@@ -72,9 +73,14 @@ export function suggestFromDocument(db, fx) {
   if (hits.length === 1) out.customerId = hits[0].id;
   // Insurer: its name, minus the generic words, appears in the text.
   const insHit = db.insurers.filter((i) => text.includes(flat(i.name).replace(/ (general )?(insurance|assurance)( company)?( limited| ltd)?$/, "")));
-  if (insHit.length === 1) {
-    out.insurerId = insHit[0].id;
-    const brs = insHit[0].branches;
+  // Several hits that are one company listed twice (or the printed name matches one of them): use one, never none.
+  const printed = fx.info?.insurer;
+  const insPick = insHit.length === 1 ? insHit[0]
+    : (printed && sameInsurer(insHit.length ? insHit : db.insurers, printed))
+    || (insHit.length > 1 && insHit.every((i) => insurerKey(i.name) === insurerKey(insHit[0].name)) ? insHit[0] : null);
+  if (insPick) {
+    out.insurerId = insPick.id;
+    const brs = insPick.branches;
     const office = fx.info?.branch;
     const byOffice = office && brs.find((b) => flat(b.name) === flat(office.name) || (office.code && flat(b.name).includes(office.code)));
     const br = byOffice || brs.find((b) => text.includes(flat(b.name))) || (brs.filter((b) => text.includes(flat(b.city))).length === 1 ? brs.find((b) => text.includes(flat(b.city))) : null) || (brs.length === 1 ? brs[0] : null);
@@ -167,7 +173,7 @@ export function QuickAdd({ inboxId }) {
   const addInsurer = () => {
     const name = extra.insName.trim();
     if (!name) return setExtraErr("Enter the insurer's name");
-    const same = db.insurers.find((i) => i.name.toLowerCase() === name.toLowerCase());
+    const same = sameInsurer(db.insurers, name);
     if (same) { set("insurerId")(same.id); return setExtraErr(""); }
     const id = newId("INS");
     update((d) => { d.insurers.push({ id, name, branches: [] }); log(d, { action: "Insurer added", detail: `${name}, from ${fx.fileName || fx.title}.` }); });
