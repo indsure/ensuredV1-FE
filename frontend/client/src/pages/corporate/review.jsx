@@ -1,13 +1,13 @@
 // Side-by-side review of simulated OCR output. People correct and confirm; nothing is guessed.
 import { LIVE, TODAY } from "./data.js";
 import { saveFile } from "./store.js";
-import { FIELDS, FIELD, CURRENCIES, NUMERIC } from "./data.js";
-import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf } from "./lib.js";
+import { FIELDS, FIELD, CURRENCIES, NUMERIC, isWC } from "./data.js";
+import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf, fieldRequired, fieldShown, notNeededWhy, grossPlusGst, gstApplies } from "./lib.js";
 import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput, MoneyInput, Select } from "./ui.jsx";
 import { readPolicyPdf, readerSelfTest, ReadError, isImage } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
 
-const GROUPS = ["Identification", "Dates", "Amounts", "Other", "Brokerage"];
+const GROUPS = ["Identification", "Dates", "Amounts", "Liability", "Voyage and cargo", "Project", "Other", "Brokerage"];
 
 // A line with what was searched for marked. Plain text only: nothing in a document is treated as code.
 function Marked({ text, find }) {
@@ -150,7 +150,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
       if (initial[f.key] !== undefined && initial[f.key] !== "") {
         vals[f.key] = initial[f.key];
         srcs[f.key] = initialSources[f.key] || { conf: "manual" };
-      } else if (fixture.fields[f.key] && f.key !== "renewable") {
+      } else if (fixture.fields[f.key] && f.key !== "renewable" && (!f.only || f.only(policyType))) {
         const x = fixture.fields[f.key];
         vals[f.key] = x.v;
         srcs[f.key] = { ref: x.ref, conf: x.conf, docLabel: "Document", note: x.note, alts: x.alts };
@@ -176,8 +176,9 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   const [brokOk, setBrokOk] = useState(initialBrokerageConfirmed);
   const [tried, setTried] = useState(false);
   // Fields missing when the screen opened stay listed, so an input never vanishes while someone types in it.
-  const [askKeys] = useState(() => FIELDS.filter((f) => f.req && (start.vals[f.key] === "" || start.vals[f.key] == null)).map((f) => f.key));
-  const found = FIELDS.filter((f) => fixture.fields[f.key]).length;
+  const [askKeys] = useState(() => FIELDS.filter((f) => f.req && !notNeededWhy(f.key, policyType, start.vals) && (start.vals[f.key] === "" || start.vals[f.key] == null)).map((f) => f.key));
+  const found = FIELDS.filter((f) => fixture.fields[f.key] && (!f.only || f.only(policyType))).length;
+  const isReq = (f) => fieldRequired(f, policyType, vals);
   const dirty = JSON.stringify(vals) !== JSON.stringify(start.vals) || brokOk !== initialBrokerageConfirmed;
   const ins = insurerOf(db, insurerId);
 
@@ -196,7 +197,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   const show = (ref) => { setHl(ref); document.getElementById(`line-${ref}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); };
 
   // checks
-  const missing = FIELDS.filter((f) => f.req && !(f.key === "riskEnd" && vals.noFixedEnd) && (vals[f.key] === "" || vals[f.key] == null));
+  const missing = FIELDS.filter((f) => isReq(f) && (vals[f.key] === "" || vals[f.key] == null));
   const errors = {};
   FIELDS.forEach((f) => {
     const v = vals[f.key];
@@ -213,7 +214,10 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   const twin = vals.policyNo ? db.terms.find((t) => t.policyId !== selfPolicyId && norm(t.values?.policyNo) === norm(vals.policyNo)) : null;
   const twinPolicy = twin && db.policies.find((p) => p.id === twin.policyId);
   // Gross + GST is the final amount on most policies; some totals add stamp duty too. Either can be right.
-  const sumCheck = [vals.grossPremium, vals.gst].every(isNum) ? r2(+vals.grossPremium + +vals.gst) : null;
+  // A non-INR policy carries no GST, so with no GST entered its net is the gross (plus any stamp duty).
+  const noGst = !gstApplies(vals) && !isNum(vals.gst);
+  const gLabel = noGst ? "Gross" : "Gross + GST";
+  const sumCheck = grossPlusGst(vals);
   const withStamp = sumCheck != null && +vals.stampDuty > 0 ? r2(sumCheck + +vals.stampDuty) : null;
   const grossMismatch = sumCheck != null && isNum(vals.netPremium) && Math.abs(sumCheck - +vals.netPremium) > 0.01 && (withStamp == null || Math.abs(withStamp - +vals.netPremium) > 0.01);
   const setNet = (v) => { setVals((p) => ({ ...p, netPremium: v })); setSrcs((p) => ({ ...p, netPremium: { conf: "calc" } })); };
@@ -228,6 +232,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     FIELDS.forEach((f) => { const v = vals[f.key]; clean[f.key] = NUMERIC.has(f.key) && isNum(v) ? +v : v; });
     const snap = srcs.brokeragePct?.conf === "preset" ? { presetId: srcs.brokeragePct.presetId, version: srcs.brokeragePct.version, pct: +vals.brokeragePct } : null;
     clean.noFixedEnd = !!vals.noFixedEnd; if (clean.noFixedEnd) clean.riskEnd = "";
+    clean.sumInsuredNA = policyType ? isWC(policyType) : !!initial.sumInsuredNA;
     return { values: clean, sources: srcs, brokerageConfirmed: brokOk, brokerageSnap: snap, ...(askPayment && paid.how === "full" ? { payment: { date: paid.date, mode: paid.mode, ref: paid.ref.trim() } } : {}) };
   };
 
@@ -258,14 +263,14 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
             <Pill tone={askKeys.some((k) => vals[k] === "" || vals[k] == null) ? "warn" : "good"}>{askKeys.filter((k) => !(vals[k] === "" || vals[k] == null)).length} of {askKeys.length} entered</Pill>
           </div>
           <div className="formgrid">
-            {askKeys.filter((k) => !(k === "riskEnd" && vals.noFixedEnd)).map((k) => {
+            {askKeys.filter((k) => !(k === "riskEnd" && vals.noFixedEnd) && !notNeededWhy(k, policyType, vals)).map((k) => {
               const f = FIELD[k], id = `ask-${k}`, done = !(vals[k] === "" || vals[k] == null);
               return (
                 <Labeled key={k} label={<>{done && <span className="good-text">✓ </span>}{f.label}</>} htmlFor={id} req error={errors[k] || (tried && !done ? "Required before confirming" : null)} hint={f.help}>
                   {f.type === "date" ? <DateInput id={id} value={vals[k] || ""} onChange={(e) => set(k, e.target.value)} />
                     : f.type === "currency" ? <select id={id} value={vals[k] || ""} onChange={(e) => set(k, e.target.value)}><option value="">Choose</option>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
                       : f.type === "yesno" ? <select id={id} value={vals[k] || ""} onChange={(e) => set(k, e.target.value)}><option value="">Not entered</option><option>Yes</option><option>No</option></select>
-                        : <input id={id} type="text" inputMode={NUMERIC.has(k) ? "decimal" : undefined} value={vals[k] ?? ""} onChange={(e) => set(k, e.target.value.replace(/,/g, ""))} />}
+                        : <input id={id} type="text" inputMode={NUMERIC.has(k) ? "decimal" : undefined} value={vals[k] ?? ""} onChange={(e) => set(k, NUMERIC.has(k) ? e.target.value.replace(/,/g, "") : e.target.value)} />}
                 </Labeled>
               );
             })}
@@ -278,38 +283,40 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
         <DocPane lines={fixture.lines} title={fixture.title} highlight={hl} generated={fixture.generated} extracted={fixture.extracted} onLine={setHl} localUrl={fixture.localUrl} localIsImage={fixture.localIsImage} readPages={fixture.readPages} pages={fixture.pages} />
         <div className="review-fields">
           <div className="note small">Insurer and branch from step 3: <strong>{ins?.name}, {branchOf(db, insurerId, branchId)?.name || "selected branch"}</strong>. Policy type: <strong>{policyType}</strong>.</div>
-          {GROUPS.map((g) => (
+          {GROUPS.filter((g) => FIELDS.some((f) => f.group === g && fieldShown(f, policyType, vals))).map((g) => (
             <fieldset key={g} className="fgroup">
               <legend>{g}</legend>
-              {FIELDS.filter((f) => f.group === g).map((f) => {
+              {FIELDS.filter((f) => f.group === g && fieldShown(f, policyType, vals)).map((f) => {
                 if (f.key === "premiumRate" && !showRate && (vals.premiumRate === "" || vals.premiumRate == null) && !srcs.premiumRate) return <div key={f.key} className="small"><button type="button" className="linkbtn" onClick={() => setShowRate(true)}>Add a premium rate</button> <span className="muted">(only if the policy states one)</span></div>;
                 const id = `rv-${f.key}`;
-                const err = errors[f.key] || (tried && f.req && (vals[f.key] === "" || vals[f.key] == null) ? "Required before confirming" : null);
+                const req = isReq(f), why = notNeededWhy(f.key, policyType, vals);
+                const err = errors[f.key] || (tried && req && (vals[f.key] === "" || vals[f.key] == null) ? "Required before confirming" : null);
                 const s = srcs[f.key];
                 return (
-                  <div key={f.key} className={`rv-row ${f.req && (vals[f.key] === "" || vals[f.key] == null) ? "rv-miss" : ""} ${s?.conf === "low" && !s?.edited && !s?.checked ? "rv-low" : ""}`}>
-                    <Labeled label={f.label} htmlFor={id} req={f.req} error={err} hint={s?.note || f.help}>
+                  <div key={f.key} className={`rv-row ${req && (vals[f.key] === "" || vals[f.key] == null) ? "rv-miss" : ""} ${s?.conf === "low" && !s?.edited && !s?.checked ? "rv-low" : ""}`}>
+                    <Labeled label={f.label} htmlFor={id} req={req} error={err} hint={why || s?.note || f.help}>
                       {f.type === "date" ? <DateInput id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
                         : f.type === "currency" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Choose</option>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
                         : f.type === "yesno" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Not entered</option><option>Yes</option><option>No</option></select>
                         : f.type === "select" ? <Select id={id} value={vals[f.key] || ""} onChange={(v) => set(f.key, v)} placeholder="Not entered" options={f.options} />
                         : f.type === "money" ? <MoneyInput id={id} value={vals[f.key] ?? ""} onChange={(v) => set(f.key, v)} />
-                        : <input id={id} type="text" inputMode={NUMERIC.has(f.key) ? "decimal" : undefined} value={vals[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value.replace(/,/g, ""))} />}
+                        : <input id={id} type="text" inputMode={NUMERIC.has(f.key) ? "decimal" : undefined} value={vals[f.key] ?? ""} onChange={(e) => set(f.key, NUMERIC.has(f.key) ? e.target.value.replace(/,/g, "") : e.target.value)} />}
                       {s?.alts?.length > 0 && !s.edited && <div className="small row gap-xs wrap alts">Also printed on the policy:{s.alts.map((a) => <button key={String(a.v)} type="button" className="src src-btn" title={`Use this value, from line ${a.ref}`} onClick={() => { set(f.key, a.v); show(a.ref); }}>{fmtValue(f.key, a.v, vals.currency)} · line {a.ref}</button>)}</div>}
                       {f.key === "riskEnd" && <label className="check small" style={{ marginTop: 6 }}><input id="rv-noend" type="checkbox" checked={!!vals.noFixedEnd} onChange={(e) => setVals((p) => ({ ...p, noFixedEnd: e.target.checked, ...(e.target.checked ? { riskEnd: "" } : {}) }))} /> No fixed end date: it ends when the voyage or transit completes</label>}
                       {f.key === "netPremium" && fixture.info?.premiumInAnnexure && !vals.netPremium && <div className="small warn-text">The policy says the premium is in an annexure (line {fixture.info.premiumInAnnexure.ref}).{fixture.readPages < fixture.pages ? ` We read ${fixture.readPages} of ${fixture.pages} pages, so it may be in a page we did not read: check the Original file.` : " Search the document for it."}</div>}
                     </Labeled>
                     <div className="rv-src">
-                      <SourceChip src={s} onShow={show} req={f.req} />
+                      {why && !s ? <span className="src src-info" data-na={f.key}>{why.split(":")[0]}</span> : <SourceChip src={s} onShow={show} req={req} />}
                       {s?.conf === "low" && !s?.edited && !s?.checked && (
                         <button type="button" className="linkbtn" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...s, checked: true } }))}>This is right</button>
                       )}
                       {s?.checked && <span className="src src-ok">You checked this</span>}
                       {f.key === "netPremium" && (
                         <div className="small">
-                          {grossMismatch && <div className="warn-text">Gross + GST = {fmtValue("netPremium", sumCheck, vals.currency)}{withStamp != null && <>, or {fmtValue("netPremium", withStamp, vals.currency)} with stamp duty</>}, which differs from the net entered.</div>}
+                          {grossMismatch && <div className="warn-text">{gLabel} = {fmtValue("netPremium", sumCheck, vals.currency)}{withStamp != null && <>, or {fmtValue("netPremium", withStamp, vals.currency)} with stamp duty</>}, which differs from the net entered.</div>}
+                          {noGst && <div className="muted">No GST on a {vals.currency} policy, so net premium is the gross{+vals.stampDuty > 0 ? ", plus stamp duty if the total includes it" : ""}.</div>}
                           {withStamp == null ? <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => setNet(sumCheck)}>Work out net premium</button>
-                            : <span className="row gap-s wrap"><button type="button" className="linkbtn" onClick={() => setNet(withStamp)}>Gross + GST + stamp duty = {fmtValue("netPremium", withStamp, vals.currency)}</button><button type="button" className="linkbtn" onClick={() => setNet(sumCheck)}>Gross + GST only = {fmtValue("netPremium", sumCheck, vals.currency)}</button></span>}
+                            : <span className="row gap-s wrap"><button type="button" className="linkbtn" onClick={() => setNet(withStamp)}>{gLabel} + stamp duty = {fmtValue("netPremium", withStamp, vals.currency)}</button><button type="button" className="linkbtn" onClick={() => setNet(sumCheck)}>{gLabel} only = {fmtValue("netPremium", sumCheck, vals.currency)}</button></span>}
                         </div>
                       )}
                       {f.key === "gst" && (

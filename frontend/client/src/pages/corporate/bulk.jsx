@@ -5,7 +5,7 @@ import { useApp, Card, Btn, Empty, Labeled, Pill, SearchPick, Select, Table, Ask
 import { FIELDS } from "./data.js";
 import { readPolicyPdf, ReadError } from "./extract.js";
 import { saveFile, loadTexts, docText } from "./store.js";
-import { fmtStamp, fmtMoney, activePreset, nowIso } from "./lib.js";
+import { fmtStamp, fmtMoney, activePreset, nowIso, notNeededWhy } from "./lib.js";
 import { sameInsurer } from "./tidy.js";
 import { suggestFromDocument, createPolicy, cleanInsurer } from "./add.jsx";
 import { sameName } from "./review.jsx";
@@ -69,7 +69,9 @@ export function checkDraft(db, item, lines) {
   const must = [], warn = [];
   if (item.noText) must.push("No text could be read");
   if (item.ocr) must.push("Read from a scan: open it to check");
-  const missing = NEEDED.filter((f) => !item.fields?.[f.key]);
+  // Not needed for this policy (WC has no sum insured; a USD policy has no GST) is never missing.
+  const vals = { currency: item.fields?.currency?.v || "INR" };
+  const missing = NEEDED.filter((f) => !item.fields?.[f.key] && !notNeededWhy(f.key, guess.type, vals));
   if (missing.length) must.push(`Not found: ${missing.map((f) => f.label).join(", ")}`);
   // Only the values a record cannot do without hold it back. Optional ones can be checked later.
   const low = NEEDED.filter((f) => item.fields?.[f.key]?.conf === "low").length;

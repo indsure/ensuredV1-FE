@@ -1,5 +1,5 @@
 // Pure helpers: formatting, the four separate state axes, FX lookup, report building, CSV.
-import { TODAY, FIELDS, FIELD } from "./data.js";
+import { TODAY, FIELDS, FIELD, isWC } from "./data.js";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const fmtDate = (iso) => {
@@ -36,10 +36,36 @@ export const fyRange = (fy) => { const y = +fy.slice(0, 4); return [`${y}-04-01`
 export const fyLabel = (fy) => { const [a, b] = fyRange(fy); return `${fmtDate(a)} to ${fmtDate(b)}`; };
 export const FY_OPTIONS = ["2025-26", "2026-27"];
 
+// ---- which fields apply, and which are needed
+const blank = (x) => x === "" || x == null;
+/** GST is charged only on INR policies. A blank currency is treated as INR. */
+export const gstApplies = (values) => !values?.currency || values.currency === "INR";
+/** Sum insured does not apply to Workmen's Compensation. Saved terms carry sumInsuredNA so this works without the type. */
+export const siNotApplicable = (type, values) => isWC(type) || !!values?.sumInsuredNA;
+/** Why a required field is not needed here, in plain words, or null when it is needed as usual. */
+export function notNeededWhy(key, type, values) {
+  if (key === "sumInsured" && siNotApplicable(type, values)) return "Not applicable: Workmen's Compensation has no sum insured";
+  if (key === "gst" && !gstApplies(values)) return `Not charged: the policy is in ${values.currency}, not INR`;
+  return null;
+}
+export function fieldRequired(f, type, values = {}) {
+  if (!f.req) return false;
+  if (f.key === "riskEnd" && values.noFixedEnd) return false;
+  return !notNeededWhy(f.key, type, values);
+}
+/** A field limited to some policy types is shown for those types, or anywhere it already holds a value. */
+export const fieldShown = (f, type, values = {}) => !f.only || (!!type && f.only(type)) || !blank(values[f.key]);
+/** Net premium worked out from gross: gross + GST, where GST is left out (0) on a non-INR policy with no GST entered. */
+export function grossPlusGst(values) {
+  if (!isNum(values.grossPremium)) return null;
+  if (isNum(values.gst)) return r2(+values.grossPremium + +values.gst);
+  return gstApplies(values) ? null : r2(+values.grossPremium);
+}
+
 // ---- the four state axes, each derived separately
-export function missingFields(term) {
+export function missingFields(term, type) {
   const v = term.values || {};
-  const miss = FIELDS.filter((f) => f.req && !(f.key === "riskEnd" && v.noFixedEnd) && (v[f.key] === "" || v[f.key] == null)).map((f) => f.label);
+  const miss = FIELDS.filter((f) => fieldRequired(f, type, v) && blank(v[f.key])).map((f) => f.label);
   if (!term.brokerageConfirmed) miss.push("Brokerage confirmation");
   return miss;
 }

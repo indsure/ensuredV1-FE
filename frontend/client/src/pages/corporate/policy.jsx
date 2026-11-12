@@ -1,7 +1,7 @@
 // One policy, its terms, and every tab that hangs off a term.
 import { FIELDS, FIELD, TODAY, LIVE, PLAIN_SAMPLES, fixtureById, makeEndorsementFixture, makeRenewalFixture, isVesselType, isCargoOpen, isCharterers, CURRENCIES } from "./data.js";
-import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf, plural } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Icon, DocModal, DateInput, Tip } from "./ui.jsx";
+import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf, plural, fieldRequired, notNeededWhy } from "./lib.js";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Icon, DocModal, DateInput, Tip, MoneyInput } from "./ui.jsx";
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
@@ -9,6 +9,7 @@ import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
 import { instalmentTable } from "./extract-extra.js";
 import { docText, loadTexts } from "./store.js";
 import { useState, useEffect, useRef } from "react";
+import { MembersTab, isGroupPolicy } from "./members.jsx";
 
 export function docLines(doc) {
   if (!doc) return null;
@@ -75,6 +76,7 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
     { key: "documents", label: "Documents", count: docs.length },
     { key: "endorsements", label: "Endorsements", count: term.endorsements.length },
     { key: "payments", label: "Payments", count: term.receipts.length },
+    ...(isGroupPolicy(p, term) ? [{ key: "members", label: "Members", count: (term.members || []).filter((m) => m.status !== "Removed").length }] : []),
     ...(marine ? [{ key: "marine", label: "Marine" }] : []),
     { key: "renewals", label: "Renewals", count: terms.length },
     { key: "history", label: "History" },
@@ -111,6 +113,7 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
       {tab === "documents" && <DocumentsTab p={p} term={term} terms={terms} openDoc={setViewDoc} />}
       {tab === "endorsements" && <EndorsementsTab p={p} term={term} openDoc={setViewDoc} />}
       {tab === "payments" && <PaymentsTab p={p} term={term} openDoc={setViewDoc} />}
+      {tab === "members" && isGroupPolicy(p, term) && <MembersTab p={p} term={term} openDoc={setViewDoc} />}
       {tab === "marine" && marine && <MarineTab p={p} term={term} openDoc={setViewDoc} />}
       {tab === "renewals" && <RenewalsTab p={p} term={term} terms={terms} go={go} />}
       {tab === "history" && <HistoryTab p={p} />}
@@ -125,14 +128,14 @@ function Overview({ p, term, go, openDoc }) {
   const [editing, setEditing] = useState(false);
   const c = db.customers.find((x) => x.id === p.customerId);
   const doc = db.documents.find((d) => d.id === term.docId);
-  const miss = missingFields(term);
+  const miss = missingFields(term, p.type);
   if (editing) {
     const fixture = doc && docLines(doc) ? { id: doc.id, title: doc.name, lines: docLines(doc), fields: doc.fixtureId ? fixtureById(doc.fixtureId).fields : doc.fixtureFields || {}, info: doc.info, generated: !!doc.lines && !doc.extracted, extracted: doc.extracted, fileName: doc.name } : { id: "none", title: "No document", lines: ["No document attached"], fields: {} };
     const save = (pl, confirm) => {
       update((d) => {
         const t = d.terms.find((x) => x.id === term.id);
         Object.assign(t, pl, { status: confirm ? "confirmed" : "draft" });
-        log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: confirm ? "Term confirmed" : "Draft saved", detail: confirm ? "Reviewer confirmed every required field." : `Draft saved. Missing: ${missingFields(t).join(", ") || "none"}` });
+        log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: confirm ? "Term confirmed" : "Draft saved", detail: confirm ? "Reviewer confirmed every required field." : `Draft saved. Missing: ${missingFields(t, p.type).join(", ") || "none"}` });
         if (confirm && t.prevTermId) {
           const prev = d.terms.find((x) => x.id === t.prevTermId);
           prev.outcome = "Renewed"; prev.nextTermId = t.id;
@@ -146,7 +149,10 @@ function Overview({ p, term, go, openDoc }) {
       heading={`Review draft: ${p.type}`} onCancel={() => setEditing(false)} onSaveDraft={(pl) => save(pl, false)} onConfirm={(pl) => save(pl, true)} />;
   }
   const v = term.values;
-  const groups = ["Identification", "Dates", "Amounts", "Other", "Brokerage"];
+  const groups = ["Identification", "Dates", "Amounts", "Liability", "Voyage and cargo", "Project", "Other", "Brokerage"];
+  const empty = (x) => x === "" || x == null;
+  // Fields limited to some policy types (liability limits, voyage, project) are listed only when filled.
+  const rowsOf = (g) => FIELDS.filter((f) => f.group === g && (!f.only || !empty(v[f.key])));
   return (
     <div className="stack">
       {term.status === "draft" && (
@@ -164,17 +170,18 @@ function Overview({ p, term, go, openDoc }) {
           {term.status === "confirmed" && <p className="small muted" style={{ marginTop: 8 }}>Confirmed values change only through an endorsement, so the earlier value is always kept.</p>}
         </Card>
       </div>
-      {groups.map((g) => (
+      {groups.filter((g) => rowsOf(g).length).map((g) => (
         <Card key={g} title={g}>
           <Table>
             <thead><tr><th>Field</th><th>Value</th><th>Where it came from</th></tr></thead>
             <tbody>
-              {FIELDS.filter((f) => f.group === g).map((f) => {
+              {rowsOf(g).map((f) => {
                 const s = term.sources[f.key];
+                const req = fieldRequired(f, p.type, v), why = notNeededWhy(f.key, p.type, v);
                 return (
-                  <tr key={f.key} className={v[f.key] === "" || v[f.key] == null ? (f.req ? "row-miss" : "") : ""}>
-                    <td>{f.label}{f.req && <span className="req"> *</span>}</td>
-                    <td className="num-l">{v[f.key] === "" || v[f.key] == null ? <span className={f.req ? "bad-text" : "muted"}>{f.req ? "Missing" : "--"}</span> : fmtValue(f.key, v[f.key], v.currency)}</td>
+                  <tr key={f.key} className={empty(v[f.key]) ? (req ? "row-miss" : "") : ""}>
+                    <td>{f.label}{req && <span className="req"> *</span>}</td>
+                    <td className="num-l">{empty(v[f.key]) ? <span className={req ? "bad-text" : "muted"} data-na={why ? f.key : undefined}>{req ? "Missing" : why || "--"}</span> : fmtValue(f.key, v[f.key], v.currency)}</td>
                     <td className="small">{!s ? "--" : s.via ? `Changed by ${s.via}, line ${s.ref}` : s.conf === "preset" ? `Brokerage preset v${s.version}` : s.conf === "manual" ? s.note || "Entered by reviewer" : s.conf === "calc" ? "Calculated by reviewer" : `Policy document line ${s.ref}${s.edited ? `, corrected by reviewer (document said ${s.originalText})` : ""}${s.checked ? ", checked by reviewer" : ""}`}</td>
                   </tr>
                 );
@@ -793,7 +800,8 @@ function CharterSection({ p, term }) {
   const save = () => {
     setTried(true);
     if (!f.period.trim() || !f.reference.trim() || (f.premium && !isNum(f.premium))) return;
-    update((d) => { const t = d.terms.find((x) => x.id === term.id); t.charterDecls.push({ ...f, id: `CD${++d.seq}`, at: nowIso(), by: who }); log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Charterers declaration saved", detail: `${f.period}, ${f.reference}. No premium effect applied (not specified).` }); });
+    const prem = isNum(f.premium) ? +f.premium : "";
+    update((d) => { const t = d.terms.find((x) => x.id === term.id); t.charterDecls.push({ ...f, premium: prem, id: `CD${++d.seq}`, at: nowIso(), by: who }); log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Charterers declaration saved", detail: `${f.period}, ${f.reference}. ${prem !== "" ? `Premium declared: ${fmtMoney(prem, term.values.currency)}.` : "No premium entered."}` }); });
     toast("Charterers declaration saved");
     setOpen(false); setF({ period: "", reference: "", vessel: "", remarks: "", from: "", to: "", grt: "", premium: "" }); setTried(false);
   };
@@ -809,12 +817,13 @@ function CharterSection({ p, term }) {
           <Labeled label="Charter from" htmlFor="ch-from"><DateInput id="ch-from" value={f.from || ""} onChange={(e) => setF({ ...f, from: e.target.value })} /></Labeled>
           <Labeled label="Charter to" htmlFor="ch-to"><DateInput id="ch-to" value={f.to || ""} onChange={(e) => setF({ ...f, to: e.target.value })} /></Labeled>
           <Labeled label="GRT" htmlFor="ch-grt"><input id="ch-grt" inputMode="numeric" value={f.grt || ""} onChange={(e) => setF({ ...f, grt: e.target.value.replace(/,/g, "") })} /></Labeled>
-          <Labeled label="Premium charged by the insurer" htmlFor="ch-prem" error={tried && f.premium && !isNum(f.premium) ? "Enter a number" : null}><input id="ch-prem" inputMode="decimal" value={f.premium || ""} onChange={(e) => setF({ ...f, premium: e.target.value.replace(/,/g, "") })} /></Labeled>
+          <Labeled label={`Premium charged by the insurer (${term.values.currency || "INR"})`} htmlFor="ch-prem" hint="Optional. Leave blank if the insurer has not charged one." error={tried && f.premium && !isNum(f.premium) ? "Enter a number" : null}><MoneyInput id="ch-prem" value={f.premium || ""} onChange={(v) => setF({ ...f, premium: v })} /></Labeled>
           <div className="row gap-s fld-wide"><Btn onClick={() => { setOpen(false); setTried(false); }}>Cancel</Btn><Btn kind="primary" onClick={save}>Save declaration</Btn></div>
         </div>
       )}
       {term.charterDecls.length ? <Table><thead><tr><th>Period</th><th>Reference</th><th>Vessel</th><th>Charter dates</th><th className="num">GRT<Tip k="GRT" /></th><th className="num">Premium</th><th>Remarks</th><th>Recorded</th></tr></thead>
-        <tbody>{term.charterDecls.map((x) => <tr key={x.id}><td>{x.period}</td><td>{x.reference}</td><td>{x.vessel || "--"}</td><td className="small">{x.from || x.to ? `${fmtDate(x.from)} to ${fmtDate(x.to)}` : "--"}</td><td className="num">{x.grt || "--"}</td><td className="num">{x.premium ? fmtMoney(+x.premium, term.values.currency) : "--"}</td><td>{x.remarks || "--"}</td><td className="small">{fmtStamp(x.at)} by {x.by}</td></tr>)}</tbody></Table> : <Empty title="No charterers declarations yet" />}
+        <tbody>{term.charterDecls.map((x) => <tr key={x.id}><td>{x.period}</td><td>{x.reference}</td><td>{x.vessel || "--"}</td><td className="small">{x.from || x.to ? `${fmtDate(x.from)} to ${fmtDate(x.to)}` : "--"}</td><td className="num">{x.grt || "--"}</td><td className="num">{isNum(x.premium) ? fmtMoney(+x.premium, term.values.currency) : "--"}</td><td>{x.remarks || "--"}</td><td className="small">{fmtStamp(x.at)} by {x.by}</td></tr>)}</tbody>
+        <tfoot><tr><td colSpan={5}><strong>Total declared premium</strong> <span className="small muted">({plural(term.charterDecls.filter((x) => isNum(x.premium)).length, "declaration")} with a premium)</span></td><td className="num" id="ch-total"><strong>{fmtMoney(r2(term.charterDecls.reduce((a, x) => a + (isNum(x.premium) ? +x.premium : 0), 0)), term.values.currency)}</strong></td><td colSpan={2}></td></tr></tfoot></Table> : <Empty title="No charterers declarations yet" />}
     </Card>
   );
 }
@@ -852,7 +861,7 @@ function RenewalsTab({ p, term, terms, go }) {
         prev.outcome = "Renewed"; prev.nextTermId = t.id;
         log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Term confirmed", detail: `Renewal term ${t.termNo} confirmed (${t.values.policyNo}).` });
         log(d, { customerId: p.customerId, policyId: p.id, termId: prev.id, action: "Renewal confirmed", detail: `Year ${prev.termNo} marked Renewed and linked forward to term ${t.termNo}. Both terms and both documents kept.` });
-      } else log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Draft saved", detail: `Renewal draft saved. Missing: ${missingFields(t).join(", ") || "none"}` });
+      } else log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Draft saved", detail: `Renewal draft saved. Missing: ${missingFields(t, p.type).join(", ") || "none"}` });
     });
     toast(confirm ? "Renewal confirmed and linked" : "Renewal draft saved");
     setReviewing(false);

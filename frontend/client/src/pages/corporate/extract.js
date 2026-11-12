@@ -1,6 +1,6 @@
 import { SELFTEST_PDF } from "./selftest.js";
 import { VOCAB, phraseRe, CITIES, MUMBAI_AREAS } from "./vocab.js";
-import { premiumFigures, clientGstin, liabilitySchedule, otherDetails, clientPlace } from "./extract-extra.js";
+import { premiumFigures, clientGstin, liabilitySchedule, otherDetails, clientPlace, liabilityDetails, marineDetails, projectDetails, vesselList, riskAddressTable, engineeringType, instalmentTable } from "./extract-extra.js";
 export { parseDateText } from "./extract-extra.js";
 // Reads the text layer of a PDF in the browser (pdf.js) and finds register fields with fixed label rules.
 // Nothing is uploaded. Scanned PDFs and photos are read with OCR (tesseract.js), also inside the browser:
@@ -269,7 +269,9 @@ const RULES = [
   // Jurisdiction and its like are a kind of location, but the words also appear in legal clauses, so only as a label.
   { key: "location", kind: "text", label: phraseRe(VOCAB.jurisdiction), strict: true, not: /court|subject\s+to|law|dispute|arbitration|exclusive/i, badValue: /court|subject\s+to|\blaws?\b|arbitration|^(address|e-?\s*mail|phone|name)\b|@|\bwww\.|\.(com|co\.in|in|org)\b/i },
 ];
-const LABELS = { policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location" };
+const LABELS = { policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location",
+  aoaLimit: "Limit any one accident (AOA)", aoyLimit: "Limit any one year (AOY)", retroDate: "Retroactive date", continuityDate: "Continuity date", deductible: "Deductible", claimsMade: "Claims made basis",
+  voyageFrom: "Voyage from", voyageTo: "Voyage to", commodity: "Goods insured", valuationBasis: "Basis of valuation", lossPayee: "Loss payee", contractValue: "Contract value", principal: "Principal" };
 
 function parseKind(kind, s, zeroOk, needDigit) {
   if (kind === "date") { const d = findDates(s); return d.length ? { v: d[0].iso, ambiguous: d[0].ambiguous } : null; }
@@ -361,6 +363,7 @@ export function parseFields(lines, ocr = false) {
   const fields = {};
   const found = {};
   for (const r of RULES) found[r.key] = (found[r.key] || []).concat(candidates(lines, r));
+  // Small stamp duties are real: Indian policies often carry Rs. 0.25 or Rs. 0.50 ("Stamp Duty of Rs.0.25/- is paid"). Keep them.
   for (const k of Object.keys(found)) { if (k[0] === "_" || k === "gst") continue; const p = pick(found[k], k, ocr); if (p) fields[k] = p; }
   // Gross premium + GST = net premium. Which is which comes from the figures, not the printed words.
   const prem = premiumFigures(lines, found._pre, found._post, found.gst, found.stampDuty);
@@ -374,8 +377,13 @@ export function parseFields(lines, ocr = false) {
     const d = i >= 0 ? findDates(lines[i].text)[0] : null;
     if (d) fields.issueDate = { v: d.iso, ref: i + 1, conf: "low", note: "The policy calls this just \"Date\", under the place of issue. Check it." };
   }
+  // The risk address set out in a table column, when no labelled location was read or it only says "As per ...".
+  if (!fields.location || /^as\s+per\b/i.test(String(fields.location.v))) {
+    const t = riskAddressTable(lines);
+    if (t) fields.location = { ...t, word: "Location" };
+  }
   // Show the word the policy itself uses for the location field.
-  if (fields.location) { const w = lines[fields.location.ref - 1]?.text.match(new RegExp(phraseRe(VOCAB.jurisdiction).source + "|" + phraseRe(VOCAB.location).source, "i")); if (w) fields.location.word = w[0].trim(); }
+  if (fields.location && !fields.location.word) { const w = lines[fields.location.ref - 1]?.text.match(new RegExp(phraseRe(VOCAB.jurisdiction).source + "|" + phraseRe(VOCAB.location).source, "i")); if (w) fields.location.word = w[0].trim(); }
   // A schedule with one row of limits (MTO and similar).
   const sch = liabilitySchedule(lines);
   if (sch) {
@@ -402,6 +410,30 @@ export function parseFields(lines, ocr = false) {
       else if (fields[k].v !== v && !fields[k].noteSet) { fields[k] = { ...fields[k], conf: "low", note: `Line ${i + 1} gives the period as a different date. Check which is right.`, noteSet: true }; }
     }
   });
+
+  // On a scan the slashes of a date are often lost: "Period To    28032027" is 28/03/2027.
+  if (ocr) {
+    for (const [k, re] of [["riskStart", /^\s*period\s*from\s*:?\s+(\d{2})(\d{2})(20\d{2})\s*$/i], ["riskEnd", /^\s*period\s*to\s*:?\s+(\d{2})(\d{2})(20\d{2})\s*$/i]]) {
+      if (fields[k]) continue;
+      const i = lines.findIndex((l) => !l.marker && re.test(l.text));
+      if (i < 0) continue;
+      const m = lines[i].text.match(re);
+      const d = findDates(`${m[1]}/${m[2]}/${m[3]}`)[0];
+      if (d && (k === "riskStart" ? !fields.riskEnd || d.iso < fields.riskEnd.v : !fields.riskStart || d.iso > fields.riskStart.v)) fields[k] = { v: d.iso, ref: i + 1, conf: "low", note: "The scan lost the separators in this date, so it was read as day, month, year. Check it." };
+    }
+  }
+  // No issue date printed: the tax invoice date, else the date the schedule was printed, if it falls in the policy's time.
+  if (!fields.issueDate) {
+    for (const [re, what] of [[/\b(?:tax\s*)?invoice\s*date\b/i, "the invoice date"], [/\b(?:policy\s*)?printed\s*on\b/i, "the date the policy was printed"]]) {
+      const i = lines.findIndex((l) => !l.marker && re.test(l.text) && findDates(l.text.slice(l.text.search(re))).length);
+      if (i < 0) continue;
+      const d = findDates(lines[i].text.slice(lines[i].text.search(re)))[0];
+      const lo = fields.riskStart ? new Date(Date.parse(fields.riskStart.v) - 120 * 864e5).toISOString().slice(0, 10) : null;
+      if ((lo && d.iso < lo) || (fields.riskEnd && d.iso > fields.riskEnd.v)) continue;
+      fields.issueDate = { v: d.iso, ref: i + 1, conf: "low", note: `No issue date is printed. This is ${what}. Check it.` };
+      break;
+    }
+  }
 
   // GST split into CGST + SGST/UTGST when no single GST line exists
   if (!fields.gst) {
@@ -456,8 +488,16 @@ export function parseFields(lines, ocr = false) {
       fields.riskEnd = { v: d.toISOString().slice(0, 10), ref: i + 1, conf: "low", note: `Worked out: ${n} days counting the start day, from line ${i + 1}.${/extend|extension/i.test(lines[i].text) ? " The policy can be extended, so check for an extension." : ""}` };
     }
   }
+  // Liability limits and dates, marine voyage details and engineering project details, each only when printed.
+  const vessels = vesselList(lines);
+  const marine = marineDetails(lines);
+  if (vessels.length) delete marine.commodity; // on a hull or P&I document "interest insured" is the hull, not goods
+  for (const [k, v] of Object.entries({ ...liabilityDetails(lines, sch), ...marine, ...projectDetails(lines) })) if (!fields[k]) fields[k] = v;
   // Information only, never written into fields
   const info = {};
+  if (vessels.length) info.vessels = vessels;
+  const inst = instalmentTable(lines);
+  if (inst) info.instalments = inst;
   { const i = lines.findIndex((l) => !l.marker && /\b(till|until|up\s*to)\b[^.]{0,40}\b(voyage|transit|journey|delivery|arrival)\b[^.]{0,30}\b(complet|end|over|destination)|\b(on|till|until|up\s*to)\s+(the\s+)?(completion|end|termination|arrival)\s+of\s+(the\s+)?(voyage|transit|journey|shipment)/i.test(l.text)); if (i >= 0 && !fields.riskEnd) info.noFixedEnd = { ref: i + 1 }; }
   { const i = lines.findIndex((l) => !l.marker && /premium[^\n]{0,20}as\s+per\s+(the\s+)?(annexure|schedule\s+attached|attached\s+annexure)/i.test(l.text)); if (i >= 0) info.premiumInAnnexure = { ref: i + 1 }; }
   // "100,000 per employee": what the limit applies to.
@@ -648,7 +688,7 @@ export function parseCustomer(lines) {
   const place = clientPlace(lines, ins?.ref, CITIES, MUMBAI_AREAS);
   if (place) {
     out.address = { v: place.address, ref: place.ref, conf: ins ? "high" : "low", ...(ins ? {} : { note: "Check this is the customer's address, not the insurer's." }) };
-    if (!out.city && place.city) out.city = { v: place.city.replace(/w/g, (c) => c.toUpperCase()).replace(/Bw+/g, (w) => w.toLowerCase()), ref: place.ref, conf: "high", note: "Read from the customer's address." };
+    if (!out.city && place.city) out.city = { v: place.city.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\B\w+/g, (w) => w.toLowerCase()), ref: place.ref, conf: "high", note: "Read from the customer's address." };
   }
   const gst = clientGstin(lines, out.name?.v);
   if (gst) out.gst = gst;
@@ -679,6 +719,10 @@ export async function readPolicyPdf(file, onProgress = () => {}) {
   const customer = parseCustomer(lines);
   // A scan can misread a letter or digit, so every value read from one is marked for checking.
   if (ocr) for (const set of [fields, customer]) for (const k of Object.keys(set)) set[k] = { ...set[k], conf: "low", note: [set[k].note, "Read from a scan. Check it against the document."].filter(Boolean).join(" ") };
+  if (ocr && info.vessels) info.vessels = info.vessels.map((v) => ({ ...v, conf: "low", note: "Read from a scan. Check the name and numbers against the document." }));
+  // A project cover named only in its heading: the reader says which type it is, and add.jsx uses it.
+  const eng = engineeringType(lines);
+  if (eng) { base.type = eng.type; base.dept = eng.dept; base.typeFrom = "document"; }
   const other = otherDetails(lines);
   const sch = liabilitySchedule(lines);
   if (sch) other.unshift({ label: "AOA (any one accident)", value: String(sch.aoa), ref: sch.ref }, { label: "AOY (any one year)", value: String(sch.aoy), ref: sch.ref }, { label: "AOA to AOY ratio", value: sch.ratio, ref: sch.ref }, { label: "Deductible", value: String(sch.deductible), ref: sch.ref }, { label: "Retroactive date", value: sch.retro, ref: sch.ref });

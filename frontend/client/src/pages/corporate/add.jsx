@@ -1,8 +1,8 @@
 // Add a policy, PDF first: read the document, match the insured, insurer, branch and policy type, ask only
 // for what is missing, then review the values. The step-by-step wizard stays for anyone who prefers it.
 import { useState, useEffect } from "react";
-import { DEPARTMENTS, FIXTURES, fixtureById, isVesselType, LIVE } from "./data.js";
-import { nowIso, missingFields, insurerOf } from "./lib.js";
+import { DEPARTMENTS, FIXTURES, FIELDS, fixtureById, isVesselType, isWC, LIVE } from "./data.js";
+import { nowIso, missingFields, insurerOf, isNum, plural } from "./lib.js";
 import { sameInsurer, insurerKey } from "./tidy.js";
 import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
@@ -26,12 +26,21 @@ export function createPolicy({ update, log, toast, go, who }, s0, fx, pl0, confi
       ? { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: fx.fileName, fixtureId: null, lines: fx.lines, textId: fx.textId, fixtureFields: fx.fields, info: fx.info, extracted: true, userFile: { name: fx.fileName, size: fx.fileSize, fileId: fx.fileId || null }, addedAt: nowIso(), addedBy: who, note: fx.noText ? "No readable text; values entered by hand" : fx.ocr ? "Scan read with OCR in the browser" : "Text read in the browser" }
       : { id: docId, customerId: s.customerId, policyId: pid, termId: tid, kind: "Policy schedule", name: `${fx.title}.pdf`, fixtureId: fx.id, addedAt: nowIso(), addedBy: who, note: "" });
     d.policies.push({ id: pid, controlNo: `CN-${String(n).padStart(4, "0")}`, customerId: s.customerId, dept: s.dept, type: s.type, insurerId: s.insurerId, branchId: s.branchId, cover: s.cover || "", vesselMode: s.vesselMode || "", termIds: [tid] });
-    d.terms.push({ id: tid, policyId: pid, termNo: 1, prevTermId: null, nextTermId: null, status: confirm ? "confirmed" : "draft", cancelled: false, nr: "New", outcome: "Open", lossDetail: "", instalments: [], receipts: [], endorsements: [], vesselSchedules: [], cargoDecls: [], charterDecls: [], docId, ...pl });
+    // Fields that belong to other policy types (for example liability limits on a fire policy) are not kept.
+    // Workmen's Compensation has no sum insured, so the term says so for every later check.
+    const values = { ...(pl.values || {}) }, sources = { ...(pl.sources || {}) };
+    FIELDS.forEach((f) => { if (f.only && !f.only(s.type) && values[f.key] !== undefined) { values[f.key] = ""; delete sources[f.key]; } });
+    values.sumInsuredNA = isWC(s.type);
+    // Vessels named on the document start the first vessel schedule. Only what the reader found, never invented.
+    const found = isVesselType(s.type) ? (fx.info?.vessels || []).filter((x) => x && String(x.name || "").trim()) : [];
+    const vesselSchedules = found.length ? [{ version: 1, effectiveFrom: values.riskStart || "", vessels: found.map((x) => ({ name: String(x.name).trim(), imo: x.imo ? String(x.imo).trim() : "", gt: isNum(x.gt) ? +x.gt : "" })), change: null, at: nowIso(), by: who, fromDoc: docId }] : [];
+    d.terms.push({ id: tid, policyId: pid, termNo: 1, prevTermId: null, nextTermId: null, status: confirm ? "confirmed" : "draft", cancelled: false, nr: "New", outcome: "Open", lossDetail: "", instalments: [], receipts: [], endorsements: [], vesselSchedules, cargoDecls: [], charterDecls: [], docId, ...pl, values, sources });
     if (confirm && payment && +pl.values?.netPremium > 0) {
       d.terms[d.terms.length - 1].receipts.push({ id: `R${++d.seq}`, instNo: null, date: payment.date, amount: +pl.values.netPremium, mode: payment.mode, ref: payment.ref, bank: "", remitDate: "", proofDocId: null });
       log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: "Full payment recorded", detail: `Paid in full when the policy was added: ${pl.values.netPremium} on ${payment.date}.` });
     }
-    log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: confirm ? "Term confirmed" : "Draft saved", detail: confirm ? `New business confirmed after review of ${fx.title || fx.fileName}.` : `Draft saved from ${fx.title || fx.fileName}. Missing: ${missingFields(d.terms[d.terms.length - 1]).join(", ") || "none"}` });
+    if (found.length) log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: "Vessel schedule started", detail: `${plural(found.length, "vessel")} taken from ${fx.title || fx.fileName}: ${found.map((x) => String(x.name).trim()).join(", ")}. Check them on the Marine tab.` });
+    log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: confirm ? "Term confirmed" : "Draft saved", detail: confirm ? `New business confirmed after review of ${fx.title || fx.fileName}.` : `Draft saved from ${fx.title || fx.fileName}. Missing: ${missingFields(d.terms[d.terms.length - 1], s.type).join(", ") || "none"}` });
   });
   toast(confirm ? "Policy confirmed and added to the register" : "Draft saved. It is listed under Today until complete");
   go({ view: "policy", id: pid, termId: tid });
@@ -42,16 +51,16 @@ const ALL_TYPES = Object.entries(DEPARTMENTS).flatMap(([dept, types]) => types.m
 // Words that name a policy type without spelling it out in full.
 const TYPE_HINTS = [
   [/charterers? (p and i|liability|legal liability)|charterers p and i club/, "Charterers Liability"],
-  [/protection and indemnity|shipowners? p and i|owners p and i|\\bp and i\\b/, "Protection & Indemnity"],
-  [/hull and machinery|\\bhull\\b|inland vessels?|\\bh and m\\b/, "Marine Hull & Machinery"],
+  [/protection and indemnity|shipowners? p and i|owners p and i|\bp and i\b(?! club| association)/, "Protection & Indemnity"],
+  [/hull and machinery|\bhull\b|inland vessels?|\bh and m\b/, "Marine Hull & Machinery"],
   [/multi ?modal transport|mto liability|multimodal transport operator/, "Multi Model Transport Operator"],
-  [/directors and officers|\\bd and o\\b/, "Directors and Officers Liability Insurance"],
+  [/directors and officers|\bd and o\b/, "Directors and Officers Liability Insurance"],
   [/professional indemnity/, "Professional Indemnity Insurance"],
   [/workm[ae]n'?s? compensation|employees? compensation/, "Workmens Compensation Policy"],
   [/group personal accident|group accident/, "Group Personal Accident Policy"],
   [/group mediclaim|group health/, "Group Mediclaim Policy"], [/family floater/, "Health Family Floater Policy"],
   [/errors and omm?issions/, "Errors and Ommissions Insurance"],
-  [/(sookshma|laghu) udyam|bharat griha raksha|standard fire|fire and special perils|\\bsfsp\\b/, "Standard Fire and Special Perils"],
+  [/(sookshma|laghu) udyam|bharat griha raksha|standard fire|fire and special perils|\bsfsp\b/, "Standard Fire and Special Perils"],
   [/marine cargo open|open (policy|cover)/, "Marine Cargo - Open Policy"],
   [/marine (cargo )?specific|single (transit|voyage)|completion of the voyage|institute cargo clauses/, "Marine Cargo - Specific Policy"],
   [/burglary/, "Burglary Insurance"], [/private car package|motor private car/, "Motor Private Car Package Policy"], [/event cancellation/, "Event Cancellation Insurance"],
@@ -87,7 +96,7 @@ export function suggestFromDocument(db, fx) {
     if (br) out.branchId = br.id;
   }
   // Policy type: a sample says it outright; otherwise the longest type name in the text, then known short forms.
-  if (fx.type) { out.type = fx.type; out.dept = fx.dept; out.typeFrom = "sample"; }
+  if (fx.type) { out.type = fx.type; out.dept = fx.dept; out.typeFrom = fx.typeFrom === "document" ? "document" : "sample"; }
   else {
     const head = flat((fx.lines || []).slice(0, 80).join(" "));
     for (const region of [head, text]) {

@@ -27,7 +27,16 @@ export const isCharterers = (t) => t === "Charterers Liability";
 
 export const CURRENCIES = ["INR", "USD", "AED", "EUR"];
 
+/** The department a policy type sits in, or "" when the type is not in the list. */
+export const deptOfType = (t) => Object.keys(DEPARTMENTS).find((d) => DEPARTMENTS[d].includes(t)) || "";
+export const CARGO_TYPES = ["Marine Cargo - Open Policy", "Marine Cargo - Specific Policy", "Marine Transit Policy"];
+export const isCargoType = (t) => CARGO_TYPES.includes(t);
+/** Workmen's / Employees' Compensation: the cover is set by law, so there is no sum insured. */
+export const isWC = (t) => /workm[ae]n'?s?\s*compensation|employees?'?\s*compensation/i.test(String(t || ""));
+const inDept = (...ds) => (t) => ds.includes(deptOfType(t));
+
 // The register fields a reviewer sees. `req` = needed before a record can be confirmed (PROPOSED list).
+// `only(type)` limits a field to some policy types; it is shown elsewhere only if it already holds a value.
 export const FIELDS = [
   { key: "policyNo", label: "Policy number", group: "Identification", type: "text", req: true },
   { key: "planName", label: "Plan name", group: "Identification", type: "text" },
@@ -47,7 +56,20 @@ export const FIELDS = [
   { key: "stampDuty", label: "Stamp duty", group: "Amounts", type: "money" },
   { key: "netPremium", label: "Net premium", group: "Amounts", type: "money", req: true, help: "The final amount paid: gross + GST, plus stamp duty if the policy's total includes it" },
   { key: "excess", label: "Policy excess", group: "Amounts", type: "text" },
+  { key: "aoaLimit", label: "Limit any one accident / claim", group: "Liability", type: "money", only: inDept("Liability") },
+  { key: "aoyLimit", label: "Limit any one year (aggregate)", group: "Liability", type: "money", only: inDept("Liability") },
+  { key: "retroDate", label: "Retroactive date", group: "Liability", type: "date", only: inDept("Liability"), help: "Claims for acts before this date are not covered" },
+  { key: "continuityDate", label: "Continuity date", group: "Liability", type: "date", only: inDept("Liability") },
+  { key: "deductible", label: "Deductible", group: "Liability", type: "text", only: inDept("Liability") },
+  { key: "claimsMade", label: "Claims-made basis", group: "Liability", type: "yesno", only: inDept("Liability") },
+  { key: "voyageFrom", label: "Voyage from", group: "Voyage and cargo", type: "text", only: isCargoType },
+  { key: "voyageTo", label: "Voyage to", group: "Voyage and cargo", type: "text", only: isCargoType },
+  { key: "commodity", label: "Goods insured", group: "Voyage and cargo", type: "text", only: isCargoType },
+  { key: "valuationBasis", label: "Basis of valuation", group: "Voyage and cargo", type: "text", only: isCargoType, help: "For example, CIF + 10%" },
+  { key: "contractValue", label: "Contract value", group: "Project", type: "money", only: inDept("Engineering") },
+  { key: "principal", label: "Principal / employer", group: "Project", type: "text", only: inDept("Engineering") },
   { key: "location", label: "Location / Jurisdiction", group: "Other", type: "text" },
+  { key: "lossPayee", label: "Loss payee / mortgagee", group: "Other", type: "text", only: inDept("Marine", "Fire", "Engineering"), help: "The bank or lender paid first in a claim, if the policy names one" },
   { key: "share", label: "Our share (%)", group: "Other", type: "pct" },
   { key: "coBrokerShare", label: "Co-broker share (%)", group: "Other", type: "pct" },
   { key: "renewable", label: "Is renewable", group: "Other", type: "yesno", req: true, help: "Entered by a person. Never guessed." },
