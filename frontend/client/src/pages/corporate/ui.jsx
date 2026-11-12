@@ -167,7 +167,7 @@ export function AskFirst({ label, question, yes = "Yes", onYes, kind = "secondar
     <span className="askfirst" role="group">
       <span>{question}</span>
       <Btn kind="danger" onClick={() => { setOpen(false); onYes(); }}>{yes}</Btn>
-      <Btn onClick={() => setOpen(false)}>No, go back</Btn>
+      <Btn onClick={() => setOpen(false)}>Cancel</Btn>
     </span>
   );
 }

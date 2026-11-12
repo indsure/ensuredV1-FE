@@ -26,8 +26,8 @@ export function FeedbackPage({ page }) {
   };
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>Report a problem</h1><p className="muted">Tell us what went wrong or what would help. It goes straight to the IndSure team.</p></div></header>
-      {done && <div className="note" role="status"><strong>Thank you, we have it.</strong>{done !== true && <> Your report number is {done}.</>} <button className="linkbtn" onClick={() => setDone(null)}>Send another</button></div>}
+      <header className="page-head"><div><h1>Report a problem</h1><p className="muted">Report an issue or suggest an improvement. It is sent directly to the IndSure team.</p></div></header>
+      {done && <div className="note" role="status"><strong>Thank you. Your report has been received.</strong>{done !== true && <> Your report number is {done}.</>} <button className="linkbtn" onClick={() => setDone(null)}>Send another report</button></div>}
       {!done && (
         <Card title="Your message">
           <div className="formgrid">
@@ -35,7 +35,7 @@ export function FeedbackPage({ page }) {
               <label className="check"><input type="radio" name="fb-kind" checked={kind === "problem"} onChange={() => setKind("problem")} /> Something is not working</label>
               <label className="check"><input type="radio" name="fb-kind" checked={kind === "idea"} onChange={() => setKind("idea")} /> An idea or a request</label>
             </fieldset>
-            <Labeled label="What happened?" htmlFor="fb-msg" req wide error={tried && !message.trim() ? "Tell us what happened" : null} hint="What you did, what you expected, and what you saw. Please leave out customer details you do not need to share.">
+            <Labeled label="What happened?" htmlFor="fb-msg" req wide error={tried && !message.trim() ? "Please describe the issue" : null} hint="What you did, what you expected, and what you saw. Please leave out customer details you do not need to share.">
               <textarea id="fb-msg" rows={6} value={message} onChange={(e) => setMessage(e.target.value)} />
             </Labeled>
             <Labeled label="Screenshot (optional)" htmlFor="fb-file" wide hint="JPG or PNG. Check it does not show anything you would rather not send.">

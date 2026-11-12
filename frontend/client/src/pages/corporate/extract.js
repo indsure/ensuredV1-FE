@@ -350,7 +350,8 @@ function pick(cands, key, ocr) {
   if (distinct.length > 1) {
     res.conf = "low";
     const other = cands.find((c) => String(c.v) !== String(first.v));
-    res.note = `The document shows different values (lines ${first.ref} and ${other.ref}). ${first === cands[0] ? "The first one was used." : "The largest one was used."}`;
+    res.note = `The policy shows different values (lines ${first.ref} and ${other.ref}). ${first === cands[0] ? "The first one was used." : "The largest one was used."} Choose the right one below if needed.`;
+    res.alts = distinct.filter((v) => v !== String(first.v)).slice(0, 3).map((v) => { const c = cands.find((x) => String(x.v) === v); return { v: c.v, ref: c.ref }; });
   }
   if (first.ambiguous) { res.note = (res.note ? res.note + " " : "") + "Read as day/month/year."; }
   return res;
@@ -436,6 +437,14 @@ export function parseFields(lines, ocr = false) {
   if (fields.riskStart && fields.riskEnd && fields.riskEnd.v <= fields.riskStart.v) { fields.riskEnd.conf = "low"; fields.riskEnd.note = "End date is not after the start date. Check it."; }
   Object.values(fields).forEach((f) => { delete f.noteSet; if (!f.note) delete f.note; });
 
+  // No labelled plan name: the product heading at the top of a schedule usually is one, for example "OIL AND ENERGY RISKS".
+  if (!fields.planName) {
+    const skip = /policy\s+schedule|schedule|certificate|tax\s+invoice|invoice|page\s+\d|government|undertaking|digitally|signed|signer|reason|date|attached|forming\s+part|company|limited|\bltd\b|insurance\s+co|assurance\s+co|office|address|customer|insured|policy\s*(no|number)|uin|gstin|irda/i;
+    const product = /\b(risks?|insurance|policy|suraksha|cover|protect\w*|plan|liability|vessels?|package|mediclaim|accident|marine|fire|cargo|hull|indemnity|compensation|operators?|projects?|guard|secure|shield|bharat|udyam)\b/i;
+    const top = lines.filter((l) => !l.marker).slice(0, 14);
+    const pickLine = top.find((l) => { const t = ((l.segs && l.segs[0]?.s) || l.text).trim(); const words = t.split(/\s+/); return t.length >= 6 && t.length <= 70 && words.length >= 2 && words.length <= 9 && !/\d{3,}|[:@]/.test(t) && !skip.test(t) && product.test(t) && /^[A-Z]/.test(t) && !/^(insurance|policy|cover)\b/i.test(t) && !/\b(reference|ref|number|no\.?|details|period|wording)\s*$/i.test(t) && !INSURERS.some(([, re]) => re.test(t)); });
+    if (pickLine) { const i = lines.indexOf(pickLine); fields.planName = { v: ((pickLine.segs && pickLine.segs[0]?.s) || pickLine.text).trim(), ref: i + 1, conf: "low", note: "Taken from the heading at the top of the policy. Check it is the plan name." }; }
+  }
   // Issue date read from the same line as the start date is often the start date again. Ask.
   if (fields.issueDate && fields.riskStart && fields.issueDate.ref === fields.riskStart.ref) { fields.issueDate.conf = "low"; fields.issueDate.note = "Read from the same line as the risk start date. Check the issue date is really this."; }
   // "Valid for 90 days from the policy inception date": the end date is worked out, and marked for checking.

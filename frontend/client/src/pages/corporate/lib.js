@@ -57,6 +57,8 @@ export function coverage(term) {
   if (TODAY > e) return { label: "Expired", tone: "muted", why: `Ended ${fmtDate(e)}` };
   return { label: "Active", tone: "good", why: `Until ${fmtDate(e)}` };
 }
+/** "1 document", "3 documents". */
+export const plural = (n, word, many = word + "s") => `${n} ${+n === 1 ? word : many}`;
 export const instTotal = (i) => r2((+i.amount || 0) * (1 + (+i.taxPct || 0) / 100) + (+i.stampDuty || 0));
 export function paymentSummary(term) {
   const due = term.instalments.length ? r2(term.instalments.reduce((a, i) => a + instTotal(i), 0)) : +term.values.netPremium || 0;

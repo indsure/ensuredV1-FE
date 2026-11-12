@@ -218,7 +218,7 @@ export function QuickAdd({ inboxId }) {
   return (
     <div className="stack">
       {inboxId && <div className="note row between wrap gap-s"><span><strong>Draft {waiting.findIndex((x) => x.id === inboxId) + 1} of {waiting.length}:</strong> {draft?.fileName}</span><div className="row gap-s wrap"><Btn onClick={() => go({ view: "drafts" })}>Back to Drafts</Btn>{nextAfter() && <Btn onClick={() => go({ view: "add", inboxId: nextAfter().id, nonce: Date.now() })}>Skip to next</Btn>}</div></div>}
-      <header className="page-head"><div><h1>Add a policy</h1><p className="muted">Drop the policy here. We read what we can; you check it and fill any gaps. Nothing is saved until you confirm.</p></div>
+      <header className="page-head"><div><h1>Add a policy</h1><p className="muted">Attach the policy document. Its details are read for you to check and complete. Nothing is saved until you confirm.</p></div>
         <div className="row gap-s">{fx && !inboxId && <AskFirst label="Start again" question="Clear this document?" yes="Clear" onYes={() => { setFx(null); setS(null); }} />}{!inboxId && <Btn onClick={() => go({ view: "new" })}>Fill in step by step</Btn>}</div></header>
       {!inboxId && <Card title="1. The policy document">
         <PdfAttach id="ap-file" ready={fx?.extracted ? fx : null} onReady={start} />
@@ -239,7 +239,7 @@ export function QuickAdd({ inboxId }) {
                 cityHint={nc.city && nc.city === guess.city ? <Found ok line={lines.city} onShow={setHl}>Read from the policy</Found> : null} onChange={(p) => setNc({ ...nc, ...p })} />
               <Labeled label="Customer type" htmlFor="ap-nvert"><Select id="ap-nvert" value={nc.vertical} onChange={(v) => setNc({ ...nc, vertical: v })} options={["Corporate", "Retail"]} /></Labeled>
             </>}
-            <Labeled label="CSC" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From this customer's record" : "Who looks after this customer? Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
+            <Labeled label="CSC" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From this customer's record" : "The team member responsible for this customer. Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
             <Labeled label="RM" htmlFor="ap-rm" hint="Optional"><SearchPick id="ap-rm" value={s.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
             <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={!guess.insurerId && !s.insurerId && fx?.info?.insurer ? <Found ok line={lines.insurer} onShow={setHl}>The policy says {fx.info.insurer.replace(/\.$/, "")}. Not in your list yet, add it below</Found> : hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the policy")}><Select id="ap-ins" value={s.insurerId} onChange={set("insurerId")} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
             <Labeled label="Insurer branch" htmlFor="ap-br" req error={tried && errs.branch} hint={s.insurerId ? hintFor("branch", !!guess.branchId && s.branchId === guess.branchId, "Read from the policy") : null}><Select id="ap-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
@@ -276,7 +276,7 @@ export function QuickAdd({ inboxId }) {
           {extraErr && <div className="err-text small" role="alert">{extraErr}</div>}
           {tried && todo.length > 0 && <div className="note note-warn small"><strong>Still needed:</strong> {todo.join("; ")}.</div>}
           <div className="row gap-s wrap"><Btn kind="primary" onClick={toReview}>Next: check the figures</Btn><span className="small muted">Policy number, dates and amounts come next.</span></div>
-          <p className="small muted">Picked the wrong one? Just change it here.</p>
+          <p className="small muted">If a match is wrong, change it here before continuing.</p>
         </Card>
         </div>
       )}

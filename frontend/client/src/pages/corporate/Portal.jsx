@@ -1,7 +1,7 @@
 // IndSure Commercial: shell, workspaces and the views that are not about one policy.
 import "./commercial.css";
 import { seed, TODAY, LIVE, DEPARTMENTS, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
-import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook } from "./lib.js";
+import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook, plural } from "./lib.js";
 import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, DateInput, Tip } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
@@ -54,7 +54,14 @@ export function App({ onSignedOut }) {
   const [loadErr, setLoadErr] = useState(false);
   const [saveState, setSaveState] = useState({ state: "idle" });
   const loaded = useRef(null);
-  const [role, setRole] = useState(() => (isRemote() && currentUser()?.role) || "ops");
+  const TEAM_KEY = "indsure-commercial-team";
+  const [role, setRole] = useState(() => {
+    if (!isRemote()) return "ops";
+    const mine = currentUser()?.role || "ops";
+    if (mine !== "admin") return mine;
+    try { const saved = localStorage.getItem(TEAM_KEY); return saved && ROLES[saved] ? saved : "admin"; } catch (e) { return "admin"; }
+  });
+  const canChooseTeam = !isRemote() || currentUser()?.role === "admin";
   const lastPage = useRef("");
   const [fy, setFy] = useState("2026-27");
   const [route, setRoute] = useState({ view: "home" });
@@ -118,6 +125,7 @@ export function App({ onSignedOut }) {
   const go = (r) => { setRoute(r); setMenu(false); mainRef.current?.scrollTo?.(0, 0); window.scrollTo(0, 0); };
   const visible = (key) => NAV.flatMap((g) => g.items).find((i) => i.key === key)?.roles.includes(role);
   const switchRole = (r) => {
+    if (isRemote()) { try { localStorage.setItem(TEAM_KEY, r); } catch (e) { /* storage blocked */ } }
     setRole(r);
     const first = NAV.flatMap((g) => g.items).find((i) => i.roles.includes(r));
     const keep = ["customer", "policy"].includes(route.view) || NAV.flatMap((g) => g.items).find((i) => i.key === route.view)?.roles.includes(r);
@@ -168,7 +176,7 @@ export function App({ onSignedOut }) {
           <div className="demo-banner">
             <span className="row gap-xs"><Icon name="sparkle" size={16} /> {!LIVE ? "Demo prototype: fictional data, nothing leaves this browser." : isRemote() ? "Beta: your records are saved securely online." : storeInfo().kind === "server" ? "Your records are saved on this computer, not online." : "Beta: your records are kept in this browser only. Download a backup regularly."}</span>
             <div className="banner-ctl">
-              {!isRemote() && <label className="pillsel"><span className="sr">Role</span><select id="role" value={role} onChange={(e) => switchRole(e.target.value)}>{Object.entries(ROLES).map(([k, x]) => <option key={k} value={k}>Role: {x.label}</option>)}</select></label>}
+              {canChooseTeam && <label className="pillsel" title="Show the pages for this team"><span className="sr">Team</span><select id="role" value={role} onChange={(e) => switchRole(e.target.value)}>{Object.entries(ROLES).map(([k, x]) => <option key={k} value={k}>Team: {x.label}</option>)}</select></label>}
               <label className="pillsel"><span className="sr">Financial year</span><select id="fy" value={fy} onChange={(e) => setFy(e.target.value)}>{FY_OPTIONS.map((f) => <option key={f} value={f}>F.Y. {f}</option>)}</select></label>
               {import.meta.env.DEV && <a className="btn btn-banner" href={LIVE ? "?demo" : "?"}>{LIVE ? "Open the demo" : "Back to my records"}</a>}
               <Btn kind="banner" onClick={() => setBackup(true)}>Backup</Btn>
@@ -266,9 +274,9 @@ function HomeView() {
     <div className="stack">
       <header className="page-head"><div><h1>Today</h1><p className="muted">What needs doing today. Click anything to open it.</p></div>{can("newBusiness") && <Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy</Btn>}</header>
       {!db.policies.length && can("newBusiness") && (
-        <Card title="New here? Start with one policy" sub="It takes about ten minutes.">
+        <Card title="Getting started" sub="Add your first policy to begin. It takes about ten minutes.">
           <ol className="guide-steps"><li>Click <strong>Add a policy</strong> and drop a policy PDF.</li><li>Check what was read against the policy, beside it on the same screen.</li><li>Fill any gaps and confirm.</li></ol>
-          <div className="row gap-s wrap" style={{ marginTop: 12 }}><Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy</Btn><Btn onClick={() => go({ view: "guide" })}>Open the How to guide</Btn></div>
+          <div className="row gap-s wrap" style={{ marginTop: 12 }}><Btn kind="primary" onClick={() => go({ view: "add", nonce: Date.now() })}>Add a policy</Btn><Btn onClick={() => go({ view: "guide" })}>Open the guide</Btn></div>
         </Card>
       )}
       {(db.inbox || []).length > 0 && can("newBusiness") && <div className="note row between wrap gap-s"><span><strong>{db.inbox.length} draft{db.inbox.length === 1 ? "" : "s"} waiting for approval</strong> from bulk upload.</span><Btn onClick={() => go({ view: "drafts" })}>Open Drafts</Btn></div>}
@@ -683,7 +691,7 @@ function BusinessReport() {
       <div className={out === "print" ? "printsheet" : ""}>
         {out === "print" && <div className="letterhead"><div><strong>IndSure Commercial{LIVE ? "" : " (demo)"}</strong><div className="small">Broker's Business Report, grouped {GROUPINGS.find((x) => x.key === g).label}</div></div><div className="small">Printed {fmtStamp(printedAt)}<br />Page 1 of 1</div></div>}
         <div className="reportmeta"><span>Date basis: <strong>{basisLabel}</strong></span><span>Period: <strong>{fmtDate(from)} to {fmtDate(to)}</strong>{!f.useRange && ` (F.Y. ${fy})`}</span><span>{filterText}</span><span>Printed {fmtStamp(printedAt)}</span><span>Drafts excluded: {drafts}</span></div>
-        {missingRate.length > 0 && <div className="note note-warn">No FX rate for {missingRate.join(", ")}. {T.noRate} record(s) are left out of INR totals and shown as "No rate". Add the rate under FX rates.</div>}
+        {missingRate.length > 0 && <div className="note note-warn">No FX rate for {missingRate.join(", ")}. {plural(T.noRate, "record")} are left out of INR totals and shown as "No rate". Add the rate under FX rates.</div>}
         {!rows.length ? <Empty title="No confirmed records match">Change the period, date basis or filters. Drafts are never counted.</Empty> : (
           <>
             {groups.map((gr) => (

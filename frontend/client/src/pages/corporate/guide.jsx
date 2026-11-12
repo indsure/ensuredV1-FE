@@ -14,7 +14,7 @@ const FIRST_DAY = [
   { title: "Know the idea", text: "One customer can hold many policies. A policy starts as a draft, someone checks it and confirms it, then the money comes in. During the year it may change (endorsement). At the end it renews or is lost.", },
   { title: "Add one policy", text: "Click Add a policy and drop the PDF. The portal reads what it can.", go: "add", label: "Add a policy" },
   { title: "Check what was read", text: "The policy shows beside the form. Green was read clearly; amber needs your eye. Click any tag to see the line it came from. Reading can make mistakes, especially on scans, so this check matters.", },
-  { title: "Fill the gaps and confirm", text: "Type in anything missing and choose whether it is renewable, then click Confirm. Not sure yet? Save as draft and come back.", },
+  { title: "Fill the gaps and confirm", text: "Type in anything missing and choose whether it is renewable, then click Confirm. To finish later, click Save as draft.", },
   { title: "Record the money", text: "When the customer pays, open the policy, go to Payments, and click Record receipt. Paid in one go? Click Paid in full.", go: "register", label: "Policy register" },
   { title: "Look at Today each morning", text: "It lists drafts to finish, overdue instalments and policies ending soon. Each item opens the record.", go: "home", label: "Today" },
 ];
@@ -59,7 +59,7 @@ export const GUIDE = [
     tip: "Paid after the due date? Enter the real date. The portal keeps both dates and shows it as paid late." },
   { group: "Money", id: "instalments", title: "Set up instalments", roles: ADD, go: "register", words: "instalment installment schedule emi split payment stamp duty quarterly due dates table read",
     when: "The customer pays the premium in parts.",
-    steps: ["Open the policy and go to Payments. If the policy's document has an instalment table, click \"Use this schedule\" and you are done.", "Otherwise click \"Set up instalments\". You can read the table from a PDF or photo.", "Or enter the first due date, how many months apart, and how many instalments, then click \"Make rows\".", "Click \"Split remaining net equally\", or type each amount. Stamp duty has its own box and starts on the first instalment.", "Check the total matches, then click \"Save schedule\"."] },
+    steps: ["Open the policy and go to Payments. If the policy's document has an instalment table, click \"Use this schedule\" to apply it.", "Otherwise click \"Set up instalments\". You can read the table from a PDF or photo.", "Or enter the first due date, how many months apart, and how many instalments, then click \"Make rows\".", "Click \"Split remaining net equally\", or type each amount. Stamp duty has its own box and starts on the first instalment.", "Check the total matches, then click \"Save schedule\"."] },
   { group: "Money", id: "brokerage-net", title: "Charge brokerage on net premium", roles: MONEY, words: "brokerage net gross tick base commission",
     steps: ["Brokerage is on gross premium by default.", "For a policy where it is on net, tick \"Brokerage on net premium\" on the review screen, or under Brokerage on the policy page.", "The brokerage amount and the Brokerage received page follow the tick."] },
   { group: "Money", id: "receipt", title: "Record brokerage received from an insurer", roles: MONEY, go: "brokerage", words: "brokerage receipt commission received insurer short paid outstanding remittance chase",
@@ -107,7 +107,7 @@ export const GUIDE = [
   { group: "Team and settings", id: "readonly", title: "What a read-only login can do", roles: ["readonly"], words: "read only view viewer auditor",
     steps: ["You can open customers, policies and reports, and download documents.", "You cannot add or change anything. Ask a CSC or an Admin."] },
   { group: "Team and settings", id: "report", title: "Report a problem", roles: ALL, go: "feedback", words: "bug problem feedback idea report error help contact support not working",
-    steps: ["Click \"Report a problem\" in the menu.", "Say what happened, add a screenshot if it helps, and click \"Send to IndSure\". It reaches the IndSure team straight away."] },
+    steps: ["Click \"Report a problem\" in the menu.", "Say what happened, add a screenshot if it helps, and click \"Send to IndSure\". It is sent to the IndSure team immediately."] },
 ];
 
 // Doubts people actually have.
@@ -128,7 +128,7 @@ export const QUESTIONS = [
   { q: "The insurer's name is spelled differently on this policy. Will it make a duplicate?", a: "Pick the existing insurer from the list instead of adding a new one. Use Rename in Lists and team to correct a spelling; old policies follow it.", words: "duplicate spelling same insurer name" },
   { q: "Issue date, risk start and booked date: which is which?", a: "Issue date: when the insurer issued it. Risk start: when cover begins. Booked date: when the business counts in your reports. It starts as the issue date.", words: "dates difference issue risk booked which date" },
   { q: "How do I type dates?", a: "Dates show as DD/MM/YYYY. Type 14/08/2026 or 14/08/26, or paste straight from the policy: 14-Aug-26 and 14/08/2026 02:53 PM both work. After a paste the portal says how it read the date and asks if it is right.", words: "date format paste copy dd mm yyyy" },
-  { q: "Why can't I see a page or button someone else can?", a: "What you see depends on your role. Operations add and change policies, Accounts handle money and reports, Admins do everything, and Read-only can look but not change. Ask an Admin if you need more.", words: "role permission access missing button greyed disabled" },
+  { q: "Why is a page or button missing for me?", a: "What you see depends on your role. Operations add and change policies, Accounts handle money and reports, Admins do everything, and Read-only can look but not change. Ask an Admin if you need more.", words: "role permission access missing button greyed disabled" },
   { q: "A button is greyed out. Why?", a: "Hover over it, or tap it on a phone. It says why, usually your role or something still missing.", words: "disabled greyed cannot click" },
   { q: "Does anything go to my customer automatically?", a: "No. Reminders go only to your own team. Nothing is sent to customers.", words: "email customer sent automatic message reminder" },
   { q: "Two of us changed the same thing. What happens?", a: "The second person is told someone else saved first and sees the latest records, so nothing is overwritten silently. Redo your last change if it is missing.", words: "conflict same time saved elsewhere overwritten" },
@@ -146,7 +146,7 @@ function Topic({ g, open, role, go, roleLabels = true }) {
       <ol className="guide-steps">{g.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
       {g.tip && <p className="small note">{g.tip}</p>}
       <div className="row gap-s wrap" style={{ marginTop: 10 }}>
-        {g.go && g.roles.includes(role) && <Btn onClick={() => go(g.go === "add" ? { view: "add", nonce: Date.now() } : { view: g.go })}>Go there</Btn>}
+        {g.go && g.roles.includes(role) && <Btn onClick={() => go(g.go === "add" ? { view: "add", nonce: Date.now() } : { view: g.go })}>Open</Btn>}
         {roleLabels && g.roles.length < 4 && g.roles.map((r) => <Pill key={r} tone={r === role ? "info" : "muted"}>{ROLE_LABEL[r]}</Pill>)}
       </div>
     </details>
@@ -170,13 +170,13 @@ export function Guide() {
   const found = topics.length + faqs.length + words.length;
   return (
     <div className="stack">
-      <header className="page-head"><div><h1>How to</h1><p className="muted">Search for what you want to do, or a word you want explained. New here? Start with your first day below.</p></div></header>
+      <header className="page-head"><div><h1>How to</h1><p className="muted">Search for what you want to do, or a word you want explained. New users can begin with the first-day steps below.</p></div></header>
       <div className="guide-search">
         <label className="sr" htmlFor="guide-search">Search the guide</label>
         <input id="guide-search" type="search" placeholder="What do you want to do? Try: renew, part payment, what is an endorsement" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {searching && <p className="small muted" role="status">{found ? `${found} result${found === 1 ? "" : "s"}` : ""}</p>}
-      {searching && !found && <Empty title="Nothing matches">Try fewer or different words. Still stuck? <button className="linkbtn" onClick={() => go({ view: "feedback" })}>Ask us through Report a problem</button>.</Empty>}
+      {searching && !found && <Empty title="Nothing matches">Try fewer or different words. If you still cannot find it, <button className="linkbtn" onClick={() => go({ view: "feedback" })}>contact us through Report a problem</button>.</Empty>}
 
       {!searching && (
         <Card title="Your first day" sub="Do these in order with one real policy. It takes about ten minutes.">
@@ -212,7 +212,7 @@ export function Guide() {
         </Card>
       )}
 
-      {!searching && <p className="small muted">Can't find it? <button className="linkbtn" onClick={() => go({ view: "feedback" })}>Ask us through Report a problem</button>. City data: GeoNames (CC BY 4.0).</p>}
+      {!searching && <p className="small muted">Cannot find what you need? <button className="linkbtn" onClick={() => go({ view: "feedback" })}>Contact us through Report a problem</button>. City data: GeoNames (CC BY 4.0).</p>}
     </div>
   );
 }

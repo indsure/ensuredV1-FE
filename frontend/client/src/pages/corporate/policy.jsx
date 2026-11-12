@@ -1,6 +1,6 @@
 // One policy, its terms, and every tab that hangs off a term.
 import { FIELDS, FIELD, TODAY, LIVE, PLAIN_SAMPLES, fixtureById, makeEndorsementFixture, makeRenewalFixture, isVesselType, isCargoOpen, isCharterers, CURRENCIES } from "./data.js";
-import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf } from "./lib.js";
+import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtValue, isNum, r2, coverage, completeness, paymentSummary, instalmentRows, instTotal, missingFields, insurerOf, branchOf, teamName, nowIso, daysBetween, brokerageOf, plural } from "./lib.js";
 import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, Icon, DocModal, DateInput, Tip } from "./ui.jsx";
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
@@ -90,8 +90,8 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
           <h1>{term.values.policyNo || "Policy number not entered"}</h1>
           <p className="muted">{p.type} · {ins?.name}, {br?.name} ({br?.city}, {br?.country}){p.vesselMode ? ` · ${p.vesselMode}` : ""}{p.cover ? ` · ${p.cover}` : ""}</p>
           {(can("*") || (can("editDraft") && terms.every((t) => t.status === "draft"))) && <div style={{ marginTop: 10 }}><AskFirst label="Delete policy" kind="danger"
-            question={`Delete ${term.values.policyNo || p.controlNo} with its ${terms.length} year${terms.length === 1 ? "" : "s"}, ${db.documents.filter((d) => d.policyId === p.id).length} document(s) and ${terms.reduce((a, t) => a + t.receipts.length, 0)} receipt(s)? The customer stays. An Admin can bring it back from Earlier saves.`}
-            yes="Delete policy" onYes={() => { update((d) => { const tids = new Set(p.termIds); d.terms = d.terms.filter((t) => !tids.has(t.id)); d.documents = d.documents.filter((x) => x.policyId !== p.id); d.policies = d.policies.filter((x) => x.id !== p.id); log(d, { customerId: p.customerId, action: "Policy deleted", detail: `${p.controlNo}, policy number ${term.values.policyNo || "none"}, ${p.type}, with ${tids.size} year(s).` }); }); toast("Policy deleted"); go({ view: "register" }); }} /></div>}
+            question={`Delete ${term.values.policyNo || p.controlNo} with ${plural(terms.length, "policy year")}, ${plural(db.documents.filter((d) => d.policyId === p.id).length, "document")} and ${plural(terms.reduce((a, t) => a + t.receipts.length, 0), "receipt")}? The customer stays. An Admin can bring it back from Earlier saves.`}
+            yes="Delete policy" onYes={() => { update((d) => { const tids = new Set(p.termIds); d.terms = d.terms.filter((t) => !tids.has(t.id)); d.documents = d.documents.filter((x) => x.policyId !== p.id); d.policies = d.policies.filter((x) => x.id !== p.id); log(d, { customerId: p.customerId, action: "Policy deleted", detail: `${p.controlNo}, policy number ${term.values.policyNo || "none"}, ${p.type}, with ${plural(tids.size, "year")}.` }); }); toast("Policy deleted"); go({ view: "register" }); }} /></div>}
         </div>
         <div className="termsel" aria-label="Policy years">
           <span className="axis">Policy years</span>
@@ -363,7 +363,7 @@ function PaymentsTab({ p, term, openDoc }) {
       <div className="note small">Recording money here never changes the policy's premium, dates or sum insured.</div>
       <div className="stats">
         <div className="stat"><span>Due on this policy</span><strong>{fmtMoney(pay.due, cur)}</strong><em>{term.instalments.length ? `${term.instalments.length} instalments` : "Net premium, single payment"}</em></div>
-        <div className="stat"><span>Received</span><strong>{fmtMoney(pay.received, cur)}</strong><em>{term.receipts.length} receipt(s)</em></div>
+        <div className="stat"><span>Received</span><strong>{fmtMoney(pay.received, cur)}</strong><em>{plural(term.receipts.length, "receipt")}</em></div>
         <div className="stat"><span>Outstanding</span><strong className={pay.outstanding > 0 ? "bad-text" : ""}>{fmtMoney(pay.outstanding, cur)}</strong><em>{pay.label}</em>{can("receipt") && pay.outstanding > 0 && !addRec && <div style={{ marginTop: 10 }}><Btn kind="primary" onClick={openFull}>Paid in full</Btn></div>}</div>
       </div>
       <Card title="Instalment schedule" sub="Due date and receipt date are kept separately."
@@ -441,7 +441,7 @@ function ScheduleEditor({ p, term, onDone }) {
       const t = d.terms.find((x) => x.id === term.id);
       t.scheduleHistory = [...(t.scheduleHistory || []), { at: nowIso(), by: who, rows: t.instalments }];
       t.instalments = rows.map((r, i) => ({ no: i + 1, due: r.due, amount: +r.amount, taxPct: +r.taxPct, stampDuty: +r.stampDuty || 0 }));
-      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Instalment schedule saved", detail: `${t.instalments.length} instalment(s), total ${fmtMoney(total, cur)}. Previous schedule kept as version ${t.scheduleHistory.length}.` });
+      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: "Instalment schedule saved", detail: `${plural(t.instalments.length, "instalment")}, total ${fmtMoney(total, cur)}. Previous schedule kept as version ${t.scheduleHistory.length}.` });
     });
     toast("Instalment schedule saved");
     onDone();
@@ -496,7 +496,7 @@ function ReceiptForm({ p, term, onDone, startFull = false }) {
       // Full payment clears every open instalment, one receipt each, so each shows as paid on that date.
       const parts = full && rows.length ? rows.map((r) => ({ instNo: r.no, amount: r.out })) : [{ instNo: f.instNo ? +f.instNo : null, amount: +f.amount }];
       parts.forEach((x, k) => t.receipts.push({ id: `R${++d.seq}`, instNo: x.instNo, date: f.date, amount: x.amount, mode: f.mode, ref: f.ref, bank: f.bank, remitDate: f.remitDate, proofDocId: k === 0 ? proofDocId : null }));
-      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: full ? "Full payment recorded" : "Receipt recorded", detail: `${fmtMoney(+f.amount, t.values.currency)} received ${fmtDate(f.date)}${full ? (rows.length ? `, clearing ${rows.length} instalment(s)` : ", the full amount") : f.instNo ? ` against instalment ${f.instNo}` : ""}. Policy values unchanged.` });
+      log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: full ? "Full payment recorded" : "Receipt recorded", detail: `${fmtMoney(+f.amount, t.values.currency)} received ${fmtDate(f.date)}${full ? (rows.length ? `, clearing ${plural(rows.length, "instalment")}` : ", the full amount") : f.instNo ? ` against instalment ${f.instNo}` : ""}. Policy values unchanged.` });
     });
     toast(full ? "Marked as paid in full" : "Receipt recorded");
     onDone();
@@ -588,7 +588,7 @@ function VesselSection({ p, term, openDoc }) {
           ) : (
             <>
               <h4>Check before confirming</h4>
-              <KV items={[["Change", `${f.type} ${f.type === "Add" ? f.name : f.remove}`], ["Effective from", fmtDate(f.effDate)], ["Premium adjustment", fmtMoney(+f.premiumAdj, cur)], ["Brokerage adjustment", fmtMoney(+f.brokerageAdj, cur)], ["Current schedule", `Version ${current.version}, ${current.vessels.length} vessel(s), kept unchanged`], ["New schedule", `Version ${current.version + 1}, ${f.type === "Add" ? current.vessels.length + 1 : current.vessels.length - 1} vessel(s)`]]} />
+              <KV items={[["Change", `${f.type} ${f.type === "Add" ? f.name : f.remove}`], ["Effective from", fmtDate(f.effDate)], ["Premium adjustment", fmtMoney(+f.premiumAdj, cur)], ["Brokerage adjustment", fmtMoney(+f.brokerageAdj, cur)], ["Current schedule", `Version ${current.version}, ${plural(current.vessels.length, "vessel")}, kept unchanged`], ["New schedule", `Version ${current.version + 1}, ${plural(f.type === "Add" ? current.vessels.length + 1 : current.vessels.length - 1, "vessel")}`]]} />
               <div className="row gap-s"><Btn onClick={() => setStep("form")}>Back</Btn><Btn kind="primary" onClick={confirm}>Confirm fleet change</Btn></div>
             </>
           )}
@@ -597,7 +597,7 @@ function VesselSection({ p, term, openDoc }) {
       <div className="stack">
         {scheds.slice().reverse().map((s) => (
           <details key={s.version} open={s === current} className="sched">
-            <summary><strong>Version {s.version}</strong>{s === current ? <Pill tone="good">Current</Pill> : <Pill>Earlier, kept</Pill>} effective from {fmtDate(s.effectiveFrom)} · {s.vessels.length} vessel(s)</summary>
+            <summary><strong>Version {s.version}</strong>{s === current ? <Pill tone="good">Current</Pill> : <Pill>Earlier, kept</Pill>} effective from {fmtDate(s.effectiveFrom)} · {plural(s.vessels.length, "vessel")}</summary>
             <Table><thead><tr><th>Vessel</th><th>IMO</th><th className="num">GT</th></tr></thead><tbody>{s.vessels.map((v) => <tr key={v.name}><td>{v.name}</td><td>{v.imo || "--"}</td><td className="num">{v.gt ? fmtNum(v.gt) : "--"}</td></tr>)}</tbody></Table>
             {s.change && <p className="small">{s.change.type === "Add" ? "Added" : "Removed"} {s.change.vessel} from {fmtDate(s.change.effDate)}. Premium adjustment {fmtMoney(s.change.premiumAdj, cur)}, brokerage adjustment {fmtMoney(s.change.brokerageAdj, cur)}. {s.change.note} Recorded {fmtStamp(s.at)} by {s.by}. {s.change.docId && <button className="linkbtn" onClick={() => openDoc(db.documents.find((d) => d.id === s.change.docId))}>View document</button>}</p>}
           </details>

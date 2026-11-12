@@ -153,7 +153,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
       } else if (fixture.fields[f.key] && f.key !== "renewable") {
         const x = fixture.fields[f.key];
         vals[f.key] = x.v;
-        srcs[f.key] = { ref: x.ref, conf: x.conf, docLabel: "Document", note: x.note };
+        srcs[f.key] = { ref: x.ref, conf: x.conf, docLabel: "Document", note: x.note, alts: x.alts };
       } else {
         vals[f.key] = "";
       }
@@ -270,7 +270,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               );
             })}
           </div>
-          <p className="small muted">We never guess Is renewable, so please answer it. Business booked date starts as the issue date. You can save a draft with gaps and finish it later.</p>
+          <p className="small muted">Is renewable is never read from the policy, so please answer it. Business booked date starts as the issue date. You can save a draft with gaps and finish it later.</p>
         </section>
       )}
       <div className="legend note small"><strong>How to read this:</strong> <span className="src src-ok">read clearly</span> <span className="src src-low">please check</span> Click a tag to see its line on the policy. <span className="src">Not on the policy</span></div>
@@ -295,6 +295,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                         : f.type === "select" ? <Select id={id} value={vals[f.key] || ""} onChange={(v) => set(f.key, v)} placeholder="Not entered" options={f.options} />
                         : f.type === "money" ? <MoneyInput id={id} value={vals[f.key] ?? ""} onChange={(v) => set(f.key, v)} />
                         : <input id={id} type="text" inputMode={NUMERIC.has(f.key) ? "decimal" : undefined} value={vals[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value.replace(/,/g, ""))} />}
+                      {s?.alts?.length > 0 && !s.edited && <div className="small row gap-xs wrap alts">Also printed on the policy:{s.alts.map((a) => <button key={String(a.v)} type="button" className="src src-btn" title={`Use this value, from line ${a.ref}`} onClick={() => { set(f.key, a.v); show(a.ref); }}>{fmtValue(f.key, a.v, vals.currency)} · line {a.ref}</button>)}</div>}
                       {f.key === "riskEnd" && <label className="check small" style={{ marginTop: 6 }}><input id="rv-noend" type="checkbox" checked={!!vals.noFixedEnd} onChange={(e) => setVals((p) => ({ ...p, noFixedEnd: e.target.checked, ...(e.target.checked ? { riskEnd: "" } : {}) }))} /> No fixed end date: it ends when the voyage or transit completes</label>}
                       {f.key === "netPremium" && fixture.info?.premiumInAnnexure && !vals.netPremium && <div className="small warn-text">The policy says the premium is in an annexure (line {fixture.info.premiumInAnnexure.ref}).{fixture.readPages < fixture.pages ? ` We read ${fixture.readPages} of ${fixture.pages} pages, so it may be in a page we did not read: check the Original file.` : " Search the document for it."}</div>}
                     </Labeled>
@@ -350,7 +351,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
       {askPayment && (
         <fieldset className="fgroup review-pay">
           <legend>Payment (optional)</legend>
-          <p className="small muted">Already paid? Record it now and skip the Payments tab. Paying in instalments? Set them up on the policy after saving.</p>
+          <p className="small muted">If the premium has been received in full, record it here. For instalments, set up the schedule on the policy after saving.</p>
           <div className="row gap-s wrap">
             <label className="check"><input type="radio" name="rv-pay" checked={paid.how === "no"} onChange={() => setPaid({ ...paid, how: "no" })} /> Not paid yet, or in instalments</label>
             <label className="check"><input id="rv-paid-full" type="radio" name="rv-pay" checked={paid.how === "full"} onChange={() => setPaid({ ...paid, how: "full" })} /> Paid in full{isNum(vals.netPremium) ? ` (${fmtValue("netPremium", vals.netPremium, vals.currency)})` : ""}</label>
