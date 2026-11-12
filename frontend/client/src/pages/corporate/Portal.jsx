@@ -14,6 +14,7 @@ import { BulkPage, DraftsPage, bindBulk, bulkBusy } from "./bulk.jsx";
 import { FeedbackPage } from "./feedback.jsx";
 import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
+import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch } from "./tidy.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
 // Live and demo records never share storage.
@@ -806,14 +807,56 @@ function RenameMaster({ edit, onClose }) {
     onClose();
   };
   return (
-    <Card title={isBranch ? `Rename branch of ${ins.name}` : `Rename ${edit.name}`} sub={used ? `Used on ${used} polic${used === 1 ? "y" : "ies"}; they will all show the new name.` : "Not used on any policy yet."}>
+    <Card title={isBranch ? `Edit branch of ${ins.name}` : `Edit ${edit.name}`} sub={used ? `Used on ${used} polic${used === 1 ? "y" : "ies"}; they will all show the new name.` : "Not used on any policy yet."}>
       <div className="formgrid">
         <Labeled label={isBranch ? "Branch" : "Insurer name"} htmlFor="rn-name"><input id="rn-name" value={f.name} onChange={(e) => { setF({ ...f, name: e.target.value }); setErr(""); }} /></Labeled>
         {isBranch && <PlaceFields id="rn" value={f} req countryReq onChange={(p) => { setF({ ...f, ...p }); setErr(""); }} />}
       </div>
       {err && <div className="err-text small" role="alert">{err}</div>}
       <div className="row gap-s"><Btn kind="primary" onClick={save}>Save name</Btn><Btn onClick={onClose}>Cancel</Btn></div>
+      <TidyMaster edit={edit} onDone={onClose} />
     </Card>
+  );
+}
+
+// Merge a duplicate into the right insurer or branch, or delete one nothing uses.
+function TidyMaster({ edit, onDone }) {
+  const { db, update, log, toast } = useApp();
+  const isBranch = edit.kind === "branch";
+  const ins = insurerOf(db, edit.insId);
+  const [to, setTo] = useState(edit.mergeTo || "");
+  const use = insurerUse(db, edit.insId, isBranch ? edit.brId : null);
+  const targets = isBranch ? ins.branches.filter((b) => b.id !== edit.brId).map((b) => ({ value: b.id, label: `${b.name} (${b.city})` }))
+    : db.insurers.filter((i) => i.id !== edit.insId).map((i) => ({ value: i.id, label: i.name }));
+  const target = isBranch ? ins.branches.find((b) => b.id === to) : insurerOf(db, to);
+  const nm = String(edit.name).replace(/[.]+$/, "");
+  const usedText = [use.policies && plural(use.policies, "policy", "policies"), use.presets && plural(use.presets, "brokerage rate"), use.receipts && plural(use.receipts, "brokerage receipt")].filter(Boolean).join(", ");
+  const merge = () => {
+    update((d) => { const detail = isBranch ? mergeBranch(d, edit.insId, edit.brId, to) : mergeInsurer(d, edit.insId, to); log(d, { action: isBranch ? "Branch merged" : "Insurer merged", detail }); });
+    toast(isBranch ? "Branch merged" : "Insurer merged"); onDone();
+  };
+  const remove = () => {
+    update((d) => {
+      if (isBranch) { const i = d.insurers.find((x) => x.id === edit.insId); i.branches = i.branches.filter((b) => b.id !== edit.brId); log(d, { action: "Branch deleted", detail: `${i.name}: ${edit.name} (${edit.city}).` }); }
+      else { d.insurers = d.insurers.filter((x) => x.id !== edit.insId); log(d, { action: "Insurer deleted", detail: edit.name }); }
+    });
+    toast(isBranch ? "Branch deleted" : "Insurer deleted"); onDone();
+  };
+  return (
+    <div className="stack" style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--line, #e2e8f0)" }}>
+      {targets.length > 0 && <div className="stack">
+        <strong>{isBranch ? "Duplicate of another branch?" : "Duplicate of another insurer?"}</strong>
+        <p className="small muted">{isBranch ? `Moves its policies to the branch you choose, then removes ${nm}.` : `Moves its policies, branches, brokerage rates and receipts to the insurer you choose, then removes ${nm}.`}</p>
+        <div className="row gap-s wrap">
+          <Labeled label={isBranch ? "Merge into branch" : "Merge into insurer"} htmlFor="tm-merge"><Select id="tm-merge" value={to} onChange={setTo} placeholder="Choose" options={targets} /></Labeled>
+          <AskFirst label="Merge" disabled={!to} why="Choose where to merge it first" question={target ? `Merge ${edit.name} into ${target.name}${usedText ? `, moving ${usedText}` : ""}? This cannot be undone, except from an earlier save.` : ""} yes="Merge" onYes={merge} />
+        </div>
+      </div>}
+      <div className="row gap-s wrap">
+        {isUnused(use) ? <AskFirst label={isBranch ? "Delete branch" : "Delete insurer"} question={`Delete ${nm}? It is not used on any record.`} yes="Delete" onYes={remove} />
+          : <p className="small muted">It cannot be deleted while it is used ({usedText}). {targets.length ? "Merge it into the right one instead." : ""}</p>}
+      </div>
+    </div>
   );
 }
 
@@ -824,6 +867,7 @@ function Masters() {
   const [nb, setNb] = useState({ ins: "", name: "", city: "", state: "", country: "India" });
   const [err, setErr] = useState("");
   const [edit, setEdit] = useState(null);
+  const dups = duplicateInsurers(db);
   const typeCount = {};
   Object.values(DEPARTMENTS).flat().forEach((t) => (typeCount[t] = (typeCount[t] || 0) + 1));
   const addIns = () => { if (!ni.trim()) return setErr("Enter the insurer name"); if (db.insurers.some((i) => i.name.toLowerCase() === ni.trim().toLowerCase())) return setErr("That insurer already exists"); update((d) => { d.insurers.push({ id: `INS${++d.seq}`, name: ni.trim(), branches: [] }); log(d, { action: "Insurer added", detail: ni.trim() }); }); setNi(""); setErr(""); toast("Insurer added"); };
@@ -836,11 +880,13 @@ function Masters() {
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
         <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><PlaceFields id="ms-b" value={nb} req countryReq onChange={(x) => setNb({ ...nb, ...x })} /><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
+        {dups.length > 0 && !edit && <div className="note note-warn" role="status"><strong>Possible duplicates.</strong> These look like the same insurer. Merge them so every policy and report uses one name.
+          {dups.map((g) => { const [keep, ...rest] = [...g].sort((a, b) => insurerUse(db, b.id).policies - insurerUse(db, a.id).policies); return <div key={keep.id} className="row gap-s wrap" style={{ marginTop: 6 }}><span>{g.map((i) => i.name).join(" / ")}</span>{rest.map((r) => <Btn key={r.id} onClick={() => setEdit({ kind: "insurer", insId: r.id, name: r.name, mergeTo: keep.id })}>Merge {r.name} into {keep.name}</Btn>)}</div>; })}</div>}
+        {edit && <RenameMaster key={(edit.brId || edit.insId) + (edit.mergeTo || "")} edit={edit} onClose={() => setEdit(null)} />}
         <Table><thead><tr><th>Insurer</th><th>Branch</th><th>City</th><th>State</th><th>Country</th></tr></thead><tbody>{db.insurers.flatMap((i) => (i.branches.length ? i.branches : [null]).map((b, j) => <tr key={i.id + (b?.id || "none")}>
-          <td>{j === 0 && <div className="row gap-s wrap"><span>{i.name}</span><Btn onClick={() => setEdit({ kind: "insurer", insId: i.id, name: i.name })}>Rename</Btn></div>}</td>
-          <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, state: b.state, country: b.country })}>Rename</Btn></div> : <span className="muted">No branches yet</span>}</td>
+          <td>{j === 0 && <div className="row gap-s wrap"><span>{i.name}</span><Btn onClick={() => setEdit({ kind: "insurer", insId: i.id, name: i.name })}>Edit</Btn></div>}</td>
+          <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, state: b.state, country: b.country })}>Edit</Btn></div> : <span className="muted">No branches yet</span>}</td>
           <td>{b?.city || ""}</td><td>{b?.state || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
-        {edit && <RenameMaster edit={edit} onClose={() => setEdit(null)} />}
       </>}
       {tab === "logins" && <LoginsTab />}
       {tab === "types" && <Card title="Departments and policy types" >
