@@ -550,14 +550,57 @@ function findOffice(lines) {
   return { name, code, city, ref: ref || at + 1 };
 }
 
+// A company name as printed after "issued by" or "Security:": capitalised words ending like a company
+// ("... Agencies Limited", "Great Lakes Insurance SE", "Westfield Syndicate 1200"), never "the relevant authorities".
+const COMPANY_END = /\b(limited|ltd\.?|llp|se|plc|inc\.?|ag|s\.?a\.?|n\.?v\.?|gmbh|syndicate\s+\d{3,5}|company|insurance|assurance|agencies|underwriters|club|mutual)$/i;
+function companyName(raw) {
+  const v = String(raw || "").replace(/^\s*(the|m\/s\.?)\s+/i, "").replace(/\s+/g, " ").replace(/[\s,;:]+$/, "").trim();
+  const known = INSURERS.find(([, re]) => re.test(v));
+  if (known) return known[0];
+  const words = v.split(" ");
+  if (words.length < 2 || words.length > 9 || v.length > 80 || !/^[A-Z0-9]/.test(v) || !COMPANY_END.test(v)) return null;
+  if (/\b(authorit\w*|government|court|bank|insured|assured|policy\s*holder|you|we)\b/i.test(v)) return null;
+  return v === v.toUpperCase() ? v.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\b(Llp|Se|Plc|Ag)\b/g, (m) => m.toUpperCase()) : v;
+}
+// The company a certificate says issued it: "This Certificate of Insurance is issued by X for and on behalf of ...".
+const ISSUE_STOP = /\s+(?:for\s+and\s+on\s+behalf|on\s+behalf|pursuant|under\s+(?:the|its|a)\s|in\s+accordance|acting\s|as\s+agents?|who\s|which\s|whose\s|and\s+is\s|dated\s|at\s+(?:the|its)\s)|[,;(]|\.(?:\s|$)/i;
+function issuedBy(flatText) {
+  const re = /\b(?:issued|underwritten)\s+by\s*:?\s+/gi;
+  let m;
+  while ((m = re.exec(flatText))) {
+    const before = flatText.slice(Math.max(0, m.index - 80), m.index);
+    if (!/\b(certificate|policy|document|insurance|cover(?:age)?|schedule|contract|this)\b[^.]*$/i.test(before)) continue;
+    const rest = flatText.slice(m.index + m[0].length, m.index + m[0].length + 160);
+    const name = companyName(rest.split(ISSUE_STOP)[0]);
+    if (name) return name;
+  }
+  return null;
+}
+// London market slips: "SECURITY  100% Great Lakes Insurance SE ..." or "USD 10 Million led by Westfield Syndicate 1200".
+function securityLead(lines) {
+  for (const l of lines) {
+    const m = l.text.match(/^\s*security\s*:?\s+(.*)$/i);
+    if (!m) continue;
+    const v = m[1].replace(/^[\d.]+\s*%\s*/, "");
+    const led = v.match(/\bled\s+by\s+(.+)/i);
+    const name = companyName((led ? led[1] : v).split(/\s+a\s+wholly|\s+\(|[,;]|\.(?:\s|$)/i)[0]);
+    if (name) return name;
+  }
+  return null;
+}
+
 function findInsurer(lines) {
   const text = lines.filter((l) => !l.marker).map((l) => l.text).join("\n");
+  const stated = issuedBy(text.replace(/\s+/g, " "));
+  if (stated) return stated;
   let best = null;
   for (const [name, re] of INSURERS) {
     const n = (text.match(new RegExp(re.source, "gi")) || []).length;
     if (n && (!best || n > best.n)) best = { name, n };
   }
   if (best) return best.name;
+  const lead = securityLead(lines.filter((l) => !l.marker));
+  if (lead) return lead;
   const top = lines.filter((l) => !l.marker).slice(0, 40).map((l) => l.text.split(/\s{3,}/)[0].replace(/\s*\((fictional|sample)\)\s*/i, "").trim());
   // Ends like a registered insurer ("... Insurance Company Limited", "... Assurance Co. Ltd."); never a broker or a heading.
   const named = top.find((t) => t.length <= 80 && /^[A-Z][A-Za-z&.'\- ]{2,60}\b(insurance|assurance)\s+(company|co\.?)(\s+(limited|ltd\.?))?\.?$|^[A-Z][A-Za-z&.'\- ]{2,60}\b(insurance|assurance)\s+(limited|ltd\.?)\.?$/i.test(t)
