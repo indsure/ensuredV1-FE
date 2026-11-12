@@ -64,7 +64,8 @@ export function App({ onSignedOut }) {
   const canChooseTeam = !isRemote() || currentUser()?.role === "admin";
   const lastPage = useRef("");
   const [fy, setFy] = useState("2026-27");
-  const [route, setRoute] = useState({ view: "home" });
+  // Open on the first page this team can use: Accounts and Read-only have no "Today" page.
+  const [route, setRoute] = useState(() => ({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role))?.key || "register" }));
   const [toasts, setToasts] = useState([]);
   const [menu, setMenu] = useState(false);
   const [backup, setBackup] = useState(false);
@@ -142,7 +143,7 @@ export function App({ onSignedOut }) {
   if (v === "policy") view = <PolicyView key={route.id + (route.termId || "")} policyId={route.id} termId={route.termId} tab={route.tab} go={go} />;
   else if (v === "customer") view = <CustomerView id={route.id} />;
   else if (v === "add") view = <QuickAdd key={route.nonce || "add"} inboxId={route.inboxId} />;
-  else if (!visible(v)) view = <Empty title="Not available for this role">Switch role at the top, or pick a page from the menu.</Empty>;
+  else if (!visible(v)) view = <Empty title="This page is not available for your team">Choose a page from the menu.</Empty>;
   else view = {
     home: <HomeView />, customers: <CustomersView />, new: <NewBusiness key={(route.customerId || "new") + (route.fx?.id || "")} presetCustomer={route.customerId} presetFx={route.fx} />, register: <RegisterView />, expiry: <ExpiryView />,
     business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, bulk: <BulkPage />, drafts: <DraftsPage />, feedback: <FeedbackPage page={lastPage.current} />,
