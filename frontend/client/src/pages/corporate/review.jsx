@@ -119,6 +119,7 @@ function SourceChip({ src, onShow, req }) {
   if (src.conf === "preset") return <span className="src src-info">From your brokerage rates</span>;
   if (src.conf === "manual") return <span className="src src-info">Typed in</span>;
   if (src.conf === "calc") return <span className="src src-info">Worked out here</span>;
+  if (src.conf === "usual") return <span className="src src-info">The usual 18%. Change it if the rate is different.</span>;
   const label = `Line ${src.ref}`;
   return (
     <span className="row gap-xs wrap">
@@ -164,6 +165,8 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     // A policy that ends when the voyage or transit completes has no calendar end date.
     vals.noFixedEnd = initial.noFixedEnd ?? (!vals.riskEnd && !!fixture.info?.noFixedEnd);
     vals.otherDetails = initial.otherDetails || fixture.other || [];
+    // GST on brokerage: from the policy when printed, else the usual 18%, shown so it is checked, never hidden.
+    if (vals.brokerageGstPct === "" || vals.brokerageGstPct == null) { vals.brokerageGstPct = 18; srcs.brokerageGstPct = { conf: "usual" }; }
     if ((vals.brokeragePct === "" || vals.brokeragePct == null) && preset) {
       vals.brokeragePct = preset.pct;
       srcs.brokeragePct = { conf: "preset", version: preset.version, presetId: preset.presetId };
@@ -190,7 +193,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
       const s = p[k];
       if (s && s.ref && !s.edited) return { ...p, [k]: { ...s, edited: true, originalText: fmtValue(k, start.vals[k], vals.currency) } };
       if (s && s.edited && String(v) === String(start.vals[k])) { const { edited, originalText, ...rest } = s; return { ...p, [k]: rest }; }
-      if (!s || s.conf === "preset" || s.conf === "calc" || s.conf === "issue") return { ...p, [k]: { conf: "manual" } };
+      if (!s || s.conf === "preset" || s.conf === "calc" || s.conf === "issue" || s.conf === "usual") return { ...p, [k]: { conf: "manual" } };
       return p;
     });
   };
@@ -314,6 +317,9 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                       {f.key === "netPremium" && (
                         <div className="small">
                           {grossMismatch && <div className="warn-text">{gLabel} = {fmtValue("netPremium", sumCheck, vals.currency)}{withStamp != null && <>, or {fmtValue("netPremium", withStamp, vals.currency)} with stamp duty</>}, which differs from the net entered.</div>}
+                          {!grossMismatch && sumCheck != null && isNum(vals.netPremium) && <div className="muted">{withStamp != null && Math.abs(withStamp - +vals.netPremium) <= 0.01
+                            ? <>Net = gross {fmtValue("netPremium", +vals.grossPremium, vals.currency)} + GST {fmtValue("netPremium", +vals.gst || 0, vals.currency)} + stamp duty {fmtValue("netPremium", +vals.stampDuty, vals.currency)} = {fmtValue("netPremium", withStamp, vals.currency)}. The policy's total includes the stamp duty.</>
+                            : <>Net = gross {fmtValue("netPremium", +vals.grossPremium, vals.currency)} + GST {fmtValue("netPremium", +vals.gst || 0, vals.currency)} = {fmtValue("netPremium", sumCheck, vals.currency)}.{+vals.stampDuty > 0 && <> The stamp duty of {fmtValue("netPremium", +vals.stampDuty, vals.currency)} is not in the policy's total (usually paid by the insurer as consolidated stamp duty), so it is not added.</>}</>}</div>}
                           {noGst && <div className="muted">No GST on a {vals.currency} policy, so net premium is the gross{+vals.stampDuty > 0 ? ", plus stamp duty if the total includes it" : ""}.</div>}
                           {withStamp == null ? <button type="button" className="linkbtn" disabled={sumCheck == null} onClick={() => setNet(sumCheck)}>Work out net premium</button>
                             : <span className="row gap-s wrap"><button type="button" className="linkbtn" onClick={() => setNet(withStamp)}>{gLabel} + stamp duty = {fmtValue("netPremium", withStamp, vals.currency)}</button><button type="button" className="linkbtn" onClick={() => setNet(sumCheck)}>{gLabel} only = {fmtValue("netPremium", sumCheck, vals.currency)}</button></span>}

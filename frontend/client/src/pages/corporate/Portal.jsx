@@ -15,6 +15,7 @@ import { FeedbackPage } from "./feedback.jsx";
 import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
 import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch, sameInsurer } from "./tidy.js";
+import { irdaiCsv } from "./irdai.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
 // Live and demo records never share storage.
@@ -377,6 +378,7 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
       <Labeled label="Contact number" htmlFor="cf-phone" hint={hint("phone")}><input id="cf-phone" value={f.phone} onChange={set("phone")} /></Labeled>
       <Labeled label="Email" htmlFor="cf-email" error={tried && errs.email} hint={hint("email")}><input id="cf-email" value={f.email} onChange={set("email")} /></Labeled>
       <Labeled label="GSTIN" htmlFor="cf-gst" error={tried && errs.gst} hint={hint("gst")}><input id="cf-gst" value={f.gst} onChange={set("gst")} /></Labeled>
+      {(db.brokerBranches || []).length > 0 && <Labeled label="Our branch" htmlFor="cf-bb" hint={(db.brokerBranches || []).length === 1 ? "Your only branch is used when this is empty" : "The branch of ours that handles this customer. Used in the IRDAI register."}><Select id="cf-bb" value={f.brokerBranch || ""} onChange={set("brokerBranch")} placeholder="Choose" options={(db.brokerBranches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>}
       <Labeled label="Source" htmlFor="cf-src"><Select id="cf-src" value={f.source} onChange={set("source")} options={["Direct", "Referral"]} /></Labeled>
       {f.source === "Referral" && <Labeled label="Referral (REF/POS name)" htmlFor="cf-ref" req error={tried && errs.referral}><input id="cf-ref" value={f.referral} onChange={set("referral")} /></Labeled>}
       <Labeled label="POC tags (comma separated)" htmlFor="cf-tags"><input id="cf-tags" value={typeof f.tags === "string" ? f.tags : f.tags.join(", ")} onChange={set("tags")} /></Labeled>
@@ -685,7 +687,8 @@ function BusinessReport() {
         <Card title="2. Group them by"><Labeled label="Group by" htmlFor="bf-group"><Select id="bf-group" value={g} onChange={setG} options={GROUPINGS.map((x) => ({ value: x.key, label: x.label }))} /></Labeled></Card>
         <Card title="3. See or download">
           <div className="seg" role="radiogroup" aria-label="Output">{[["screen", "On screen"], ["print", "Print view"], ["csv", "CSV file"]].map(([k, l]) => <button key={k} role="radio" aria-checked={out === k} className={out === k ? "on" : ""} onClick={() => setOut(k)}>{l}</button>)}</div>
-          {out === "csv" && <div className="stack" style={{ marginTop: 10 }}>{can("export") ? <><p className="small">Downloads exactly the rows on screen, with the date basis, filters, FX rates and print date written at the top.</p><Btn kind="primary" disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`business-report-${f.useRange ? "range" : fy}-${f.basis}.csv`, csv(), toast, setFallback)}>Download CSV</Btn></> : <p className="small">Your role cannot download reports.</p>}</div>}
+          {out === "csv" && <div className="stack" style={{ marginTop: 10 }}>{can("export") ? <><p className="small">Downloads exactly the rows on screen, with the date basis, filters, FX rates and print date written at the top.</p><Btn kind="primary" disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`business-report-${f.useRange ? "range" : fy}-${f.basis}.csv`, csv(), toast, setFallback)}>Download CSV</Btn>
+            <p className="small" style={{ marginTop: 8 }}>The IRDAI premium register has the 33 columns of the IRDAI sheet, in the same order, for the same rows. Premium is before GST and Gross Premium is premium + GST, as IRDAI defines them.</p><Btn disabled={!rows.length} why="No rows to export" onClick={() => saveCsv(`irdai-premium-register-${f.useRange ? "range" : fy}.csv`, irdaiCsv(db, rows), toast, setFallback)}>Download IRDAI premium register</Btn></> : <p className="small">Your role cannot download reports.</p>}</div>}
           {out === "print" && <div className="row gap-s wrap" style={{ marginTop: 10 }}><Btn kind="primary" onClick={() => window.print()}><Icon name="file" size={16} /> Print or save as PDF</Btn><span className="small muted">Prints only the report, with letterhead and print date.</span></div>}
           {can("finalize") && <div style={{ marginTop: 10 }}><AskFirst label="Lock this report" question="Save a copy of this report as it stands, with these exchange rates?" yes="Lock" onYes={finalize} disabled={!rows.length} why="No rows" /></div>}
         </Card>
@@ -860,6 +863,55 @@ function TidyMaster({ edit, onDone }) {
   );
 }
 
+// Our own branches and the Qualified Person at each, as the IRDAI register asks.
+function BrokerBranches() {
+  const { db, update, log, toast } = useApp();
+  const list = db.brokerBranches || [];
+  const blank = { name: "", city: "", qualifiedPerson: "" };
+  const [nb, setNb] = useState(blank);
+  const [edit, setEdit] = useState(null);
+  const [err, setErr] = useState("");
+  const used = (id) => db.customers.filter((c) => c.brokerBranch === id).length;
+  const check = (f, id) => (!f.name.trim() || !f.city.trim() || !f.qualifiedPerson.trim() ? "Enter the branch name, city and Qualified Person"
+    : list.some((b) => b.id !== id && b.name.trim().toLowerCase() === f.name.trim().toLowerCase()) ? "That branch is already listed" : "");
+  const add = () => {
+    const e = check(nb); if (e) return setErr(e);
+    update((d) => { d.brokerBranches = d.brokerBranches || []; d.brokerBranches.push({ id: `BB${++d.seq}`, name: nb.name.trim(), city: nb.city.trim(), qualifiedPerson: nb.qualifiedPerson.trim() }); log(d, { action: "Our branch added", detail: `${nb.name.trim()} (${nb.city.trim()}), Qualified Person ${nb.qualifiedPerson.trim()}.` }); });
+    setNb(blank); setErr(""); toast("Branch added");
+  };
+  const save = () => {
+    const e = check(edit.f, edit.id); if (e) return setErr(e);
+    update((d) => { const b = d.brokerBranches.find((x) => x.id === edit.id); Object.assign(b, { name: edit.f.name.trim(), city: edit.f.city.trim(), qualifiedPerson: edit.f.qualifiedPerson.trim() }); log(d, { action: "Our branch changed", detail: `${b.name} (${b.city}), Qualified Person ${b.qualifiedPerson}.` }); });
+    setEdit(null); setErr(""); toast("Branch saved");
+  };
+  const remove = (b) => { update((d) => { d.brokerBranches = d.brokerBranches.filter((x) => x.id !== b.id); log(d, { action: "Our branch deleted", detail: `${b.name} (${b.city}).` }); }); setEdit(null); toast("Branch deleted"); };
+  return (
+    <div className="stack">
+      {err && <div className="note note-bad" role="alert">{err}</div>}
+      <Card title="Add one of our branches" sub="Each branch has a Qualified Person. Both appear in the IRDAI premium register. With only one branch, every customer uses it.">
+        <div className="filters">
+          <Labeled label="Branch name" htmlFor="bb-name"><input id="bb-name" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled>
+          <Labeled label="City" htmlFor="bb-city"><input id="bb-city" value={nb.city} onChange={(e) => setNb({ ...nb, city: e.target.value })} /></Labeled>
+          <Labeled label="Qualified Person" htmlFor="bb-qp"><input id="bb-qp" value={nb.qualifiedPerson} onChange={(e) => setNb({ ...nb, qualifiedPerson: e.target.value })} /></Labeled>
+          <div className="fld"><Btn kind="primary" onClick={add}>Add branch</Btn></div>
+        </div>
+      </Card>
+      {list.length ? <Table><thead><tr><th>Branch</th><th>City</th><th>Qualified Person</th><th className="num">Customers</th><th /></tr></thead>
+        <tbody>{list.map((b) => <tr key={b.id}><td>{b.name}</td><td>{b.city}</td><td>{b.qualifiedPerson}</td><td className="num">{used(b.id)}</td><td><Btn onClick={() => { setEdit({ id: b.id, f: { name: b.name, city: b.city, qualifiedPerson: b.qualifiedPerson } }); setErr(""); }}>Edit</Btn></td></tr>)}</tbody></Table>
+        : <Empty title="No branches yet">Add your branch to fill the branch and Qualified Person columns of the IRDAI register.</Empty>}
+      {edit && <Card title="Edit branch">
+        <div className="filters">
+          <Labeled label="Branch name" htmlFor="bbe-name"><input id="bbe-name" value={edit.f.name} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, name: e.target.value } })} /></Labeled>
+          <Labeled label="City" htmlFor="bbe-city"><input id="bbe-city" value={edit.f.city} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, city: e.target.value } })} /></Labeled>
+          <Labeled label="Qualified Person" htmlFor="bbe-qp"><input id="bbe-qp" value={edit.f.qualifiedPerson} onChange={(e) => setEdit({ ...edit, f: { ...edit.f, qualifiedPerson: e.target.value } })} /></Labeled>
+        </div>
+        <div className="row gap-s wrap"><Btn kind="primary" onClick={save}>Save branch</Btn><Btn onClick={() => setEdit(null)}>Cancel</Btn>
+          {used(edit.id) ? <span className="small muted">Used by {plural(used(edit.id), "customer")}, so it cannot be deleted.</span> : <AskFirst label="Delete branch" question="Delete this branch?" yes="Delete" onYes={() => remove(list.find((x) => x.id === edit.id))} />}</div>
+      </Card>}
+    </div>
+  );
+}
+
 function Masters() {
   const { db, update, log, toast } = useApp();
   const [tab, setTab] = useState("insurers");
@@ -882,7 +934,7 @@ function Masters() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Lists and team</h1><p className="muted">Your insurers, policy types and team. Every screen picks from these.</p></div></header>
-      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
+      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
@@ -897,6 +949,7 @@ function Masters() {
           <td>{b?.city || ""}</td><td>{b?.state || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
       </>}
       {tab === "logins" && <LoginsTab />}
+      {tab === "brokerbranches" && <BrokerBranches />}
       {tab === "types" && <Card title="Departments and policy types" >
         <div className="typegrid">{Object.entries(DEPARTMENTS).map(([dpt, types]) => <div key={dpt}><h4>{dpt} <span className="muted small">({types.length})</span></h4><ul>{types.map((t) => <li key={t}>{t}{typeCount[t] > 1 && <Pill tone="warn" title="Listed under more than one department">Also elsewhere</Pill>}</li>)}</ul>{dpt === "Miscellaneous" && <p className="small muted">Visible portion only; the source list scrolls further.</p>}</div>)}</div>
       </Card>}

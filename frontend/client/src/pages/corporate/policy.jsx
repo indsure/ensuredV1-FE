@@ -10,6 +10,7 @@ import { instalmentTable } from "./extract-extra.js";
 import { docText, loadTexts } from "./store.js";
 import { useState, useEffect, useRef } from "react";
 import { MembersTab, isGroupPolicy } from "./members.jsx";
+import { coverKind, irdaiRows, reportRowFor, IRDAI_HEADERS, IRDAI_WHERE } from "./irdai.js";
 
 export function docLines(doc) {
   if (!doc) return null;
@@ -90,7 +91,8 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
         <div>
           <p className="eyebrow">{p.dept} · Control no. {p.controlNo}<Tip k="Control no." /></p>
           <h1>{term.values.policyNo || "Policy number not entered"}</h1>
-          <p className="muted">{p.type} · {ins?.name}, {br?.name} ({br?.city}, {br?.country}){p.vesselMode ? ` · ${p.vesselMode}` : ""}{p.cover ? ` · ${p.cover}` : ""}</p>
+          <p className="muted">{p.type} · {ins?.name}, {br?.name} ({br?.city}, {br?.country}){p.vesselMode ? ` · ${p.vesselMode}` : ""}</p>
+          <div className="row gap-s wrap small" style={{ marginTop: 6 }}><span className="muted">Individual or Group:</span>{can("editCustomer") || can("*") ? <select id="pv-cover" aria-label="Individual or Group" value={coverKind(p, term)} onChange={(e) => { const v = e.target.value; update((d) => { d.policies.find((x) => x.id === p.id).cover = v; log(d, { customerId: p.customerId, policyId: p.id, action: "Policy changed", detail: `Marked as ${v}.` }); }); toast("Saved"); }}><option>Individual</option><option>Group</option></select> : <strong>{coverKind(p, term)}</strong>}</div>
           {(can("*") || (can("editDraft") && terms.every((t) => t.status === "draft"))) && <div style={{ marginTop: 10 }}><AskFirst label="Delete policy" kind="danger"
             question={`Delete ${term.values.policyNo || p.controlNo} with ${plural(terms.length, "policy year")}, ${plural(db.documents.filter((d) => d.policyId === p.id).length, "document")} and ${plural(terms.reduce((a, t) => a + t.receipts.length, 0), "receipt")}? The customer stays. An Admin can bring it back from Earlier saves.`}
             yes="Delete policy" onYes={() => { update((d) => { const tids = new Set(p.termIds); d.terms = d.terms.filter((t) => !tids.has(t.id)); d.documents = d.documents.filter((x) => x.policyId !== p.id); d.policies = d.policies.filter((x) => x.id !== p.id); log(d, { customerId: p.customerId, action: "Policy deleted", detail: `${p.controlNo}, policy number ${term.values.policyNo || "none"}, ${p.type}, with ${plural(tids.size, "year")}.` }); }); toast("Policy deleted"); go({ view: "register" }); }} /></div>}
@@ -198,7 +200,23 @@ function Overview({ p, term, go, openDoc }) {
             <tbody>{v.otherDetails.map((o, i) => <tr key={i}><td>{o.label}</td><td>{o.value}</td></tr>)}</tbody></Table>
         </Card>
       )}
+      {term.status === "confirmed" && <IrdaiCard term={term} />}
     </div>
+  );
+}
+
+// The 33 columns of the IRDAI premium register for this policy year, with where to fill any blank.
+function IrdaiCard({ term }) {
+  const { db } = useApp();
+  const row = irdaiRows(db, [reportRowFor(db, term, { insurerOf, branchOf, brokerageOf })])[0];
+  const blanks = IRDAI_HEADERS.filter((h, i) => i > 0 && (row[i] === "" || row[i] == null));
+  return (
+    <Card title="IRDAI premium register" sub={blanks.length ? `${plural(blanks.length, "column")} still blank for this policy year.` : "Every column is filled for this policy year."}>
+      <details open={blanks.length > 0}><summary className="small">Show the register row</summary>
+        <Table><thead><tr><th>Column</th><th>Value</th></tr></thead>
+          <tbody>{IRDAI_HEADERS.slice(1).map((h, k) => { const val = row[k + 1]; const blank = val === "" || val == null; return <tr key={h} className={blank ? "row-miss" : ""}><td>{h}</td><td>{blank ? <span className="muted">Blank. {IRDAI_WHERE[h] || ""}</span> : typeof val === "number" ? fmtNum(val) : String(val)}</td></tr>; })}</tbody></Table>
+      </details>
+    </Card>
   );
 }
 

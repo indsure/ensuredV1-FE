@@ -54,7 +54,7 @@ export const FIELDS = [
   { key: "gstPct", label: "GST (%)", group: "Amounts", type: "pct" },
   { key: "gst", label: "GST amount", group: "Amounts", type: "money", req: true },
   { key: "stampDuty", label: "Stamp duty", group: "Amounts", type: "money" },
-  { key: "netPremium", label: "Net premium", group: "Amounts", type: "money", req: true, help: "The final amount paid: gross + GST, plus stamp duty if the policy's total includes it" },
+  { key: "netPremium", label: "Net premium (total paid)", group: "Amounts", type: "money", req: true, help: "Gross + GST, plus stamp duty only when the policy's total includes it. Matches the total printed on the policy." },
   { key: "excess", label: "Policy excess", group: "Amounts", type: "text" },
   { key: "aoaLimit", label: "Limit any one accident / claim", group: "Liability", type: "money", only: inDept("Liability") },
   { key: "aoyLimit", label: "Limit any one year (aggregate)", group: "Liability", type: "money", only: inDept("Liability") },
@@ -74,6 +74,7 @@ export const FIELDS = [
   { key: "coBrokerShare", label: "Co-broker share (%)", group: "Other", type: "pct" },
   { key: "renewable", label: "Is renewable", group: "Other", type: "yesno", req: true, help: "Entered by a person. Never guessed." },
   { key: "brokeragePct", label: "Brokerage (%)", group: "Brokerage", type: "pct", req: true },
+  { key: "brokerageGstPct", label: "GST on brokerage (%)", group: "Brokerage", type: "pct", help: "Starts at the usual 18%, or the rate printed on the policy. Used in the IRDAI register." },
 ];
 export const FIELD = Object.fromEntries(FIELDS.map((f) => [f.key, f]));
 export const NUMERIC = new Set(FIELDS.filter((f) => ["money", "pct"].includes(f.type)).map((f) => f.key));
@@ -359,6 +360,7 @@ function demoSeed() {
   const d = {
     version: 2, premiumModel: 2, seq: 500,
     remittances: [],
+    brokerBranches: [{ id: "BB1", name: "Mumbai head office", city: "Mumbai", qualifiedPerson: "Rohan Desai (demo)" }],
     insurers: [
       { id: "INS1", name: "Bharat Shield General Insurance", branches: [
         { id: "BR1", name: "Mumbai Fort", city: "Mumbai", country: "India" },

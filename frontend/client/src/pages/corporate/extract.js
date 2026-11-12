@@ -264,12 +264,14 @@ const RULES = [
   { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl/i },
   { key: "stampDuty", kind: "amount", label: phraseRe(VOCAB.stampDuty), zeroOk: true },
   { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i },
+  // GST on the broker's commission, when a policy or debit note prints it ("GST on Brokerage @ 18%").
+  { key: "brokerageGstPct", kind: "pct", label: /(\b(gst|igst|tax)\s*(on|for)?\s*(the\s*)?(brokerage|commission)|\b(brokerage|commission)\s*(gst|igst)\b)(\s*(@|at\b|rate))?/i },
   { key: "excess", kind: "text", label: phraseRe(VOCAB.excess), needDigit: true, not: /voluntary|discount/i, badValue: /^\d+(\.\d+)+\s+[A-Za-z]|^(clause|section|item)\b/i },
   { key: "location", kind: "text", label: phraseRe(VOCAB.location), badValue: /^(address|e-?\s*mail|phone|name|details?|jurisdiction|city|state|country)\b\s*$|@|\bwww\.|\.(com|co\.in|in|org)\b/i },
   // Jurisdiction and its like are a kind of location, but the words also appear in legal clauses, so only as a label.
   { key: "location", kind: "text", label: phraseRe(VOCAB.jurisdiction), strict: true, not: /court|subject\s+to|law|dispute|arbitration|exclusive/i, badValue: /court|subject\s+to|\blaws?\b|arbitration|^(address|e-?\s*mail|phone|name)\b|@|\bwww\.|\.(com|co\.in|in|org)\b/i },
 ];
-const LABELS = { policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location",
+const LABELS = { brokerageGstPct: "GST on brokerage (%)", policyNo: "Policy number", uin: "UIN", planName: "Plan name", proposalDate: "Proposal date", issueDate: "Policy issue date", riskStart: "Risk start date", riskEnd: "Risk end date", sumInsured: "Sum insured", netPremium: "Net premium", grossPremium: "Gross premium", gst: "GST amount", stampDuty: "Stamp duty", premiumRate: "Premium rate", excess: "Policy excess", location: "Insured location",
   aoaLimit: "Limit any one accident (AOA)", aoyLimit: "Limit any one year (AOY)", retroDate: "Retroactive date", continuityDate: "Continuity date", deductible: "Deductible", claimsMade: "Claims made basis",
   voyageFrom: "Voyage from", voyageTo: "Voyage to", commodity: "Goods insured", valuationBasis: "Basis of valuation", lossPayee: "Loss payee", contractValue: "Contract value", principal: "Principal" };
 
@@ -313,7 +315,7 @@ function candidates(lines, rule) {
       const atStart = /^\s*((\d{1,2}|[a-z]|[ivx]{1,4})[.)]\s*)?([A-Za-z&]{1,12}\s+){0,2}$/i.test(before) || /[:|]\s*$/.test(before);
       const colonAfter = /^\s*(\([^)]{0,30}\))?\s*(no\.?|number)?\s*[:=–-]/i.test(after);
       // A header cell may carry a bracket or a rate after the label, e.g. "Sum Insured (Rs.)" or "IGST 18%".
-      const ownCell = isPunct(after) || /^\s*\/\s*[A-Za-z ]{0,25}:?\s*$/.test(after) || /^\s*\([^)]{0,30}\)\s*$/.test(after) || /^\s*@?\s*\(?\d{1,2}(\.\d+)?\s*%\)?\s*$/.test(after);
+      const ownCell = isPunct(after) || /^\s*\/\s*[A-Za-z ]{0,25}:?\s*$/.test(after) || /^\s*\([^)]{0,30}\)\s*$/.test(after) || (rule.kind !== "pct" && /^\s*@?\s*\(?\d{1,2}(\.\d+)?\s*%\)?\s*$/.test(after)); // for a % field the rate is the value
       if (!atStart && !colonAfter) return;
       const idInline = rule.kind === "id" && /^\s+[A-Z0-9][A-Z0-9\/\-.]{3,}[A-Z0-9]\s*$/i.test(after) && /\d/.test(after);
       if ((rule.kind === "text" || rule.kind === "id" || rule.strict) && !colonAfter && !ownCell && !idInline) return;
@@ -442,7 +444,7 @@ export function parseFields(lines, ocr = false) {
   }
   // GST %: only a % written right next to the tax name counts, e.g. "GST @ 18%", "IGST 18%", "CGST (9%)".
   const taxPct = (t, name) => { const m = t.match(new RegExp("\\b(" + name + ")\\b[^%\\d]{0,12}(\\d{1,2}(?:\\.\\d+)?)\\s*%", "i")); return m ? +m[2] : null; };
-  const gstLine = lines.find((l) => !l.marker && !/gstin/i.test(l.text) && (taxPct(l.text, "igst|gst") != null || taxPct(l.text, "cgst") != null));
+  const gstLine = lines.find((l) => !l.marker && !/gstin/i.test(l.text) && !/brokerage|commission/i.test(l.text) && (taxPct(l.text, "igst|gst") != null || taxPct(l.text, "cgst") != null));
   if (gstLine) {
     const isSplit = taxPct(gstLine.text, "igst|gst") == null;
     let pct = isSplit ? taxPct(gstLine.text, "cgst") : taxPct(gstLine.text, "igst|gst");
