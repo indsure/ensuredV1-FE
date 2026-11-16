@@ -143,7 +143,7 @@ export function App({ onSignedOut }) {
 
   let view;
   const v = route.view;
-  if (v === "policy") view = <PolicyView key={route.id + (route.termId || "")} policyId={route.id} termId={route.termId} tab={route.tab} go={go} />;
+  if (v === "policy") view = <PolicyView key={route.id + (route.termId || "")} policyId={route.id} termId={route.termId} tab={route.tab} endorseFx={route.endorseFx} go={go} />;
   else if (v === "customer") view = <CustomerView id={route.id} />;
   else if (v === "add") view = <QuickAdd key={route.nonce || "add"} inboxId={route.inboxId} />;
   else if (!visible(v)) view = <Empty title="This page is not available for your team">Choose a page from the menu.</Empty>;

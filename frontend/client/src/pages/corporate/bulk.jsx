@@ -78,6 +78,7 @@ export function checkDraft(db, item, lines) {
   if (low && !item.ocr) must.push(`${low} value${low === 1 ? "" : "s"} to check`);
   if (!guess.insurerId) must.push(item.info?.insurer ? "Insurer not in your list" : "Insurer not found");
   else if (!guess.branchId) must.push("Branch not in your list");
+  if (item.info?.docKind?.kind === "Endorsement") warn.push("Looks like an endorsement, not a new policy: open it to attach it to its policy");
   if (!guess.type) must.push("Policy type not found");
   else if (guess.typeWhy?.conf === "low") warn.push(`Policy type only suggested (${guess.type}): open it to check`);
   if (!guess.customerId) {

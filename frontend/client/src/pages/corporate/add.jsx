@@ -76,6 +76,16 @@ const TYPE_HINTS = [
   [/burglary/, "Burglary Insurance"], [/event cancellation/, "Event Cancellation Insurance"],
 ];
 
+/** The register policy a document refers to: its read policy number, or any listed policy number printed in it. */
+export function policyForDocument(db, fx) {
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const text = norm((fx.lines || []).map((l) => (typeof l === "string" ? l : l?.text || "")).join(" "));
+  const read = norm(fx.fields?.policyNo?.v);
+  const latestNo = (p) => { const t = db.terms.find((x) => x.id === p.termIds[p.termIds.length - 1]); return norm(t?.values.policyNo); };
+  return (read && db.policies.find((p) => p.termIds.some((id) => norm(db.terms.find((t) => t.id === id)?.values.policyNo) === read)))
+    || db.policies.find((p) => { const n = latestNo(p); return n.length >= 6 && text.includes(n); }) || null;
+}
+
 /** Where the policy type came from, in words. A short form, a guessed name or a match deep in the wording asks for a check. */
 export function typeHint(w) {
   if (!w) return "Suggested from the policy";
@@ -274,6 +284,19 @@ export function QuickAdd({ inboxId }) {
         {hasDoc && <DocPane lines={fx.lines} title={fx.title || fx.fileName} highlight={hl} generated={fx.generated} extracted={fx.extracted} onLine={setHl} localUrl={fx.localUrl} localIsImage={fx.localIsImage} readPages={fx.readPages} pages={fx.pages} />}
         <Card title={inboxId ? "Check what we read" : "2. Check what we read"} sub={todo.length ? `${todo.length} thing${todo.length === 1 ? "" : "s"} to fill before checking the values.` : "All filled. Check it against the policy, then go on."}
           actions={<Pill tone={todo.length ? "warn" : "good"}>{todo.length ? `${todo.length} to fill` : "Ready"}</Pill>}>
+          {fx.info?.docKind?.kind === "Endorsement" && (() => {
+            // An endorsement changes a policy already on the register; it is not a new policy.
+            const base = policyForDocument(db, fx);
+            const bt = base && db.terms.find((t) => t.id === base.termIds[base.termIds.length - 1]);
+            return (
+              <div className="note note-warn" role="status" style={{ marginBottom: 12 }}>
+                <strong>This looks like an endorsement, not a new policy.</strong> It says "{fx.info.docKind.text}" on line {fx.info.docKind.ref}.
+                {base ? <> It belongs to policy <strong>{bt?.values.policyNo || base.controlNo}</strong> ({base.type}, {db.customers.find((c) => c.id === base.customerId)?.name}).
+                  <div className="row gap-s wrap" style={{ marginTop: 8 }}><Btn kind="primary" onClick={() => go({ view: "policy", id: base.id, tab: "endorsements", endorseFx: fx })}>Add it as an endorsement to {bt?.values.policyNo || base.controlNo}</Btn><span className="small muted">Or carry on below to add it as a new policy.</span></div></>
+                  : <> No policy in your register has the number it refers to. Add the base policy first and then attach this as its endorsement, or carry on below if it really is a new policy.</>}
+              </div>
+            );
+          })()}
           <div className="formgrid">
             <Labeled label="Insured (customer)" htmlFor="ap-cust" req error={tried && errs.customer} hint={!fx ? null : guess.customerId ? <Found ok line={lines.insured} onShow={setHl}>Already one of your customers</Found> : isNew && guess.insuredName ? <span className="src src-info">Not an existing customer. It will be added</span> : <Found ok={false}>Not on the policy, please choose</Found>}>
               <Select id="ap-cust" value={s.customerId} onChange={set("customerId")} placeholder="Choose customer" options={[...(guess.insuredName ? [{ value: "NEW", label: `New customer: ${guess.insuredName}` }] : [{ value: "NEW", label: "New customer" }]), ...db.customers.map((c) => ({ value: c.id, label: `${c.name} (${c.code})` }))]} />

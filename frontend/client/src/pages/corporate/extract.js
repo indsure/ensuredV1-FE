@@ -510,7 +510,20 @@ export function parseFields(lines, ocr = false) {
   if (insurer) info.insurer = insurer;
   const office = findOffice(lines);
   if (office) info.branch = office;
+  const kind = docKindOf(lines);
+  if (kind) info.docKind = kind;
   return { fields, info };
+}
+
+// ---- what kind of document this is
+// An endorsement says so near the top: "MACHINERY BREAKDOWN - ENDORSEMENT E07", "Endorsement No. 3",
+// "Endorsement attached ahead of base schedule", "This endorsement forms part of the policy".
+// "Attached to and forming part of policy number ..." is printed on ordinary schedule pages, so it never counts.
+const ENDORSEMENT_TITLE = /(^|[-–—:|]\s*)endorsement\s*(no\.?|number|ref(erence)?\.?|schedule|certificate)?\s*[:#.]?\s*[A-Z]{0,4}[\/-]?\d{1,4}\b|^\s*endorsement\s*(schedule|certificate|wording)?\s*$|\bendorsement\s+(attached|schedule|certificate|effective)\b|\bthis\s+endorsement\s+(forms|is\s+attached|is\s+issued)|\bchanges\s+only\s+the\s+(extension|section|item)/i;
+function docKindOf(lines) {
+  const top = lines.filter((l) => !l.marker).slice(0, 25);
+  const hit = top.findIndex((l) => ENDORSEMENT_TITLE.test(String(l.text || "")) && !/attached\s+to\s+and\s+forming\s+part/i.test(String(l.text || "")));
+  return hit >= 0 ? { kind: "Endorsement", ref: lines.indexOf(top[hit]) + 1, text: String(top[hit].text).replace(/\s{2,}/g, " ").trim().slice(0, 80) } : null;
 }
 
 // ---- who is insured, and by whom

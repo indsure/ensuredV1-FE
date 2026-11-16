@@ -57,7 +57,7 @@ export function StatePills({ term }) {
   );
 }
 
-export function PolicyView({ policyId, termId, tab = "overview", go }) {
+export function PolicyView({ policyId, termId, tab = "overview", endorseFx = null, go }) {
   const { db, update, can, log, toast } = useApp();
   // Bring in this policy's document text before showing it.
   const [textReady, setTextReady] = useState(false);
@@ -114,7 +114,7 @@ export function PolicyView({ policyId, termId, tab = "overview", go }) {
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
       {tab === "overview" && <Overview p={p} term={term} go={go} openDoc={setViewDoc} />}
       {tab === "documents" && <DocumentsTab p={p} term={term} terms={terms} openDoc={setViewDoc} />}
-      {tab === "endorsements" && <EndorsementsTab p={p} term={term} openDoc={setViewDoc} />}
+      {tab === "endorsements" && <EndorsementsTab p={p} term={term} openDoc={setViewDoc} startFx={endorseFx} />}
       {tab === "payments" && <PaymentsTab p={p} term={term} openDoc={setViewDoc} />}
       {tab === "members" && isGroupPolicy(p, term) && <MembersTab p={p} term={term} openDoc={setViewDoc} />}
       {tab === "marine" && marine && <MarineTab p={p} term={term} openDoc={setViewDoc} />}
@@ -297,14 +297,16 @@ function DocumentsTab({ p, term, terms, openDoc }) {
 }
 
 // ---------------------------------------------------------------- endorsements
-function EndorsementsTab({ p, term, openDoc }) {
+function EndorsementsTab({ p, term, openDoc, startFx = null }) {
   const { db, update, can, log, toast, who } = useApp();
-  const [kind, setKind] = useState(null);
+  // Sent here from Add a policy: the endorsement PDF is already read, so open it straight away.
+  const canStart = !!startFx && can("endorse") && term.status === "confirmed" && term.id === p.termIds[p.termIds.length - 1];
+  const [kind, setKind] = useState(canStart ? "own" : null);
   const [picked, setPicked] = useState({});
   const [eff, setEff] = useState(TODAY);
   const [tried, setTried] = useState(false);
   const nextNo = `END-${String(term.endorsements.length + 1).padStart(2, "0")}`;
-  const [ownFx, setOwnFx] = useState(null);
+  const [ownFx, setOwnFx] = useState(canStart ? { ...startFx, title: startFx.fileName || startFx.title } : null);
   const fx = kind === "own" ? ownFx : kind ? makeEndorsementFixture(kind, term, nextNo) : null;
   const canEndorse = can("endorse") && term.status === "confirmed" && term.id === p.termIds[p.termIds.length - 1];
   const v = term.values;
