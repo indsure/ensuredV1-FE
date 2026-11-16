@@ -5,7 +5,7 @@ import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs,
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
-import { docInUse, deleteDoc, deleteReceipt } from "./deletes.js";
+import { docInUse, deleteDoc, deleteReceipt, discardDraftYear } from "./deletes.js";
 import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
 import { instalmentTable } from "./extract-extra.js";
 import { docText, loadTexts } from "./store.js";
@@ -161,7 +161,9 @@ function Overview({ p, term, go, openDoc }) {
       {term.status === "draft" && (
         <div className="note note-warn">
           <strong>Draft.</strong> Missing: {miss.join(", ") || "nothing, ready to confirm"}. Drafts stay out of accounts reports.
-          <div className="row gap-s" style={{ marginTop: 8 }}><Btn kind="primary" disabled={!can("editDraft")} why="Your role cannot edit records" onClick={() => setEditing(true)}>Continue review</Btn></div>
+          <div className="row gap-s" style={{ marginTop: 8 }}><Btn kind="primary" disabled={!can("editDraft")} why="Your role cannot edit records" onClick={() => setEditing(true)}>Continue review</Btn>
+            {term.prevTermId && can("renew") && <AskFirst label="Delete draft year" question={`Delete the unconfirmed year ${term.termNo}${term.receipts.length ? ` and ${plural(term.receipts.length, "receipt")} recorded on it` : ""}? The year before is not affected, and the renewal document stays on the policy.`} yes="Delete draft year"
+              onYes={() => { let prevId; update((d) => { const r = discardDraftYear(d, term.id); prevId = r.prevId; log(d, { customerId: p.customerId, policyId: p.id, termId: r.prevId, action: "Renewal draft discarded", detail: r.detail }); }); toast("Draft year deleted"); go({ view: "policy", id: p.id, termId: prevId }); }} />}</div>
         </div>
       )}
       <div className="grid2">
@@ -899,12 +901,7 @@ function RenewalsTab({ p, term, terms, go }) {
     if (confirm) go({ view: "policy", id: p.id, termId: draft.id, tab: "renewals" });
   };
   const discard = () => {
-    update((d) => {
-      d.terms = d.terms.filter((x) => x.id !== draft.id);
-      const pol = d.policies.find((x) => x.id === p.id); pol.termIds = pol.termIds.filter((x) => x !== draft.id);
-      d.documents.forEach((x) => { if (x.termId === draft.id) { x.termId = null; x.note = `Renewal draft discarded ${new Date().toLocaleDateString("en-IN")}; document kept`; } });
-      log(d, { customerId: p.customerId, policyId: p.id, termId: base.id, action: "Renewal draft discarded", detail: `Unconfirmed draft year removed. Year ${base.termNo} unchanged. The renewal document stays on the policy.` });
-    });
+    update((d) => { const r = discardDraftYear(d, draft.id); log(d, { customerId: p.customerId, policyId: p.id, termId: base.id, action: "Renewal draft discarded", detail: r.detail }); });
     toast("Renewal draft discarded");
   };
   const [lossTo, setLossTo] = useState("");
@@ -940,7 +937,7 @@ function RenewalsTab({ p, term, terms, go }) {
         {draft ? (
           <div className="stack">
             <p>A renewal draft (year {draft.termNo}) is in progress. Year {base.termNo} stays <strong>Open</strong> until the renewal is confirmed.</p>
-            <div className="row gap-s wrap"><Btn kind="primary" disabled={!can("renew")} why="Your role cannot renew" onClick={() => setReviewing(true)}>Continue renewal review</Btn>{can("renew") && <AskFirst label="Discard renewal draft" question="Remove the unconfirmed draft? The earlier term is not affected." yes="Discard draft" onYes={discard} />}</div>
+            <div className="row gap-s wrap"><Btn kind="primary" disabled={!can("renew")} why="Your role cannot renew" onClick={() => setReviewing(true)}>Continue renewal review</Btn>{can("renew") && <AskFirst label="Delete draft year" question={`Delete the unconfirmed year ${draft.termNo}${draft.receipts.length ? ` and ${plural(draft.receipts.length, "receipt")} recorded on it` : ""}? Year ${base.termNo} is not affected, and the renewal document stays on the policy.`} yes="Delete draft year" onYes={discard} />}</div>
           </div>
         ) : base.status !== "confirmed" ? <p>Confirm the current term first.</p>
           : base.outcome !== "Open" ? <p>Year {base.termNo} outcome is <strong>{base.outcome}</strong>. {base.outcome === "Lost" ? "Nothing more to do." : ""}</p>

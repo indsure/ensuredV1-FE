@@ -59,6 +59,17 @@ export function deleteReceipt(d, termId, receiptId) {
   return `${fmtMoney(r.amount, t.values.currency)} received on ${fmtDate(r.date)}${r.ref ? `, ${r.ref}` : ""}${r.instNo ? `, instalment ${r.instNo}` : ""}.`;
 }
 
+/** Removes an unconfirmed renewal year. The year before is untouched; its documents stay on the policy, unlinked. */
+export function discardDraftYear(d, termId) {
+  const t = d.terms.find((x) => x.id === termId);
+  const prev = d.terms.find((x) => x.id === t.prevTermId);
+  d.terms = d.terms.filter((x) => x.id !== termId);
+  const pol = d.policies.find((x) => x.id === t.policyId); pol.termIds = pol.termIds.filter((x) => x !== termId);
+  d.documents.forEach((x) => { if (x.termId === termId) { x.termId = null; x.note = `Renewal draft discarded ${fmtDate(new Date().toISOString().slice(0, 10))}; document kept`; } });
+  const rec = (t.receipts || []).length;
+  return { prevId: prev?.id, detail: `Unconfirmed draft year ${t.termNo} removed${rec ? `, with ${plural(rec, "receipt")} recorded on it` : ""}. Year ${prev?.termNo ?? "before"} unchanged. The renewal document stays on the policy.` };
+}
+
 /** Removes one brokerage payment from an insurer, with all its lines. */
 export function deleteRemittance(d, id) {
   const r = (d.remittances || []).find((x) => x.id === id);
