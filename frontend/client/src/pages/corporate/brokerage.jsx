@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { TODAY } from "./data.js";
 import { fmtDate, fmtMoney, fmtNum, isNum, r2, nowIso, fxRate, brokerageOf, brokerageBase } from "./lib.js";
-import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, DocModal, DateInput, Tip } from "./ui.jsx";
+import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, DocModal, DateInput, Tip, AskFirst } from "./ui.jsx";
+import { deleteRemittance } from "./deletes.js";
 import { brokerageQuery } from "./docs.js";
 
 const STATUS_TONE = { Paid: "good", "Short paid": "warn", "Not received": "bad", Overpaid: "info" };
@@ -70,7 +71,7 @@ function PaymentForm({ insurer, rows, onDone }) {
 }
 
 export function BrokerageView() {
-  const { db, can } = useApp();
+  const { db, can, update, log, toast } = useApp();
   const [ins, setIns] = useState("");
   const [st, setSt] = useState("");
   const [paying, setPaying] = useState(null);
@@ -121,6 +122,15 @@ export function BrokerageView() {
           </Card>
         );
       })}
+      {(db.remittances || []).length > 0 && (
+        <Card title="Brokerage payments recorded" sub="Each payment from an insurer, newest first. Deleting one takes its amounts off the policies above.">
+          <Table><thead><tr><th>Received on</th><th>Insurer</th><th>Reference</th><th className="num">Policies</th><th className="num">Amount</th><th>Recorded by</th>{can("finalize") && <th />}</tr></thead>
+            <tbody>{[...db.remittances].sort((a, b) => (b.date || "").localeCompare(a.date || "")).map((r) => { const total = r.lines.reduce((a, l) => a + (+l.amount || 0), 0); return (
+              <tr key={r.id}><td>{fmtDate(r.date)}</td><td>{db.insurers.find((i) => i.id === r.insurerId)?.name || "--"}</td><td>{r.ref}{r.note && <div className="small muted">{r.note}</div>}</td>
+                <td className="num">{r.lines.length}</td><td className="num">{fmtMoney(total)}</td><td className="small">{r.by}</td>
+                {can("finalize") && <td><AskFirst label="Delete" question={`Delete ${r.ref} (${fmtMoney(total)})?`} yes="Delete payment" onYes={() => { update((d) => { log(d, { action: "Brokerage payment deleted", detail: deleteRemittance(d, r.id) }); }); toast("Brokerage payment deleted"); }} /></td>}</tr>); })}</tbody></Table>
+        </Card>
+      )}
       {doc && <DocModal doc={doc} onClose={() => setDoc(null)} />}
     </div>
   );

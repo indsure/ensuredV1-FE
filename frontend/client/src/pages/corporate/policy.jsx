@@ -5,6 +5,7 @@ import { useApp, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs,
 import { evaluate, demoCargoProfile, VERDICT_TONE, VERDICT_LABEL } from "./marine.js";
 import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
+import { docInUse, deleteDoc, deleteReceipt } from "./deletes.js";
 import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
 import { instalmentTable } from "./extract-extra.js";
 import { docText, loadTexts } from "./store.js";
@@ -253,6 +254,16 @@ export function AddDocForm({ customerId, policyId = null, termId = null, kinds, 
   );
 }
 
+/** Delete for one document: asks first, and says why when the document is still needed. */
+export function DeleteDoc({ doc }) {
+  const { db, update, log, toast, can } = useApp();
+  if (!can("addDoc")) return null;
+  const why = docInUse(db, doc.id);
+  if (why) return <span className="small muted" title={why}>In use</span>;
+  return <AskFirst label="Delete" question={`Delete ${doc.name}? The file is no longer shown in the portal.`} yes="Delete"
+    onYes={() => { update((d) => { log(d, { customerId: doc.customerId, policyId: doc.policyId || undefined, termId: doc.termId || undefined, action: "Document deleted", detail: deleteDoc(d, doc.id) }); }); toast("Document deleted"); }} />;
+}
+
 function DocumentsTab({ p, term, terms, openDoc }) {
   const { db, update, can, log, toast } = useApp();
   const [adding, setAdding] = useState(false);
@@ -270,13 +281,13 @@ function DocumentsTab({ p, term, terms, openDoc }) {
         {adding && <AddDocForm customerId={p.customerId} policyId={p.id} termId={term.id} kinds={["Debit note", "Supporting document", "Receipt proof", "Endorsement"]} onDone={() => setAdding(false)} />}
         {docs.length ? (
           <Table><thead><tr><th>Document</th><th>Type</th><th>Term</th><th>Added</th><th /></tr></thead>
-            <tbody>{docs.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{tlabel(d.termId)}</td><td>{fmtStamp(d.addedAt)}</td><td><div className="row gap-xs wrap"><Btn onClick={() => openDoc(d)}>View</Btn><DownloadDoc doc={d} label="Download" /></div></td></tr>)}</tbody></Table>
+            <tbody>{docs.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{tlabel(d.termId)}</td><td>{fmtStamp(d.addedAt)}</td><td><div className="row gap-xs wrap"><Btn onClick={() => openDoc(d)}>View</Btn><DownloadDoc doc={d} label="Download" /><DeleteDoc doc={d} /></div></td></tr>)}</tbody></Table>
         ) : <Empty title="No documents yet" />}
       </Card>
       <Card title="Customer documents not linked to a policy" sub="Quotes, KYC and similar papers live on the customer. Link one here if it belongs to this policy.">
         {loose.length ? (
           <Table><thead><tr><th>Document</th><th>Type</th><th>Added</th><th /></tr></thead>
-            <tbody>{loose.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{fmtStamp(d.addedAt)}</td><td className="row gap-xs"><Btn onClick={() => openDoc(d)}>View</Btn><DownloadDoc doc={d} label="Download" />{can("addDoc") && <Btn onClick={() => attach(d.id)}>Link to year {term.termNo}</Btn>}</td></tr>)}</tbody></Table>
+            <tbody>{loose.map((d) => <tr key={d.id}><td>{d.name}</td><td>{d.kind}</td><td>{fmtStamp(d.addedAt)}</td><td className="row gap-xs"><Btn onClick={() => openDoc(d)}>View</Btn><DownloadDoc doc={d} label="Download" />{can("addDoc") && <Btn onClick={() => attach(d.id)}>Link to year {term.termNo}</Btn>}<DeleteDoc doc={d} /></td></tr>)}</tbody></Table>
         ) : <Empty title="Nothing waiting to be linked" />}
       </Card>
     </div>
@@ -411,8 +422,10 @@ function PaymentsTab({ p, term, openDoc }) {
       <div ref={receiptCard}><Card title="Receipts" sub="Money received from the customer. Link it to an instalment if there are any." actions={can("receipt") && !addRec && <>{pay.outstanding > 0 && <Btn onClick={openFull}>Paid in full</Btn>}<Btn kind="primary" onClick={() => { setFullRec(false); setAddRec(true); }}>Record receipt</Btn></>}>
         {addRec && <ReceiptForm key={fullRec ? "full" : "part"} p={p} term={term} startFull={fullRec} onDone={() => { setAddRec(false); setFullRec(false); }} />}
         {term.receipts.length ? (
-          <Table><thead><tr><th>Received on</th><th className="num">Amount</th><th>Against</th><th>Mode</th><th>Reference / UTR</th><th>Bank</th><th>Remitted to insurer<Tip k="Remitted to insurer on" /></th><th>Proof</th></tr></thead>
-            <tbody>{term.receipts.map((r) => { const proof = db.documents.find((d) => d.id === r.proofDocId); const inst = term.instalments.find((i) => i.no === r.instNo); return <tr key={r.id}><td>{fmtDate(r.date)}</td><td className="num">{fmtMoney(r.amount, cur)}</td><td>{inst ? `Instalment ${inst.no} (due ${fmtDate(inst.due)})` : "Not linked to an instalment"}</td><td>{r.mode}</td><td>{r.ref || "--"}</td><td>{r.bank || "--"}</td><td>{r.remitDate ? fmtDate(r.remitDate) : <span className="muted">Not yet</span>}</td><td>{proof ? <button className="linkbtn" onClick={() => openDoc(proof)}>View</button> : "--"}</td></tr>; })}</tbody></Table>
+          <Table><thead><tr><th>Received on</th><th className="num">Amount</th><th>Against</th><th>Mode</th><th>Reference / UTR</th><th>Bank</th><th>Remitted to insurer<Tip k="Remitted to insurer on" /></th><th>Proof</th>{can("finalize") && <th />}</tr></thead>
+            <tbody>{term.receipts.map((r) => { const proof = db.documents.find((d) => d.id === r.proofDocId); const inst = term.instalments.find((i) => i.no === r.instNo); return <tr key={r.id}><td>{fmtDate(r.date)}</td><td className="num">{fmtMoney(r.amount, cur)}</td><td>{inst ? `Instalment ${inst.no} (due ${fmtDate(inst.due)})` : "Not linked to an instalment"}</td><td>{r.mode}</td><td>{r.ref || "--"}</td><td>{r.bank || "--"}</td><td>{r.remitDate ? fmtDate(r.remitDate) : <span className="muted">Not yet</span>}</td><td>{proof ? <button className="linkbtn" onClick={() => openDoc(proof)}>View</button> : "--"}</td>
+              {can("finalize") && <td><AskFirst label="Delete" question={`Delete this receipt of ${fmtMoney(r.amount, cur)}? The payment status is worked out again.`} yes="Delete receipt"
+                onYes={() => { update((d) => { log(d, { customerId: p.customerId, policyId: p.id, termId: term.id, action: "Receipt deleted", detail: deleteReceipt(d, term.id, r.id) }); }); toast("Receipt deleted"); }} /></td>}</tr>; })}</tbody></Table>
         ) : <Empty title="No receipts recorded">Nothing received yet. A policy being issued does not mean it is paid.</Empty>}
       </Card></div>
       <Card title="Debit notes" sub="Kept for reference. A debit note does not change the policy's figures.">

@@ -4,7 +4,7 @@ import { seed, TODAY, LIVE, DEPARTMENTS, FIXTURES, fixtureById, isCargoOpen, CUR
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook, plural } from "./lib.js";
 import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, DateInput, Tip } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
-import { PolicyView, AddDocForm, DocViewer, StatePills } from "./policy.jsx";
+import { PolicyView, AddDocForm, DocViewer, StatePills, DeleteDoc } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
 import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText } from "./store.js";
 import { CorpLogin } from "./login.jsx";
@@ -16,6 +16,7 @@ import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
 import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch, sameInsurer } from "./tidy.js";
 import { irdaiCsv } from "./irdai.js";
+import { customerUse, deleteCustomer, mergeCustomer } from "./deletes.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
 // Live and demo records never share storage.
@@ -414,8 +415,10 @@ function CustomersView() {
 }
 
 function CustomerView({ id }) {
-  const { db, go, can } = useApp();
+  const { db, go, can, update, log, toast } = useApp();
   const [edit, setEdit] = useState(false);
+  const [tidy, setTidy] = useState(false);
+  const [mergeTo, setMergeTo] = useState("");
   const [addDoc, setAddDoc] = useState(false);
   const [viewDoc, setViewDoc] = useState(null);
   const c = db.customers.find((x) => x.id === id);
@@ -427,7 +430,27 @@ function CustomerView({ id }) {
     <div className="stack">
       <div className="crumbs"><button className="linkbtn" onClick={() => go({ view: "customers" })}>Customers</button> / {c.code}</div>
       <header className="page-head"><div><p className="eyebrow">{c.code} · {c.vertical}</p><h1>{c.name}</h1><p className="muted">{[c.address, c.city, c.state, c.country].filter(Boolean).join(", ")}</p></div>
-        <div className="row gap-s wrap">{can("editCustomer") && !edit && <Btn onClick={() => setEdit(true)}>Edit details and team</Btn>}{can("newBusiness") && <Btn kind="primary" onClick={() => go({ view: "new", customerId: c.id })}>New business for this customer</Btn>}</div></header>
+        <div className="row gap-s wrap">{can("editCustomer") && !edit && <Btn onClick={() => setEdit(true)}>Edit details and team</Btn>}{can("editCustomer") && !edit && <Btn onClick={() => setTidy((x) => !x)}>Delete or merge</Btn>}{can("newBusiness") && <Btn kind="primary" onClick={() => go({ view: "new", customerId: c.id })}>New business for this customer</Btn>}</div></header>
+      {tidy && !edit && (() => {
+        const use = customerUse(db, c.id);
+        const others = db.customers.filter((x) => x.id !== c.id).map((x) => ({ value: x.id, label: `${x.name} (${x.code})` }));
+        const target = db.customers.find((x) => x.id === mergeTo);
+        return (
+          <Card title={`Delete or merge ${c.code}`} sub="Both are written to the history. Anything removed by mistake can be brought back from an earlier save (Backup, Earlier saves).">
+            <div className="stack">
+              {use.policies ? <p className="small">{c.name} has {plural(use.policies, "policy", "policies")}, so it cannot be deleted. If it is a duplicate, merge it into the right customer below.</p>
+                : <div className="row gap-s wrap"><AskFirst kind="danger" label="Delete customer" question={`Delete ${c.name} (${c.code})${use.documents ? ` and ${plural(use.documents, "document")} kept on it` : ""}?`} yes="Delete customer"
+                  onYes={() => { update((d) => { log(d, { action: "Customer deleted", detail: deleteCustomer(d, c.id) }); }); toast("Customer deleted"); go({ view: "customers" }); }} /><span className="small muted">It has no policies.</span></div>}
+              {can("*") && others.length > 0 && <div className="row gap-s wrap">
+                <Labeled label="Same customer as" htmlFor="cv-merge" hint="Moves its policies and documents to the customer you choose, then removes this one."><Select id="cv-merge" value={mergeTo} onChange={setMergeTo} placeholder="Choose" options={others} /></Labeled>
+                <AskFirst label="Merge" disabled={!mergeTo} why="Choose the customer to keep first" question={target ? `Move ${plural(use.policies, "policy", "policies")} and ${plural(use.documents, "document")} to ${target.name} (${target.code}) and remove ${c.code}?` : ""} yes="Merge"
+                  onYes={() => { const to = mergeTo; update((d) => { log(d, { customerId: to, action: "Customer merged", detail: mergeCustomer(d, c.id, to) }); }); toast("Customers merged"); setMergeTo(""); go({ view: "customer", id: to }); }} />
+              </div>}
+              {!can("*") && use.policies > 0 && <p className="small muted">An Admin can merge duplicate customers.</p>}
+            </div>
+          </Card>
+        );
+      })()}
       {edit ? <Card title="Edit customer"><CustomerForm initial={{ ...c, tags: c.tags.join(", ") }} onDone={() => setEdit(false)} /></Card> : (
         <div className="grid2">
           <Card title="Details"><KV items={[["Contact number", c.phone || "--"], ["Email", c.email || "--"], ["GSTIN", c.gst || "--"], ["Source", c.source === "Referral" ? `Referral: ${c.referral}` : "Direct business"], ["POC tags", c.tags.length ? c.tags.join(", ") : "--"]]} /></Card>
@@ -442,7 +465,7 @@ function CustomerView({ id }) {
       <Card title={`Documents (${docs.length})`} sub="Pre-policy documents need no policy link. Link them later from a policy's Documents tab." actions={can("addDoc") && !addDoc && <Btn onClick={() => setAddDoc(true)}>Add document</Btn>}>
         {addDoc && <AddDocForm customerId={c.id} kinds={["Quote", "KYC", "GST certificate", "Supporting document"]} onDone={() => setAddDoc(false)} />}
         {docs.length ? <Table><thead><tr><th>Document</th><th>Type</th><th>Linked to</th><th>Added</th><th /></tr></thead>
-          <tbody>{docs.map((d) => { const p = pols.find((x) => x.id === d.policyId); return <tr key={d.id}><td>{d.name}{d.note && <div className="small muted">{d.note}</div>}</td><td>{d.kind}</td><td>{p ? `${p.type} (${p.controlNo})` : <span className="muted">Customer only</span>}</td><td>{fmtStamp(d.addedAt)}</td><td><Btn onClick={() => setViewDoc(d)}>View</Btn></td></tr>; })}</tbody></Table> : <Empty title="No documents" />}
+          <tbody>{docs.map((d) => { const p = pols.find((x) => x.id === d.policyId); return <tr key={d.id}><td>{d.name}{d.note && <div className="small muted">{d.note}</div>}</td><td>{d.kind}</td><td>{p ? `${p.type} (${p.controlNo})` : <span className="muted">Customer only</span>}</td><td>{fmtStamp(d.addedAt)}</td><td><div className="row gap-xs wrap"><Btn onClick={() => setViewDoc(d)}>View</Btn><DeleteDoc doc={d} /></div></td></tr>; })}</tbody></Table> : <Empty title="No documents" />}
       </Card>
       {hist.length > 0 && <Card title="Customer history"><ol className="timeline">{hist.map((a) => <li key={a.id}><div className="row between wrap gap-s"><strong>{a.action}</strong><span className="small muted">{fmtStamp(a.at)} · {a.who}</span></div><div>{a.detail}</div></li>)}</ol></Card>}
       {viewDoc && <DocViewer doc={viewDoc} onClose={() => setViewDoc(null)} />}
