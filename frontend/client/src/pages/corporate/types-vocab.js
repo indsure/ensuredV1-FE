@@ -160,6 +160,10 @@ function printedPart(text, phrase) {
   return (m ? m[0] : String(text)).replace(/\s{2,}/g, " ").trim().slice(0, 80);
 }
 
+// "Base policy product / title", "Issued policy product:", "Product name", "Name of the policy", "Policy type", "Plan name".
+// "Product code" is not one of them.
+const PRODUCT_LABEL = /^\s*(?:base\s+policy\s+product(?:\s*\/\s*title)?|issued\s+policy\s+product|policy\s+product(?:\s+name)?|product\s+(?:name|title)|name\s+of\s+(?:the\s+)?(?:product|policy|plan)|policy\s+(?:type|name|title)|type\s+of\s+(?:policy|cover)|plan\s+name)\s*[:\-|]?\s+(.{4,})$/i;
+
 /** The policy type from the title area, with the phrase and line it came from, or null. */
 export function guessType(lines) {
   // Lines come as plain strings from the reader ("[Page 2]" marks a page) or as { text, marker } objects.
@@ -173,6 +177,16 @@ export function guessType(lines) {
     }
     return null;
   };
+  // A line that labels the product beats any heading: an endorsement printed ahead of the schedule
+  // ("CARRIER LEGAL LIABILITY - ROAD LEG", then "Base policy product / title: ... (MTO)"), or a section heading
+  // above "Issued policy product: Bankers Blanket Bond". Numbered lines ("2. Policy Type: Burglary") count too.
+  for (const l of real) {
+    const m = l.text.replace(/^\s*(\d{1,2}|[a-z]|[ivx]{1,4})[.)]\s+/i, "").match(PRODUCT_LABEL);
+    if (!m) continue;
+    const f = " " + flatText(m[1]) + " ";
+    const hits = NAMES.filter((x) => f.includes(x.p)).sort((a, b) => rank(b) - rank(a));
+    if (hits.length) return { type: hits[0].type, phrase: hits[0].p.trim(), printed: printedPart(m[1], hits[0].p.trim()), line: l.i + 1, conf: "high", why: "product label" };
+  }
   const named = byLine(NAMES, "high", "title");
   // A generic cargo title next to "Open Policy" or "Open Cover" is an open policy.
   if (named && named.type === "Marine Cargo - Specific Policy" && /^(marine cargo policy|marine cargo insurance)$/.test(named.phrase) && title.some((l) => /\bopen\s+(policy|cover)\b/i.test(l.text))) return { ...named, type: "Marine Cargo - Open Policy" };
