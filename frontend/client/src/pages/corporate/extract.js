@@ -520,10 +520,45 @@ const INSURED_RULE = { kind: "text", label: phraseRe(VOCAB.insured),
   not: /sum\s*(insured|assured)|insured\s*(object|value|location|address|details|event|peril|property|person|member|employee)|persons?\s*insured|lives\s*insured|interests?\s*insured|subject.?matter|(?<!\bof\s)\bthe\s+(insured|assured)\b/i };
 const NOT_A_NAME = /\d{3,}|\b(rs\.?|inr|usd|amt|amount|sum|where|which|shall|will|whose|each|policy|period|premium|said\s+to|contain|limit)\b|;\s*$|^[^A-Za-z]|^[^(]*\)|^(mailing|address|contact|details|place|gstin|pan|mobile|e-?mail|date|holder)\b/i;
 function findInsured(lines) {
+  // The labelled reading and the no-colon reading ("Name of Insured X", "Name MR X Policy No."): the earlier one wins.
+  const a = labelledInsured(lines), b = insuredWithoutColon(lines);
+  return a && b ? (b.ref < a.ref ? b : a) : a || b;
+}
+const isLabelWord = (v) => LABEL_WORDS.test(String(v).replace(/[’'`]\s*s?\s*$/i, "").replace(/[\s–—:.,-]+$/, "").trim());
+function labelledInsured(lines) {
   for (const c of candidates(lines, INSURED_RULE)) {
     const v = c.v.split(/\s{3,}|\s+[|]\s+/)[0].replace(/\s+(e-?mail|intermediary|address|gstin|pan|mobile|phone)\b.*$/i, "").replace(/[.,\s]*\bvessel\s*:.*$/i, ".").replace(/\.\.$/, ".").trim();
     if (INSURERS.some(([, re]) => re.test(v)) || /\b(insurance|assurance)\s+(company|co\.?)\b/i.test(v)) continue; // the insurer, not the insured
-    if (v.length >= 3 && v.length <= 90 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && v.split(/\s+/).length <= 10) return { v, ref: c.ref };
+    if (v.length >= 3 && v.length <= 90 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && !isLabelWord(v) && v.split(/\s+/).length <= 10) return { v, ref: c.ref };
+  }
+  return null;
+}
+// Labels a name is never: a schedule that prints "Insured" or "Name" alone must not give a customer called "Insured".
+export const LABEL_WORDS = /^(the\s+)?(insured|assured|proposer|policy\s*holder|policyholder|customer|client|name|insured\s+name|name\s+of\s+(the\s+)?(insured|assured|proposer)|details|insured\s+details)$/i;
+// "Name of Insured NEETH PRAKASH GOPWANI" or, under an "Insured details" heading, "Name MR RONAK H SHAH Policy No. ...":
+// the label at the start of the line, no colon, and the name cut where the next label starts.
+const NEXT_LABEL = /\s+(policy\s*(no|number)|address|mobile|phone|e-?mail|period|gstin|pan\b|vehicle|registration|reg\.?\s*no|customer\s*id|client\s*id|date|dob|age|occupation|nominee|intermediary|agent|branch)\b.*$/i;
+function insuredWithoutColon(lines) {
+  const real = lines.slice(0, 160);
+  for (let i = 0; i < real.length; i++) {
+    const l = real[i]; if (l.marker) continue;
+    const t = String(l.text || "").replace(/\s+/g, " ").trim();
+    let m = t.match(/^(name\s+of\s+(the\s+)?(insured|assured|proposer|policy\s*holder)|insured'?s?\s+name|proposer'?s?\s+name)\s*[:\-]?\s+(.+)$/i);
+    let v = m && m[4];
+    // The label alone on its line ("Name of the Proposer/"): the name is the first cell of the next line.
+    if (!v && /^(name\s+of\s+(the\s+)?(insured|assured|proposer|policy\s*holder)|insured'?s?\s+name|proposer'?s?\s+name)[\s/:\-]*$/i.test(t) && real[i + 1] && !real[i + 1].marker) {
+      v = String(real[i + 1].text || "").split(/\s{3,}/)[0];
+      if (v) { v = v.replace(NEXT_LABEL, "").replace(/[\s,.:;-]+$/, "").trim(); if (v.length >= 3 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && !isLabelWord(v)) return { v, ref: i + 2 }; }
+      continue;
+    }
+    if (!v) {
+      m = t.match(/^name\s*[:\-]?\s+(.+)$/i);
+      const heading = real.slice(Math.max(0, i - 3), i).some((x) => /\b(insured|assured|proposer|policy\s*holder)\b/i.test(String(x.text || "")));
+      v = m && heading && !/^(of|and|&|the)\b/i.test(m[1]) ? m[1] : null;
+    }
+    if (!v) continue;
+    v = v.replace(NEXT_LABEL, "").replace(/^(mr|mrs|ms|miss|dr|shri|smt|kumari)\.?\s+/i, "").replace(/[\s,.:;-]+$/, "").trim();
+    if (v.length >= 3 && v.length <= 90 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && !isLabelWord(v) && v.split(/\s+/).length <= 8) return { v, ref: i + 1 };
   }
   return null;
 }

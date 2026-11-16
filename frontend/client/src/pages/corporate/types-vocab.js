@@ -152,6 +152,14 @@ const rank = (x) => (GENERIC.has(x.type) ? 0 : 1000) + x.p.length;
 const compile = (table) => Object.entries(table).flatMap(([type, list]) => list.map((p) => ({ type, p: " " + flatText(p) + " " })));
 const NAMES = compile(T), GUESSES = compile(GUESS);
 
+// The words of the name as printed on the line ("Private Car Package Policy", not the table figures after it).
+function printedPart(text, phrase) {
+  const esc = (w) => (w === "and" ? "(?:and|&)" : w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const re = new RegExp(phrase.split(" ").map(esc).join("[^A-Za-z0-9&]*"), "i");
+  const m = String(text).match(re);
+  return (m ? m[0] : String(text)).replace(/\s{2,}/g, " ").trim().slice(0, 80);
+}
+
 /** The policy type from the title area, with the phrase and line it came from, or null. */
 export function guessType(lines) {
   // Lines come as plain strings from the reader ("[Page 2]" marks a page) or as { text, marker } objects.
@@ -161,7 +169,7 @@ export function guessType(lines) {
     for (const l of title) {
       const f = " " + flatText(l.text) + " ";
       const hits = list.filter((x) => f.includes(x.p)).sort((a, b) => rank(b) - rank(a));
-      if (hits.length) return { type: hits[0].type, phrase: hits[0].p.trim(), printed: l.text.replace(/\s{2,}/g, " ").trim().slice(0, 60), line: l.i + 1, conf, why };
+      if (hits.length) return { type: hits[0].type, phrase: hits[0].p.trim(), printed: printedPart(l.text, hits[0].p.trim()), line: l.i + 1, conf, why };
     }
     return null;
   };

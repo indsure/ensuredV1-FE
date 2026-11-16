@@ -5,6 +5,7 @@ import { DEPARTMENTS, FIXTURES, FIELDS, fixtureById, isVesselType, isWC, LIVE } 
 import { nowIso, missingFields, insurerOf, isNum, plural } from "./lib.js";
 import { sameInsurer, insurerKey } from "./tidy.js";
 import { guessType } from "./types-vocab.js";
+import { LABEL_WORDS } from "./extract.js";
 import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
 import { placeOf } from "./places.js";
@@ -93,7 +94,8 @@ export function suggestFromDocument(db, fx) {
   // Insured: the labelled name first, then any existing customer named anywhere in the text.
   const named = fx.info?.insured || fx.customer?.name?.v || "";
   const byName = named ? db.customers.filter((c) => sameName(c.name, named)) : [];
-  const byText = byName.length ? [] : db.customers.filter((c) => text.includes(flat(c.name)));
+  // A customer named in the text, as whole words. A saved name that is only a label word ("Insured") never matches.
+  const byText = byName.length ? [] : db.customers.filter((c) => { const n = flat(c.name); return n.length >= 4 && !LABEL_WORDS.test(n) && (" " + text + " ").includes(" " + n + " "); });
   const hits = byName.length ? byName : byText;
   out.insuredName = named || (hits[0]?.name ?? "");
   // City: a labelled city, else the place just before the PIN code in the address.
@@ -151,6 +153,7 @@ export function QuickAdd({ inboxId }) {
   const [guess, setGuess] = useState({});
   const [hl, setHl] = useState(null);
   const [nc, setNc] = useState({ name: "", city: "", state: "", country: "India", vertical: "Corporate" });
+  const [rename, setRename] = useState(null); // { id, name, err } while correcting a saved customer's name
   const [tried, setTried] = useState(false);
   const [extra, setExtra] = useState({ insName: "", brName: "", brCity: "", cseCode: "", cseName: "" });
   const [extraErr, setExtraErr] = useState("");
@@ -275,6 +278,34 @@ export function QuickAdd({ inboxId }) {
             <Labeled label="Insured (customer)" htmlFor="ap-cust" req error={tried && errs.customer} hint={!fx ? null : guess.customerId ? <Found ok line={lines.insured} onShow={setHl}>Already one of your customers</Found> : isNew && guess.insuredName ? <span className="src src-info">Not an existing customer. It will be added</span> : <Found ok={false}>Not on the policy, please choose</Found>}>
               <Select id="ap-cust" value={s.customerId} onChange={set("customerId")} placeholder="Choose customer" options={[...(guess.insuredName ? [{ value: "NEW", label: `New customer: ${guess.insuredName}` }] : [{ value: "NEW", label: "New customer" }]), ...db.customers.map((c) => ({ value: c.id, label: `${c.name} (${c.code})` }))]} />
             </Labeled>
+            {(() => {
+              // The chosen customer's saved name is wrong, or the policy names someone else.
+              const c = !isNew && db.customers.find((x) => x.id === s.customerId);
+              if (!c) return null;
+              const other = guess.insuredName && !sameName(c.name, guess.insuredName) ? guess.insuredName : null;
+              const saveName = () => {
+                const name = rename.name.trim().replace(/\s+/g, " ");
+                if (name.length < 2) return setRename({ ...rename, err: "Enter the customer's name" });
+                const clash = db.customers.find((x) => x.id !== c.id && sameName(x.name, name));
+                if (clash) return setRename({ ...rename, err: `${clash.name} (${clash.code}) already has this name. Choose it from the list instead.` });
+                update((d) => { const x = d.customers.find((y) => y.id === c.id); log(d, { customerId: c.id, action: "Customer renamed", detail: `${x.name} to ${name}.` }); x.name = name; });
+                setRename(null); toast("Customer name saved");
+              };
+              return (
+                <div className="fld fld-wide stack small" style={{ marginTop: -6 }}>
+                  {other && <div className="note note-warn" role="status">The policy names <strong>{other}</strong>{lines.insured ? `, line ${lines.insured}` : ""}, but {c.name} ({c.code}) is chosen.
+                    <div className="row gap-s wrap" style={{ marginTop: 6 }}>
+                      <Btn onClick={() => { setS((x) => ({ ...x, customerId: "NEW" })); setNc((n) => ({ ...n, name: other })); }}>Add {other} as a new customer</Btn>
+                      {can("editCustomer") && <Btn onClick={() => setRename({ id: c.id, name: other, err: "" })}>Rename {c.code} to {other}</Btn>}
+                    </div></div>}
+                  {!rename && can("editCustomer") && <button type="button" className="linkbtn" onClick={() => setRename({ id: c.id, name: c.name, err: "" })}>Edit name of {c.code}</button>}
+                  {rename && rename.id === c.id && <div className="row gap-s wrap">
+                    <Labeled label={`Correct name for ${c.code}`} htmlFor="ap-rename" error={rename.err || null} hint="Changes this customer everywhere, on all their policies."><input id="ap-rename" value={rename.name} onChange={(e) => setRename({ ...rename, name: e.target.value, err: "" })} /></Labeled>
+                    <div className="fld"><div className="row gap-s"><Btn kind="primary" onClick={saveName}>Save name</Btn><Btn onClick={() => setRename(null)}>Cancel</Btn></div></div>
+                  </div>}
+                </div>
+              );
+            })()}
             {isNew && <>
               <Labeled label="Insured name" htmlFor="ap-nname" req error={tried && (errs.customer && isNew ? errs.customer : null)} hint={guess.insuredName ? <Found ok line={lines.insured} onShow={setHl}>Read from the policy</Found> : null}><input id="ap-nname" value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} /></Labeled>
               <PlaceFields id="ap-n" value={{ city: nc.city, state: nc.state, country: nc.country }} req cityError={tried && errs.city}
