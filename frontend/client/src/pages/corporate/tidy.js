@@ -5,7 +5,11 @@ import { plural } from "./lib.js";
 
 const NOISE = /\b(the|general|insurance|assurance|insurer|company|co|corporation|corp|limited|ltd|pvt|private|india|indian|of|and)\b/g;
 /** "TATA AIG General Insurance Company Ltd." and "Tata Aig" both become "tataaig". */
-export const insurerKey = (name) => String(name || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9 ]/g, " ").replace(NOISE, " ").replace(/\s+/g, "");
+// Renamed or merged insurers: an old name and the new one are the same company in the list.
+const RENAMED = { reliance: "indusind", bajajallianz: "bajaj", futuregenerali: "generalicentral", kotakmahindra: "zurichkotak", magmahdi: "magma",
+  edelweiss: "zuno", bhartiaxa: "icicilombard", apollomunich: "hdfcergo", apollomunichhealth: "hdfcergo", maxbupa: "nivabupa", maxbupahealth: "nivabupahealth",
+  religarehealth: "carehealth", religare: "carehealth", cignattk: "manipalcigna", cignattkhealth: "manipalcignahealth", royalsundaramalliance: "royalsundaram" };
+export const insurerKey = (name) => { const k = String(name || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9 ]/g, " ").replace(NOISE, " ").replace(/\s+/g, ""); return RENAMED[k] || k; };
 const branchKey = (b) => `${String(b.name || "").toLowerCase().replace(/[^a-z0-9]/g, "")}|${String(b.city || "").toLowerCase().trim()}`;
 
 /** The listed insurer with the same name once "Ltd", "Insurance Company" and the like are ignored. */

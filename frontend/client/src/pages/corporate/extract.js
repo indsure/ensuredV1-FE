@@ -532,12 +532,14 @@ function findInsured(lines) {
 const INSURERS = [
   ["The New India Assurance Co. Ltd.", /new\s*india\s*assurance/i], ["Tata AIG General Insurance", /tata\s*-?\s*aig/i], ["Zurich Kotak General Insurance", /zurich\s*kotak|kotak\s*mahindra\s*general/i],
   ["Bajaj General Insurance", /bajaj\s*(allianz\s*)?general/i], ["Generali Central Insurance", /generali\s*central|future\s*generali/i], ["National Insurance Co. Ltd.", /national\s*insurance\s*co|\bnic\.co\.in\b/i],
-  ["ICICI Lombard General Insurance", /icici\s*lombard/i], ["HDFC ERGO General Insurance", /hdfc\s*ergo/i], ["United India Insurance", /united\s*india\s*insurance/i], ["The Oriental Insurance Co. Ltd.", /oriental\s*insurance/i],
-  ["SBI General Insurance", /sbi\s*general/i], ["Reliance General Insurance", /reliance\s*general/i], ["Royal Sundaram General Insurance", /royal\s*sundaram/i], ["Cholamandalam MS General Insurance", /cholamandalam/i],
+  ["ICICI Lombard General Insurance", /icici\s*lombard|bharti\s*axa\s*general/i], ["HDFC ERGO General Insurance", /hdfc\s*ergo|apollo\s*munich/i], ["United India Insurance", /united\s*india\s*insurance/i], ["The Oriental Insurance Co. Ltd.", /oriental\s*insurance/i],
+  ["SBI General Insurance", /sbi\s*general/i], ["IndusInd General Insurance", /indusind\s*general|reliance\s*general/i], ["Royal Sundaram General Insurance", /royal\s*sundaram/i], ["Cholamandalam MS General Insurance", /cholamandalam/i],
   ["IFFCO-Tokio General Insurance", /iffco[\s-]*tokio/i], ["Liberty General Insurance", /liberty\s*general/i], ["Go Digit General Insurance", /go\s*digit|digit\s*insurance/i], ["ACKO General Insurance", /\backo\b/i],
   ["Magma General Insurance", /magma\s*(hdi|general)/i], ["Raheja QBE General Insurance", /raheja\s*qbe/i], ["Shriram General Insurance", /shriram\s*general/i], ["Universal Sompo General Insurance", /universal\s*sompo/i],
-  ["Navi General Insurance", /navi\s*general/i], ["Zuno General Insurance", /\bzuno\b|edelweiss\s*general/i], ["Star Health Insurance", /star\s*health/i], ["Care Health Insurance", /care\s*health/i],
-  ["Niva Bupa Health Insurance", /niva\s*bupa|max\s*bupa/i], ["ManipalCigna Health Insurance", /manipal\s*cigna/i], ["Aditya Birla Health Insurance", /aditya\s*birla\s*health/i], ["ECGC", /\becgc\b/i],
+  ["Navi General Insurance", /navi\s*general/i], ["Zuno General Insurance", /\bzuno\b|edelweiss\s*general/i], ["Star Health Insurance", /star\s*health/i], ["Care Health Insurance", /care\s*health|religare\s*health/i],
+  ["Niva Bupa Health Insurance", /niva\s*bupa|max\s*bupa/i], ["ManipalCigna Health Insurance", /manipal\s*cigna|cigna\s*ttk/i], ["Aditya Birla Health Insurance", /aditya\s*birla\s*health/i], ["ECGC", /\becgc\b/i],
+  ["Galaxy Health Insurance", /galaxy\s*health/i], ["Narayana Health Insurance", /narayana\s*health\s*insurance/i], ["Kshema General Insurance", /kshema\s*general/i],
+  ["Agriculture Insurance Company of India", /agriculture\s*insurance\s*company/i],
 ];
 // The insurer's office that issued or services the policy: its name, office code and city.
 // Offices are printed as "Office Name: HARBOUR ROAD D.O - II (123456)", "Office Code: CORPORATE_OFFICE (654321)",

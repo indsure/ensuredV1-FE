@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { DEPARTMENTS, FIXTURES, FIELDS, fixtureById, isVesselType, isWC, LIVE } from "./data.js";
 import { nowIso, missingFields, insurerOf, isNum, plural } from "./lib.js";
 import { sameInsurer, insurerKey } from "./tidy.js";
+import { guessType } from "./types-vocab.js";
 import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, Pill } from "./ui.jsx";
 import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
 import { placeOf } from "./places.js";
@@ -56,15 +57,34 @@ const TYPE_HINTS = [
   [/multi ?modal transport|mto liability|multimodal transport operator/, "Multi Model Transport Operator"],
   [/directors and officers|\bd and o\b/, "Directors and Officers Liability Insurance"],
   [/professional indemnity/, "Professional Indemnity Insurance"],
-  [/workm[ae]n'?s? compensation|employees? compensation/, "Workmens Compensation Policy"],
+  // Motor, as insurers print it ("Private Car Policy - Bundled"), checked before WC: motor wordings cite the Workmen Compensation Act.
+  [/private car (standalone |stand alone )?own damage|stand ?alone (od|own damage) (policy )?(for )?private car|private car od only/, "PVT Car OD only"],
+  [/two wheeler (standalone |stand alone )?own damage|two wheeler od only/, "Two wheeler OD only"],
+  [/(private car|two wheeler|commercial vehicle) (policy )?liability only|liability only (policy )?(for )?(private car|two wheeler|commercial vehicle)|motor third party/, "Motor Third Party Liability Policy"],
+  [/private car package|motor private car|private car (policy|bundled)|bundled (policy )?(for )?private car/, "Motor Private Car Package Policy"],
+  [/two wheeler (package |bundled )?policy|motor ?cycle policy|scooter policy/, "Motor Two Wheeler Policy"],
+  [/(goods|passenger) carrying vehicle|commercial vehicle (package )?policy|\b(gcv|pcv)\b/, "Motor Commercial Vehicle Policy"],
+  // The Act is cited by motor and other wordings; only the policy title means a WC policy.
+  [/workm[ae]n ?'?s? compensation(?! act)|employees? compensation(?! act)/, "Workmens Compensation Policy"],
   [/group personal accident|group accident/, "Group Personal Accident Policy"],
   [/group mediclaim|group health/, "Group Mediclaim Policy"], [/family floater/, "Health Family Floater Policy"],
   [/errors and omm?issions/, "Errors and Ommissions Insurance"],
   [/(sookshma|laghu) udyam|bharat griha raksha|standard fire|fire and special perils|\bsfsp\b/, "Standard Fire and Special Perils"],
   [/marine cargo open|open (policy|cover)/, "Marine Cargo - Open Policy"],
   [/marine (cargo )?specific|single (transit|voyage)|completion of the voyage|institute cargo clauses/, "Marine Cargo - Specific Policy"],
-  [/burglary/, "Burglary Insurance"], [/private car package|motor private car/, "Motor Private Car Package Policy"], [/event cancellation/, "Event Cancellation Insurance"],
+  [/burglary/, "Burglary Insurance"], [/event cancellation/, "Event Cancellation Insurance"],
 ];
+
+/** Where the policy type came from, in words. A short form, a guessed name or a match deep in the wording asks for a check. */
+export function typeHint(w) {
+  if (!w) return "Suggested from the policy";
+  if (w.why === "wording") return "Only found in the policy wording, not its title. Please check it.";
+  const at = w.line ? `, line ${w.line}` : "";
+  if (w.why === "short form") return `Suggested from the short form in "${w.phrase}"${at}. Please check it.`;
+  const said = w.printed || w.phrase;
+  if (w.why === "guess") return `Suggested from "${said}"${at}, a less common name. Please check it.`;
+  return `Suggested from "${said}"${at}`;
+}
 
 // Reads who, which insurer and what kind of policy from the document. Each guess says where it came from.
 export function suggestFromDocument(db, fx) {
@@ -98,12 +118,19 @@ export function suggestFromDocument(db, fx) {
   // Policy type: a sample says it outright; otherwise the longest type name in the text, then known short forms.
   if (fx.type) { out.type = fx.type; out.dept = fx.dept; out.typeFrom = fx.typeFrom === "document" ? "document" : "sample"; }
   else {
-    const head = flat((fx.lines || []).slice(0, 80).join(" "));
-    for (const region of [head, text]) {
-      const hint = TYPE_HINTS.find(([re]) => re.test(region));
-      const full = ALL_TYPES.filter((x) => region.includes(flat(x.type))).sort((a, b) => b.type.length - a.type.length)[0];
-      const pick = (hint && ALL_TYPES.find((x) => x.type === hint[1])) || full;
-      if (pick) { out.type = pick.type; out.dept = pick.dept; out.typeFrom = "document"; break; }
+    // The name printed in the title area, from the Indian naming list. Then the older rules.
+    const g = guessType(fx.lines || []);
+    const gPick = g && ALL_TYPES.find((x) => x.type === g.type);
+    if (gPick) { out.type = gPick.type; out.dept = gPick.dept; out.typeFrom = "document"; out.typeWhy = g; }
+    else {
+      const head = flat((fx.lines || []).slice(0, 80).join(" "));
+      for (const region of [head, text]) {
+        const hint = TYPE_HINTS.find(([re]) => re.test(region));
+        const full = ALL_TYPES.filter((x) => region.includes(flat(x.type))).sort((a, b) => b.type.length - a.type.length)[0];
+        const pick = (hint && ALL_TYPES.find((x) => x.type === hint[1])) || full;
+        // Found only deep in the wording: a suggestion to check, not a decision.
+        if (pick) { out.type = pick.type; out.dept = pick.dept; out.typeFrom = "document"; if (region !== head) out.typeWhy = { conf: "low", why: "wording" }; break; }
+      }
     }
   }
   return out;
@@ -259,7 +286,7 @@ export function QuickAdd({ inboxId }) {
             <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={!guess.insurerId && !s.insurerId && fx?.info?.insurer ? <Found ok line={lines.insurer} onShow={setHl}>The policy says {fx.info.insurer.replace(/\.$/, "")}. Not in your list yet, add it below</Found> : hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the policy")}><Select id="ap-ins" value={s.insurerId} onChange={set("insurerId")} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
             <Labeled label="Insurer branch" htmlFor="ap-br" req error={tried && errs.branch} hint={s.insurerId ? hintFor("branch", !!guess.branchId && s.branchId === guess.branchId, "Read from the policy") : null}><Select id="ap-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
             <Labeled label="Department" htmlFor="ap-dept" req error={tried && !s.dept ? errs.type : null}><Select id="ap-dept" value={s.dept} onChange={set("dept")} placeholder="Choose department" options={Object.keys(DEPARTMENTS)} /></Labeled>
-            <Labeled label="Policy type" htmlFor="ap-type" req error={tried && s.dept && !s.type ? errs.type : null} hint={hintFor("type", !!guess.type && s.type === guess.type, guess.typeFrom === "sample" ? "From the sample" : "Suggested from the policy")}><Select id="ap-type" value={s.type} onChange={set("type")} disabled={!s.dept} placeholder={s.dept ? "Choose policy type" : "Choose department first"} options={DEPARTMENTS[s.dept] || []} /></Labeled>
+            <Labeled label="Policy type" htmlFor="ap-type" req error={tried && s.dept && !s.type ? errs.type : null} hint={hintFor("type", !!guess.type && s.type === guess.type, guess.typeFrom === "sample" ? "From the sample" : typeHint(guess.typeWhy))}><Select id="ap-type" value={s.type} onChange={set("type")} disabled={!s.dept} placeholder={s.dept ? "Choose policy type" : "Choose department first"} options={DEPARTMENTS[s.dept] || []} /></Labeled>
             {isVesselType(s.type) && <Labeled label="Vessel cover" htmlFor="ap-vm"><Select id="ap-vm" value={s.vesselMode} onChange={set("vesselMode")} placeholder="Choose" options={["Individual vessel", "Fleet"]} /></Labeled>}
           </div>
           {canAdd && fx && !s.insurerId && (
