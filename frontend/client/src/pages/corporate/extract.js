@@ -522,7 +522,9 @@ const NOT_A_NAME = /\d{3,}|\b(rs\.?|inr|usd|amt|amount|sum|where|which|shall|wil
 function findInsured(lines) {
   // The labelled reading and the no-colon reading ("Name of Insured X", "Name MR X Policy No."): the earlier one wins.
   const a = labelledInsured(lines), b = insuredWithoutColon(lines);
-  return a && b ? (b.ref < a.ref ? b : a) : a || b;
+  const r = a && b ? (b.ref < a.ref ? b : a) : a || b;
+  if (r) { const v = r.v.replace(COMPANY_TAIL, "$1").replace(DESCRIPTION_TAIL, "").trim(); if (v.length >= 3) r.v = v; }
+  return r;
 }
 const isLabelWord = (v) => LABEL_WORDS.test(String(v).replace(/[’'`]\s*s?\s*$/i, "").replace(/[\s–—:.,-]+$/, "").trim());
 function labelledInsured(lines) {
@@ -538,11 +540,32 @@ export const LABEL_WORDS = /^(the\s+)?(insured|assured|proposer|policy\s*holder|
 // "Name of Insured NEETH PRAKASH GOPWANI" or, under an "Insured details" heading, "Name MR RONAK H SHAH Policy No. ...":
 // the label at the start of the line, no colon, and the name cut where the next label starts.
 const NEXT_LABEL = /\s+(policy\s*(no|number)|address|mobile|phone|e-?mail|period|gstin|pan\b|vehicle|registration|reg\.?\s*no|customer\s*id|client\s*id|date|dob|age|occupation|nominee|intermediary|agent|branch)\b.*$/i;
+// "Policyholder / insured", "Proposer / Insured", "Name / Insured", "Policyholder", "Policy holder's name".
+const LABEL_PART = "(?:policy\\s*holder(?:'?s)?|proposer(?:'?s)?|insured(?:'?s)?|assured(?:'?s)?|name)";
+const COMBINED_LABEL = new RegExp(`^(?:${LABEL_PART}\\s*\\/\\s*)+${LABEL_PART}(?:\\s+name)?\\s*:?$|^policy\\s*holder(?:'?s)?(?:\\s+name)?\\s*:?$`, "i");
+// A company name followed by a description: "Aster Quay Analytics Private Limited - server room and design studio".
+const COMPANY_TAIL = /^(.*?\b(?:limited|ltd\.?|llp|pvt\.?|private|inc\.?|plc|co\.?)\.?)\s+[-–—]\s+.+$/i;
+// Any name followed by " - " and a description in lower case: "Tara Glen - individual traveller".
+const DESCRIPTION_TAIL = /\s+[-–—]\s+[a-z0-9].*$/;
+function cleanInsuredName(raw) {
+  let v = String(raw || "").replace(NEXT_LABEL, "").replace(/^(mr|mrs|ms|miss|dr|shri|smt|kumari)\.?\s+/i, "").trim();
+  const tail = v.match(COMPANY_TAIL); if (tail) v = tail[1];
+  v = v.replace(DESCRIPTION_TAIL, "");
+  v = v.replace(/[\s,.:;-]+$/, (m) => (/\b(ltd|co|pvt|inc)$/i.test(v.slice(0, v.length - m.length)) ? "." : "")).trim();
+  return v.length >= 3 && v.length <= 90 && /[A-Za-z]{3}/.test(v) && !NOT_A_NAME.test(v) && !isLabelWord(v) && v.split(/\s+/).length <= 10 ? v : null;
+}
 function insuredWithoutColon(lines) {
   const real = lines.slice(0, 160);
   for (let i = 0; i < real.length; i++) {
     const l = real[i]; if (l.marker) continue;
     const t = String(l.text || "").replace(/\s+/g, " ").trim();
+    // A combined label in its own cell ("Policyholder / insured", "Proposer / Insured Name") or "Policyholder":
+    // the name is the next cell on the line.
+    const cells = String(l.text || "").split(/\s{3,}/).map((x) => x.trim()).filter(Boolean);
+    if (cells.length >= 2 && COMBINED_LABEL.test(cells[0])) {
+      const v0 = cleanInsuredName(cells[1]);
+      if (v0) return { v: v0, ref: i + 1 };
+    }
     let m = t.match(/^(name\s+of\s+(the\s+)?(insured|assured|proposer|policy\s*holder)|insured'?s?\s+name|proposer'?s?\s+name)\s*[:\-]?\s+(.+)$/i);
     let v = m && m[4];
     // The label alone on its line ("Name of the Proposer/"): the name is the first cell of the next line.
