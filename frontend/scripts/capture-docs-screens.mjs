@@ -252,7 +252,7 @@ async function main() {
       await page.addInitScript(() => { try { localStorage.setItem("indsure_lang", "en"); } catch {} });
       if (shot.demo !== false) {
         // ?go= skips the welcome card; the tour stays off.
-        await page.goto(`${BASE}/agent/playground?go=%2Fagent%2Fdashboard`, { waitUntil: "networkidle" });
+        await page.goto(`${BASE}/hihihaha?go=%2Fagent%2Fdashboard`, { waitUntil: "networkidle" });
         await page.waitForURL(/\/agent\/dashboard/);
         await page.evaluate(() => sessionStorage.removeItem("indsure_playground_tour"));
         // Client-side navigation keeps the in-memory demo state.

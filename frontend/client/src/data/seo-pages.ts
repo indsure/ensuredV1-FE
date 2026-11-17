@@ -184,11 +184,6 @@ export const PAGE_SEO: Record<string, PageSeo> = {
     description: "Create an IndSure Advisor Portal account.",
     noindex: true,
   },
-  "/agent/playground": {
-    title: "Advisor Portal Demo | IndSure",
-    description: "Try the IndSure Advisor Portal with sample data, no account needed.",
-    noindex: true,
-  },
 };
 
 /** Spread into useSEO: `useSEO(seoFor("/pricing"))`. */

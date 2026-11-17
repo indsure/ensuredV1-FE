@@ -15,6 +15,11 @@
   ],
   "redirects": [
     {
+      "source": "/docs/demo",
+      "destination": "/docs",
+      "permanent": true
+    },
+    {
       "source": "/hospitals",
       "destination": "/find-provider",
       "permanent": true
@@ -396,7 +401,7 @@
       "destination": "/api/advisor-page?slug=:slug"
     },
     {
-      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|agent|admin|account|login|signup|forgot-password|reset-password|app|pay|corporate)(/.*)?",
+      "source": "/(processing|report|shared|analyze|calculator/report|compare/report|agent|admin|account|login|signup|forgot-password|reset-password|app|pay|corporate|hihihaha)(/.*)?",
       "destination": "/app-shell.html"
     }
   ]

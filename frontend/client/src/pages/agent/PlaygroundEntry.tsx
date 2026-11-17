@@ -6,10 +6,9 @@ import { setTourState } from "@/lib/playground/tour";
 import { DEMO_ROUTES } from "@/lib/advisorGuide";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useSEO } from "@/hooks/use-seo";
-import { seoFor } from "@/data/seo-pages";
 
 /**
- * Clean, shareable entry point for the demo: visiting /agent/playground turns on
+ * Unlisted entry point for the demo: visiting PLAYGROUND_PATH turns on
  * playground mode (so the whole portal runs against the in-memory mock) and
  * forwards into the dashboard. Doing it here — rather than as a side-effect of a
  * button — means the URL itself is the switch, so it can be linked or bookmarked.
@@ -24,7 +23,8 @@ export default function PlaygroundEntry() {
   const search = useSearch();
   const { t } = useLanguage();
   // A demo dashboard ("Good evening, Rajesh") is not a page anyone should land on from search.
-  useSEO(seoFor("/agent/playground"));
+  // Unlisted, so not in seo-pages.ts or the prerender list; noindex all the same.
+  useSEO({ title: "Advisor Portal Demo | IndSure", description: "IndSure Advisor Portal demo with sample data.", noindex: true });
 
   useEffect(() => {
     const params = new URLSearchParams(search);

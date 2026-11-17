@@ -1,3 +1,4 @@
+import { PLAYGROUND_PATH } from "@/lib/playground/mode";
 import {
   BarChart3, BookOpen, Calculator, CalendarClock, ClipboardList, FileSearch, FileText, Globe,
   Inbox, IndianRupee, MessageCircle, Scale, Sheet, Users, UserPlus, UsersRound,
@@ -93,8 +94,9 @@ export const DEMO_ROUTES: ReadonlySet<string> = new Set([
   ...GUIDES.map((g) => g.route),
 ]);
 
+/** In-demo links only (e.g. My Website's Preview in a new tab). Never on a public page. */
 export function demoHref(route: string): string {
-  return `/agent/playground?go=${encodeURIComponent(route)}`;
+  return `${PLAYGROUND_PATH}?go=${encodeURIComponent(route)}`;
 }
 
 /**
