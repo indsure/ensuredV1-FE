@@ -109,11 +109,6 @@ export default function AgentLanding() {
                 {t("agent_landing.nav_pricing")}
               </span>
             </Link>
-            <Link href="/agent/playground">
-              <span className="px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
-                {t("agent_landing.nav_playground")}
-              </span>
-            </Link>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
@@ -157,11 +152,6 @@ export default function AgentLanding() {
               {t("agent_landing.nav_pricing")}
             </span>
           </Link>
-          <Link href="/agent/playground">
-            <span className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors cursor-pointer">
-              {t("agent_landing.nav_playground")}
-            </span>
-          </Link>
           <button
             onClick={openCalendly}
             className="shrink-0 px-1.5 py-1 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] transition-colors"
@@ -199,11 +189,6 @@ export default function AgentLanding() {
           <Link href="/agent/signup/step1" className="w-full sm:w-auto">
             <button className="w-full h-[52px] px-6 rounded-lg bg-[var(--color-cta)] text-white text-base font-semibold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
               {t("agent_landing.cta_start")} <ArrowRight className="w-4 h-4" />
-            </button>
-          </Link>
-          <Link href="/agent/playground" className="w-full sm:w-auto">
-            <button className="w-full h-[52px] px-6 rounded-lg bg-white border border-[var(--color-border-light)] text-base font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors">
-              {t("agent_landing.cta_playground")}
             </button>
           </Link>
         </div>
@@ -367,11 +352,6 @@ export default function AgentLanding() {
             {t("agent_landing.b1_heading")}
           </h2>
           <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">{t("agent_landing.b1_body")}</p>
-          <Link href="/agent/playground">
-            <span className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">
-              {t("agent_landing.b1_link")} <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
         </div>
 
         <div className="rounded-xl bg-white overflow-hidden" style={{ boxShadow: panelShadow }}>
@@ -474,11 +454,6 @@ export default function AgentLanding() {
             {t("agent_landing.b3_heading")}
           </h2>
           <p className="text-base leading-relaxed text-[var(--color-text-secondary)]">{t("agent_landing.b3_body")}</p>
-          <Link href="/agent/playground">
-            <span className="inline-flex items-center gap-2 text-base font-semibold text-[var(--color-teal-600)] hover:underline cursor-pointer">
-              {t("agent_landing.b3_link")} <ArrowRight className="w-4 h-4" />
-            </span>
-          </Link>
         </div>
 
         <div className="rounded-xl bg-white overflow-hidden" style={{ boxShadow: panelShadow }}>
@@ -586,11 +561,6 @@ export default function AgentLanding() {
             <Link href="/agent/signup/step1" className="w-full sm:w-auto">
               <button className="w-full h-14 px-7 rounded-lg bg-[var(--color-cta)] text-white text-lg font-bold hover:bg-[var(--color-cta-hover)] transition-colors flex items-center justify-center gap-2">
                 {t("agent_landing.cta_start")} <ArrowRight className="w-5 h-5" />
-              </button>
-            </Link>
-            <Link href="/agent/playground" className="w-full sm:w-auto">
-              <button className="w-full h-14 px-7 rounded-lg border border-white/25 text-white/90 text-lg font-semibold hover:bg-white/10 hover:text-white transition-colors">
-                {t("agent_landing.cta_playground_short")}
               </button>
             </Link>
           </div>

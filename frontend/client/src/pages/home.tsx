@@ -606,11 +606,6 @@ function ProductSection() {
                 {t("home.start_free")}
               </button>
             </Link>
-            <Link href="/agent/playground" className="w-full sm:w-auto">
-              <button className="w-full h-12 px-5 rounded-lg bg-white border border-[var(--color-border-light)] text-base font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-cream-dark)] transition-colors">
-                {t("home.try_demo")}
-              </button>
-            </Link>
           </div>
 
           <div className="h-px bg-[var(--color-border-light)]" />

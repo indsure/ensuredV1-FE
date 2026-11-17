@@ -24,7 +24,7 @@ export type DocBlock =
   | { t: "note"; tone: "tip" | "note" | "warn"; text: string }
   | { t: "faq"; items: { q: string; a: string }[] }
   | { t: "cards"; slugs: string[] }
-  | { t: "cta"; kind: "demo" | "signup" | "contact" };
+  | { t: "cta"; kind: "signup" | "contact" };
 
 export type DocPage = {
   /** "" is the docs home, /docs. */
@@ -83,8 +83,8 @@ export const DOC_SECTIONS: DocSection[] = [
             text: "IndSure does not sell insurance. We are not an IRDAI-registered broker or agent, and we do not earn commission on any policy you sell. You pay a flat subscription, and there is a free plan. See [Plans and policy checks](/docs/plans).",
           },
           { t: "h2", text: "Where to start", id: "where-to-start" },
-          { t: "cards", slugs: ["create-account", "portal-tour", "demo", "check-a-policy"] },
-          { t: "cta", kind: "demo" },
+          { t: "cards", slugs: ["create-account", "portal-tour", "check-a-policy"] },
+          { t: "cta", kind: "signup" },
         ],
       },
       {
@@ -188,32 +188,6 @@ export const DOC_SECTIONS: DocSection[] = [
           },
           { t: "note", tone: "note", text: "These docs and their screenshots are in English. If your portal is in Hindi, the buttons will have Hindi names but sit in the same places." },
           { t: "cards", slugs: ["check-a-policy", "leads"] },
-        ],
-      },
-      {
-        slug: "demo",
-        nav: "Try the demo",
-        badge: "No login",
-        title: "Try the demo first",
-        description: "Explore the IndSure advisor portal with sample customers and policies. No account needed, nothing is saved, and a guided tour shows the main tools.",
-        lead: "See the whole portal with sample data before you sign up.",
-        blocks: [
-          {
-            t: "p",
-            text: "The demo is the real advisor portal filled with sample customers, policies, leads and claims. You do not need an account, and nothing you do is saved. Everything you see in these docs, you can try there.",
-          },
-          {
-            t: "steps",
-            items: [
-              "Open [indsure.in/agent/playground](/agent/playground).",
-              "A welcome card offers a short tour. Press **Start the tour**, or **Explore on my own**.",
-              "The tour walks you through eight screens. Press **Next** to move on, **Back** to go back, or the cross to stop.",
-              "To start the tour again, press **Take the tour** in the green bar at the top.",
-              "When you are done, press **Exit demo**.",
-            ],
-          },
-          { t: "note", tone: "tip", text: "Sharing the portal with someone? Send them indsure.in/agent/playground?tour=1. It opens the demo with the tour already running." },
-          { t: "cta", kind: "demo" },
         ],
       },
     ],
@@ -940,7 +914,7 @@ export const DOC_SECTIONS: DocSection[] = [
               { q: "Does IndSure sell insurance to my customers?", a: "No. We do not sell insurance. Your customers are yours." },
               { q: "Do I need to install an app?", a: "No. IndSure works in the browser on your phone and computer. On a phone, the main screens are in tabs at the bottom." },
               { q: "Can I use IndSure in Hindi?", a: "Yes. Press **हिंदी** at the top of any screen. A few things stay in English, such as the written text of a policy report." },
-              { q: "Can I try it before signing up?", a: "Yes. Open the [demo](/docs/demo). It has sample data and a guided tour, and you do not need an account." },
+              { q: "Can I try it before paying?", a: "Yes. The Free plan needs no card, so you can sign up and check your first policies on it. See [Plans and policy checks](/docs/plans)." },
             ],
           },
           { t: "h2", text: "Policy checks", id: "checks" },

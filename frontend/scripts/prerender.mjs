@@ -426,7 +426,6 @@ const STATIC_ROUTES = [
   { path: "/login", h1: "Sign in to IndSure" },
   { path: "/agent/login", h1: "Advisor sign in" },
   { path: "/agent/signup", h1: "Create your advisor account" },
-  { path: "/agent/playground", h1: "Advisor Portal demo" },
 ];
 
 // ---------------------------------------------------------------------------
