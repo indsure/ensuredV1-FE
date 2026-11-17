@@ -41,9 +41,12 @@ const blank = (x) => x === "" || x == null;
 /** GST is charged only on INR policies. A blank currency is treated as INR. */
 export const gstApplies = (values) => !values?.currency || values.currency === "INR";
 /** Sum insured does not apply to Workmen's Compensation. Saved terms carry sumInsuredNA so this works without the type. */
-export const siNotApplicable = (type, values) => isWC(type) || !!values?.sumInsuredNA;
+// Motor liability-only and compulsory PA policies print no IDV, so they have no sum insured to record.
+const NO_SI_MOTOR = new Set(["Motor Third Party Liability Policy"]);
+export const siNotApplicable = (type, values) => isWC(type) || NO_SI_MOTOR.has(type) || !!values?.sumInsuredNA;
 /** Why a required field is not needed here, in plain words, or null when it is needed as usual. */
 export function notNeededWhy(key, type, values) {
+  if (key === "sumInsured" && NO_SI_MOTOR.has(type)) return "Not applicable: a liability-only motor policy has no IDV";
   if (key === "sumInsured" && siNotApplicable(type, values)) return "Not applicable: Workmen's Compensation has no sum insured";
   if (key === "gst" && !gstApplies(values)) return `Not charged: the policy is in ${values.currency}, not INR`;
   return null;

@@ -256,7 +256,10 @@ const RULES = [
   { key: "issueDate", kind: "date", label: phraseRe(VOCAB.issueDate) },
   { key: "riskStart", kind: "date", label: phraseRe(VOCAB.riskStart), not: /endorsement/i },
   { key: "riskEnd", kind: "date", label: phraseRe(VOCAB.riskEnd), not: /endorsement|renewals*notice/i },
-  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum|%\s*of|per\s*(person|employee|member|vessel)|in\s*words/i },
+  // Not the policy's sum insured: health bonuses, buffers, deductibles and daily amounts; marine per-sending,
+  // per-bottom and per-location limits; a liability any-one-accident limit (unless it is also the aggregate);
+  // fire deductible bands ("Sum Insured upto 10 Cr per location"); add-on and PA sums insured.
+  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum|%\s*of|per\s*(person|employee|member|vessel|sending|bottom|location|transit|conveyance|day|claim|occurrence)|in\s*words|cumulative\s*bonus|no\s*claim\s*bonus|\bbonus\b|corporate\s*buffer|\bbuffer\b|deductible|threshold|restor|recharge|reload|booster|room\s*rent|daily\s*(cash|allowance)|hospital\s*cash|\bup\s*to\b|\bupto\b|owner[\s-]*driver|unnamed|paid\s*driver|hospitali[sz]ation|battery|charger|any\s*one\s*(accident|claim|occurrence)(?![^.]*aggregate)|\baoa\b/i },
   { key: "_pre", kind: "amount", label: new RegExp(phraseRe(VOCAB.netPremium).source + "|" + /total\s*premium\s*(before|excl)/i.source, "i") },
   { key: "_post", kind: "amount", label: new RegExp(phraseRe(VOCAB.grossPremium).source + "|" + /\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i.source, "i"), not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
   // A bare "Premium" label is the premium before tax. Only as a label in its own cell or before a colon.
@@ -512,7 +515,78 @@ export function parseFields(lines, ocr = false) {
   if (office) info.branch = office;
   const kind = docKindOf(lines);
   if (kind) info.docKind = kind;
+  // Motor: the Total IDV is the sum insured, ahead of any add-on "sum insured" or premium figure.
+  const idv = motorIdv(lines);
+  if (idv) { fields.sumInsured = idv; info.idv = idv.v; }
+  if (!fields.sumInsured) { const lim = limitCell(lines); if (lim) fields.sumInsured = lim; }
   return { fields, info };
+}
+
+// ---- motor: the IDV is the sum insured
+// The IDV block is a header row ending in "Total IDV" or "Total Value" (For the Vehicle | Trailer | accessories |
+// CNG/LPG | IDV Booster | Total IDV), with the figures on the first row of plain numbers below it; a multi-year
+// table has a row per policy year, and year 1 comes first. Or one line: "Total IDV (Rs.) : 5,00,000".
+// Add-on sums insured (emergency medical, PA for owner-driver, battery), premiums and the third-party
+// property limit are never the IDV.
+const IDV_TOTAL = /\btotal\s*(idv|i\.d\.v\.?)(\s*value)?\b|\btotal\s+value\b/i;
+const IDV_WORDS = /\bidv\b|i\.d\.v|insured'?s?\s+declared?\s+value|insureds\s+declared|for\s+the\s+vehicle/i;
+const plainNum = (c) => { const s = String(c).replace(/[`₹,]|\brs\.?|\binr\b|\(\s*\)/gi, "").trim(); return /^\d+(\.\d+)?$/.test(s) ? +s : null; };
+export function motorIdv(lines) {
+  const real = lines.map((l, i) => ({ t: String((l && l.text) ?? l ?? ""), i, marker: l && l.marker })).filter((l) => !l.marker);
+  for (let k = 0; k < real.length; k++) {
+    const t = real[k].t;
+    if (!IDV_TOTAL.test(t)) continue;
+    const near = real.slice(Math.max(0, k - 3), k + 1).map((x) => x.t).join(" ");
+    if (!IDV_WORDS.test(near) && !/\btotal\s*idv\b/i.test(t)) continue;
+    if (/\bpremium\b|%\s*on\s*idv|\brate\b/i.test(t)) continue;
+    // One line: the figure after the label.
+    const after = t.slice(t.search(IDV_TOTAL)).replace(IDV_TOTAL, "");
+    const inline = after.match(/^\s*(?:\(\s*(?:rs\.?|inr|`|₹)?\s*\))?\s*[:\-]?\s*(?:rs\.?|inr|`|₹)?\s*([\d,]{4,}(?:\.\d+)?)/i);
+    if (inline) { const v = +inline[1].replace(/,/g, ""); if (v >= 1000) return { v, ref: real[k].i + 1, conf: "high", note: "Total IDV: the motor sum insured." }; }
+    // A header row: the first row of plain numbers in the next few lines (year 1 in a multi-year table).
+    for (let j = k + 1; j < Math.min(real.length, k + 6); j++) {
+      const nums = real[j].t.split(/\s{2,}|\t/).map(plainNum).filter((x) => x != null);
+      if (nums.length < 2) continue;
+      const year = /^\s*(year|1st|first|policy\s+year)\b/i.test(real[j].t) ? " for year 1" : "";
+      const ok = (v) => ({ v, ref: real[j].i + 1, conf: "high", note: `Total IDV${year}: the motor sum insured.` });
+      // The total is the figure equal to the sum of the parts before it. Columns after it (owner-driver PA,
+      // baggage, a stray 0) are ignored. Some insurers print the total first, equal to the parts after it.
+      let run = 0;
+      for (let x = 0; x < nums.length; x++) { if (x >= 1 && nums[x] >= 1000 && Math.abs(nums[x] - run) < 1 && nums.slice(0, x).some((n) => n > 0)) return ok(nums[x]); run += nums[x]; }
+      for (let y = 2; y < nums.length; y++) { const parts = nums.slice(1, y + 1).reduce((a, b) => a + b, 0); if (nums[0] >= 1000 && Math.abs(nums[0] - parts) < 1) return ok(nums[0]); }
+      const last = nums[nums.length - 1];
+      if (last >= 1000) return { v: last, ref: real[j].i + 1, conf: "low", note: "Read as the Total IDV, the last figure of the IDV row. The parts do not add up to it, so please check." };
+      break;
+    }
+  }
+  return null;
+}
+
+// ---- "Limit" in its own cell, when nothing else gave the sum insured
+// "Limit    INR 7,50,00,000", "Limit    INR 75,00,000 any one vehicle / INR 2,00,00,000 aggregate". With an
+// aggregate or annual figure on the line, that is the one recorded. A figure per vehicle, member, family,
+// event or day, or in a foreign currency, is marked for checking.
+const LIMIT_CELL = /^(limit|limits|total\s+limit|aggregate\s+limit|annual\s+limit|limit\s+of\s+(indemnity|liability)|indemnity\s+limit|cover\s+limit)\s*:?$/i;
+function limitCell(lines) {
+  const real = lines.slice(0, 160);
+  for (let i = 0; i < real.length; i++) {
+    const l = real[i]; if (!l || l.marker) continue;
+    const cells = String(l.text || "").split(/\s{3,}|\s+\|\s+/).map((x) => x.trim()).filter(Boolean);
+    if (cells.length < 2 || !LIMIT_CELL.test(cells[0])) continue;
+    const val = cells.slice(1).join(" ");
+    const parts = val.split(/\s*[\/;]\s*/);
+    const amt = (s) => { const m = s.match(/(?:rs\.?|inr|usd|eur|gbp|aed|₹)?\s*([\d,]{3,}(?:\.\d+)?)\s*(lakhs?|lacs?|crores?|cr\b|million|mn\b)?/i); if (!m) return null; let v = +m[1].replace(/,/g, ""); const u = (m[2] || "").toLowerCase(); if (/^la/.test(u)) v *= 1e5; else if (/^cr/.test(u)) v *= 1e7; else if (/^m/.test(u)) v *= 1e6; return v >= 1000 ? v : null; };
+    const agg = parts.find((p) => /aggregate|annual|any\s+one\s+year|per\s+(annum|year)|\baoy\b/i.test(p) && amt(p) != null);
+    const pick = agg || parts.find((p) => amt(p) != null);
+    if (!pick) continue;
+    const v = amt(pick);
+    const foreign = /\b(usd|eur|gbp|aed)\b|\$/i.test(pick);
+    const per = !agg && /per\s+(vehicle|member|family|enrolled|person|employee|day|event|claim|sending|location)|any\s+one\s+(vehicle|event|claim|accident|person)|each\s+(claim|event|loss)/i.test(pick);
+    const note = foreign ? `Read from "Limit". It is in ${(pick.match(/\b(usd|eur|gbp|aed)\b/i) || ["a foreign currency"])[0].toUpperCase()}, so check the currency.`
+      : per ? "Read from \"Limit\". It is stated per unit, not for the whole policy, so please check." : agg && parts.length > 1 ? "Read from \"Limit\": the aggregate figure, not the per-unit one." : "Read from \"Limit\".";
+    return { v, ref: i + 1, conf: foreign || per || parts.length > 2 ? "low" : "high", note };
+  }
+  return null;
 }
 
 // ---- what kind of document this is
