@@ -1,11 +1,11 @@
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { FEATURE_GROUPS, demoHref, uiLabelVars } from "@/lib/advisorGuide";
+import { FEATURE_GROUPS, uiLabelVars } from "@/lib/advisorGuide";
 
 /**
- * Every portal tool, grouped by the job it serves. Public mode links each card
- * into the demo; portal mode links straight to the real screen.
+ * Every portal tool, grouped by the job it serves. Portal mode links straight to
+ * the real screen. Public mode shows plain cards: the demo is unlisted.
  */
 export function FeatureGrid({ mode, isOwner = false }: { mode: "public" | "portal"; isOwner?: boolean }) {
   const { t } = useLanguage();
@@ -24,13 +24,9 @@ export function FeatureGrid({ mode, isOwner = false }: { mode: "public" | "porta
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {features.map((f) => {
                 const Icon = f.icon;
-                const href = mode === "public" ? demoHref(f.route) : f.route;
-                return (
-                  <Link
-                    key={f.id}
-                    href={href}
-                    className="group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-[#0D9488]"
-                  >
+                const cardClass = "group flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5";
+                const body = (
+                  <>
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0FDFA] text-[#0F766E]">
                       <Icon className="h-5 w-5" aria-hidden="true" />
                     </span>
@@ -39,10 +35,19 @@ export function FeatureGrid({ mode, isOwner = false }: { mode: "public" | "porta
                     {f.ownersOnly && (
                       <span className="text-sm font-medium text-slate-500">{t("aguide.owners_only")}</span>
                     )}
-                    <span className="mt-auto inline-flex min-h-11 items-center gap-1.5 text-base font-semibold text-[#0F766E]">
-                      {mode === "public" ? t("aguide.see_in_demo") : t("aguide.open_it")}
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                    </span>
+                    {mode === "portal" && (
+                      <span className="mt-auto inline-flex min-h-11 items-center gap-1.5 text-base font-semibold text-[#0F766E]">
+                        {t("aguide.open_it")}
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                      </span>
+                    )}
+                  </>
+                );
+                return mode === "public" ? (
+                  <div key={f.id} className={cardClass}>{body}</div>
+                ) : (
+                  <Link key={f.id} href={f.route} className={`${cardClass} transition-colors hover:border-[#0D9488]`}>
+                    {body}
                   </Link>
                 );
               })}

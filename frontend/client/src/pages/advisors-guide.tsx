@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useSEO } from "@/hooks/use-seo";
@@ -79,15 +79,8 @@ export default function AdvisorsGuide({ view }: { view: View }) {
           <p className="text-lg text-white/80 max-w-2xl mx-auto mb-7">{t("aguide.cta_sub")}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/agent/playground?tour=1"
-              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-lg bg-[var(--color-cta)] px-6 text-base font-semibold text-white hover:bg-[var(--color-cta-hover)]"
-            >
-              <PlayCircle className="h-5 w-5" aria-hidden="true" />
-              {t("aguide.cta_tour")}
-            </Link>
-            <Link
               href="/agent/signup/step1"
-              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-lg border border-white/30 px-6 text-base font-semibold text-white hover:bg-white/10"
+              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-lg bg-[var(--color-cta)] px-6 text-base font-semibold text-white hover:bg-[var(--color-cta-hover)]"
             >
               {t("agent_landing.cta_start")}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />

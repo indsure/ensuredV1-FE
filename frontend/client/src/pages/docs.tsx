@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode, type Re
 import { Link } from "wouter";
 import {
   AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, FileText, Info, Lightbulb, Link2, Menu,
-  MessageCircle, PlayCircle, Rocket, Search, TrendingUp, UserCog, Users, Wrench, X,
+  MessageCircle, Rocket, Search, TrendingUp, UserCog, Users, Wrench, X,
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -194,7 +194,7 @@ function Block({ block, firstImage }: { block: DocBlock; firstImage: boolean }) 
   }
 }
 
-function Cta({ kind }: { kind: "demo" | "signup" | "contact" }) {
+function Cta({ kind }: { kind: "signup" | "contact" }) {
   const btn = "inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-5 text-base font-semibold";
   if (kind === "contact") {
     return (
@@ -218,17 +218,12 @@ function Cta({ kind }: { kind: "demo" | "signup" | "contact" }) {
   return (
     <div className="my-8 flex flex-col gap-4 rounded-2xl bg-[var(--color-navy-900)] p-6 text-white sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-xl font-semibold">See it for yourself</p>
-        {/* claim-source: /agent/playground runs the whole portal on the in-memory mock
-            (lib/playground/mode.ts, lib/supabase.ts); no sign-in exists on that path. Verified 2026-09-24. */}
-        <p className="text-base text-white/80">Try the portal with sample data. No account needed.</p>
+        {/* claim-source: Free plan, no card (docs/content.ts "Is IndSure free?", lib/entitlement.ts). */}
+        <p className="text-xl font-semibold">Ready to start?</p>
+        <p className="text-base text-white/80">Create a free account. No card needed.</p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Link href="/agent/playground?tour=1" className={`${btn} bg-[var(--color-cta)] text-white hover:bg-[var(--color-cta-hover)]`}>
-          <PlayCircle className="h-5 w-5" aria-hidden="true" />
-          Take the tour
-        </Link>
-        <Link href="/agent/signup/step1" className={`${btn} border border-white/30 text-white hover:bg-white/10`}>
+        <Link href="/agent/signup/step1" className={`${btn} bg-[var(--color-cta)] text-white hover:bg-[var(--color-cta-hover)]`}>
           Start free
         </Link>
       </div>

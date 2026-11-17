@@ -219,7 +219,10 @@ function App() {
                       {/* --- Agent Auth --- */}
                       {CorporatePortal && <Route path="/corporate" component={CorporatePortal} />}
                       <Route path="/agent" component={AgentLanding} />
-                      <Route path="/agent/playground" component={PlaygroundEntry} />
+                      {/* The demo is unlisted: the old public URL goes to the advisor landing. The path is a
+                          literal (the prerender refresh-404 check reads it) and must equal PLAYGROUND_PATH. */}
+                      <Route path="/agent/playground"><Redirect to="/agent" /></Route>
+                      <Route path="/hihihaha" component={PlaygroundEntry} />
                       <Route path="/agent/login" component={AgentLoginNew} />
                       <Route path="/agent/forgot-password" component={AgentForgotPassword} />
                       <Route path="/agent/reset-password" component={AgentResetPassword} />

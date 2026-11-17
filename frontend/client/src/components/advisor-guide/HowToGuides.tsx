@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { GUIDES, demoHref, uiLabelVars } from "@/lib/advisorGuide";
+import { GUIDES, uiLabelVars } from "@/lib/advisorGuide";
 
 /**
  * Short numbered guides for the jobs advisors do most. A jump list first, so a
@@ -27,7 +27,6 @@ export function HowToGuides({ mode }: { mode: "public" | "portal" }) {
 
       {GUIDES.map((g) => {
         const Icon = g.icon;
-        const href = mode === "public" ? demoHref(g.route) : g.route;
         return (
           <section
             key={g.id}
@@ -58,13 +57,16 @@ export function HowToGuides({ mode }: { mode: "public" | "portal" }) {
                 </li>
               ))}
             </ol>
-            <Link
-              href={href}
-              className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#0D9488] px-5 text-base font-semibold text-white hover:bg-[#0F766E]"
-            >
-              {mode === "public" ? t("aguide.try_in_demo") : t("aguide.go_there")}
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+            {/* Public mode has no button: the demo is unlisted. */}
+            {mode === "portal" && (
+              <Link
+                href={g.route}
+                className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#0D9488] px-5 text-base font-semibold text-white hover:bg-[#0F766E]"
+              >
+                {t("aguide.go_there")}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            )}
           </section>
         );
       })}

@@ -3,7 +3,7 @@
  *
  * When ON, the whole agent portal runs against an in-memory mock instead of the
  * real Supabase backend (see ./mockClient + ../supabase). This lets a brand-new
- * user click "Go to Playground" on the agent landing page and poke around a
+ * visitor with the unlisted link (PLAYGROUND_PATH) poke around a
  * fully-populated dashboard — leads, customers, policies, calculator — without
  * an account and without ever touching the real database. Nothing is saved.
  *
@@ -13,6 +13,15 @@
  */
 
 const PLAYGROUND_KEY = "indsure_playground";
+
+/**
+ * The demo's only way in. Unlisted on purpose (founder, 2026-11-17): no public
+ * page links to it, it is not prerendered or in the sitemap, and the old
+ * /agent/playground now redirects to /agent. It is unlisted, not secret: the
+ * string ships in the JS bundle. Renaming it also needs the rewrite in
+ * frontend/vercel.json changed, or the new path 404s on a direct load.
+ */
+export const PLAYGROUND_PATH = "/hihihaha";
 
 /**
  * The only pages the demo may answer: the advisor portal itself. The flag lives
