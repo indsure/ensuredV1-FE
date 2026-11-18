@@ -17,6 +17,7 @@ export const VOCAB = {
     "certificate no", "certificate number", "certificate reference", "certificate ref", "certificate of entry no",
     "cover note no", "cover note number", "reference no", "reference number", "entry no", "contract no", "contract number",
     "UMR", "unique market reference",
+    "pol no", "pol. no", "pol. no.", "policy #", "schedule no", "schedule number", "policy cum certificate no", "policy cum certificate number", "cert no", "cert. no", "cert. no.",
   ],
   uin: ["UIN", "UIN no", "product UIN", "IRDAI UIN"],
   planName: [
@@ -42,6 +43,7 @@ export const VOCAB = {
     "total amount insured", "insured declared value", "IDV", "agreed value", "capital sum insured", "CSI", "total CSI",
     "limit of liability", "limits of liability", "limit of indemnity", "indemnity limit", "aggregate limit", "total limit",
     "any one accident", "AOA", "any one year", "AOY", "cover amount", "coverage amount",
+    "maximum annual liability", "annual aggregate limit", "aggregate limit of liability", "aggregate limit of indemnity",
   ],
   netPremium: [
     "net premium", "basic premium", "base premium", "own premium", "taxable value", "taxable premium", "taxable amount",
@@ -50,9 +52,9 @@ export const VOCAB = {
   grossPremium: [
     "gross premium", "total premium", "total premium payable", "premium payable", "total amount payable", "total payable",
     "amount payable", "final premium", "total amount", "total premium including gst", "premium including taxes",
-    "premium inclusive of taxes", "total invoice value",
+    "premium inclusive of taxes", "total invoice value", "grand total",
   ],
-  gst: ["GST", "IGST", "GST amount", "IGST amount", "goods and services tax", "service tax", "total tax", "tax amount"],
+  gst: ["GST", "IGST", "GST amount", "IGST amount", "UTGST", "UTGST amount", "goods and services tax", "service tax", "total tax", "tax amount"],
   stampDuty: ["stamp duty", "stamp fee", "stamp fees", "stamp charges"],
   excess: [
     "excess", "deductible", "deductibles", "compulsory deductible", "compulsory excess", "policy excess", "standard excess",

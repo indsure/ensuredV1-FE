@@ -249,7 +249,7 @@ const cleanText = (s) => s.replace(/`\s*(?=\d)/g, "₹ ").replace(/^[\s:\-–.]+
 
 // ---- field rules (order matters: specific labels before generic ones)
 const RULES = [
-  { key: "policyNo", kind: "id", label: phraseRe(VOCAB.policyNo), not: /previous|prev\b|old\b|expiring|proposal|endorsement|receipt|invoice|order/i },
+  { key: "policyNo", kind: "id", label: phraseRe(VOCAB.policyNo), not: /previous|prev\b|old\b|expiring|proposal|endorsement|receipt|invoice|order|claim|transaction|\butr\b|agent|broker|posp|intermediary|quote|quotation/i },
   { key: "uin", kind: "id", label: phraseRe(VOCAB.uin) },
   { key: "planName", kind: "text", label: phraseRe(VOCAB.planName), badValue: /^(both\s+)?(indemnity|benefit)(\s+and\s+(indemnity|benefit))?\b|^(fresh|new|renewal|individual|group|floater)$|^(product|policy|type|details|name)\b\s*\/?/i },
   { key: "proposalDate", kind: "date", label: phraseRe(VOCAB.proposalDate) },
@@ -259,7 +259,7 @@ const RULES = [
   // Not the policy's sum insured: health bonuses, buffers, deductibles and daily amounts; marine per-sending,
   // per-bottom and per-location limits; a liability any-one-accident limit (unless it is also the aggregate);
   // fire deductible bands ("Sum Insured upto 10 Cr per location"); add-on and PA sums insured.
-  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum|%\s*of|per\s*(person|employee|member|vessel|sending|bottom|location|transit|conveyance|day|claim|occurrence)|in\s*words|cumulative\s*bonus|no\s*claim\s*bonus|\bbonus\b|corporate\s*buffer|\bbuffer\b|deductible|threshold|restor|recharge|reload|booster|room\s*rent|daily\s*(cash|allowance)|hospital\s*cash|\bup\s*to\b|\bupto\b|owner[\s-]*driver|unnamed|paid\s*driver|hospitali[sz]ation|battery|charger|any\s*one\s*(accident|claim|occurrence)(?![^.]*aggregate)|\baoa\b/i },
+  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum(?!\s+annual\s+liability)|%\s*of|per\s*(person|employee|member|vessel|sending|bottom|location|transit|conveyance|day|claim|occurrence)|in\s*words|cumulative\s*bonus|no\s*claim\s*bonus|\bbonus\b|corporate\s*buffer|\bbuffer\b|deductible|threshold|restor|recharge|reload|booster|room\s*rent|daily\s*(cash|allowance)|hospital\s*cash|\bup\s*to\b|\bupto\b|owner[\s-]*driver|unnamed|paid\s*driver|hospitali[sz]ation|battery|charger|any\s*one\s*(accident|claim|occurrence)(?![^.]*aggregate)|\baoa\b/i },
   { key: "_pre", kind: "amount", label: new RegExp(phraseRe(VOCAB.netPremium).source + "|" + /total\s*premium\s*(before|excl)/i.source, "i") },
   { key: "_post", kind: "amount", label: new RegExp(phraseRe(VOCAB.grossPremium).source + "|" + /\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i.source, "i"), not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
   // A bare "Premium" label is the premium before tax. Only as a label in its own cell or before a colon.
