@@ -6,6 +6,7 @@ export { parseDateText } from "./extract-extra.js";
 // Nothing is uploaded. Scanned PDFs and photos are read with OCR (tesseract.js), also inside the browser:
 // only the OCR program and its English word data are downloaded, the policy never leaves this computer.
 const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+export const PDFJS_BASE = PDFJS;
 // The insurer's PDFs are read up to 60 pages, so premium tables in an annexure near the end are found.
 const MAX_PAGES = 60;
 const MAX_LINES = 3000;
@@ -69,6 +70,7 @@ export async function pdfToLines(file, onProgress = () => {}) {
     onProgress(p, pdf.numPages);
     const page = await pdf.getPage(p);
     const tc = await page.getTextContent();
+    const vp1 = page.getViewport({ scale: 1 });
     const items = tc.items.filter((i) => i.str && i.str.trim()).map((i) => ({ x: i.transform[4], y: i.transform[5], w: i.width, h: Math.abs(i.transform[3]) || 10, s: i.str.replace(/\u00a0/g, " ") }));
     items.sort((a, b) => b.y - a.y || a.x - b.x);
     const rows = [];
@@ -88,7 +90,10 @@ export async function pdfToLines(file, onProgress = () => {}) {
         else segs.push({ x: it.x, x2: it.x + it.w, s: it.s });
       }
       segs.forEach((s) => (s.s = s.s.replace(/\s+/g, " ").trim()));
-      lines.push({ page: p, text: segs.map((s) => s.s).join("    "), segs });
+      // Where the line sits on the page, as fractions of the page size, for "View in PDF". pdf.js counts y from the bottom.
+      const h = Math.max(...r.items.map((it) => it.h));
+      const g = [segs[0].x / vp1.width, (vp1.height - r.y - h) / vp1.height, segs[segs.length - 1].x2 / vp1.width, (vp1.height - r.y + h * 0.3) / vp1.height].map((n) => Math.round(Math.min(1, Math.max(0, n)) * 1000) / 1000);
+      lines.push({ page: p, text: segs.map((s) => s.s).join("    "), segs, g });
     }
   }
   return { pdf, lines: lines.slice(0, MAX_LINES), pages: pdf.numPages, readPages: pages, textChars: lines.reduce((a, l) => a + (l.marker ? 0 : l.text.length), 0) };
@@ -143,7 +148,8 @@ async function ocrCanvas(canvas, page, multi) {
       if (!t || /^[^A-Za-z0-9₹]{1,3}$/.test(t)) continue;
       clean.push({ ...sg, s: t });
     }
-    if (clean.length) out.push({ page, text: clean.map((x) => x.s).join("    "), segs: clean });
+    const W = canvas.width || 1, H = canvas.height || 1, r3 = (n) => Math.round(Math.min(1, Math.max(0, n)) * 1000) / 1000;
+    if (clean.length) out.push({ page, text: clean.map((x) => x.s).join("    "), segs: clean, g: [r3(clean[0].x / W), r3((ln.cy - h / 2) / H), r3(clean[clean.length - 1].x2 / W), r3((ln.cy + h / 2) / H)] });
   }
   return out;
 }
@@ -249,7 +255,7 @@ const cleanText = (s) => s.replace(/`\s*(?=\d)/g, "₹ ").replace(/^[\s:\-–.]+
 
 // ---- field rules (order matters: specific labels before generic ones)
 const RULES = [
-  { key: "policyNo", kind: "id", label: phraseRe(VOCAB.policyNo), not: /previous|prev\b|old\b|expiring|proposal|endorsement|receipt|invoice|order|claim|transaction|\butr\b|agent|broker|posp|intermediary|quote|quotation/i },
+  { key: "policyNo", kind: "id", label: phraseRe(VOCAB.policyNo), not: /previous|prev\b|old\b|expiring|\bbase\s+polic|\bunderlying\s+polic|proposal|endorsement|receipt|invoice|order|claim|transaction|\butr\b|agent|broker|posp|intermediary|quote|quotation/i },
   { key: "uin", kind: "id", label: phraseRe(VOCAB.uin) },
   { key: "planName", kind: "text", label: phraseRe(VOCAB.planName), badValue: /^(both\s+)?(indemnity|benefit)(\s+and\s+(indemnity|benefit))?\b|^(fresh|new|renewal|individual|group|floater)$|^(product|policy|type|details|name)\b\s*\/?/i },
   { key: "proposalDate", kind: "date", label: phraseRe(VOCAB.proposalDate) },
@@ -310,6 +316,9 @@ function candidates(lines, rule) {
     ln.segs.forEach((seg, j) => {
       const m = seg.s.match(rule.label);
       if (!m || (rule.not && rule.not.test(seg.s))) return;
+      // A scan can split "Previous | Policy No" into two cells: the word in the cell before counts too.
+      const prevCell = j > 0 ? ln.segs[j - 1].s : "";
+      if (rule.not && prevCell && prevCell.length <= 20 && seg.s.slice(0, m.index).trim() === "" && rule.not.test(prevCell)) return;
       const before = seg.s.slice(0, m.index).replace(/[^\x00-\x7F]+\/?\s*/g, "");
       const after = seg.s.slice(m.index + m[0].length);
       // Only labels that are set out as labels: at the start of a block (after an optional "1." or "a)"),
@@ -328,7 +337,7 @@ function candidates(lines, rule) {
       for (const part of rest) {
         if (isPunct(part)) continue;
         const v = parseKind(rule.kind, part, rule.zeroOk, rule.needDigit);
-        if (v && acceptable(rule, v)) { out.push({ ...v, ref: i + 1, conf: "high" }); return; }
+        if (v && acceptable(rule, v)) { out.push({ ...v, ref: i + 1, conf: "high", label: m[0] }); return; }
         if (rule.kind === "text" || rule.kind === "id") break;
         if (!ownCell && !tail) break; // "Label: words" with no value: stop rather than wander along the line
       }
@@ -341,7 +350,7 @@ function candidates(lines, rule) {
         const whole = rule.kind === "date" ? (() => { const d = findDates(under.s); return d.length && d[0].end - d[0].index >= under.s.trim().length * 0.6; })()
           : rule.kind === "text" ? under.s.length < 120 : WHOLE[rule.kind].test(under.s);
         const v = whole && parseKind(rule.kind, under.s, rule.zeroOk, rule.needDigit);
-        if (v && acceptable(rule, v)) out.push({ ...v, ref: i + 2, conf: "high", note: "Read from the cell below the label" });
+        if (v && acceptable(rule, v)) out.push({ ...v, ref: i + 2, conf: "high", note: "Read from the cell below the label", label: m[0] });
       }
     });
   });
@@ -362,6 +371,19 @@ function pick(cands, key, ocr) {
   }
   if (first.ambiguous) { res.note = (res.note ? res.note + " " : "") + "Read as day/month/year."; }
   return res;
+}
+// The fields that get a pick list of everything found. Others keep the single best reading.
+const CAND_KEYS = ["sumInsured", "policyNo"];
+// Distinct values, the one in use first, each with its label, line and how many times it was printed.
+function candList(cands, first) {
+  const by = new Map();
+  for (const c of first ? [first, ...cands] : cands) {
+    const k = String(c.v);
+    const e = by.get(k);
+    if (e) { if (c.ref !== e.ref) e.count++; if (!c.prior) e.prior = false; if (!e.label && c.label) e.label = c.label; continue; }
+    by.set(k, { v: c.v, ref: c.ref, label: c.label || "", count: 1, prior: !!c.prior, ...(c.note ? { note: c.note } : {}) });
+  }
+  return [...by.values()].slice(0, 5);
 }
 
 export function parseFields(lines, ocr = false) {
@@ -519,6 +541,27 @@ export function parseFields(lines, ocr = false) {
   const idv = motorIdv(lines);
   if (idv) { fields.sumInsured = idv; info.idv = idv.v; }
   if (!fields.sumInsured) { const lim = limitCell(lines); if (lim) fields.sumInsured = lim; }
+  // Pick lists: every value found for these fields, the one in use first. Earlier policy numbers are listed
+  // last and marked, never used.
+  for (const k of CAND_KEYS) {
+    const f = fields[k];
+    const extra = k === "policyNo" ? candidates(lines, { key: "priorPolicyNo", kind: "id", label: phraseRe(VOCAB.priorPolicyNo) }).map((c) => ({ ...c, prior: true })) : [];
+    const list = candList([...found[k], ...extra], f ? { v: f.v, ref: f.ref, label: (found[k].find((c) => String(c.v) === String(f.v)) || {}).label || f.word || "", conf: f.conf } : null);
+    // A value found by a table rule has no label of its own: use the first cell of its line ("Limit", "Total IDV").
+    for (const c of list) if (!c.label) { const s0 = lines[c.ref - 1]?.segs?.[0]?.s || ""; if (s0.length <= 40 && /[A-Za-z]{3}/.test(s0) && !s0.includes(String(c.v))) c.label = s0.replace(/\s*:$/, ""); }
+    // The motor IDV rule checks that the parts add up to the total.
+    if (f && k === "sumInsured" && /^(Read as the )?Total IDV/.test(f.note || "") && list[0]) { list[0].label = "Total IDV"; if (f.conf === "high") list[0].sums = true; }
+    // The limits table rule (MTO and similar): the AOY column is the sum insured.
+    if (f && k === "sumInsured" && /^AOY \(any one year\)/.test(f.note || "") && list[0]) list[0].label = "AOY (any one year)";
+    if (f) f.cands = list; else if (list.some((c) => !c.prior)) info[k + "Cands"] = list;
+  }
+  // Insurer: every candidate, and the letterhead or a labelled issuer when nothing else named one.
+  const insCands = insurerCandidates(lines);
+  if (insCands.length) info.insurerCands = insCands;
+  if (!info.insurer) {
+    const top = insCands.filter((c) => !c.prior && (c.how === "labelled" || c.pages >= 2)).sort((a, b) => b.pages - a.pages)[0];
+    if (top) { info.insurer = top.v; info.insurerFrom = top.how; }
+  }
   return { fields, info };
 }
 
@@ -797,6 +840,69 @@ function findInsurer(lines) {
   return named || null;
 }
 
+// Every company the document could mean as its insurer, for the pick list. Each has the line it was read
+// from, the words beside it and how many pages show it. A name next to "former", "prior" or "previous" is
+// kept but marked, so the screen can show it was found and passed over.
+const INSURER_LABEL = /^(current\s+issuer|issuer|insurer(?:'s)?\s+name|name\s+of\s+(?:the\s+)?insurer|insurer|insurance\s+company|insurance\s+co\.?|underwriter|issuing\s+company|issuing\s+office\s+of)\s*:?$/i;
+const PRIOR_INSURER_LABEL = /^(former\s+(?:trade\s+style|name|insurer|trading\s+name)|formerly(?:\s+known\s+as)?|previous\s+(?:insurer|name|trade\s+name)|prior\s+(?:insurer|name)|old\s+name|erstwhile(?:\s+name)?|expiring\s+insurer)\s*:?$/i;
+const PLAIN = (s) => String(s || "").replace(/\s*\((fictional|sample|specimen|test)\)\s*/gi, " ").replace(/\s+/g, " ").trim();
+const insurerKeyOf = (s) => PLAIN(s).toLowerCase().replace(/^the\s+/, "").replace(/[.,]/g, "").replace(/\s+(company|co|limited|ltd|insurance|assurance|general)\b/g, "").replace(/\s+/g, " ").trim();
+export function insurerCandidates(lines) {
+  const by = new Map();
+  const add = (name, ref, label, how, prior = false) => {
+    const v = PLAIN(name);
+    if (!v) return;
+    const k = insurerKeyOf(v);
+    const page = lines[ref - 1]?.page || 1;
+    const e = by.get(k);
+    if (e) {
+      e.count++; e.pageSet.add(page); if (!prior) e.prior = false;
+      if (how === "labelled" && !prior) e.how = how;
+      // Point at the earliest place it is printed, with the words found there.
+      if (ref < e.ref) { e.ref = ref; e.label = label || e.label; } else if (!e.label && label) e.label = label;
+      return;
+    }
+    by.set(k, { v, ref, label: label || "", how, prior, count: 1, pageSet: new Set([page]) });
+  };
+  const real = lines.map((l, i) => ({ l, i })).filter((x) => !x.l.marker);
+  // 1) "issued by X" in the certificate wording
+  const flat = real.map((x) => x.l.text).join(" ").replace(/\s+/g, " ");
+  const stated = issuedBy(flat);
+  if (stated) { const at = real.find((x) => x.l.text.toLowerCase().includes(stated.toLowerCase().split(" ")[0])); add(stated, (at ? at.i : 0) + 1, "Issued by", "stated"); }
+  // 2) a label cell and its value: "Current issuer  North Quay Assurance", "Former trade style  Cedar Legacy Assurance"
+  for (const { l, i } of real) {
+    const segs = l.segs || [];
+    for (let j = 0; j < segs.length - 1; j++) {
+      const lab = segs[j].s.trim();
+      const prior = PRIOR_INSURER_LABEL.test(lab);
+      if (!prior && !INSURER_LABEL.test(lab)) continue;
+      const name = companyName(PLAIN(segs[j + 1].s));
+      if (name) add(name, i + 1, lab.replace(/\s*:$/, ""), "labelled", prior);
+    }
+  }
+  // 3) a registered insurer named anywhere, counted
+  for (const [name, re] of INSURERS) {
+    const hits = real.filter((x) => re.test(x.l.text));
+    for (const h of hits) add(name, h.i + 1, "", "known");
+  }
+  // 4) the letterhead: the first line of each page, when it reads like an insurance company
+  if (lines.some((l) => l.marker)) {
+    lines.forEach((l, i) => {
+      if (!l.marker) return;
+      const nx = lines[i + 1];
+      if (!nx || nx.marker) return;
+      const t = PLAIN((nx.segs && nx.segs[0]?.s) || nx.text);
+      if (!/\b(insurance|assurance|general|underwriters|mutual)\b/i.test(t) || /\b(brok|agent|policy|schedule|certificate|period)\b/i.test(t)) return;
+      const name = companyName(t);
+      if (name) add(name, i + 2, "Letterhead", "letterhead");
+    });
+  }
+  // 5) London market security
+  const lead = securityLead(real.map((x) => x.l));
+  if (lead) { const at = real.find((x) => /^\s*security\b/i.test(x.l.text)); add(lead, (at ? at.i : 0) + 1, "Security", "security"); }
+  return [...by.values()].map(({ pageSet, ...c }) => ({ ...c, pages: pageSet.size, firstPage: Math.min(...pageSet) })).slice(0, 6);
+}
+
 // ---- customer details printed on a policy or GST certificate
 // Insurer contact details are common on schedules, so a value on an insurer/helpline line is never used,
 // and a value not clearly tied to the insured is marked for checking.
@@ -875,6 +981,8 @@ export async function readPolicyPdf(file, onProgress = () => {}) {
   const other = otherDetails(lines);
   const sch = liabilitySchedule(lines);
   if (sch) other.unshift({ label: "AOA (any one accident)", value: String(sch.aoa), ref: sch.ref }, { label: "AOY (any one year)", value: String(sch.aoy), ref: sch.ref }, { label: "AOA to AOY ratio", value: sch.ratio, ref: sch.ref }, { label: "Deductible", value: String(sch.deductible), ref: sch.ref }, { label: "Retroactive date", value: sch.retro, ref: sch.ref });
-  return { ...base, lines: lines.map((l) => l.text), fields, info, customer, other: other.filter((x, i, a) => a.findIndex((y) => y.label === x.label) === i) };
+  // geo: where each line sits ([page, x0, y0, x1, y1] as fractions of the page), for "View in PDF". Kept only
+  // while the document is being reviewed, never saved with the book.
+  return { ...base, lines: lines.map((l) => l.text), geo: lines.map((l) => (l.g ? [l.page, ...l.g] : [l.page || 1])), fields, info, customer, other: other.filter((x, i, a) => a.findIndex((y) => y.label === x.label) === i) };
 }
 export { LABELS as EXTRACT_LABELS };

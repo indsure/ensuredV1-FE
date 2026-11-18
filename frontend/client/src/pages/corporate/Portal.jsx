@@ -16,6 +16,7 @@ import { LoginsTab } from "./logins.jsx";
 import { placeOf } from "./places.js";
 import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch, sameInsurer } from "./tidy.js";
 import { irdaiCsv } from "./irdai.js";
+import { ocrSettings, OCR_DEFAULTS, POINTS, POINT_WORDS, PICK_LABELS, localStamp } from "./confidence.js";
 import { customerUse, deleteCustomer, mergeCustomer } from "./deletes.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
@@ -935,6 +936,76 @@ function BrokerBranches() {
   );
 }
 
+// How sure the reader must be before a value shows green, and every pick and correction people made.
+function ReadingTab() {
+  const { db, update, log, toast, role, can } = useApp();
+  const cur = ocrSettings(db);
+  const [f, setF] = useState({ green: String(cur.green), amber: String(cur.amber), gap: String(cur.gap) });
+  const [err, setErr] = useState("");
+  const [key, setKey] = useState("");
+  const [fallback, setFallback] = useState(null);
+  const edit = role === "admin";
+  const saveSet = (vals) => {
+    const n = { green: +vals.green, amber: +vals.amber, gap: +vals.gap };
+    if (![n.green, n.amber, n.gap].every((x) => isNum(x) && x >= 0 && x <= 100)) return setErr("Enter numbers from 0 to 100");
+    if (n.amber > n.green) return setErr("Amber must not be higher than green");
+    update((d) => { d.settings = { ...(d.settings || {}), ocr: n }; log(d, { action: "Reading settings saved", detail: `Green from ${n.green}, amber from ${n.amber}, red when the top two are within ${n.gap} points.` }); });
+    setErr(""); setF({ green: String(n.green), amber: String(n.amber), gap: String(n.gap) }); toast("Reading settings saved");
+  };
+  const all = [...(db.ocrLog || [])].reverse();
+  const rows = key ? all.filter((r) => r.key === key) : all;
+  const val = (r, v) => (r.key === "sumInsured" && isNum(v) ? fmtNum(+v) : v);
+  const found = (r) => (r.found || []).map((c) => `${val(r, c.v)} (L${c.ref})`).join("; ");
+  const csv = () => toCsv([["Report", "Picks and corrections from the policy reader"], ["Field", key ? PICK_LABELS[key] : "All fields"], ["Printed", nowIso().replace("T", " ").slice(0, 16)]],
+    ["When", "Field", "Colour", "Values found", "We suggested", "Final value", "How", "By", "Document"],
+    rows.map((r) => [r.at.replace("T", " "), PICK_LABELS[r.key] || r.key, r.state, found(r), r.sug, r.fin, r.how, r.by, r.doc]));
+  // Right first time: kept or confirmed as suggested, over the last 30 days.
+  const since = localStamp(Date.now() - 30 * 864e5);
+  const recent = all.filter((r) => r.at >= since);
+  const rate = (k) => { const x = recent.filter((r) => r.key === k); return x.length ? Math.round((100 * x.filter((r) => r.how === "Kept" || r.how === "Confirmed").length) / x.length) : null; };
+  const box = (tone, title, k, note) => (
+    <div className={`cf-set cf-set-${tone}`}>
+      <span className={`cf-chip cf-${tone}`}>{title}</span>
+      {k ? <Labeled label={k === "gap" ? "Top two within (points)" : "Score at or above"} htmlFor={`rs-${k}`}><input id={`rs-${k}`} inputMode="numeric" value={f[k]} disabled={!edit} onChange={(e) => setF({ ...f, [k]: e.target.value.replace(/[^\d]/g, "") })} /></Labeled> : null}
+      <span className="small muted">{note}</span>
+    </div>
+  );
+  return (
+    <div className="stack">
+      <Card title="How sure is sure" sub="One setting for every field the reader colours (insurer, policy number, sum insured). Changes apply to the next document read.">
+        <div className="cf-sets">
+          {box("green", "Green: sure", "green", "And only one value found. Filled for you, still editable.")}
+          {box("amber", "Amber: please check", "amber", "Or two or more values found. Our best guess is filled; someone confirms it.")}
+          {box("red", "Red: please verify", "gap", `Below ${f.amber || OCR_DEFAULTS.amber}, or the top two values score within this many points. Nothing counts until someone chooses.`)}
+        </div>
+        <div className="stack" style={{ gap: 6 }}>
+          <span className="small muted">What makes up a score (out of 100, starting at {POINTS.base})</span>
+          <div className="row gap-xs wrap">{POINT_WORDS.map(([k, w]) => <span key={k} className="cf-chip">{w} {POINTS[k] > 0 ? "+" : ""}{POINTS[k]}</span>)}</div>
+          <span className="small muted">A value read from a scan is never green.</span>
+        </div>
+        {err && <div className="err-text small" role="alert">{err}</div>}
+        {edit ? <div className="row gap-s wrap"><Btn kind="primary" onClick={() => saveSet(f)}>Save settings</Btn><Btn onClick={() => saveSet(OCR_DEFAULTS)}>Reset to default</Btn></div> : <p className="small muted">Only an Admin can change these.</p>}
+      </Card>
+      <Card title="Picks and corrections" sub="Every pick and every typed value, written when a record is confirmed, so we can see which labels to trust. The last 200 are kept."
+        actions={<div className="row gap-s wrap"><Select id="rs-field" value={key} onChange={setKey} placeholder="All fields" options={Object.entries(PICK_LABELS).map(([value, label]) => ({ value, label }))} />{can("export") && <Btn disabled={!rows.length} why="Nothing logged yet" onClick={() => saveCsv("reader-corrections.csv", csv(), toast, setFallback)}>Download CSV</Btn>}</div>}>
+        {rows.length ? (
+          <Table className="rs-log">
+            <thead><tr><th>When</th><th>Field</th><th>Values found</th><th>We suggested</th><th>Final value</th><th>How</th><th>By</th><th>Document</th></tr></thead>
+            <tbody>{rows.slice(0, 200).map((r, i) => (
+              <tr key={i}>
+                <td>{fmtStamp(r.at)}</td><td>{PICK_LABELS[r.key] || r.key}</td><td className="small">{found(r) || "None"}</td>
+                <td>{r.sug ? <span className={`cf-chip cf-${r.state}`}>{val(r, r.sug)}</span> : <span className={`cf-chip cf-${r.state || "red"}`}>None</span>}</td>
+                <td><strong>{val(r, r.fin) || "Blank"}</strong></td><td><span className={`cf-chip ${r.how === "Kept" || r.how === "Confirmed" ? "cf-green" : ""}`}>{r.how}</span></td><td>{r.by}</td><td className="small">{r.doc}</td>
+              </tr>))}</tbody>
+          </Table>
+        ) : <Empty title="Nothing logged yet">Picks and corrections appear here once a policy read from a PDF is confirmed.</Empty>}
+        {recent.length > 0 && <div className="row gap-s wrap small"><span className="muted">Last 30 days, right first time:</span>{Object.keys(PICK_LABELS).map((k) => rate(k) == null ? null : <span key={k} className={`cf-chip ${rate(k) >= 85 ? "cf-green" : rate(k) >= 60 ? "cf-amber" : "cf-red"}`}>{PICK_LABELS[k]}: {rate(k)}%</span>)}</div>}
+      </Card>
+      {fallback && <CsvFallback data={fallback} onClose={() => setFallback(null)} />}
+    </div>
+  );
+}
+
 function Masters() {
   const { db, update, log, toast } = useApp();
   const [tab, setTab] = useState("insurers");
@@ -957,7 +1028,7 @@ function Masters() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Lists and team</h1><p className="muted">Your insurers, policy types and team. Every screen picks from these.</p></div></header>
-      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
+      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
@@ -973,6 +1044,7 @@ function Masters() {
       </>}
       {tab === "logins" && <LoginsTab />}
       {tab === "brokerbranches" && <BrokerBranches />}
+      {tab === "reading" && <ReadingTab />}
       {tab === "types" && <Card title="Departments and policy types" >
         <div className="typegrid">{Object.entries(DEPARTMENTS).map(([dpt, types]) => <div key={dpt}><h4>{dpt} <span className="muted small">({types.length})</span></h4><ul>{types.map((t) => <li key={t}>{t}{typeCount[t] > 1 && <Pill tone="warn" title="Listed under more than one department">Also elsewhere</Pill>}</li>)}</ul>{dpt === "Miscellaneous" && <p className="small muted">Visible portion only; the source list scrolls further.</p>}</div>)}</div>
       </Card>}

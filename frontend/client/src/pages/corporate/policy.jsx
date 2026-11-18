@@ -7,6 +7,7 @@ import { declarationNote, carrierNotice } from "./docs.js";
 import { saveFile, fileUrl } from "./store.js";
 import { docInUse, deleteDoc, deleteReceipt, discardDraftYear } from "./deletes.js";
 import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
+import { dropCands } from "./confidence.js";
 import { instalmentTable } from "./extract-extra.js";
 import { docText, loadTexts } from "./store.js";
 import { useState, useEffect, useRef } from "react";
@@ -133,11 +134,11 @@ function Overview({ p, term, go, openDoc }) {
   const doc = db.documents.find((d) => d.id === term.docId);
   const miss = missingFields(term, p.type);
   if (editing) {
-    const fixture = doc && docLines(doc) ? { id: doc.id, title: doc.name, lines: docLines(doc), fields: doc.fixtureId ? fixtureById(doc.fixtureId).fields : doc.fixtureFields || {}, info: doc.info, generated: !!doc.lines && !doc.extracted, extracted: doc.extracted, fileName: doc.name } : { id: "none", title: "No document", lines: ["No document attached"], fields: {} };
+    const fixture = doc && docLines(doc) ? { id: doc.id, title: doc.name, lines: docLines(doc), fields: doc.fixtureId ? fixtureById(doc.fixtureId).fields : doc.fixtureFields || {}, info: doc.info, generated: !!doc.lines && !doc.extracted, extracted: doc.extracted, fileName: doc.name, fileId: doc.userFile?.fileId || null, ocr: /OCR/.test(doc.note || "") } : { id: "none", title: "No document", lines: ["No document attached"], fields: {} };
     const save = (pl, confirm) => {
       update((d) => {
         const t = d.terms.find((x) => x.id === term.id);
-        Object.assign(t, pl, { status: confirm ? "confirmed" : "draft" });
+        Object.assign(t, pl, { status: confirm ? "confirmed" : "draft" }); if (confirm) dropCands(d.documents.find((x) => x.id === t.docId));
         log(d, { customerId: p.customerId, policyId: p.id, termId: t.id, action: confirm ? "Term confirmed" : "Draft saved", detail: confirm ? "Reviewer confirmed every required field." : `Draft saved. Missing: ${missingFields(t, p.type).join(", ") || "none"}` });
         if (confirm && t.prevTermId) {
           const prev = d.terms.find((x) => x.id === t.prevTermId);
@@ -890,7 +891,7 @@ function RenewalsTab({ p, term, terms, go }) {
   const saveRenewal = (pl, confirm) => {
     update((d) => {
       const t = d.terms.find((x) => x.id === draft.id);
-      Object.assign(t, pl, { status: confirm ? "confirmed" : "draft" });
+      Object.assign(t, pl, { status: confirm ? "confirmed" : "draft" }); if (confirm) dropCands(d.documents.find((x) => x.id === t.docId));
       if (confirm) {
         const prev = d.terms.find((x) => x.id === t.prevTermId);
         prev.outcome = "Renewed"; prev.nextTermId = t.id;
@@ -917,7 +918,7 @@ function RenewalsTab({ p, term, terms, go }) {
   };
   if (reviewing && draft) {
     const doc = db.documents.find((x) => x.id === draft.docId);
-    return <OcrReview selfPolicyId={p.id} fixture={{ id: doc.id, title: doc.name, lines: docText(doc) || [], fields: doc.fixtureFields || {}, info: doc.info, generated: !doc.extracted, extracted: doc.extracted, fileName: doc.name }} customerName={db.customers.find((x) => x.id === p.customerId)?.name} initial={draft.values} initialSources={draft.sources} initialBrokerageConfirmed={draft.brokerageConfirmed}
+    return <OcrReview selfPolicyId={p.id} fixture={{ id: doc.id, title: doc.name, lines: docText(doc) || [], fields: doc.fixtureFields || {}, info: doc.info, generated: !doc.extracted, extracted: doc.extracted, fileName: doc.name, fileId: doc.userFile?.fileId || null, ocr: /OCR/.test(doc.note || "") }} customerName={db.customers.find((x) => x.id === p.customerId)?.name} initial={draft.values} initialSources={draft.sources} initialBrokerageConfirmed={draft.brokerageConfirmed}
       insurerId={p.insurerId} branchId={p.branchId} policyType={p.type} heading={`Renewal review: year ${draft.termNo}`} confirmLabel="Confirm renewal"
       onCancel={() => setReviewing(false)} onSaveDraft={(pl) => saveRenewal(pl, false)} onConfirm={(pl) => saveRenewal(pl, true)} />;
   }

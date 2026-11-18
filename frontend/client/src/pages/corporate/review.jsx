@@ -6,6 +6,12 @@ import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf, fi
 import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput, MoneyInput, Select } from "./ui.jsx";
 import { readPolicyPdf, readerSelfTest, ReadError, isImage } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { judgeField, ocrSettings, pickCandidates, logEntry, addLog, PICK_LABELS } from "./confidence.js";
+import { StateChip, SourceLine, CandidatePicker, PdfView } from "./picks.jsx";
+import { insurerKey } from "./tidy.js";
+
+// The review fields that get a colour and a pick list. The insurer is picked on step 1, before review.
+const REVIEW_PICKS = ["policyNo", "sumInsured"];
 
 const GROUPS = ["Identification", "Dates", "Amounts", "Liability", "Voyage and cargo", "Project", "Other", "Brokerage"];
 
@@ -141,10 +147,21 @@ const nameKey = (n) => String(n || "").toLowerCase().replace(/\bm\/s\b/g, " ").r
 export const sameName = (a, b) => { const x = nameKey(a), y = nameKey(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
 
 export function OcrReview({ fixture, initial = {}, initialSources = {}, initialBrokerageConfirmed = false, insurerId, branchId, policyType, heading, customerName, onCancel, onSaveDraft, onConfirm, confirmLabel = "Confirm record", askPayment = false, selfPolicyId = null }) {
-  const { db, can, go } = useApp();
+  const { db, can, go, update, who } = useApp();
   const [showRate, setShowRate] = useState(false);
   const [paid, setPaid] = useState({ how: "no", date: TODAY, mode: "Bank transfer", ref: "" });
   const preset = activePreset(db, insurerId, policyType);
+  // Green, amber or red for the pick fields, from every value the reader found. Worked out once.
+  const judged = useMemo(() => {
+    const out = {};
+    if (!fixture?.extracted || fixture.noText) return out;
+    const pc = pickCandidates(fixture), settings = ocrSettings(db);
+    for (const k of REVIEW_PICKS) if (pc[k]?.length) out[k] = judgeField(k, pc[k], { lines: fixture.lines, ocr: fixture.ocr, settings, inUse: fixture.fields?.[k]?.v });
+    if (pc.insurer?.length) out.insurer = judgeField("insurer", pc.insurer, { lines: fixture.lines, ocr: fixture.ocr, settings, inUse: fixture.info?.insurer });
+    return out;
+  }, []);
+  const [openPick, setOpenPick] = useState({});
+  const [pdfAt, setPdfAt] = useState(null);
   const start = useMemo(() => {
     const vals = {}, srcs = {};
     FIELDS.forEach((f) => {
@@ -155,6 +172,9 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
         const x = fixture.fields[f.key];
         vals[f.key] = x.v;
         srcs[f.key] = { ref: x.ref, conf: x.conf, docLabel: "Document", note: x.note, alts: x.alts };
+        // Amber or red: the value stays as read, but must be checked or picked before confirming.
+        const j = judged[f.key];
+        if (j) { srcs[f.key].state = j.state; if (j.state !== "green") { srcs[f.key].conf = "low"; if (!x.note || x.conf !== "low") srcs[f.key].note = j.reason + (x.note ? " " + x.note : ""); } }
       } else {
         vals[f.key] = "";
       }
@@ -198,6 +218,42 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     });
   };
   const show = (ref) => { setHl(ref); document.getElementById(`line-${ref}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }); };
+  // A value chosen from the pick list: it is the policy's own, so it counts as checked.
+  const pickCand = (k, c) => {
+    set(k, c.v); show(c.ref);
+    setSrcs((p) => { const { edited, originalText, typed, ...rest } = p[k] || {}; return { ...p, [k]: { ...rest, ref: c.ref, conf: rest.conf || "low", docLabel: "Document", picked: true, checked: true } }; });
+    setOpenPick((p) => ({ ...p, [k]: false }));
+  };
+  const typeIn = (k) => {
+    set(k, "");
+    setSrcs((p) => ({ ...p, [k]: { ...(p[k] || { conf: "manual" }), picked: false, checked: false, typed: true, edited: true } }));
+    setOpenPick((p) => ({ ...p, [k]: false }));
+    setTimeout(() => document.getElementById(`rv-${k}`)?.focus(), 0);
+  };
+  // The source line is shown only for a value read from this document.
+  const fromThisDoc = (s) => s && s.ref && !s.via && (!s.docId || s.docId === fixture.id) && fixture.extracted;
+  // Every pick and correction for the corrections log, written when the record is confirmed.
+  // Logged once per record: confirming an edited record again adds nothing.
+  const alreadyLogged = REVIEW_PICKS.some((k) => srcs[k]?.logged);
+  const pickLog = () => {
+    if (alreadyLogged) return;
+    const doc = fixture.fileName || fixture.title || "";
+    const entries = [];
+    for (const k of REVIEW_PICKS) {
+      const j = judged[k]; if (!j) continue;
+      const s = srcs[k] || {}, fin = vals[k], sug = j.cands[0]?.v;
+      const inList = j.cands.some((c) => String(c.v) === String(fin));
+      const how = s.picked ? (String(fin) === String(sug) ? "Confirmed" : "Picked") : s.edited ? (inList ? "Picked" : "Typed in") : s.checked ? "Confirmed" : "Kept";
+      entries.push(logEntry({ key: k, cands: j.cands, suggested: j.state === "red" ? "" : sug, final: fin, how, by: who, doc, state: j.state }));
+    }
+    const j = judged.insurer;
+    if (j && ins) {
+      const sug = fixture.info?.insurer || "", same = (a, b) => !!a && !!b && insurerKey(a) === insurerKey(b);
+      const how = same(ins.name, sug) ? (j.state === "green" ? "Kept" : "Confirmed") : j.cands.some((c) => same(c.v, ins.name)) ? "Picked" : sug ? "Changed" : "Chosen from list";
+      entries.push(logEntry({ key: "insurer", cands: j.cands, suggested: sug, final: ins.name, how, by: who, doc, state: j.state }));
+    }
+    if (entries.length && update) update((d) => { d.ocrLog = addLog(d, entries).ocrLog; });
+  };
 
   // checks
   const missing = FIELDS.filter((f) => isReq(f) && (vals[f.key] === "" || vals[f.key] == null));
@@ -296,7 +352,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                 const err = errors[f.key] || (tried && req && (vals[f.key] === "" || vals[f.key] == null) ? "Required before confirming" : null);
                 const s = srcs[f.key];
                 return (
-                  <div key={f.key} className={`rv-row ${req && (vals[f.key] === "" || vals[f.key] == null) ? "rv-miss" : ""} ${s?.conf === "low" && !s?.edited && !s?.checked ? "rv-low" : ""}`}>
+                  <div key={f.key} className={`rv-row ${req && (vals[f.key] === "" || vals[f.key] == null) ? "rv-miss" : ""} ${s?.conf === "low" && !s?.edited && !s?.checked ? "rv-low" : ""} ${judged[f.key]?.state === "red" && !s?.edited && !s?.checked ? "rv-red" : ""}`} data-state={judged[f.key] ? (s?.picked || s?.checked ? "answered" : judged[f.key].state) : undefined}>
                     <Labeled label={f.label} htmlFor={id} req={req} error={err} hint={why || s?.note || f.help}>
                       {f.type === "date" ? <DateInput id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} />
                         : f.type === "currency" ? <select id={id} value={vals[f.key] || ""} onChange={(e) => set(f.key, e.target.value)}><option value="">Choose</option>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
@@ -304,11 +360,23 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                         : f.type === "select" ? <Select id={id} value={vals[f.key] || ""} onChange={(v) => set(f.key, v)} placeholder="Not entered" options={f.options} />
                         : f.type === "money" ? <MoneyInput id={id} value={vals[f.key] ?? ""} onChange={(v) => set(f.key, v)} />
                         : <input id={id} type="text" inputMode={NUMERIC.has(f.key) ? "decimal" : undefined} value={vals[f.key] ?? ""} onChange={(e) => set(f.key, NUMERIC.has(f.key) ? e.target.value.replace(/,/g, "") : e.target.value)} />}
-                      {s?.alts?.length > 0 && !s.edited && <div className="small row gap-xs wrap alts">Also printed on the policy:{s.alts.map((a) => <button key={String(a.v)} type="button" className="src src-btn" title={`Use this value, from line ${a.ref}`} onClick={() => { set(f.key, a.v); show(a.ref); }}>{fmtValue(f.key, a.v, vals.currency)} · line {a.ref}</button>)}</div>}
+                      {fromThisDoc(s) && !s.typed && <SourceLine fixture={fixture} at={s.ref} fkey={f.key} onView={(r) => setPdfAt({ key: f.key, at: r })} />}
+                      {(() => {
+                        const j = judged[f.key];
+                        if (!j || !(j.cands.length >= 2 || j.state !== "green")) return null;
+                        const saved = initial[f.key] !== undefined && initial[f.key] !== "" && !(s?.state && s.state !== "green");
+                        const answered = s?.picked || s?.checked || saved || (s?.edited && vals[f.key] !== "" && vals[f.key] != null);
+                        const others = j.cands.filter((c) => String(c.v) !== String(vals[f.key])).length;
+                        if (answered && !openPick[f.key]) return <div className="small row gap-s wrap"><button type="button" className="linkbtn" onClick={() => setOpenPick((p) => ({ ...p, [f.key]: true }))}>{s?.picked ? "Change" : "Show the values found"}</button>{others > 0 && <span className="muted">{others} other value{others === 1 ? " was" : "s were"} found</span>}</div>;
+                        return <CandidatePicker fkey={f.key} name={`pick-${f.key}`} label={f.label} judged={j} value={vals[f.key]} typed={!!s?.typed} fmt={(v) => fmtValue(f.key, v, vals.currency)}
+                          onPick={(c) => pickCand(f.key, c)} onType={() => typeIn(f.key)} onView={(r) => setPdfAt({ key: f.key, at: r })} canSee={!!(fixture.localUrl || fixture.fileId)} />;
+                      })()}
+                      {!judged[f.key] && s?.alts?.length > 0 && !s.edited && <div className="small row gap-xs wrap alts">Also printed on the policy:{s.alts.map((a) => <button key={String(a.v)} type="button" className="src src-btn" title={`Use this value, from line ${a.ref}`} onClick={() => { set(f.key, a.v); show(a.ref); }}>{fmtValue(f.key, a.v, vals.currency)} · line {a.ref}</button>)}</div>}
                       {f.key === "riskEnd" && <label className="check small" style={{ marginTop: 6 }}><input id="rv-noend" type="checkbox" checked={!!vals.noFixedEnd} onChange={(e) => setVals((p) => ({ ...p, noFixedEnd: e.target.checked, ...(e.target.checked ? { riskEnd: "" } : {}) }))} /> No fixed end date: it ends when the voyage or transit completes</label>}
                       {f.key === "netPremium" && fixture.info?.premiumInAnnexure && !vals.netPremium && <div className="small warn-text">The policy says the premium is in an annexure (line {fixture.info.premiumInAnnexure.ref}).{fixture.readPages < fixture.pages ? ` We read ${fixture.readPages} of ${fixture.pages} pages, so it may be in a page we did not read: check the Original file.` : " Search the document for it."}</div>}
                     </Labeled>
                     <div className="rv-src">
+                      {judged[f.key] && <StateChip state={s?.checked || s?.edited ? null : judged[f.key].state} picked={!!s?.picked} typed={!!s?.typed && !s?.picked} />}
                       {why && !s ? <span className="src src-info" data-na={f.key}>{why.split(":")[0]}</span> : <SourceChip src={s} onShow={show} req={req} />}
                       {s?.conf === "low" && !s?.edited && !s?.checked && (
                         <button type="button" className="linkbtn" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...s, checked: true } }))}>This is right</button>
@@ -360,6 +428,9 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
           </fieldset>
         </div>
       </div>
+      {pdfAt && <PdfView fixture={fixture} at={pdfAt.at} title={`${FIELD[pdfAt.key]?.label || "Value"}: where we found it`} fkey={pdfAt.key}
+        cands={judged[pdfAt.key]?.cands || []} fmt={(v) => fmtValue(pdfAt.key, v, vals.currency)}
+        onUse={judged[pdfAt.key] ? (c) => pickCand(pdfAt.key, c) : null} onType={judged[pdfAt.key] ? () => typeIn(pdfAt.key) : null} onClose={() => setPdfAt(null)} />}
       {twinPolicy && <div className="note note-bad row between wrap gap-s" role="alert"><span><strong>This policy is already in your register.</strong> Policy number {vals.policyNo} is {twinPolicy.controlNo}. Open it instead of adding it again. If it is a renewal with the same number, renew that policy.</span><Btn onClick={() => go({ view: "policy", id: twinPolicy.id })}>Open {twinPolicy.controlNo}</Btn></div>}
       {askPayment && (
         <fieldset className="fgroup review-pay">
@@ -386,7 +457,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
         <div className="row gap-s wrap">
           {dirty ? <AskFirst label="Cancel" question="Discard the changes on this screen?" yes="Discard" onYes={onCancel} /> : <Btn onClick={onCancel}>Cancel</Btn>}
           <Btn disabled={!can("editDraft") || Object.keys(errors).length > 0} why={Object.keys(errors).length ? "Fix the fields marked in red first" : "Your role cannot save"} onClick={() => onSaveDraft(payload())}>Save as draft</Btn>
-          <Btn kind="primary" disabled={!can("editDraft")} why="Your role cannot confirm" onClick={() => { setTried(true); if (!blockers.length) onConfirm(payload()); }}>{confirmLabel}</Btn>
+          <Btn kind="primary" disabled={!can("editDraft")} why="Your role cannot confirm" onClick={() => { setTried(true); if (!blockers.length) { pickLog(); const pl = payload(); if (Object.keys(judged).length) for (const k of REVIEW_PICKS) if (pl.sources[k]) pl.sources = { ...pl.sources, [k]: { ...pl.sources[k], logged: true } }; onConfirm(pl); } }}>{confirmLabel}</Btn>
         </div>
       </div>
     </div>

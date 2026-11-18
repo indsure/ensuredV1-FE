@@ -10,6 +10,8 @@ import { useApp, SearchPick, PlaceFields, Card, Btn, Labeled, Select, AskFirst, 
 import { OcrReview, PdfAttach, sameName, DocPane } from "./review.jsx";
 import { placeOf } from "./places.js";
 import { loadTexts, docText, fileBlobUrl } from "./store.js";
+import { judgeField, ocrSettings, pickCandidates, dropCands } from "./confidence.js";
+import { StateChip, SourceLine, CandidatePicker, PdfView } from "./picks.jsx";
 
 // Saves a new policy and its first term. Shared by this screen and the step-by-step wizard.
 // Everything happens in ONE update: React may run a second queued update later, after we navigate.
@@ -37,6 +39,7 @@ export function createPolicy({ update, log, toast, go, who }, s0, fx, pl0, confi
     const found = isVesselType(s.type) ? (fx.info?.vessels || []).filter((x) => x && String(x.name || "").trim()) : [];
     const vesselSchedules = found.length ? [{ version: 1, effectiveFrom: values.riskStart || "", vessels: found.map((x) => ({ name: String(x.name).trim(), imo: x.imo ? String(x.imo).trim() : "", gt: isNum(x.gt) ? +x.gt : "" })), change: null, at: nowIso(), by: who, fromDoc: docId }] : [];
     d.terms.push({ id: tid, policyId: pid, termNo: 1, prevTermId: null, nextTermId: null, status: confirm ? "confirmed" : "draft", cancelled: false, nr: "New", outcome: "Open", lossDetail: "", instalments: [], receipts: [], endorsements: [], vesselSchedules, cargoDecls: [], charterDecls: [], docId, ...pl, values, sources });
+    if (confirm) dropCands(d.documents.find((x) => x.id === docId));
     if (confirm && payment && +pl.values?.netPremium > 0) {
       d.terms[d.terms.length - 1].receipts.push({ id: `R${++d.seq}`, instNo: null, date: payment.date, amount: +pl.values.netPremium, mode: payment.mode, ref: payment.ref, bank: "", remitDate: "", proofDocId: null });
       log(d, { customerId: s.customerId, policyId: pid, termId: tid, action: "Full payment recorded", detail: `Paid in full when the policy was added: ${pl.values.netPremium} on ${payment.date}.` });
@@ -168,6 +171,10 @@ export function QuickAdd({ inboxId }) {
   const [extra, setExtra] = useState({ insName: "", brName: "", brCity: "", cseCode: "", cseName: "" });
   const [extraErr, setExtraErr] = useState("");
   const [reviewing, setReviewing] = useState(false);
+  // The insurer pick list: answered once a name is picked, confirmed, or chosen from the list by hand.
+  const [insOk, setInsOk] = useState(false);
+  const [insOpen, setInsOpen] = useState(false);
+  const [pdfAt, setPdfAt] = useState(null);
   const draft = inboxId ? (db.inbox || []).find((x) => x.id === inboxId) : null;
   const waiting = db.inbox || [];
   // Opened from Drafts: bring back its text and original file, then carry on as if it had just been read.
@@ -188,7 +195,7 @@ export function QuickAdd({ inboxId }) {
   const start = (x) => {
     const g = suggestFromDocument(db, x);
     const c = db.customers.find((y) => y.id === g.customerId);
-    setFx(x); setGuess(g); setTried(false); setReviewing(false);
+    setFx(x); setGuess(g); setTried(false); setReviewing(false); setInsOk(false); setInsOpen(false);
     setS({ customerId: g.customerId || (g.insuredName ? "NEW" : ""), cse: c?.cse || "", rm: c?.rm || "", insurerId: g.insurerId || "", branchId: g.branchId || "", dept: g.dept || "", type: g.type || "", cover: "", vesselMode: "" });
     const place = placeOf(g.city);
     setNc({ name: g.insuredName || "", city: g.city || "", state: place?.state || "", country: place?.country || "India", vertical: "Corporate" });
@@ -204,13 +211,16 @@ export function QuickAdd({ inboxId }) {
   });
   const isNew = s?.customerId === "NEW";
   const ins = s && insurerOf(db, s.insurerId);
+  // How sure the reader is about the insurer, from every company name it found.
+  const insJ = fx?.extracted && !fx.noText && pickCandidates(fx).insurer.length ? judgeField("insurer", pickCandidates(fx).insurer, { lines: fx.lines, ocr: fx.ocr, settings: ocrSettings(db), inUse: fx.info?.insurer }) : null;
+  const insNeedsPick = !!insJ && insJ.state !== "green" && !insOk;
   const team = (role) => db.team.filter((t) => t.role === role && t.active !== false).map((t) => ({ value: t.code, label: `${t.name} (${t.code})` }));
   const dup = isNew && nc.name.trim() && db.customers.find((c) => sameName(c.name, nc.name));
   const errs = s ? {
     customer: !s.customerId ? "Choose the customer, or add a new one" : isNew && !nc.name.trim() ? "Enter the insured name" : dup ? `Already exists as ${dup.code}. Choose ${dup.name} instead.` : null,
     city: isNew && !nc.city.trim() ? "Enter the city" : null,
     cse: !s.cse ? "Assign a CSC" : null,
-    insurer: !s.insurerId ? "Choose the insurer" : null,
+    insurer: !s.insurerId ? "Choose the insurer" : insNeedsPick ? "Check the insurer: pick the company that issued this policy" : null,
     branch: s.insurerId && !s.branchId ? "Choose the branch" : null,
     type: !s.dept ? "Choose the department" : !s.type ? "Choose the policy type" : null,
   } : {};
@@ -223,6 +233,7 @@ export function QuickAdd({ inboxId }) {
     const name = extra.insName.trim();
     if (!name) return setExtraErr("Enter the insurer's name");
     const same = sameInsurer(db.insurers, name);
+    setInsOk(true); // typing the name in is an answer to the insurer pick list
     if (same) { set("insurerId")(same.id); return setExtraErr(""); }
     const id = newId("INS");
     update((d) => { d.insurers.push({ id, name, branches: [] }); log(d, { action: "Insurer added", detail: `${name}, from ${fx.fileName || fx.title}.` }); });
@@ -246,6 +257,16 @@ export function QuickAdd({ inboxId }) {
     update((d) => { d.team.push({ code, name, role: "CSC", active: true }); log(d, { action: "Team member added", detail: `${name} (${code}) as CSC.` }); });
     setS((x) => ({ ...x, cse: code })); setExtraErr(""); toast("CSC added");
   };
+  // A name from the pick list: the listed insurer it matches, or added to the list when it is new.
+  const pickInsurer = (c) => {
+    const hit = sameInsurer(db.insurers, c.v);
+    if (hit) { setS((x) => ({ ...x, insurerId: hit.id, branchId: hit.id === guess.insurerId ? guess.branchId || "" : "" })); setInsOk(true); setInsOpen(false); setExtraErr(""); return; }
+    if (!canAdd) return setExtraErr(`${c.v} is not in your insurer list. Ask an Admin to add it, or choose another.`);
+    const name = cleanInsurer(c.v), id = newId("INS");
+    update((d) => { d.insurers.push({ id, name, branches: [] }); log(d, { action: "Insurer added", detail: `${name}, from ${fx.fileName || fx.title}.` }); });
+    setS((x) => ({ ...x, insurerId: id, branchId: "" })); setInsOk(true); setInsOpen(false); setExtraErr(""); toast("Insurer added");
+  };
+  const insTypeIn = () => { setS((x) => ({ ...x, insurerId: "", branchId: "" })); setInsOk(true); setInsOpen(false); setTimeout(() => document.getElementById("ap-ins")?.focus(), 0); };
   const toReview = () => { setTried(true); if (!todo.length) setReviewing(true); };
   const addCustomer = (d) => {
     const cid = `C${++d.seq}`; const code = `CUST-${1000 + d.customers.length + 1}`;
@@ -337,7 +358,27 @@ export function QuickAdd({ inboxId }) {
             </>}
             <Labeled label="CSC" htmlFor="ap-cse" req error={tried && errs.cse} hint={s.cse && !isNew ? "From this customer's record" : "The team member responsible for this customer. Type a name or code"}><SearchPick id="ap-cse" value={s.cse} onChange={set("cse")} options={team("CSC")} noun="CSC" /></Labeled>
             <Labeled label="RM" htmlFor="ap-rm" hint="Optional"><SearchPick id="ap-rm" value={s.rm} onChange={set("rm")} options={team("RM")} noun="RM" emptyLabel="Not assigned" /></Labeled>
-            <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={!guess.insurerId && !s.insurerId && fx?.info?.insurer ? <Found ok line={lines.insurer} onShow={setHl}>The policy says {fx.info.insurer.replace(/\.$/, "")}. Not in your list yet, add it below</Found> : hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the policy")}><Select id="ap-ins" value={s.insurerId} onChange={set("insurerId")} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
+            <Labeled label="Insurer" htmlFor="ap-ins" req error={tried && errs.insurer} hint={insJ && (insJ.cands.length >= 2 || insJ.state !== "green") ? null : !guess.insurerId && !s.insurerId && fx?.info?.insurer ? <Found ok line={lines.insurer} onShow={setHl}>The policy says {fx.info.insurer.replace(/\.$/, "")}. Not in your list yet, add it below</Found> : hintFor("insurer", !!guess.insurerId && s.insurerId === guess.insurerId, "Read from the policy")}><Select id="ap-ins" value={s.insurerId} onChange={(v) => { set("insurerId")(v); setInsOk(true); }} placeholder="Choose insurer" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
+            {insJ && (insJ.cands.length >= 2 || insJ.state !== "green") && (() => {
+              // Every company the policy could mean. Each is matched to your list; a new one is added when picked.
+              const onCand = ins ? insJ.cands.find((c) => sameInsurer([ins], c.v)) : null;
+              const top = onCand || (insJ.state !== "red" ? insJ.cands[0] : null);
+              return (
+                <div className="fld fld-wide stack small" data-pickbox="insurer" style={{ marginTop: -6 }}>
+                  <div className="row gap-s wrap" style={{ alignItems: "center" }}>
+                    <StateChip state={insOk ? null : insJ.state} picked={insOk && !!onCand} />
+                    <span className="muted">{insOk ? (onCand ? `From the policy, line ${onCand.ref}.` : "Chosen by you.") : insJ.state === "red" ? "The policy names more than one company. Pick the one that issued it." : `${insJ.reason} Check it is the company that issued this policy.`}</span>
+                  </div>
+                  {top && <SourceLine fixture={fx} at={top.ref} onView={(r) => setPdfAt(r)} />}
+                  {(!insOk || insOpen) ? <>
+                    <CandidatePicker fkey="insurer" name="pick-insurer" label="Insurer" judged={{ cands: insJ.cands.map((c) => ({ ...c, label: c.label })) }} value={insOk || insJ.state !== "red" ? onCand?.v : null}
+                      fmt={(v) => { const hit = sameInsurer(db.insurers, v); return hit ? hit.name : `${cleanInsurer(v)} (not in your list yet${canAdd ? ", picking adds it" : ""})`; }}
+                      onPick={pickInsurer} onType={insTypeIn} onView={(r) => setPdfAt(r)} canSee={!!fx.localUrl} />
+                    {!insOk && onCand && <div><button type="button" className="linkbtn" onClick={() => setInsOk(true)}>This is right</button></div>}
+                  </> : <div><button type="button" className="linkbtn" onClick={() => setInsOpen(true)}>Change</button> <span className="muted">{insJ.cands.length - (onCand ? 1 : 0)} other name{insJ.cands.length - (onCand ? 1 : 0) === 1 ? " was" : "s were"} found</span></div>}
+                </div>
+              );
+            })()}
             <Labeled label="Insurer branch" htmlFor="ap-br" req error={tried && errs.branch} hint={s.insurerId ? hintFor("branch", !!guess.branchId && s.branchId === guess.branchId, "Read from the policy") : null}><Select id="ap-br" value={s.branchId} onChange={set("branchId")} disabled={!ins} placeholder={ins ? "Choose branch" : "Choose insurer first"} options={(ins?.branches || []).map((b) => ({ value: b.id, label: `${b.name}, ${b.city}` }))} /></Labeled>
             <Labeled label="Department" htmlFor="ap-dept" req error={tried && !s.dept ? errs.type : null}><Select id="ap-dept" value={s.dept} onChange={set("dept")} placeholder="Choose department" options={Object.keys(DEPARTMENTS)} /></Labeled>
             <Labeled label="Policy type" htmlFor="ap-type" req error={tried && s.dept && !s.type ? errs.type : null} hint={hintFor("type", !!guess.type && s.type === guess.type, guess.typeFrom === "sample" ? "From the sample" : typeHint(guess.typeWhy))}><Select id="ap-type" value={s.type} onChange={set("type")} disabled={!s.dept} placeholder={s.dept ? "Choose policy type" : "Choose department first"} options={DEPARTMENTS[s.dept] || []} /></Labeled>
@@ -370,6 +411,7 @@ export function QuickAdd({ inboxId }) {
               </div>
             </div>)}
           {extraErr && <div className="err-text small" role="alert">{extraErr}</div>}
+          {pdfAt && insJ && <PdfView fixture={fx} at={pdfAt} title="Insurer: where we found it" fkey="insurer" cands={insJ.cands} onUse={pickInsurer} onType={insTypeIn} onClose={() => setPdfAt(null)} />}
           {tried && todo.length > 0 && <div className="note note-warn small"><strong>Still needed:</strong> {todo.join("; ")}.</div>}
           <div className="row gap-s wrap"><Btn kind="primary" onClick={toReview}>Next: check the figures</Btn><span className="small muted">Policy number, dates and amounts come next.</span></div>
           <p className="small muted">If a match is wrong, change it here before continuing.</p>

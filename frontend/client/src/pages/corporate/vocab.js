@@ -18,6 +18,15 @@ export const VOCAB = {
     "cover note no", "cover note number", "reference no", "reference number", "entry no", "contract no", "contract number",
     "UMR", "unique market reference",
     "pol no", "pol. no", "pol. no.", "policy #", "schedule no", "schedule number", "policy cum certificate no", "policy cum certificate number", "cert no", "cert. no", "cert. no.",
+    "policy / issue", "policy / issue no", "policy / endorsement no",
+  ],
+  // Labels for an earlier, base or other related policy's number. Never the policy number, but shown in the pick list
+  // so a person can see it was found and passed over.
+  priorPolicyNo: [
+    "prior reference", "prior policy no", "prior policy number", "previous policy no", "previous policy number", "previous policy",
+    "expiring policy no", "expiring policy number", "expiring policy", "old policy no", "old policy number", "renewal of policy no",
+    "renewal of", "prev policy no", "prev. policy no", "existing policy no", "earlier policy no",
+    "base policy reference", "base policy no", "base policy number", "underlying policy no", "underlying policy number",
   ],
   uin: ["UIN", "UIN no", "product UIN", "IRDAI UIN"],
   planName: [

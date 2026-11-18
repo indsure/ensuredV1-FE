@@ -7,6 +7,7 @@ import { readPolicyPdf, ReadError } from "./extract.js";
 import { saveFile, loadTexts, docText } from "./store.js";
 import { fmtStamp, fmtMoney, activePreset, nowIso, notNeededWhy } from "./lib.js";
 import { sameInsurer } from "./tidy.js";
+import { judgeField, ocrSettings, pickCandidates, PICK_FIELDS, PICK_LABELS } from "./confidence.js";
 import { suggestFromDocument, createPolicy, cleanInsurer } from "./add.jsx";
 import { sameName } from "./review.jsx";
 import { placeOf } from "./places.js";
@@ -76,6 +77,13 @@ export function checkDraft(db, item, lines) {
   // Only the values a record cannot do without hold it back. Optional ones can be checked later.
   const low = NEEDED.filter((f) => item.fields?.[f.key]?.conf === "low").length;
   if (low && !item.ocr) must.push(`${low} value${low === 1 ? "" : "s"} to check`);
+  // Insurer, policy number and sum insured shown amber or red on the review screen must be answered there.
+  if (!item.ocr && !item.noText) {
+    const pc = pickCandidates(item), settings = ocrSettings(db);
+    const inUse = { insurer: item.info?.insurer, policyNo: item.fields?.policyNo?.v, sumInsured: item.fields?.sumInsured?.v };
+    const unsure = PICK_FIELDS.filter((k) => pc[k]?.length && judgeField(k, pc[k], { lines: fx.lines, settings, inUse: inUse[k] }).state !== "green");
+    if (unsure.length) must.push(`${unsure.map((k) => PICK_LABELS[k]).join(", ")}: more than one value or not clearly labelled, open it to pick`);
+  }
   if (!guess.insurerId) must.push(item.info?.insurer ? "Insurer not in your list" : "Insurer not found");
   else if (!guess.branchId) must.push("Branch not in your list");
   if (item.info?.docKind?.kind === "Endorsement") warn.push("Looks like an endorsement, not a new policy: open it to attach it to its policy");

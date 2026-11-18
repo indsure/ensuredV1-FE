@@ -415,3 +415,40 @@
 .ic-root .paper mark { background: #FDE68A; color: inherit; border-radius: 3px; padding: 0 1px; }
 .ic-root .paper li.hit-on { box-shadow: inset 3px 0 0 var(--teal-700); background: var(--teal-50); }
 .ic-root .paper li.hit-on mark { background: #F59E0B; }
+
+/* ---- How sure we are: green / amber / red, the source line, the pick list and View in PDF */
+.ic-root .cf-chip { display: inline-flex; align-items: center; gap: 5px; font-size: .76rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--s200); background: var(--s100); color: var(--s600); white-space: nowrap; }
+.ic-root .cf-green { border-color: #A7F3D0; color: #047857; background: #ECFDF5; }
+.ic-root .cf-amber { border-color: #FDE68A; color: #92400E; background: #FFFBEB; }
+.ic-root .cf-red { border-color: #FECACA; color: #B91C1C; background: #FEF2F2; }
+.ic-root .cf-src { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.ic-root .cf-line { font-family: "Courier New", ui-monospace, monospace; font-size: .8rem; color: var(--s600); background: var(--s50); border: 1px solid var(--s200); border-radius: 10px; padding: 6px 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ic-root .cf-cands { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.ic-root .cf-cand { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--s200); border-radius: 14px; padding: 10px 12px; background: var(--white); cursor: pointer; }
+.ic-root .cf-cand input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--teal); flex: none; }
+.ic-root .cf-cand.cf-on { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+.ic-root .cf-cand.cf-prior:not(.cf-on) { background: var(--s50); }
+.ic-root .cf-cand-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.ic-root .mono { font-family: "Courier New", ui-monospace, monospace; }
+.ic-root .rv-red { box-shadow: inset 3px 0 0 #DC2626; }
+.ic-root .pv-wrap { display: flex; flex-wrap: wrap; min-height: 0; overflow: auto; }
+.ic-root .pv-side { flex: 1 1 260px; max-width: 340px; padding: 16px; border-right: 1px solid var(--s200); display: flex; flex-direction: column; gap: 10px; background: var(--cream); }
+.ic-root .pv-side .lbl { font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--s500); }
+.ic-root .pv-where { display: flex; flex-direction: column; gap: 3px; border: 1px solid var(--s200); border-radius: 14px; padding: 10px 12px; background: var(--white); text-align: left; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.ic-root .pv-where.cf-on { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
+.ic-root .pv-acts { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; }
+.ic-root .pv-page { flex: 999 1 480px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: var(--s200); }
+.ic-root .pv-bar { align-items: center; }
+.ic-root .pv-nav { min-height: 34px; padding: 4px 12px; font-size: 1.1rem; }
+.ic-root .pv-hint { margin-left: auto; }
+.ic-root .pv-sheet { position: relative; align-self: center; max-width: 100%; background: var(--white); box-shadow: 0 4px 12px rgba(0,0,0,.12); line-height: 0; }
+.ic-root .pv-sheet canvas, .ic-root .pv-sheet img { display: block; max-width: 100%; height: auto; }
+.ic-root .pv-box { position: absolute; border: 3px solid #DC2626; border-radius: 4px; background: rgba(254,226,226,.35); pointer-events: none; }
+.ic-root .pv-box span { position: absolute; top: -20px; left: -3px; background: #DC2626; color: #FFFFFF; font-size: 11px; line-height: 1.4; font-weight: 700; padding: 1px 7px; border-radius: 6px 6px 0 0; white-space: nowrap; }
+@media (max-width: 700px) { .ic-root .pv-side { max-width: none; border-right: 0; border-bottom: 1px solid var(--s200); } .ic-root .pv-hint { margin-left: 0; } }
+.ic-root .cf-sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.ic-root .cf-set { display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--s200); border-radius: 14px; padding: 14px; }
+.ic-root .cf-set .cf-chip { align-self: flex-start; }
+.ic-root .cf-set-green { border-color: #A7F3D0; background: #F7FEFB; }
+.ic-root .cf-set-amber { border-color: #FDE68A; background: #FFFEF7; }
+.ic-root .cf-set-red { border-color: #FECACA; background: #FFFBFB; }
