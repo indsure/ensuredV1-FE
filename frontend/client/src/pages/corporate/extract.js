@@ -250,7 +250,10 @@ export function findAmounts(s) {
 }
 function curOf(t) { t = t.toLowerCase(); return /usd|us\$|^\$$/.test(t) ? "USD" : t === "aed" ? "AED" : /eur|€/.test(t) ? "EUR" : "INR"; }
 const findPct = (s) => { const m = s.match(/(\d{1,2}(?:\.\d{1,3})?)\s*%/); return m ? +m[1] : null; };
-const findId = (s) => { const m = s.match(/[A-Z0-9][A-Z0-9\/\-.]{4,}[A-Z0-9]/i); if (!m || !/\d/.test(m[0])) return null; return m[0].replace(/^(\d{8,})[A-Za-z]{3,}$/, "$1"); };
+// Some insurers print the number in spaced groups, "2302 2089 9690 2000 000" (HDFC ERGO motor). A cell that is
+// only digit groups like that, with 10 or more digits in all, is one number: the spaces are dropped.
+const SPACED_ID = /^\s*\d{2,6}(?: \d{2,6}){2,}\s*$/;
+const findId = (s) => { if (SPACED_ID.test(s) && s.replace(/\D/g, "").length >= 10) return s.replace(/\D/g, ""); const m = s.match(/[A-Z0-9][A-Z0-9\/\-.]{4,}[A-Z0-9]/i); if (!m || !/\d/.test(m[0])) return null; return m[0].replace(/^(\d{8,})[A-Za-z]{3,}$/, "$1"); };
 const cleanText = (s) => s.replace(/`\s*(?=\d)/g, "₹ ").replace(/^[\s:\-–.]+/, "").replace(/\s{2,}/g, " ").trim().slice(0, 140);
 
 // ---- field rules (order matters: specific labels before generic ones)
