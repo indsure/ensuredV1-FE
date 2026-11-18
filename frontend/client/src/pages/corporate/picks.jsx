@@ -2,7 +2,8 @@
 // Used by the review screen (policy number, sum insured) and step 1 of Add a policy (insurer).
 import { useEffect, useRef, useState } from "react";
 import { Btn, Icon } from "./ui.jsx";
-import { loadPdfJs, pdfToLines, PDFJS_BASE } from "./extract.js";
+import { loadPdfJs, pdfToLines } from "./extract.js";
+const PDFJS_FONTS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/";
 import { fileBlobUrl } from "./store.js";
 import { pageOf } from "./confidence.js";
 
@@ -95,7 +96,8 @@ export function PdfView({ fixture, at, title, cands = [], fkey, fmt, onUse, onTy
         if (!isImg) {
           const lib = await loadPdfJs();
           // Drawn for people to read, so the PDF's fonts are used (the reader itself skips them).
-          pdfRef.current = await lib.getDocument({ url, isEvalSupported: false, standardFontDataUrl: PDFJS_BASE + "standard_fonts/", cMapUrl: PDFJS_BASE + "cmaps/", cMapPacked: true }).promise;
+          // cdnjs does not carry pdf.js's font files, so they come from the same version on jsdelivr.
+          pdfRef.current = await lib.getDocument({ url, isEvalSupported: false, standardFontDataUrl: PDFJS_FONTS + "standard_fonts/", cMapUrl: PDFJS_FONTS + "cmaps/", cMapPacked: true }).promise;
           if (on) setTotal(pdfRef.current.numPages);
           // A saved document: read its text again here, to know where each line sits.
           if (!geoRef.current && !fixture.ocr) {
