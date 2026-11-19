@@ -299,7 +299,22 @@
     "note_nofamily": "{{count}} are not linked to a family, so they have no phone to call.",
     "note_nodate": "{{count}} have no renewal or premium date, so they cannot be listed.",
     "note_rules": "Life and term use the next premium date; other insurance uses the expiry date. Travel and marine are paid once and never renew. Scores are for health and motor only.",
-    "t_due30_hint_late": "{{count}} policies, {{late}} already late"
+    "t_due30_hint_late": "{{count}} policies, {{late}} already late",
+    "col_outcome": "Outcome",
+    "outcome_label": "What happened with {{name}}'s renewal",
+    "s_none": "Not done yet",
+    "s_spoken": "Spoken",
+    "s_renewed": "Renewed",
+    "s_lost": "Lost",
+    "add_new_policy": "Add the new policy",
+    "c_open": "To do: {{count}}",
+    "c_spoken": "Spoken: {{count}}",
+    "c_renewed": "Renewed: {{count}}",
+    "c_lost": "Lost: {{count}}",
+    "saved_renewed": "Marked as renewed",
+    "saved_renewed_desc": "Add the new policy too, so your book and next year's date stay right.",
+    "save_failed": "Could not save",
+    "outcome_paid": "Mark outcomes on the paid plan"
   },
   "dashboard": {
     "good_morning": "Good morning",
@@ -1739,7 +1754,7 @@
     "benefit_2_sub": "One view of earnings from all your insurers",
     "benefit_3": "Auto-filled forms for faster policy submissions (coming soon)",
     "benefit_3_sub": "Save time with insurer-specific fields filled in for you"
-  },
+  },
   "pv": {
     "title": "Surrender values",
     "subtitle": "Each value shows what it is based on. We show a calculated amount only when the needed policy terms and inputs are available. Missing information and projections are shown separately. Confirm the final surrender or loan amount with the insurer before acting.",

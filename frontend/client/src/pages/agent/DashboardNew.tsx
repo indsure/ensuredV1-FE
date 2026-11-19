@@ -14,11 +14,12 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { typeLabel } from "@/lib/insuranceTypes";
 import { fullInr, renewalBuckets, shortInr as shortInrFor } from "@/lib/business";
 import {
-  dueList, splitDue, startOfDay, sumDue, summarise, upcomingBirthdays, LATE_WINDOW_DAYS, WEEK_DAYS,
+  dueList, splitDue, startOfDay, sumDue, summarise, upcomingBirthdays, LATE_WINDOW_DAYS, MONTH_DAYS, WEEK_DAYS,
   type Due, type HomeRow,
 } from "@/lib/home";
 import { fetchLeads, isFollowUpDue, telHref, waHref, type Lead } from "@/lib/leads";
 import { fetchDueLeadPolicies, daysUntilDue, type LeadPolicyWithLead } from "@/lib/leadPolicies";
+import { fetchRenewalStatuses, renewalKey, setRenewalStatus, type RenewalStatus } from "@/lib/renewals";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
 import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore";
 
@@ -74,6 +75,9 @@ export default function DashboardNew() {
   const [prospectsDue, setProspectsDue] = useState<LeadPolicyWithLead[]>([]);
   const [queue, setQueue] = useState<number | null>(null);
   const [failed, setFailed] = useState<Failed[]>([]);
+  // null until loaded, and stays null if the table is not there yet (migration 039).
+  const [statuses, setStatuses] = useState<Map<string, RenewalStatus> | null>(null);
+  const [saving, setSaving] = useState<Set<string>>(new Set());
   const [retrying, setRetrying] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +108,8 @@ export default function DashboardNew() {
       setRows(all);
 
       // Side blocks. Each one failing only empties its own block.
-      const [cust, leads, prospects, q, f] = await Promise.allSettled([
+      const t0 = startOfDay(new Date());
+      const [cust, leads, prospects, q, f, st] = await Promise.allSettled([
         fetchAllRows<Person>((from, to) =>
           supabase.from("customers").select("id, name, phone, dob").eq("agent_id", agentId).order("id").range(from, to)),
         fetchLeads(agentId),
@@ -113,7 +118,13 @@ export default function DashboardNew() {
           .eq("agent_id", agentId).in("status", ["pending", "processing", "error"]),
         supabase.from("clients").select("id, policy_name, name, error_message, created_at")
           .eq("agent_id", agentId).eq("status", "error").order("created_at", { ascending: false }).limit(5),
+        fetchRenewalStatuses(
+          agentId,
+          new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - LATE_WINDOW_DAYS),
+          new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() + MONTH_DAYS),
+        ),
       ]);
+      setStatuses(st.status === "fulfilled" ? st.value : null);
       setPeople(cust.status === "fulfilled" ? new Map(cust.value.map((p) => [p.id, p])) : new Map());
       setLeadsDue(leads.status === "fulfilled" ? leads.value.filter(isFollowUpDue) : []);
       // Same window as the advisor's own book: up to 30 days late, or due this week.
@@ -133,6 +144,33 @@ export default function DashboardNew() {
   }, [agent?.agentId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // Shows the change at once, saves it, and puts it back if the save fails.
+  // The picker is locked while its own save runs, so two quick changes can never
+  // land out of order or revert each other.
+  async function changeStatus(d: Due, next: RenewalStatus | null) {
+    if (!agent?.agentId || !statuses) return;
+    const key = renewalKey(d.row.id, d.date);
+    if (saving.has(key)) return;
+    setSaving((s) => new Set(s).add(key));
+    const before = statuses.get(key);
+    const apply = (s: RenewalStatus | null | undefined) =>
+      setStatuses((m) => {
+        const copy = new Map(m ?? []);
+        if (s) copy.set(key, s); else copy.delete(key);
+        return copy;
+      });
+    apply(next);
+    try {
+      await setRenewalStatus(agent.agentId, d.row.id, d.date, next);
+      if (next === "renewed") toast({ variant: "success", title: t("ahome.saved_renewed"), description: t("ahome.saved_renewed_desc") });
+    } catch (e: unknown) {
+      apply(before);
+      toast({ variant: "destructive", title: t("ahome.save_failed"), description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setSaving((s) => { const n = new Set(s); n.delete(key); return n; });
+    }
+  }
 
   // Retry stays on Home: My Queue is paid-only, and a Free advisor's own failed
   // check must not land on an upgrade screen.
@@ -340,6 +378,10 @@ export default function DashboardNew() {
             shortInr={shortInr}
             typeName={typeName}
             onOpen={(id) => setLocation(`/agent/policies/${id}`)}
+            statuses={statuses}
+            canEdit={paid}
+            onStatus={changeStatus}
+            saving={saving}
           />
 
           <DueCard
@@ -361,6 +403,10 @@ export default function DashboardNew() {
             shortInr={shortInr}
             typeName={typeName}
             onOpen={(id) => setLocation(`/agent/policies/${id}`)}
+            statuses={statuses}
+            canEdit={paid}
+            onStatus={changeStatus}
+            saving={saving}
           />
 
           {/* 4. WORTH A CALL */}
@@ -698,15 +744,56 @@ function Contact({ d, phone, name, typeName, dateText }: {
   );
 }
 
+function OutcomePicker({ d, status, canEdit, busy, onStatus }: {
+  d: Due; status: RenewalStatus | undefined; canEdit: boolean; busy: boolean; onStatus: (d: Due, s: RenewalStatus | null) => void;
+}) {
+  const { t } = useLanguage();
+  const tone = status === "renewed" ? "border-green-300 bg-green-50 text-green-800"
+    : status === "lost" ? "border-slate-300 bg-slate-100 text-slate-600"
+    : status === "spoken" ? "border-violet-300 bg-violet-50 text-violet-800"
+    : "border-slate-200 bg-white text-slate-600";
+  return (
+    <span className="inline-flex flex-col items-end gap-1" onClick={(e) => e.stopPropagation()}>
+      <select
+        value={status ?? ""}
+        disabled={!canEdit || busy}
+        aria-busy={busy}
+        aria-label={t("ahome.outcome_label", { name: d.row.policyholder_name || d.row.name || "" })}
+        onChange={(e) => onStatus(d, (e.target.value || null) as RenewalStatus | null)}
+        className={`min-h-11 rounded-xl border px-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-70 ${tone}`}
+      >
+        <option value="">{t("ahome.s_none")}</option>
+        <option value="spoken">{t("ahome.s_spoken")}</option>
+        <option value="renewed">{t("ahome.s_renewed")}</option>
+        <option value="lost">{t("ahome.s_lost")}</option>
+      </select>
+      {canEdit && status === "renewed" && (
+        <Link href="/agent/uploads" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#0D9488] hover:underline">{t("ahome.add_new_policy")}</Link>
+      )}
+      {!canEdit && (
+        <Link href="/agent/plan" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#0D9488] hover:underline">{t("ahome.outcome_paid")}</Link>
+      )}
+    </span>
+  );
+}
+
 function DueCard({
   title, tone, desc, sum, money, items, showAll, onShowAll, empty, holder, people, dateText, shortInr, typeName, onOpen,
+  statuses, canEdit, onStatus, saving,
 }: {
   title: string; tone: "amber" | "teal"; desc: string; sum: { amount: number; priced: number }; money: boolean; items: Due[];
   showAll: boolean; onShowAll: () => void; empty: string; holder: (r: HomeRow) => string;
   people: Map<string, Person>; dateText: (d: Date) => string; shortInr: (n: number) => string;
   typeName: (ty: string) => string; onOpen: (id: string) => void;
+  /** null = table not there yet (migration 039 not run): the column is hidden. */
+  statuses: Map<string, RenewalStatus> | null; canEdit: boolean; onStatus: (d: Due, s: RenewalStatus | null) => void; saving: Set<string>;
 }) {
   const { t } = useLanguage();
+  const statusOf = (d: Due) => statuses?.get(renewalKey(d.row.id, d.date));
+  const counts = { spoken: 0, renewed: 0, lost: 0 };
+  for (const d of items) { const st = statusOf(d); if (st) counts[st]++; }
+  const open = items.length - counts.spoken - counts.renewed - counts.lost;
+  const rowTone = (d: Due) => statusOf(d) === "renewed" ? "bg-green-50/50" : statusOf(d) === "lost" ? "bg-slate-50 opacity-70" : "";
   const shown = showAll ? items : items.slice(0, SHOW);
   const hidden = items.slice(SHOW);
   const hiddenSum = sumDue(hidden);
@@ -734,6 +821,14 @@ function DueCard({
           {desc}{" "}
           {money && sum.priced > 0 && <b className="text-slate-800">{t("ahome.of_premium", { amount: shortInr(sum.amount) })}</b>}
         </p>
+        {statuses && items.length > 0 && (
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold">
+            <span className="text-slate-700">{t("ahome.c_open", { count: open })}</span>
+            <span className="text-violet-700">{t("ahome.c_spoken", { count: counts.spoken })}</span>
+            <span className="text-green-700">{t("ahome.c_renewed", { count: counts.renewed })}</span>
+            <span className="text-slate-500">{t("ahome.c_lost", { count: counts.lost })}</span>
+          </p>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -741,21 +836,23 @@ function DueCard({
       ) : (
         <>
           {/* Desktop table */}
-          <table className="hidden w-full text-sm md:table">
+          <div className="hidden overflow-x-auto xl:block">
+          <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="py-2.5 pl-5 pr-3">{t("ahome.col_due")}</th>
                 <th className="px-3 py-2.5">{t("ahome.col_customer")}</th>
                 <th className="px-3 py-2.5">{t("ahome.col_insurance")}</th>
-                <th className="hidden px-3 py-2.5 lg:table-cell">{t("ahome.col_insurer")}</th>
+                <th className="hidden px-3 py-2.5 xl:table-cell">{t("ahome.col_insurer")}</th>
                 <th className="px-3 py-2.5 text-right">{t("ahome.col_premium")}</th>
                 <th className="px-3 py-2.5">{t("ahome.col_score")}</th>
-                <th className="py-2.5 pl-3 pr-5 text-right">{t("ahome.col_contact")}</th>
+                <th className="px-3 py-2.5 text-right">{t("ahome.col_contact")}</th>
+                {statuses && <th className="py-2.5 pl-3 pr-5 text-right">{t("ahome.col_outcome")}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {shown.map((d) => (
-                <tr key={d.row.id} onClick={() => onOpen(d.row.id)} className="cursor-pointer hover:bg-slate-50/60">
+                <tr key={`${d.row.id}|${d.date.getTime()}`} onClick={() => onOpen(d.row.id)} className={`cursor-pointer hover:bg-slate-50/60 ${rowTone(d)}`}>
                   <td className="py-3 pl-5 pr-3"><WhenCell d={d} dateText={dateText} /></td>
                   <td className="px-3 py-3">
                     <span className="block font-bold text-slate-900">{holder(d.row)}</span>
@@ -764,23 +861,29 @@ function DueCard({
                     )}
                   </td>
                   <td className="px-3 py-3"><TypeChip type={d.type} label={typeName(d.type)} /></td>
-                  <td className="hidden max-w-[220px] px-3 py-3 text-slate-600 lg:table-cell"><span className="line-clamp-2" title={d.row.insurer || ""}>{d.row.insurer || "–"}</span></td>
+                  <td className="hidden max-w-[220px] px-3 py-3 text-slate-600 xl:table-cell"><span className="line-clamp-2" title={d.row.insurer || ""}>{d.row.insurer || "–"}</span></td>
                   <td className="px-3 py-3 text-right">{amountCell(d)}</td>
                   <td className="px-3 py-3"><ScoreCell row={d.row} /></td>
-                  <td className="py-3 pl-3 pr-5">
+                  <td className="px-3 py-3">
                     <div className="flex justify-end">
                       <Contact d={d} phone={phoneOf(d)} name={holder(d.row)} typeName={typeName} dateText={dateText} />
                     </div>
                   </td>
+                  {statuses && (
+                    <td className="py-3 pl-3 pr-5 text-right">
+                      <OutcomePicker d={d} status={statusOf(d)} canEdit={canEdit} busy={saving.has(renewalKey(d.row.id, d.date))} onStatus={onStatus} />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
 
           {/* Phone cards */}
-          <ul className="divide-y divide-slate-100 md:hidden">
+          <ul className="divide-y divide-slate-100 xl:hidden">
             {shown.map((d) => (
-              <li key={d.row.id} className="px-4 py-3.5">
+              <li key={`${d.row.id}|${d.date.getTime()}`} className={`px-4 py-3.5 ${rowTone(d)}`}>
                 <button type="button" onClick={() => onOpen(d.row.id)} className="flex w-full items-start justify-between gap-3 text-left">
                   <span className="min-w-0">
                     <span className="block text-base font-bold text-slate-900">{holder(d.row)}</span>
@@ -795,6 +898,12 @@ function DueCard({
                   <span>{amountCell(d)}</span>
                   <Contact d={d} phone={phoneOf(d)} name={holder(d.row)} typeName={typeName} dateText={dateText} />
                 </div>
+                {statuses && (
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-slate-500">{t("ahome.col_outcome")}</span>
+                    <OutcomePicker d={d} status={statusOf(d)} canEdit={canEdit} busy={saving.has(renewalKey(d.row.id, d.date))} onStatus={onStatus} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

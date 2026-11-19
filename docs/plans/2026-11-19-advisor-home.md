@@ -82,3 +82,21 @@ Frontend only, no writes, no migration. Revert the commit.
    strings and paywall.f_insights removed. Old docs screenshots of Home/Insights dropped: RE-CAPTURE.
 10. Filter chips and birthday buttons are 44px.
 11. One demo birthday is relative to today.
+
+## Renewal outcome (2026-11-19, founder: "Yes, add it")
+Goal: on each renewal row the advisor records Spoken, Renewed or Lost, and each list shows
+To do / Spoken / Renewed / Lost counts.
+
+- Table `policy_renewals` (migration 039): one row per (client_id, due_date), status in
+  spoken | renewed | lost. Keyed on the due date so last year's outcome never marks this
+  year's renewal, and a monthly life premium gets one row per instalment.
+- Browser writes under RLS (agent_id = auth.uid(), and the policy must be the advisor's own),
+  like lead_policies. Free plan: read-only via assertCrmWritable, picker disabled.
+- Read in a side query. If the table is missing (039 not run) the Outcome column is hidden
+  and Home works exactly as before, so the frontend can ship before the SQL runs.
+- "Renewed" suggests adding the new policy, which then becomes the next renewal on its own.
+- Not done: renewal rate over time, reasons for Lost, notes. Prospect renewals keep
+  lead_policies.spoken_to.
+
+Claims ledger: the counts in each list header = statuses of the rows in that list.
+Reversibility: 039_down drops the table (loses recorded outcomes only).

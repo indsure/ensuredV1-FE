@@ -1820,6 +1820,8 @@ export function buildSeed(): Store {
     agent_pages,
     agent_page_views,
     // Tables some pages query but the demo leaves empty — return [] gracefully.
+    // Renewal outcomes on Home (migration 039). Empty: the demo starts with nothing marked.
+    policy_renewals: [],
     report_shares: [],
     invite_codes: [],
     reports: [],
