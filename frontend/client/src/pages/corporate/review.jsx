@@ -8,6 +8,7 @@ import { readPolicyPdf, readerSelfTest, ReadError, isImage } from "./extract.js"
 import { useState, useMemo, useRef, useEffect } from "react";
 import { judgeField, judgeAny, ocrSettings, pickCandidates, logEntry, addLog, PICK_LABELS } from "./confidence.js";
 import { StateChip, SourceLine, CandidatePicker, PdfView } from "./picks.jsx";
+import { crossChecks } from "./checks.js";
 import { insurerKey } from "./tidy.js";
 
 // Policy number and sum insured get the full scoring, a pick list whenever they are not green, and a log row
@@ -291,6 +292,10 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   if (!brokOk) blockers.push("Tick the brokerage confirmation");
   if (twinPolicy) blockers.push(`Policy number ${vals.policyNo} is already in your register as ${twinPolicy.controlNo}`);
   if (lowConf.length) blockers.push(`${lowConf.length} low-confidence value${lowConf.length > 1 ? "s" : ""} not yet checked`);
+  // Values that do not agree with each other. Correct one, or confirm the policy really says so.
+  const issues = crossChecks(vals, fixture.info || {});
+  const openIssue = (k) => issues[k] && srcs[k]?.issueOk !== issues[k] && fieldShown(FIELD[k], policyType, vals);
+  for (const k of Object.keys(issues)) if (openIssue(k)) blockers.push(`${FIELD[k]?.label || k}: ${issues[k]}`);
 
   const payload = () => {
     const clean = {};
@@ -389,6 +394,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                         <button type="button" className="linkbtn" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...s, checked: true } }))}>This is right</button>
                       )}
                       {s?.checked && <span className="src src-ok">You checked this</span>}
+                      {openIssue(f.key) && <div className="cf-issue" role="alert" data-issue={f.key}><span className="cf-chip cf-red">Does not add up</span> <span className="small">{issues[f.key]}</span> <button type="button" className="linkbtn small" onClick={() => setSrcs((p) => ({ ...p, [f.key]: { ...(p[f.key] || { conf: "manual" }), issueOk: issues[f.key] } }))}>The policy says this</button></div>}
                       {f.key === "netPremium" && (
                         <div className="small">
                           {grossMismatch && <div className="warn-text">{gLabel} = {fmtValue("netPremium", sumCheck, vals.currency)}{withStamp != null && <>, or {fmtValue("netPremium", withStamp, vals.currency)} with stamp duty</>}, which differs from the net entered.</div>}

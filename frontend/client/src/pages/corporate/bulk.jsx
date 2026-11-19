@@ -8,6 +8,7 @@ import { saveFile, loadTexts, docText } from "./store.js";
 import { fmtStamp, fmtMoney, activePreset, nowIso, notNeededWhy } from "./lib.js";
 import { sameInsurer } from "./tidy.js";
 import { judgeField, ocrSettings, pickCandidates, PICK_FIELDS, PICK_LABELS } from "./confidence.js";
+import { crossChecks } from "./checks.js";
 import { suggestFromDocument, createPolicy, cleanInsurer } from "./add.jsx";
 import { sameName } from "./review.jsx";
 import { placeOf } from "./places.js";
@@ -84,6 +85,10 @@ export function checkDraft(db, item, lines) {
     const unsure = PICK_FIELDS.filter((k) => pc[k]?.length && judgeField(k, pc[k], { lines: fx.lines, settings, inUse: inUse[k] }).state !== "green");
     if (unsure.length) must.push(`${unsure.map((k) => PICK_LABELS[k]).join(", ")}: more than one value or not clearly labelled, open it to pick`);
   }
+  // Figures that do not agree with each other (gross + GST is not net, the sum insured equals a premium...).
+  const issues = crossChecks(Object.fromEntries(Object.entries(item.fields || {}).map(([k, f]) => [k, f && f.v])), item.info || {});
+  const firstIssue = Object.values(issues)[0];
+  if (firstIssue) must.push(`Does not add up: ${firstIssue} Open it to check`);
   if (!guess.insurerId) must.push(item.info?.insurer ? "Insurer not in your list" : "Insurer not found");
   else if (!guess.branchId) must.push("Branch not in your list");
   if (item.info?.docKind?.kind === "Endorsement") warn.push("Looks like an endorsement, not a new policy: open it to attach it to its policy");

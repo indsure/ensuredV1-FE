@@ -231,6 +231,7 @@ const UNIT = { lakh: 1e5, lakhs: 1e5, lac: 1e5, lacs: 1e5, crore: 1e7, crores: 1
 // "Rupees Forty Lakh Only", "Eight Thousand Seventeen", "USD Five Million". Indian and international scales.
 const SMALL = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fourty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
 const WORD_RE = new RegExp(String.raw`\b(rupees|rs\.?|inr|usd|us\s*dollars?|dollars?)?\s*((?:(?:` + Object.keys(SMALL).join("|") + "|hundred|thousand|lakhs?|lacs?|crores?|million|billion|and" + String.raw`)\b[\s-]*)+)(rupees|dollars?)?\s*(only)?`, "gi");
+const NUM_WORDS = new RegExp(String.raw`(?:\b(?:` + Object.keys(SMALL).join("|") + String.raw`|hundred|thousand|lakhs?|lacs?|crores?|million|billion)\b[\s-]*)(?:\b(?:` + Object.keys(SMALL).join("|") + String.raw`|hundred|thousand|lakhs?|lacs?|crores?|million|billion|and)\b[\s-]*)*(?:only\b)?`, "i");
 export function wordsToAmount(s) {
   for (const m of s.matchAll(WORD_RE)) {
     const words = m[2].toLowerCase().split(/[\s-]+/).filter((w) => w && w !== "and");
@@ -259,7 +260,9 @@ export function findAmounts(s) {
     if (/[A-Za-z\/]/.test(prev)) continue; // part of a code like NGI/26/0991
     if (/\bno\.?\s*$/i.test(s.slice(Math.max(0, m.index - 4), m.index))) continue; // a reference number, "No. 67"
     const next = s.slice(m.index + m[0].length, m.index + m[0].length + 1);
-    if (!m[4] && !m[3] && /^[)\-\/A-Za-z]/.test(next)) continue; // list marker "1)" or code "67-B"
+    // A list marker "1)" or a code "67-B" is not money; a bracketed amount "( `11126.5)" is.
+    const bracketed = next === ")" && /\(\s*$/.test(s.slice(0, m.index));
+    if (!m[4] && !m[3] && !bracketed && /^[)\-\/A-Za-z]/.test(next)) continue;
     const unit = m[3] ? UNIT[m[3].trim().toLowerCase().replace(/\.$/, "")] : 1;
     const v = Math.round(+m[2].replace(/,/g, "") * unit * 100) / 100;
     if (!Number.isFinite(v)) continue;
@@ -275,7 +278,12 @@ const findPct = (s) => { const m = s.match(/(\d{1,2}(?:\.\d{1,3})?)\s*%/); retur
 // Some insurers print the number in spaced groups, "2302 2089 9690 2000 000" (HDFC ERGO motor). A cell that is
 // only digit groups like that, with 10 or more digits in all, is one number: the spaces are dropped.
 const SPACED_ID = /^\s*\d{2,6}(?: \d{2,6}){2,}\s*$/;
-const findId = (s) => { if (SPACED_ID.test(s) && s.replace(/\D/g, "").length >= 10) return s.replace(/\D/g, ""); const m = s.match(/[A-Z0-9][A-Z0-9\/\-.]{4,}[A-Z0-9]/i); if (!m || !/\d/.test(m[0])) return null; return m[0].replace(/^(\d{8,})[A-Za-z]{3,}$/, "$1"); };
+// The first ID-like token that has a digit: "UIN NUMBER - IRDAN190P0087100001" is the IRDAN code, not "NUMBER".
+const findId = (s) => {
+  if (SPACED_ID.test(s) && s.replace(/\D/g, "").length >= 10) return s.replace(/\D/g, "");
+  const m = [...s.matchAll(/[A-Z0-9][A-Z0-9\/\-.]{4,}[A-Z0-9]/gi)].find((x) => /\d/.test(x[0]));
+  return m ? m[0].replace(/^(\d{8,})[A-Za-z]{3,}$/, "$1") : null;
+};
 const cleanText = (s) => s.replace(/`\s*(?=\d)/g, "₹ ").replace(/^[\s:\-–.]+/, "").replace(/\s{2,}/g, " ").trim().slice(0, 140);
 
 // ---- field rules (order matters: specific labels before generic ones)
@@ -298,7 +306,8 @@ const RULES = [
   // Not "GST INVOICE NO ..." or "Total Premium In Words: ... Two Lakhs" on the same line (WELCAR read GST as 2,00,000).
   { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl|invoice|in\s*words/i },
   { key: "stampDuty", kind: "amount", label: phraseRe(VOCAB.stampDuty), zeroOk: true },
-  { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i },
+  // Never the tax rate column of a GST invoice ("HSN/SAC ... CGST Rate ... SGST Rate").
+  { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i, lineNot: /\b(cgst|sgst|igst|utgst|hsn|sac)\b|gst\s*amt|tax\s*amt/i },
   // GST on the broker's commission, when a policy or debit note prints it ("GST on Brokerage @ 18%").
   { key: "brokerageGstPct", kind: "pct", label: /(\b(gst|igst|tax)\s*(on|for)?\s*(the\s*)?(brokerage|commission)|\b(brokerage|commission)\s*(gst|igst)\b)(\s*(@|at\b|rate))?/i },
   { key: "excess", kind: "text", label: phraseRe(VOCAB.excess), needDigit: true, not: /voluntary|discount/i, badValue: /^\d+(\.\d+)+\s+[A-Za-z]|^(clause|section|item)\b/i },
@@ -342,6 +351,7 @@ function candidates(lines, rule) {
     ln.segs.forEach((seg, j) => {
       const m = seg.s.match(rule.label);
       if (!m || (rule.not && rule.not.test(seg.s))) return;
+      if (rule.lineNot && [ln.text, lines[i - 1]?.text, lines[i - 2]?.text].some((t) => t && rule.lineNot.test(t))) return;
       // A scan can split "Previous | Policy No" into two cells: the word in the cell before counts too.
       const prevCell = j > 0 ? ln.segs[j - 1].s : "";
       if (rule.not && prevCell && prevCell.length <= 20 && seg.s.slice(0, m.index).trim() === "" && rule.not.test(prevCell)) return;
@@ -371,8 +381,10 @@ function candidates(lines, rule) {
       const next = lines[i + 1];
       if (ownCell && next && !next.marker) {
         const alone = rule.kind === "text" && ln.segs.length === 1;
-        const under = next.segs.find((x) => x.x < seg.x2 + 4 && x.x2 > seg.x - 4) || (alone ? next.segs.find((x) => x.x >= seg.x - 4) : null);
+        let under = next.segs.find((x) => x.x < seg.x2 + 4 && x.x2 > seg.x - 4) || (alone ? next.segs.find((x) => x.x >= seg.x - 4) : null);
         if (!under) return;
+        // "i)    INR 5000 for each loss.": a list marker in its own cell, the value in the next one.
+        if (rule.kind === "text" && /^\(?([ivx]{1,4}|\d{1,2}|[a-z])[.)]$/i.test(under.s.trim())) under = next.segs[next.segs.indexOf(under) + 1] || under;
         const whole = rule.kind === "date" ? (() => { const d = findDates(under.s); return d.length && d[0].end - d[0].index >= under.s.trim().length * 0.6; })()
           : rule.kind === "text" ? under.s.length < 120 : WHOLE[rule.kind].test(under.s);
         const v = whole && parseKind(rule.kind, under.s, rule.zeroOk, rule.needDigit);
@@ -440,6 +452,17 @@ export function parseFields(lines, ocr = false) {
     if (t) fields.location = { ...t, word: "Location" };
   }
   // Show the word the policy itself uses for the location field.
+  // A text value cut where the line wraps ("... subject to a minimum of USD" / "5,000 and a maximum of USD 40,000
+  // each claim"): the next line carries on the sentence, so it is joined, up to two lines.
+  for (const k of ["excess", "location"]) {
+    const f = fields[k];
+    if (!f || typeof f.v !== "string") continue;
+    for (let j = f.ref; j < f.ref + 2; j++) {
+      const nx = lines[j];
+      if (!nx || nx.marker || (nx.segs && nx.segs.length > 1) || /[.;)]\s*$/.test(f.v) || !/^[a-z0-9(]/.test(nx.text.trim()) || nx.text.length > 140) break;
+      f.v = cleanText(f.v + " " + nx.text);
+    }
+  }
   if (fields.location && !fields.location.word) { const w = lines[fields.location.ref - 1]?.text.match(new RegExp(phraseRe(VOCAB.jurisdiction).source + "|" + phraseRe(VOCAB.location).source, "i")); if (w) fields.location.word = w[0].trim(); }
   // A schedule with one row of limits (MTO and similar).
   const sch = liabilitySchedule(lines);
@@ -452,7 +475,12 @@ export function parseFields(lines, ocr = false) {
   // Period lines with two dates, e.g. "Period of insurance: 01/12/2026 to 30/11/2027"
   lines.forEach((ln, i) => {
     if (ln.marker || !/period|from\b.*\bto\b|\bfrom\b/i.test(ln.text)) return;
-    let ds = findDates(ln.text).filter((d) => +d.iso.slice(0, 4) >= oldest);
+    // "04 March to 14 March 2028": the year is printed once, for both dates (a year earlier if the start month is later).
+    const text = ln.text.replace(/\b(\d{1,2})\s+([A-Za-z]{3,9})\s+(to|till|until)\s+(\d{1,2})\s+([A-Za-z]{3,9}),?\s+(\d{4})\b/i, (m, d1, m1, sep, d2, m2, y) => {
+      const a = MON[m1.toLowerCase()], b = MON[m2.toLowerCase()];
+      return a && b ? `${d1} ${m1} ${a > b ? +y - 1 : y} ${sep} ${d2} ${m2} ${y}` : m;
+    });
+    let ds = findDates(text).filter((d) => +d.iso.slice(0, 4) >= oldest);
     // "From: 14/08/2026 ... To:" with the end date wrapped onto the next line.
     if (ds.length === 1 && /\bfrom\b/i.test(ln.text) && /\bto\b/i.test(ln.text.slice(ds[0].end)) && lines[i + 1]) {
       const nx = findDates(lines[i + 1].text).filter((d) => d.index < 3 && +d.iso.slice(0, 4) >= oldest);
@@ -478,6 +506,13 @@ export function parseFields(lines, ocr = false) {
       const d = findDates(`${m[1]}/${m[2]}/${m[3]}`)[0];
       if (d && (k === "riskStart" ? !fields.riskEnd || d.iso < fields.riskEnd.v : !fields.riskStart || d.iso > fields.riskStart.v)) fields[k] = { v: d.iso, ref: i + 1, conf: "low", note: "The scan lost the separators in this date, so it was read as day, month, year. Check it." };
     }
+  }
+  // A certificate's header: "Page | 1 of 6 dated 18 March 2025" in the first lines is the date it was issued.
+  if (!fields.issueDate) {
+    const head = lines.filter((l) => !l.marker).slice(0, 10);
+    const hit = head.find((l) => /\bdated\s+\d/i.test(l.text) && !/\b(clause|cl\.?|endorsement|jc\d|wording)\b/i.test(l.text));
+    const d = hit ? findDates(hit.text.slice(hit.text.search(/\bdated\b/i)))[0] : null;
+    if (d) fields.issueDate = { v: d.iso, ref: lines.indexOf(hit) + 1, conf: "low", note: "Read from \"dated\" at the top of the certificate. Check it is the issue date." };
   }
   // No issue date printed: the tax invoice date, else the date the schedule was printed, if it falls in the policy's time.
   if (!fields.issueDate) {
@@ -507,6 +542,16 @@ export function parseFields(lines, ocr = false) {
     if (isSplit && sg != null) pct += sg;
     fields.gstPct = { v: pct, ref: lines.indexOf(gstLine) + 1, conf: isSplit ? "low" : "high", note: isSplit ? "CGST % and SGST % added together" : undefined };
   }
+  // GST % from the figures: GST divided by gross, when it lands on a standard rate. It also corrects a
+  // half rate read from one line ("State GST (9%)" when the policy charges 9% + 9%).
+  if (fields.grossPremium && fields.gst && +fields.grossPremium.v > 0) {
+    const r = (100 * +fields.gst.v) / +fields.grossPremium.v;
+    const std = [5, 12, 18, 28].find((x) => Math.abs(r - x) < 0.06);
+    if (std != null && (!fields.gstPct || +fields.gstPct.v !== std)) {
+      const was = fields.gstPct?.v;
+      fields.gstPct = { v: std, ref: fields.gst.ref, conf: was != null || fields.gst.conf === "low" || fields.grossPremium.conf === "low" ? "low" : "high", note: was != null ? `Worked out from GST ÷ gross premium. The policy line shows ${was}%${+was * 2 === std ? ", which is one half of the tax (central plus state)" : ""}. Check it.` : "Worked out from GST ÷ gross premium." };
+    }
+  }
 
   // Currency: only when the document says so
   const curs = {};
@@ -530,7 +575,10 @@ export function parseFields(lines, ocr = false) {
   if (!fields.planName) {
     const skip = /policy\s+schedule|schedule|certificate|tax\s+invoice|invoice|page\s+\d|government|undertaking|digitally|signed|signer|reason|date|attached|forming\s+part|company|limited|\bltd\b|insurance\s+co|assurance\s+co|office|address|customer|insured|policy\s*(no|number)|uin|gstin|irda/i;
     const product = /\b(risks?|insurance|policy|suraksha|cover|protect\w*|plan|liability|vessels?|package|mediclaim|accident|marine|fire|cargo|hull|indemnity|compensation|operators?|projects?|guard|secure|shield|bharat|udyam)\b/i;
-    const top = lines.filter((l) => !l.marker).slice(0, 14);
+    // Never the letterhead (the line repeated at the top of every page) or a banner line ("DESK | NO REAL COVER").
+    const heads = {};
+    lines.forEach((l, i) => { if (l.marker && lines[i + 1] && !lines[i + 1].marker) heads[lines[i + 1].text] = (heads[lines[i + 1].text] || 0) + 1; });
+    const top = lines.filter((l) => !l.marker && !(heads[l.text] >= 2) && !/\s\|\s/.test(l.text)).slice(0, 14);
     const pickLine = top.find((l) => { const t = ((l.segs && l.segs[0]?.s) || l.text).trim(); const words = t.split(/\s+/); return t.length >= 6 && t.length <= 70 && words.length >= 2 && words.length <= 9 && !/\d{3,}|[:@]/.test(t) && !skip.test(t) && product.test(t) && /^[A-Z]/.test(t) && !/^(insurance|policy|cover)\b/i.test(t) && !/\b(reference|ref|number|no\.?|details|period|wording)\s*$/i.test(t) && !INSURERS.some(([, re]) => re.test(t)); });
     if (pickLine) { const i = lines.indexOf(pickLine); fields.planName = { v: ((pickLine.segs && pickLine.segs[0]?.s) || pickLine.text).trim(), ref: i + 1, conf: "low", note: "Taken from the heading at the top of the policy. Check it is the plan name." }; }
   }
@@ -559,6 +607,18 @@ export function parseFields(lines, ocr = false) {
   { const i = lines.findIndex((l) => !l.marker && /premium[^\n]{0,20}as\s+per\s+(the\s+)?(annexure|schedule\s+attached|attached\s+annexure)/i.test(l.text)); if (i >= 0) info.premiumInAnnexure = { ref: i + 1 }; }
   // "100,000 per employee": what the limit applies to.
   if (fields.sumInsured) { const t = lines[fields.sumInsured.ref - 1]?.text || ""; const basis = /per\s+(employee|person|workman|member|life)/i.test(t) ? "Per employee or person" : /any\s+one\s+accident|\bAOA\b/i.test(t) ? "Any one accident" : /any\s+one\s+year|\bAOY\b|aggregate/i.test(t) ? "Any one year" : null; if (basis) fields.siBasis = { v: basis, ref: fields.sumInsured.ref, conf: "low", note: "Read from the line with the limit. Check it." }; }
+  // The total written in words ("Total Premium In Words: Indian Rupees Twenty-Nine" / "Thousand Eight Hundred
+  // Forty-Eight Only"), for the cross-check against the net premium. The next line is joined when it wraps.
+  for (let i = 0; i < lines.length && info.wordsTotal == null; i++) {
+    const l = lines[i];
+    if (l.marker || !/(total|premium|amount|invoice)[^\n]{0,40}in\s*words/i.test(l.text) || /sum\s*(insured|assured)|\bsi\b|\bidv\b|limit/i.test(l.text)) continue;
+    const at = l.text.search(/in\s*words/i);
+    // Only the number words of the next line: a two-column page puts other text ("NO 2724947848 UIN:0") between them.
+    const nxText = lines[i + 1] && !lines[i + 1].marker ? lines[i + 1].text : "";
+    const nx = (nxText.match(NUM_WORDS) || [""])[0];
+    const w = wordsToAmount(l.text.slice(at) + " " + nx) || wordsToAmount(l.text.slice(at));
+    if (w) info.wordsTotal = w.v;
+  }
   const ins = findInsured(lines);
   if (ins) info.insured = ins.v;
   const insurer = findInsurer(lines);

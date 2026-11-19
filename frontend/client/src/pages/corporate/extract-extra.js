@@ -24,7 +24,8 @@ export function premiumFigures(lines, preCands = [], postCands = [], gstCands = 
       return;
     }
     if (!/gstin|regist|\buin\b/i.test(t)) {
-      const tax = [["c", /\bcgst\b|central\s*gst/i], ["s", /\b(sgst|ugst|utgst)\b|state\s*gst/i], ["i", /\bigst\b|integrated\s*gst/i]];
+      // "Central Tax 9% (11126.5) + State Tax 9% (11126.5)" (HDFC ERGO) is CGST + SGST in other words.
+      const tax = [["c", /\bcgst\b|central\s*(gst|tax)/i], ["s", /\b(sgst|ugst|utgst)\b|state\s*(gst|tax)|union\s*territory\s*tax/i], ["i", /\bigst\b|integrated\s*(gst|tax)/i]];
       for (const [k, re] of tax) {
         const m = t.match(re);
         if (!m || parts[k]) continue;

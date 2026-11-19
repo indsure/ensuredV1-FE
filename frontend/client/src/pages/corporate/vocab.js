@@ -28,10 +28,11 @@ export const VOCAB = {
     "renewal of", "prev policy no", "prev. policy no", "existing policy no", "earlier policy no",
     "base policy reference", "base policy no", "base policy number", "underlying policy no", "underlying policy number",
   ],
-  uin: ["UIN", "UIN no", "product UIN", "IRDAI UIN"],
+  uin: ["UIN", "UIN no", "UIN number", "product UIN", "IRDAI UIN", "unique identification number (UIN)", "unique identification number"],
   planName: [
     "product name", "plan name", "name of the product", "name of product", "policy name", "name of the policy",
     "scheme name", "type of insurance", "class of insurance",
+    "issued policy product", "base policy product / title", "base policy product", "policy product",
   ],
   proposalDate: ["proposal date", "date of proposal", "proposal signed on", "proposal received on", "proposal form dated"],
   issueDate: [
@@ -58,6 +59,7 @@ export const VOCAB = {
   netPremium: [
     "net premium", "basic premium", "base premium", "own premium", "taxable value", "taxable premium", "taxable amount",
     "premium before tax", "premium before gst", "premium excluding tax", "premium excluding gst", "premium excl tax",
+    "total package premium", "package premium",
   ],
   grossPremium: [
     "gross premium", "total premium", "total premium payable", "premium payable", "total amount payable", "total payable",
