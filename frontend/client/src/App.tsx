@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Switch, Route, Redirect } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,7 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Mixpanel } from "@/components/Mixpanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ReportDispatcher from "@/components/ReportDispatcher";
-import { isPlaygroundMode } from "@/lib/playground/mode";
+import { exitPlayground, isPlaygroundMode, isRealAuthPage, playgroundFlagSet } from "@/lib/playground/mode";
 
 // ARCHIVED: import { AuthProvider } from "@/hooks/use-auth";
 const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
@@ -149,6 +149,23 @@ function PageLoader() {
   );
 }
 
+/**
+ * Walking from the demo to a real login or signup page (a link inside the demo)
+ * ends the demo. A full reload, like the banner's Exit, so no demo data stays in
+ * memory (query cache, fetch patch) for the real account that signs in next.
+ * A direct load is handled in main.tsx before the first render.
+ */
+function EndDemoOnRealAuthPage() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (playgroundFlagSet() && isRealAuthPage(location)) {
+      exitPlayground();
+      window.location.replace(window.location.href);
+    }
+  }, [location]);
+  return null;
+}
+
 // ------------------------------------------------------------
 // MAIN APP (WOUTER ONLY)
 // ------------------------------------------------------------
@@ -164,6 +181,7 @@ function App() {
                 <TooltipProvider>
                   <Toaster />
                   <Mixpanel />
+                  <EndDemoOnRealAuthPage />
 
                   <Suspense fallback={<PageLoader />}>
                     <Switch>

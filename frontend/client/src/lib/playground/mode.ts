@@ -35,6 +35,18 @@ export const PLAYGROUND_PATH = "/hihihaha";
  */
 const DEMO_PAGES = /^\/agent\/(?!(login|signup|forgot-password|reset-password|join)(\/|$))/;
 
+/**
+ * Real sign-in pages. Reaching one ends the demo (founder, 2026-11-19: the demo is
+ * independent, a real login must always open the real account). Before this, the
+ * flag outlived a real login in the same tab, so the advisor landed in the demo.
+ */
+const REAL_AUTH_PAGES =
+  /^\/(agent\/)?(login|signup|forgot-password|reset-password)(\/|$)|^\/agent\/join(\/|$)/;
+
+export function isRealAuthPage(pathname: string): boolean {
+  return REAL_AUTH_PAGES.test(pathname);
+}
+
 export function isPlaygroundMode(): boolean {
   try {
     return (
