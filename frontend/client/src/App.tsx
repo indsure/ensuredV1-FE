@@ -41,8 +41,6 @@ const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 // chunks this Switch renders. See pages/agent/lazyRoutes.ts.
 import {
   DashboardNew,
-  Insights,
-  Business,
   LeadRenewals,
   AgentUploads,
   PoliciesNew,
@@ -238,16 +236,9 @@ function App() {
                       <Route path="/agent/dashboard">
                         {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
                       </Route>
-                      <Route path="/agent/insights">
-                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_insights"><Insights /></PaidOnly></AgentProtectedRoute>}
-                      </Route>
-                      {/* Business: playground only until the founder signs it off.
-                          A real agent who types the URL lands on Insights. */}
-                      <Route path="/agent/business">
-                        {() => isPlaygroundMode()
-                          ? <AgentProtectedRoute><Business /></AgentProtectedRoute>
-                          : <Redirect to="/agent/insights" />}
-                      </Route>
+                      {/* Insights and Business now live on Home (2026-11-19). Old links land there. */}
+                      <Route path="/agent/insights">{() => <Redirect to="/agent/dashboard" />}</Route>
+                      <Route path="/agent/business">{() => <Redirect to="/agent/dashboard" />}</Route>
                       {/* WhatsApp demo phone: the real bot on the demo data. Playground only. */}
                       <Route path="/agent/whatsapp-demo">
                         {() => isPlaygroundMode()

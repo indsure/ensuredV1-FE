@@ -1,7 +1,7 @@
 /**
  * Business: the book in rupees.
  *
- * Pure helpers behind pages/agent/Business.tsx, kept out of the component so the
+ * Pure helpers behind the Home page (pages/agent/DashboardNew.tsx), kept out of the component so the
  * money rules sit in one readable place. The page's foot note states them too.
  *
  *  - The premium is the one PRINTED on the policy. We store no receipts and no
