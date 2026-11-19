@@ -191,6 +191,12 @@ export default function AgentLanding() {
               {t("agent_landing.cta_start")} <ArrowRight className="w-4 h-4" />
             </button>
           </Link>
+          {/* Returning advisors land here too; give them the way in at the same size. */}
+          <Link href="/agent/login" className="w-full sm:w-auto">
+            <button className="w-full h-[52px] px-6 rounded-lg bg-white border border-[var(--color-border-medium)] text-[var(--color-text-main)] text-base font-semibold hover:border-[var(--color-teal-600)] hover:text-[var(--color-teal-600)] transition-colors flex items-center justify-center gap-2">
+              <LogIn className="w-4 h-4" /> {t("agent_landing.nav_login")}
+            </button>
+          </Link>
         </div>
 
         <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-1">
