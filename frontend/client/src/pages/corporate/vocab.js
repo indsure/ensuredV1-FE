@@ -53,6 +53,7 @@ export const VOCAB = {
     "limit of liability", "limits of liability", "limit of indemnity", "indemnity limit", "aggregate limit", "total limit",
     "any one accident", "AOA", "any one year", "AOY", "cover amount", "coverage amount",
     "maximum annual liability", "annual aggregate limit", "aggregate limit of liability", "aggregate limit of indemnity",
+    "max. limit of liability", "max limit of liability", "maximum limit of liability", "combined single limit",
   ],
   netPremium: [
     "net premium", "basic premium", "base premium", "own premium", "taxable value", "taxable premium", "taxable amount",

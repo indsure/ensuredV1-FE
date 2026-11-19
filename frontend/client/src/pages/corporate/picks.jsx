@@ -61,6 +61,7 @@ export function CandidatePicker({ fkey, name, judged, value, fmt, onPick, onType
           <span className="cf-cand-body">
             <strong className={fkey === "policyNo" ? "mono" : ""}>{fmt ? fmt(c.v) : String(c.v)}</strong>
             <span className="small muted">{whereWords(fkey, c)}</span>
+            {c.warn && <span className="small warn-text">{c.warn}</span>}
             {canSee && <button type="button" className="linkbtn small" onClick={(e) => { e.preventDefault(); onView(c.ref); }}>View in PDF</button>}
           </span>
         </label>

@@ -6,12 +6,15 @@ import { activePreset, fmtValue, isNum, r2, insurerOf, branchOf, brokerageOf, fi
 import { useApp, Btn, Pill, Labeled, AskFirst, Icon, DateInput, MoneyInput, Select } from "./ui.jsx";
 import { readPolicyPdf, readerSelfTest, ReadError, isImage } from "./extract.js";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { judgeField, ocrSettings, pickCandidates, logEntry, addLog, PICK_LABELS } from "./confidence.js";
+import { judgeField, judgeAny, ocrSettings, pickCandidates, logEntry, addLog, PICK_LABELS } from "./confidence.js";
 import { StateChip, SourceLine, CandidatePicker, PdfView } from "./picks.jsx";
 import { insurerKey } from "./tidy.js";
 
-// The review fields that get a colour and a pick list. The insurer is picked on step 1, before review.
+// Policy number and sum insured get the full scoring, a pick list whenever they are not green, and a log row
+// even when kept. Every other field read from the document gets a colour, and a pick list only when the
+// document prints a rival value. The insurer is picked on step 1, before review.
 const REVIEW_PICKS = ["policyNo", "sumInsured"];
+const CORE_PICK = new Set(REVIEW_PICKS);
 
 const GROUPS = ["Identification", "Dates", "Amounts", "Liability", "Voyage and cargo", "Project", "Other", "Brokerage"];
 
@@ -157,6 +160,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     if (!fixture?.extracted || fixture.noText) return out;
     const pc = pickCandidates(fixture), settings = ocrSettings(db);
     for (const k of REVIEW_PICKS) if (pc[k]?.length) out[k] = judgeField(k, pc[k], { lines: fixture.lines, ocr: fixture.ocr, settings, inUse: fixture.fields?.[k]?.v });
+    for (const f of FIELDS) { const x = fixture.fields?.[f.key]; if (CORE_PICK.has(f.key) || !x || x.v === "" || x.v == null) continue; out[f.key] = judgeAny(f.key, pc[f.key], { lines: fixture.lines, ocr: fixture.ocr, settings, inUse: x.v, readerConf: x.conf }); }
     if (pc.insurer?.length) out.insurer = judgeField("insurer", pc.insurer, { lines: fixture.lines, ocr: fixture.ocr, settings, inUse: fixture.info?.insurer });
     return out;
   }, []);
@@ -239,11 +243,13 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     if (alreadyLogged) return;
     const doc = fixture.fileName || fixture.title || "";
     const entries = [];
-    for (const k of REVIEW_PICKS) {
-      const j = judged[k]; if (!j) continue;
+    for (const k of Object.keys(judged)) {
+      const j = judged[k]; if (!j || k === "insurer") continue;
       const s = srcs[k] || {}, fin = vals[k], sug = j.cands[0]?.v;
       const inList = j.cands.some((c) => String(c.v) === String(fin));
       const how = s.picked ? (String(fin) === String(sug) ? "Confirmed" : "Picked") : s.edited ? (inList ? "Picked" : "Typed in") : s.checked ? "Confirmed" : "Kept";
+      // Other fields are logged only when someone changed or picked something, to keep the log small.
+      if (!CORE_PICK.has(k) && !(how === "Picked" || how === "Typed in")) continue;
       entries.push(logEntry({ key: k, cands: j.cands, suggested: j.state === "red" ? "" : sug, final: fin, how, by: who, doc, state: j.state }));
     }
     const j = judged.insurer;
@@ -334,6 +340,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
               );
             })}
           </div>
+          {fixture.info?.classLimits && askKeys.includes("sumInsured") && <p className="small note note-warn">This policy sets its limits by class (Class I, Class II), so there is no single sum insured on it. Each class limit is under Other details as printed. Enter the figure your register should show.</p>}
           <p className="small muted">Is renewable is never read from the policy, so please answer it. Business booked date starts as the issue date. You can save a draft with gaps and finish it later.</p>
         </section>
       )}
@@ -363,7 +370,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                       {fromThisDoc(s) && !s.typed && <SourceLine fixture={fixture} at={s.ref} fkey={f.key} onView={(r) => setPdfAt({ key: f.key, at: r })} />}
                       {(() => {
                         const j = judged[f.key];
-                        if (!j || !(j.cands.length >= 2 || j.state !== "green")) return null;
+                        if (!j || !(j.cands.length >= 2 || (CORE_PICK.has(f.key) && j.state !== "green"))) return null;
                         const saved = initial[f.key] !== undefined && initial[f.key] !== "" && !(s?.state && s.state !== "green");
                         const answered = s?.picked || s?.checked || saved || (s?.edited && vals[f.key] !== "" && vals[f.key] != null);
                         const others = j.cands.filter((c) => String(c.v) !== String(vals[f.key])).length;

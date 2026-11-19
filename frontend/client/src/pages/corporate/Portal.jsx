@@ -1,6 +1,6 @@
 // IndSure Commercial: shell, workspaces and the views that are not about one policy.
 import "./commercial.css";
-import { seed, TODAY, LIVE, DEPARTMENTS, FIXTURES, fixtureById, isCargoOpen, CURRENCIES } from "./data.js";
+import { seed, TODAY, LIVE, DEPARTMENTS, FIXTURES, fixtureById, isCargoOpen, CURRENCIES, FIELD } from "./data.js";
 import { fmtDate, fmtStamp, fmtMoney, fmtNum, fmtMonth, isNum, r2, nowIso, coverage, completeness, paymentSummary, instalmentRows, missingFields, insurerOf, branchOf, teamName, latestTerm, activePreset, fyRange, fyLabel, FY_OPTIONS, DATE_BASES, GROUPINGS, businessRows, groupRows, totals, renewalRows, toCsv, daysBetween, fxRate, upgradeBook, plural } from "./lib.js";
 import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Empty, Btn, Labeled, Select, AskFirst, Modal, Tabs, KV, Table, DateInput, Tip } from "./ui.jsx";
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
@@ -953,12 +953,13 @@ function ReadingTab() {
     setErr(""); setF({ green: String(n.green), amber: String(n.amber), gap: String(n.gap) }); toast("Reading settings saved");
   };
   const all = [...(db.ocrLog || [])].reverse();
-  const rows = key ? all.filter((r) => r.key === key) : all;
+  const fieldName = (k) => PICK_LABELS[k] || FIELD[k]?.label || k;
+  const rows = key === "other" ? all.filter((r) => !PICK_LABELS[r.key]) : key ? all.filter((r) => r.key === key) : all;
   const val = (r, v) => (r.key === "sumInsured" && isNum(v) ? fmtNum(+v) : v);
   const found = (r) => (r.found || []).map((c) => `${val(r, c.v)} (L${c.ref})`).join("; ");
-  const csv = () => toCsv([["Report", "Picks and corrections from the policy reader"], ["Field", key ? PICK_LABELS[key] : "All fields"], ["Printed", nowIso().replace("T", " ").slice(0, 16)]],
+  const csv = () => toCsv([["Report", "Picks and corrections from the policy reader"], ["Field", key === "other" ? "Other fields" : key ? PICK_LABELS[key] : "All fields"], ["Printed", nowIso().replace("T", " ").slice(0, 16)]],
     ["When", "Field", "Colour", "Values found", "We suggested", "Final value", "How", "By", "Document"],
-    rows.map((r) => [r.at.replace("T", " "), PICK_LABELS[r.key] || r.key, r.state, found(r), r.sug, r.fin, r.how, r.by, r.doc]));
+    rows.map((r) => [r.at.replace("T", " "), fieldName(r.key), r.state, found(r), r.sug, r.fin, r.how, r.by, r.doc]));
   // Right first time: kept or confirmed as suggested, over the last 30 days.
   const since = localStamp(Date.now() - 30 * 864e5);
   const recent = all.filter((r) => r.at >= since);
@@ -987,13 +988,13 @@ function ReadingTab() {
         {edit ? <div className="row gap-s wrap"><Btn kind="primary" onClick={() => saveSet(f)}>Save settings</Btn><Btn onClick={() => saveSet(OCR_DEFAULTS)}>Reset to default</Btn></div> : <p className="small muted">Only an Admin can change these.</p>}
       </Card>
       <Card title="Picks and corrections" sub="Every pick and every typed value, written when a record is confirmed, so we can see which labels to trust. The last 200 are kept."
-        actions={<div className="row gap-s wrap"><Select id="rs-field" value={key} onChange={setKey} placeholder="All fields" options={Object.entries(PICK_LABELS).map(([value, label]) => ({ value, label }))} />{can("export") && <Btn disabled={!rows.length} why="Nothing logged yet" onClick={() => saveCsv("reader-corrections.csv", csv(), toast, setFallback)}>Download CSV</Btn>}</div>}>
+        actions={<div className="row gap-s wrap"><Select id="rs-field" value={key} onChange={setKey} placeholder="All fields" options={[...Object.entries(PICK_LABELS).map(([value, label]) => ({ value, label })), { value: "other", label: "Other fields" }]} />{can("export") && <Btn disabled={!rows.length} why="Nothing logged yet" onClick={() => saveCsv("reader-corrections.csv", csv(), toast, setFallback)}>Download CSV</Btn>}</div>}>
         {rows.length ? (
           <Table className="rs-log">
             <thead><tr><th>When</th><th>Field</th><th>Values found</th><th>We suggested</th><th>Final value</th><th>How</th><th>By</th><th>Document</th></tr></thead>
             <tbody>{rows.slice(0, 200).map((r, i) => (
               <tr key={i}>
-                <td>{fmtStamp(r.at)}</td><td>{PICK_LABELS[r.key] || r.key}</td><td className="small">{found(r) || "None"}</td>
+                <td>{fmtStamp(r.at)}</td><td>{fieldName(r.key)}</td><td className="small">{found(r) || "None"}</td>
                 <td>{r.sug ? <span className={`cf-chip cf-${r.state}`}>{val(r, r.sug)}</span> : <span className={`cf-chip cf-${r.state || "red"}`}>None</span>}</td>
                 <td><strong>{val(r, r.fin) || "Blank"}</strong></td><td><span className={`cf-chip ${r.how === "Kept" || r.how === "Confirmed" ? "cf-green" : ""}`}>{r.how}</span></td><td>{r.by}</td><td className="small">{r.doc}</td>
               </tr>))}</tbody>

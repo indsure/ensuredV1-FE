@@ -30,7 +30,7 @@ export function ocrSettings(db) {
 export function pageOf(lines, ref) {
   for (let i = Math.min((lines || []).length, ref) - 1; i >= 0; i--) {
     const t = typeof lines[i] === "string" ? lines[i] : lines[i]?.text;
-    const m = /^\[Page (\d+)\]$/.exec(t || "");
+    const m = /^\[Page (\d+)(?:, read again)?\]$/.exec(t || "");
     if (m) return +m[1];
   }
   return 1;
@@ -80,15 +80,29 @@ export function judgeField(key, cands, { lines, ocr, settings = OCR_DEFAULTS, in
   return { state: "green", cands: scored, reason: "One clear value next to a known label." };
 }
 
-// The reader's candidates for the three pick fields of a read document (fx from readPolicyPdf).
+// The reader's candidates for every field of a read document (fx from readPolicyPdf).
 export function pickCandidates(fx) {
   if (!fx) return {};
   const f = fx.fields || {}, info = fx.info || {};
-  return {
-    insurer: info.insurerCands || [],
-    policyNo: f.policyNo?.cands || info.policyNoCands || [],
-    sumInsured: f.sumInsured?.cands || info.sumInsuredCands || [],
-  };
+  const out = Object.fromEntries(Object.entries(f).filter(([, v]) => v && v.cands).map(([k, v]) => [k, v.cands]));
+  out.insurer = info.insurerCands || [];
+  out.policyNo = f.policyNo?.cands || info.policyNoCands || [];
+  out.sumInsured = f.sumInsured?.cands || info.sumInsuredCands || [];
+  return out;
+}
+const CORE = new Set(PICK_FIELDS);
+// A colour for any field. Insurer, policy number and sum insured get the full points above. Every other field
+// takes the reader's own certainty (read clearly = green, please check = amber) and turns amber or red only
+// when the document prints a real rival value, so it adds no hold the reader did not already raise.
+export function judgeAny(key, cands, { lines, ocr, settings = OCR_DEFAULTS, inUse, readerConf } = {}) {
+  const list = cands && cands.length ? cands : inUse != null && inUse !== "" ? [{ v: inUse, ref: 0, label: "" }] : [];
+  const j = judgeField(key, list, { lines, ocr, settings, inUse });
+  if (CORE.has(key)) return j;
+  const [top, second] = j.cands;
+  const rival = !!second && (second.prior || second.score >= settings.amber);
+  if (rival) return j;
+  if (readerConf === "low" || ocr) return { ...j, state: "amber", reason: ocr ? "Read from a scan." : "The reader asks for this to be checked." };
+  return { ...j, state: top ? "green" : "red", reason: top ? "Read clearly." : j.reason };
 }
 
 // One entry for the corrections log: short strings only, at most three candidates, so the book stays small.
@@ -108,7 +122,7 @@ export function logEntry({ key, cands, suggested, final, how, by, doc, state }) 
 // bytes each), since the book is saved whole. Drafts keep them until they are confirmed.
 export function dropCands(doc) {
   if (!doc) return;
-  for (const k of ["policyNo", "sumInsured"]) if (doc.fixtureFields?.[k]?.cands) { const { cands, ...rest } = doc.fixtureFields[k]; doc.fixtureFields[k] = rest; }
+  for (const k of Object.keys(doc.fixtureFields || {})) if (doc.fixtureFields[k]?.cands) { const { cands, ...rest } = doc.fixtureFields[k]; doc.fixtureFields[k] = rest; }
   if (doc.info) for (const k of ["insurerCands", "policyNoCands", "sumInsuredCands"]) delete doc.info[k];
 }
 export function addLog(db, entries) {

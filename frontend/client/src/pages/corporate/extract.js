@@ -10,7 +10,9 @@ export const PDFJS_BASE = PDFJS;
 // The insurer's PDFs are read up to 60 pages, so premium tables in an annexure near the end are found.
 const MAX_PAGES = 60;
 const MAX_LINES = 3000;
-const OCR_PAGES = 6;
+// A scan is read on every page too (about 10 seconds a page): limits and premium tables are often deep in
+// the schedule (WELCAR prints its sum insured on page 13 of 17).
+const OCR_PAGES = MAX_PAGES;
 const TESSERACT = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
 const IMAGE_RE = /\.(jpe?g|png|webp|bmp|gif)$/i;
 export const isImage = (f) => IMAGE_RE.test(f?.name || "") || /^image\/(jpeg|png|webp|bmp|gif)$/.test(f?.type || "");
@@ -113,9 +115,13 @@ function loadTesseract() {
   return tess;
 }
 // One OCR'd image -> lines in the same shape as a PDF's text layer (segments split where the gap is wide).
-async function ocrCanvas(canvas, page, multi) {
+async function ocrCanvas(canvas, page, multi, psm = "3") {
   const worker = await loadTesseract();
-  const { data } = await worker.recognize(canvas);
+  // "3" finds the page layout; "11" reads every word on its own, which catches small table cells the
+  // layout mode skips. The rows are rebuilt from where each word sits either way.
+  if (psm !== "3") await worker.setParameters({ tessedit_pageseg_mode: psm });
+  let data;
+  try { ({ data } = await worker.recognize(canvas)); } finally { if (psm !== "3") await worker.setParameters({ tessedit_pageseg_mode: "3" }); }
   const out = multi ? [{ page, text: `[Page ${page}]`, segs: [], marker: true }] : [];
   // OCR reports each table column as its own block, so a label and its value come back far apart. Rebuild
   // the rows from where the words sit on the page, which gives the same shape as a digital PDF. Only the
@@ -166,6 +172,22 @@ async function ocrPdf(pdf, onProgress) {
     lines.push(...await ocrCanvas(c, p, n > 1));
   }
   return { lines, readPages: n };
+}
+// A scan whose premium table was not found: read the pages that talk about premium again, word by word, and
+// add those lines after the rest (marked "[Page N, read again]"), so the line numbers already read stay the same.
+async function ocrPremiumPages(pdf, lines, onProgress) {
+  const pages = [...new Set(lines.filter((l) => !l.marker && /\bpremium\b/i.test(l.text)).map((l) => l.page))].slice(0, 3);
+  const out = [];
+  for (const p of pages) {
+    onProgress(p, pdf.numPages, true);
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({ scale: 3 });
+    const c = canvasOf(vp.width, vp.height);
+    await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    const got = await ocrCanvas(c, p, false, "11");
+    out.push({ page: p, text: `[Page ${p}, read again]`, segs: [], marker: true }, ...got);
+  }
+  return out;
 }
 async function ocrImage(file, onProgress) {
   onProgress(1, 1, true);
@@ -268,12 +290,13 @@ const RULES = [
   // Not the policy's sum insured: health bonuses, buffers, deductibles and daily amounts; marine per-sending,
   // per-bottom and per-location limits; a liability any-one-accident limit (unless it is also the aggregate);
   // fire deductible bands ("Sum Insured upto 10 Cr per location"); add-on and PA sums insured.
-  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum(?!\s+annual\s+liability)|%\s*of|per\s*(person|employee|member|vessel|sending|bottom|location|transit|conveyance|day|claim|occurrence)|in\s*words|cumulative\s*bonus|no\s*claim\s*bonus|\bbonus\b|corporate\s*buffer|\bbuffer\b|deductible|threshold|restor|recharge|reload|booster|room\s*rent|daily\s*(cash|allowance)|hospital\s*cash|\bup\s*to\b|\bupto\b|owner[\s-]*driver|unnamed|paid\s*driver|hospitali[sz]ation|battery|charger|any\s*one\s*(accident|claim|occurrence)(?![^.]*aggregate)|\baoa\b/i },
+  { key: "sumInsured", kind: "amount", label: phraseRe(VOCAB.sumInsured), not: /used|balance|basis|sub[\s-]*limit|maximum(?!\s+(annual\s+liability|limit\s+of\s+liability))|%\s*of|per\s*(person|employee|member|vessel|sending|bottom|location|transit|conveyance|day|claim|occurrence)|in\s*words|cumulative\s*bonus|no\s*claim\s*bonus|\bbonus\b|corporate\s*buffer|\bbuffer\b|deductible|threshold|restor|recharge|reload|booster|room\s*rent|daily\s*(cash|allowance)|hospital\s*cash|\bup\s*to\b|\bupto\b|owner[\s-]*driver|unnamed|paid\s*driver|hospitali[sz]ation|battery|charger|any\s*one\s*(accident|claim|occurrence)(?![^.]*(aggregate|combined\s+single\s+limit))|\baoa\b/i },
   { key: "_pre", kind: "amount", label: new RegExp(phraseRe(VOCAB.netPremium).source + "|" + /total\s*premium\s*(before|excl)/i.source, "i") },
   { key: "_post", kind: "amount", label: new RegExp(phraseRe(VOCAB.grossPremium).source + "|" + /\btotal\s*\(\s*(`|₹|rs\.?|inr)\s*\)/i.source, "i"), not: /before|excl|excluding|\bnet\b|without|in\s*words/i },
   // A bare "Premium" label is the premium before tax. Only as a label in its own cell or before a colon.
   { key: "_pre", kind: "amount", label: /\bpremium\b/i, strict: true, not: /total|gross|\bnet\b|rate|payable|deposit|minimum|paid|refund|additional|due|cheque|tax|gst|words|details|head|share|basis|amount|annual|holiday/i },
-  { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl/i },
+  // Not "GST INVOICE NO ..." or "Total Premium In Words: ... Two Lakhs" on the same line (WELCAR read GST as 2,00,000).
+  { key: "gst", kind: "amount", label: phraseRe(VOCAB.gst), not: /gstin|regist|\bno\.?\b|number|cgst|sgst|utgst|before|excl|invoice|in\s*words/i },
   { key: "stampDuty", kind: "amount", label: phraseRe(VOCAB.stampDuty), zeroOk: true },
   { key: "premiumRate", kind: "pct", label: phraseRe(VOCAB.premiumRate), not: /gst|tax|exchange|interest/i },
   // GST on the broker's commission, when a policy or debit note prints it ("GST on Brokerage @ 18%").
@@ -376,7 +399,11 @@ function pick(cands, key, ocr) {
   return res;
 }
 // The fields that get a pick list of everything found. Others keep the single best reading.
-const CAND_KEYS = ["sumInsured", "policyNo"];
+// Every labelled field, except the premium figures: which of those is gross and which net is decided by the
+// arithmetic (gross + GST = net), so a list of labelled premium values would mislead.
+const NO_CANDS = new Set(["_pre", "_post", "gst", "stampDuty", "grossPremium", "netPremium"]);
+const CAND_KEYS = [...new Set(["sumInsured", "policyNo", ...RULES.map((r) => r.key)])].filter((k) => !NO_CANDS.has(k));
+const CORE_CANDS = new Set(["sumInsured", "policyNo"]);
 // Distinct values, the one in use first, each with its label, line and how many times it was printed.
 function candList(cands, first) {
   const by = new Map();
@@ -544,13 +571,20 @@ export function parseFields(lines, ocr = false) {
   const idv = motorIdv(lines);
   if (idv) { fields.sumInsured = idv; info.idv = idv.v; }
   if (!fields.sumInsured) { const lim = limitCell(lines); if (lim) fields.sumInsured = lim; }
+  // Sections and classes: their rows go to Other details as printed (no totals are made up).
+  const secRows = applySections(lines, fields, found);
+  const cls = classBlocks(lines);
+  if (secRows.length || cls.rows.length) info.otherRows = [...secRows, ...cls.rows];
+  if (cls.byClass) info.classLimits = true;
   // Pick lists: every value found for these fields, the one in use first. Earlier policy numbers are listed
   // last and marked, never used.
   for (const k of CAND_KEYS) {
     const f = fields[k];
     const extra = k === "policyNo" ? candidates(lines, { key: "priorPolicyNo", kind: "id", label: phraseRe(VOCAB.priorPolicyNo) }).map((c) => ({ ...c, prior: true })) : [];
-    const list = candList([...found[k], ...extra], f ? { v: f.v, ref: f.ref, label: (found[k].find((c) => String(c.v) === String(f.v)) || {}).label || f.word || "", conf: f.conf } : null);
+    if (!f && !CORE_CANDS.has(k)) continue;
+    const list = candList([...(found[k] || []), ...extra], f ? { v: f.v, ref: f.ref, label: ((found[k] || []).find((c) => String(c.v) === String(f.v)) || {}).label || f.word || "", conf: f.conf } : null);
     // A value found by a table rule has no label of its own: use the first cell of its line ("Limit", "Total IDV").
+    if (k === "sumInsured") for (const c of list) if (printedShort(lines[c.ref - 1]?.text, c.v)) c.warn = "Printed one digit short on the policy. Check the figure.";
     for (const c of list) if (!c.label) { const s0 = lines[c.ref - 1]?.segs?.[0]?.s || ""; if (s0.length <= 40 && /[A-Za-z]{3}/.test(s0) && !s0.includes(String(c.v))) c.label = s0.replace(/\s*:$/, ""); }
     // The motor IDV rule checks that the parts add up to the total.
     if (f && k === "sumInsured" && /^(Read as the )?Total IDV/.test(f.note || "") && list[0]) { list[0].label = "Total IDV"; if (f.conf === "high") list[0].sums = true; }
@@ -633,6 +667,103 @@ function limitCell(lines) {
     return { v, ref: i + 1, conf: foreign || per || parts.length > 2 ? "low" : "high", note };
   }
   return null;
+}
+
+// ---- limits, premiums and deductibles set out by class
+// "Limits of Liability:" then "Class I: Up to USD 5,000,000 ..." and "Class II: Up to USD 500,000,000 ... subject
+// to subsidiary limit(s)". Each class is kept as printed, in Other details. No total is made up from them.
+const CLASS_HEAD = /^\s*(risks?\s+covered|deductibles?|limits?\s+of\s+(?:liability|cover|indemnity)|limits?|premiums?|rates?)\s*:\s*$/i;
+const CLASS_LINE = /^\s*class\s+(i{1,3}|iv|v|[1-5])\s*[:.\-–]\s*(.*)$/i;
+const CLASS_NAME = (h) => (/^risk/i.test(h) ? "Cover" : /^deduct/i.test(h) ? "Deductible" : /^limit/i.test(h) ? "Limit" : /^rate/i.test(h) ? "Rate" : "Premium");
+// A general sentence after the classes ("The premiums above are net of ...", "Rates in USD per vessel ...").
+const NOTE_START = /^\s*(the\s|rates\s+in\b|all\s+amounts\b|note\b|these\s|taxes\b)/i;
+export function classBlocks(lines) {
+  const out = [];
+  let limits = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (!l || l.marker || !CLASS_HEAD.test(l.text)) continue;
+    const name = CLASS_NAME(l.text.trim());
+    const rows = [], notes = [];
+    let cur = null;
+    for (let j = i + 1; j < Math.min(lines.length, i + 16); j++) {
+      const t = lines[j];
+      if (!t || t.marker || CLASS_HEAD.test(t.text) || /^\s*[A-Z][A-Za-z’' ]{2,40}:\s*$/.test(t.text)) break;
+      const text = t.text.replace(/\s{2,}/g, " ").trim();
+      const c = CLASS_LINE.exec(t.text);
+      if (c) { cur = { label: `${name}, Class ${c[1].toUpperCase()}`, value: c[2].replace(/\s{2,}/g, " ").trim(), ref: j + 1 }; rows.push(cur); continue; }
+      if (!cur) break;
+      if (NOTE_START.test(text) || notes.length) { if (notes.length < 3) notes.push(text); else break; continue; }
+      // A wrapped sentence joins with a space; another priced row ("Vessels 35,001 to 50,000 GT USD 2,803") with "; ".
+      cur.value += (/\d[\d,]*$/.test(cur.value) && /\d/.test(text) ? "; " : " ") + text;
+    }
+    if (!rows.length) continue;
+    if (name === "Limit") limits = Math.max(limits, rows.length);
+    for (const r of rows) out.push({ ...r, value: r.value.replace(/\s*;\s*$/, "").slice(0, 300) });
+    if (notes.length) out.push({ label: `${name} notes`, value: notes.join(" ").slice(0, 300), ref: i + 2 + rows.length });
+  }
+  return { rows: out, byClass: limits >= 2 };
+}
+
+// ---- a schedule set out in sections: "SECTION I - PHYSICAL DAMAGE" with its rows, "SECTION II - LIABILITY"
+// with its own sum insured. The sections are kept apart: each row goes to Other details as printed.
+const SECTION_HEAD = /^\s*section\s+(i{1,3}|iv|v|vi|[1-6])\b\s*[-–—:.]?\s*([A-Za-z &/]{0,50})\s*$/i;
+// "INR 2,53,70,000", "INR 2.53.70,000" (a scan reads some commas as dots), "Rs. (5.00,000)".
+const SEC_AMT = /(?:inr|rs\.?|₹)\s*\(?\s*(\d{1,3}(?:[.,]\d{2,3}){1,5})\s*\)?/i;
+function sectionAmount(raw) {
+  const groups = raw.split(/[.,]/);
+  const value = +groups.join("");
+  // An Indian amount always ends in a group of three digits: "2,95,56,64" is printed one digit short.
+  const short = groups.length > 1 && groups[groups.length - 1].length !== 3;
+  return { value, short, text: raw.replace(/\./g, ",") };
+}
+export function sectionLimits(lines) {
+  const heads = [];
+  lines.forEach((l, i) => { if (l && !l.marker) { const m = SECTION_HEAD.exec(l.text); if (m) heads.push({ i, no: m[1].toUpperCase(), name: m[2].trim() }); } });
+  const sections = [];
+  for (const [k, h] of heads.entries()) {
+    const end = Math.min(heads[k + 1]?.i ?? lines.length, h.i + 25);
+    const rows = [];
+    for (let j = h.i + 1; j < end; j++) {
+      const l = lines[j]; if (!l || l.marker) continue;
+      if (/^\s*deductibles?\b/i.test(l.text) || /^\s*\d{1,2}\.\s+[A-Z]/.test(l.text)) break; // the next numbered item ("6. PREMIUM:")
+      const m = SEC_AMT.exec(l.text); if (!m) continue;
+      const a = sectionAmount(m[1]); if (a.value < 1000) continue;
+      let label = l.text.slice(0, m.index).replace(/[\s—–:\-]+$/, "").trim();
+      if (!label) {
+        // The label wraps around the figure: "Lump-sum cost of materials for" / "INR 2,53,70,000" / "execution of entire job".
+        const prev = lines[j - 1], next = lines[j + 1];
+        const plain = (x) => x && !x.marker && !SEC_AMT.test(x.text) && !SECTION_HEAD.test(x.text) && x.text.length < 70;
+        label = [plain(prev) ? prev.text : "", plain(next) && /^[a-z+(]/.test(next.text.trim()) ? next.text : ""].join(" ").replace(/\s+/g, " ").trim();
+      }
+      if (!label || /^description\b/i.test(label)) continue;
+      rows.push({ label, ...a, ref: j + 1 });
+    }
+    if (rows.length && !sections.some((s) => s.no === h.no && s.name.toLowerCase() === h.name.toLowerCase())) sections.push({ ...h, end, rows });
+  }
+  return sections.length >= 2 ? sections : [];
+}
+// Is this figure, as printed on its line, an Indian amount one digit short ("2,95,56,64")?
+export function printedShort(lineText, v) {
+  for (const m of String(lineText || "").matchAll(/\d{1,3}(?:[.,]\d{2,3})+/g)) { const a = sectionAmount(m[0]); if (a.value === +v && a.short) return true; }
+  return false;
+}
+const titleCase = (s) => s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
+// Section rows for Other details, and the sum insured: the property section's total, the liability section's
+// own figure kept as a separate limit.
+function applySections(lines, fields, found) {
+  const secs = sectionLimits(lines);
+  if (!secs.length) return [];
+  const rows = secs.flatMap((s) => s.rows.map((r) => ({ label: `Section ${s.no}${s.name ? ` (${titleCase(s.name)})` : ""}: ${r.label}`, value: `INR ${r.text}${r.short ? " (as printed, looks one digit short: check the policy)" : ""}`, ref: r.ref })));
+  const prop = secs.find((s) => !/liabilit/i.test(s.name));
+  const total = prop && prop.rows.filter((r) => !r.short && /net|total|lump\s*sum\s*price|sum\s+insured/i.test(r.label)).sort((a, b) => b.value - a.value)[0];
+  const cur = fields.sumInsured;
+  const inLiab = cur && secs.some((s) => /liabilit/i.test(s.name) && cur.ref > s.i && cur.ref <= s.end);
+  if (total && (!cur || inLiab || printedShort(lines[cur.ref - 1]?.text, cur.v))) {
+    fields.sumInsured = { v: total.value, ref: total.ref, conf: "low", note: `Section ${prop.no}${prop.name ? ` (${titleCase(prop.name)})` : ""} total. The other sections have their own limits: see Other details.` };
+    found.sumInsured = [...(found.sumInsured || []), { v: total.value, ref: total.ref, conf: "low", label: total.label }];
+  }
+  return rows;
 }
 
 // ---- what kind of document this is
@@ -799,22 +930,30 @@ function companyName(raw) {
 }
 // The company a certificate says issued it: "This Certificate of Insurance is issued by X for and on behalf of ...".
 const ISSUE_STOP = /\s+(?:for\s+and\s+on\s+behalf|on\s+behalf|pursuant|under\s+(?:the|its|a)\s|in\s+accordance|acting\s|as\s+agents?|who\s|which\s|whose\s|and\s+is\s|dated\s|at\s+(?:the|its)\s)|[,;(]|\.(?:\s|$)/i;
-function issuedBy(flatText) {
+// "issued by X for and on behalf of the Underwriters": X is a coverholder or managing agent, not the insurer.
+// So is "issued by X pursuant to its Authority Agreement with ...", and a document that calls X a coverholder.
+const FOR_UNDERWRITERS = /^\s*(?:for\s+and\s+)?on\s+behalf\s+of\s+(?:the\s+)?(?:underwriters|insurers?|lloyd'?s|syndicates?|security)|^\s*pursuant\s+to\s+(?:its|the|a)\s+(?:binding\s+)?authority/i;
+function issuedByFull(flatText) {
   const re = /\b(?:issued|underwritten)\s+by\s*:?\s+/gi;
   let m;
   while ((m = re.exec(flatText))) {
     const before = flatText.slice(Math.max(0, m.index - 80), m.index);
     if (!/\b(certificate|policy|document|insurance|cover(?:age)?|schedule|contract|this)\b[^.]*$/i.test(before)) continue;
-    const rest = flatText.slice(m.index + m[0].length, m.index + m[0].length + 160);
-    const name = companyName(rest.split(ISSUE_STOP)[0]);
-    if (name) return name;
+    const rest = flatText.slice(m.index + m[0].length, m.index + m[0].length + 200);
+    const head = rest.split(ISSUE_STOP)[0];
+    const name = companyName(head);
+    if (name) return { name, agent: FOR_UNDERWRITERS.test(rest.slice(head.length)) || /\bcover\s*-?holder\b/i.test(flatText) };
   }
   return null;
 }
+const issuedBy = (flatText) => issuedByFull(flatText)?.name || null;
+// Regulatory boilerplate names a company without making it the insurer.
+const REGULATORY = /authori[sz]ed\s+(and|&)\s+regulated|regulated\s+by|financial\s+conduct\s+authority|\bFCA\b|prudential\s+regulation|registered\s+(office|in\s+england)|company\s+registration|registered\s+number/i;
 // London market slips: "SECURITY  100% Great Lakes Insurance SE ..." or "USD 10 Million led by Westfield Syndicate 1200".
 function securityLead(lines) {
-  for (const l of lines) {
-    const m = l.text.match(/^\s*security\s*:?\s+(.*)$/i);
+  for (const [k, l] of lines.entries()) {
+    // "Security:" alone on its line, with "100% Great Lakes Insurance SE ..." on the next one.
+    const m = l.text.match(/^\s*security\s*:?\s+(.*)$/i) || (/^\s*security\s*:\s*$/i.test(l.text) && lines[k + 1] ? [null, lines[k + 1].text] : null);
     if (!m) continue;
     const v = m[1].replace(/^[\d.]+\s*%\s*/, "");
     const led = v.match(/\bled\s+by\s+(.+)/i);
@@ -825,8 +964,11 @@ function securityLead(lines) {
 }
 
 function findInsurer(lines) {
-  const text = lines.filter((l) => !l.marker).map((l) => l.text).join("\n");
-  const stated = issuedBy(text.replace(/\s+/g, " "));
+  const text = lines.filter((l) => !l.marker && !REGULATORY.test(l.text)).map((l) => l.text).join("\n");
+  const full = issuedByFull(text.replace(/\s+/g, " "));
+  // Issued by a coverholder for the underwriters: the insurer is the security named on the slip.
+  if (full?.agent) { const lead = securityLead(lines.filter((l) => !l.marker)); if (lead) return lead; }
+  const stated = full?.name;
   if (stated) return stated;
   let best = null;
   for (const [name, re] of INSURERS) {
@@ -867,11 +1009,16 @@ export function insurerCandidates(lines) {
     }
     by.set(k, { v, ref, label: label || "", how, prior, count: 1, pageSet: new Set([page]) });
   };
-  const real = lines.map((l, i) => ({ l, i })).filter((x) => !x.l.marker);
-  // 1) "issued by X" in the certificate wording
+  const real = lines.map((l, i) => ({ l, i })).filter((x) => !x.l.marker && !REGULATORY.test(x.l.text));
+  // 0) London market security first: when a coverholder issues the certificate, this is the insurer.
+  const lead0 = securityLead(real.map((x) => x.l));
   const flat = real.map((x) => x.l.text).join(" ").replace(/\s+/g, " ");
-  const stated = issuedBy(flat);
-  if (stated) { const at = real.find((x) => x.l.text.toLowerCase().includes(stated.toLowerCase().split(" ")[0])); add(stated, (at ? at.i : 0) + 1, "Issued by", "stated"); }
+  const full = issuedByFull(flat);
+  if (lead0 && full?.agent) { const at = real.find((x) => /^\s*security\b/i.test(x.l.text)); add(lead0, (at ? at.i : 0) + 1, "Security", "security"); }
+  // 1) "issued by X" in the certificate wording. Issued "for and on behalf of the Underwriters", X is the
+  // coverholder: listed, but without the points of a named insurer.
+  const stated = full?.name;
+  if (stated) { const at = real.find((x) => /issued\s+by/i.test(x.l.text)) || real.find((x) => x.l.text.toLowerCase().includes(stated.toLowerCase().split(" ")[0])); add(stated, (at ? at.i : 0) + 1, full.agent ? "Issued for the underwriters by" : "Issued by", full.agent ? "agent" : "stated"); }
   // 2) a label cell and its value: "Current issuer  North Quay Assurance", "Former trade style  Cedar Legacy Assurance"
   for (const { l, i } of real) {
     const segs = l.segs || [];
@@ -972,8 +1119,13 @@ export async function readPolicyPdf(file, onProgress = () => {}) {
   if (chars < 40) {
     return { ...base, noText: true, lines: ["No readable text was found, even after reading the pages as a scan.", "The scan may be too faint or blurred. Enter the values by hand, or attach the digital PDF from the insurer."], fields: {}, info: {}, customer: {} };
   }
-  const lines = res.lines.slice(0, MAX_LINES);
-  const { fields, info } = parseFields(lines, ocr);
+  let lines = res.lines.slice(0, MAX_LINES);
+  let { fields, info } = parseFields(lines, ocr);
+  // A scanned premium table often comes back without its labels. Read those pages again, word by word.
+  if (ocr && res.pdf && (!fields.gst || !fields.grossPremium || !fields.netPremium)) {
+    const again = await ocrPremiumPages(res.pdf, lines, onProgress);
+    if (again.length) { lines = [...lines, ...again].slice(0, MAX_LINES); ({ fields, info } = parseFields(lines, ocr)); }
+  }
   const customer = parseCustomer(lines);
   // A scan can misread a letter or digit, so every value read from one is marked for checking.
   if (ocr) for (const set of [fields, customer]) for (const k of Object.keys(set)) set[k] = { ...set[k], conf: "low", note: [set[k].note, "Read from a scan. Check it against the document."].filter(Boolean).join(" ") };
@@ -981,7 +1133,8 @@ export async function readPolicyPdf(file, onProgress = () => {}) {
   // A project cover named only in its heading: the reader says which type it is, and add.jsx uses it.
   const eng = engineeringType(lines);
   if (eng) { base.type = eng.type; base.dept = eng.dept; base.typeFrom = "document"; }
-  const other = otherDetails(lines);
+  const other = [...(info.otherRows || []), ...otherDetails(lines)];
+  delete info.otherRows;
   const sch = liabilitySchedule(lines);
   if (sch) other.unshift({ label: "AOA (any one accident)", value: String(sch.aoa), ref: sch.ref }, { label: "AOY (any one year)", value: String(sch.aoy), ref: sch.ref }, { label: "AOA to AOY ratio", value: sch.ratio, ref: sch.ref }, { label: "Deductible", value: String(sch.deductible), ref: sch.ref }, { label: "Retroactive date", value: sch.retro, ref: sch.ref });
   // geo: where each line sits ([page, x0, y0, x1, y1] as fractions of the page), for "View in PDF". Kept only
