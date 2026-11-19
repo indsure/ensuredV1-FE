@@ -8,8 +8,6 @@ import { lazyWithPreload, type PreloadableComponent } from "@/lib/lazyPreload";
  * App.tsx: warming them costs bandwidth for a session that is already past them.
  */
 export const DashboardNew = lazyWithPreload(() => import("@/pages/agent/DashboardNew"));
-export const Insights = lazyWithPreload(() => import("@/pages/agent/Insights"));
-export const Business = lazyWithPreload(() => import("@/pages/agent/Business"));
 export const LeadRenewals = lazyWithPreload(() => import("@/pages/agent/LeadRenewals"));
 export const AgentUploads = lazyWithPreload(() => import("@/pages/agent/AgentUploads"));
 export const PoliciesNew = lazyWithPreload(() => import("@/pages/agent/PoliciesNew"));
@@ -47,7 +45,6 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
   MyQueue,
   PoliciesNew,
   CustomersNew,
-  Insights,
   LeadsNew,
   LeadRenewals,
   AgentCompare,
@@ -96,8 +93,6 @@ export const AGENT_PRELOAD_ORDER: PreloadableComponent<any>[] = [
  */
 const ROUTE_BY_PATH: Record<string, PreloadableComponent<any>> = {
   "/agent/dashboard": DashboardNew,
-  "/agent/insights": Insights,
-  "/agent/business": Business,
   "/agent/uploads": AgentUploads,
   "/agent/policies": PoliciesNew,
   "/agent/values": PolicyValues,

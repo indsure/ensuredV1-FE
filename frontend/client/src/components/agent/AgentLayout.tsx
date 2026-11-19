@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { Lock, BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, IndianRupee, LayoutDashboard, MessageCircle, Settings, LogOut, TrendingUp, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { Lock, BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, LayoutDashboard, MessageCircle, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -18,7 +18,7 @@ import { EntitlementSync } from "@/components/agent/PaidOnly"
 // Paid-only screens for the limited Free plan (founder, 2026-11-02). Kept in the rail with a
 // lock so the advisor sees what paid adds; the route itself shows the upgrade screen.
 const PAID_ONLY_HREFS = new Set([
-  "/agent/insights", "/agent/my-queue", "/agent/values", "/agent/team", "/agent/claims",
+  "/agent/my-queue", "/agent/values", "/agent/team", "/agent/claims",
   "/agent/my-page", "/agent/calculator", "/agent/compare/quotes", "/agent/riders",
 ])
 
@@ -92,25 +92,9 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           { label: label("layout.nav_needs_attention", "Needs Attention"), href: "/agent/my-queue", badge: "queue" },
         ],
       },
-      {
-        key: "insights",
-        label: label("layout.nav_insights", "Insights"),
-        href: "/agent/insights",
-        icon: <TrendingUp className="h-4 w-4" />,
-        // No children: it is one screen, and a parent that expands to a single
-        // child is a click that buys nothing.
-        children: [],
-      },
-      // Business: the book in rupees. Playground only until the founder signs
-      // it off; App.tsx sends a real agent on /agent/business to Insights.
+      // Insights and Business are part of Home now (2026-11-19).
       ...(isPlaygroundMode()
         ? [{
-            key: "business",
-            label: label("layout.nav_business", "Business"),
-            href: "/agent/business",
-            icon: <IndianRupee className="h-4 w-4" />,
-            children: [],
-          }, {
             // The WhatsApp assistant on a phone screen, answered from the demo data.
             key: "whatsapp-demo",
             label: label("layout.nav_whatsapp_demo", "WhatsApp"),

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter"
-import { Home, FileText, Users, TrendingUp, MoreHorizontal, Upload, CreditCard } from "lucide-react"
+import { Home, FileText, Users, MoreHorizontal, Upload, CreditCard } from "lucide-react"
 import { useLanguage } from "@/i18n/LanguageContext"
 import { preloadAgentRoute } from "@/pages/agent/lazyRoutes"
 
@@ -40,7 +40,7 @@ export function AgentTabBar({ onMore, limited = false }: { onMore: () => void; l
       ]
     : [
         { href: "/agent/dashboard", label: label("layout.tab_home", "Home"), icon: Home },
-        { href: "/agent/insights", label: label("layout.nav_insights", "Insights"), icon: TrendingUp },
+        { href: "/agent/uploads", label: label("paywall.tab_upload", "Upload"), icon: Upload },
         { href: "/agent/customers", label: label("layout.nav_people", "People"), icon: Users },
         { href: "/agent/policies", label: label("layout.tab_policies", "Policies"), icon: FileText },
       ]
