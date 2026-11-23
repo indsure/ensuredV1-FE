@@ -454,7 +454,8 @@ export default function AgentUploads() {
         setLocation(`/agent/policies/${completed.clientId}`);
       }
     } else {
-      setLocation("/agent/policies");
+      // Life and term policies are listed in their own section.
+      setLocation(insuranceType === "life" || insuranceType === "term" ? "/agent/life" : "/agent/policies");
     }
   };
 

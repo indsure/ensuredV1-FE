@@ -154,8 +154,9 @@ export const DOC_SECTIONS: DocSection[] = [
               "**Check a Policy**: the green button at the top. The thing you will do most, always one press away.",
               "**Home**: your Overview (renewals, your book in rupees, who is worth a call), and **Needs Attention** for policies that are still being read or could not be read.",
               "**People**: **Customers**, **Leads** and **Renewals**.",
-              "**Policies**: every policy, with quick filters for Health, Life, Term, Motor and Others.",
-              "**Services**: **Compare Policies**, **Cover Calculator**, **Surrender Values**, **Claims** and **My Website**.",
+              "**Policies**: every policy, with quick filters for Health, Motor and Others. Life and term are in their own section.",
+              "**Life**: every life and term policy, with premium dates and maturity, and **Surrender Values**.",
+              "**Services**: **Compare Policies**, **Cover Calculator**, **Claims** and **My Website**.",
               "**My Agency**: only for agency owners. Your **Team**.",
               "**Help** and **Settings**, under Account.",
               "Your name at the bottom opens **Rider Directory**, **My Profile** and **Sign Out**.",
@@ -551,7 +552,7 @@ export const DOC_SECTIONS: DocSection[] = [
             t: "list",
             items: [
               "**At the top**: how many policies you have checked, how many expire in the next 30 days, and how many should switch.",
-              "**Type filters**: All types, Health, Motor, Life, Term, Travel, Property, Fire, Marine and more.",
+              "**Type filters**: All types, Health, Motor, Travel, Property, Fire, Marine and more. **Life and term** opens the Life section.",
               "**Tabs**: All, **Expiring Soon**, **Should Switch** and **Healthy**.",
               "**Each row**: the customer, type, insurer, next premium date, score, a **Keep** or **Switch** recommendation, and whether the customer has viewed the shared report.",
               "The icons at the end of a row draft a WhatsApp message or open the policy.",
@@ -632,7 +633,7 @@ export const DOC_SECTIONS: DocSection[] = [
         description: "See each life policy in your IndSure book, what every figure is based on, what a customer could borrow, and what still needs checking.",
         lead: "Each life policy, with what every figure is based on.",
         blocks: [
-          { t: "img", name: "values", alt: "The Surrender values screen with totals for insurer quotes and calculated values, policies needing attention and policies maturing soon, above a table of policies.", caption: "Services, then Surrender Values." },
+          { t: "img", name: "values", alt: "The Surrender values screen with totals for insurer quotes and calculated values, policies needing attention and policies maturing soon, above a table of policies.", caption: "Life, then Surrender Values." },
           { t: "p", text: "Each value shows what it is based on. We show a calculated amount only when the needed policy terms and inputs are available. Missing information and projections are shown separately. Confirm the final surrender or loan amount with the insurer before acting." },
           {
             t: "list",

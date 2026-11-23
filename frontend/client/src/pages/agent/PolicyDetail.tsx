@@ -186,6 +186,8 @@ export default function PolicyDetail() {
   );
   const expiry = expiryMeta(policy?.policy_end_date ?? null, t);
   const isDataEntry = isDataEntryType(insuranceType);
+  /** The list this policy is in: life and term have their own section. */
+  const listPath = insuranceType === "life" || insuranceType === "term" ? "/agent/life" : "/agent/policies";
   /* A policy may be shared once there is something at the other end of the
      link. Health needs its audit; a data-entry policy needs at least one
      publishable field. This mirrors the readiness test the server applies in
@@ -435,7 +437,7 @@ export default function PolicyDetail() {
       await deletePolicyRecord(policy.id, agent.agentId);
 
       toast({ variant: "success", title: t("policy_detail.deleted") });
-      setLocation("/agent/policies");
+      setLocation(listPath);
     } catch (deleteError) {
       toast({ variant: "destructive", title: t("policy_detail.delete_failed"), description: deleteError instanceof Error ? deleteError.message : t("policy_detail.delete_failed_desc") });
     } finally {
@@ -448,7 +450,7 @@ export default function PolicyDetail() {
   if (error) {
     return (
       <div className="space-y-4">
-        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
+        <BackLink to={listPath} label={t("policy_detail.back")} />
         <InlineErrorState
           message={error === t("policy_detail.not_found") ? error : undefined}
           onRetry={loadDetail}
@@ -460,7 +462,7 @@ export default function PolicyDetail() {
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
-        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
+        <BackLink to={listPath} label={t("policy_detail.back")} />
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={loadDetail} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />

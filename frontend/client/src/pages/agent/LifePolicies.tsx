@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { format } from "date-fns";
-import { ChevronDown, Download, Loader2, Lock } from "lucide-react";
+import { ChevronDown, Download, Loader2, Lock, Sparkles, Trash2 } from "lucide-react";
 
 import { useAgent } from "@/context/AgentContext";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -31,11 +31,25 @@ import {
 } from "@/lib/lifeList";
 import { isoDay } from "@/lib/lifePremium";
 import { rupees } from "@/lib/policyValueText";
+import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/fetchAllRows";
+import { getApiBase } from "@/lib/queryClient";
+import { deletePolicyRecord } from "@/lib/policyDelete";
+import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog";
+import type { DraftTarget } from "@/lib/draftMessage";
 import { exportLifePolicies } from "@/lib/exportPolicies";
 import { SurrenderCell } from "@/components/agent/life/SurrenderCell";
 
 type View = "all" | "premium_due" | "maturing";
 type TypeChip = "all" | LifeType;
+
+/** Columns the surrender API does not send: read the way the Policies page reads them. */
+type RowMeta = {
+  id: string; expiry_date: string | null; client_phone: string | null; pdf_url: string | null; filename: string | null;
+};
+
+const iconBtn =
+  "inline-flex h-11 w-11 items-center justify-center rounded text-slate-600 hover:bg-teal-50 hover:text-[#0D9488] disabled:cursor-not-allowed disabled:opacity-30";
 
 const chip = (on: boolean) =>
   "inline-flex min-h-11 items-center rounded-full border px-4 py-1.5 text-sm font-semibold " +
@@ -69,6 +83,9 @@ export default function LifePolicies() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [meta, setMeta] = useState<Map<string, RowMeta>>(new Map());
+  const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
@@ -76,7 +93,20 @@ export default function LifePolicies() {
     setLoading(true);
     setError(null);
     try {
-      setSource(await fetchPolicyValueRows());
+      const [list, extra] = await Promise.all([
+        fetchPolicyValueRows(),
+        fetchAllRows((from, to) =>
+          supabase
+            .from("clients")
+            .select("id, expiry_date, client_phone, pdf_url, filename, insurance_type")
+            .eq("agent_id", agent.agentId!)
+            .in("insurance_type", ["life", "term"])
+            .order("id")
+            .range(from, to)
+        ).catch(() => [] as RowMeta[]), // the list still works; only the row actions lose their data
+      ]);
+      setMeta(new Map((extra as RowMeta[]).map((m) => [m.id, m])));
+      setSource(list);
     } catch {
       setError(t("life.load_failed"));
     } finally {
@@ -88,8 +118,8 @@ export default function LifePolicies() {
 
   const today = useMemo(() => new Date(), []);
   const rows = useMemo(
-    () => source.map((s) => toLifeRow(s, today)).filter((r): r is LifeListRow => r !== null),
-    [source, today],
+    () => source.map((s) => toLifeRow({ ...s, expiry_date: meta.get(s.id)?.expiry_date }, today)).filter((r): r is LifeListRow => r !== null),
+    [source, meta, today],
   );
   const book = useMemo(() => new Map<string, BookRow>(buildBook(source).map((b) => [b.id, b])), [source]);
 
@@ -126,6 +156,46 @@ export default function LifePolicies() {
       toast({ title: t("life.change_failed"), description: e?.message, variant: "destructive" });
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const download = async (r: LifeListRow) => {
+    setBusyId(r.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error(t("common.not_signed_in"));
+      const res = await fetch(`${getApiBase()}/api/agent/clients/${r.id}/download-pdf`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error(t("policies.download_failed"));
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = meta.get(r.id)?.filename || "policy.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast({ title: t("policies.download_failed"), description: e?.message, variant: "destructive" });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const remove = async (r: LifeListRow) => {
+    if (!agent?.agentId) return;
+    setBusyId(r.id);
+    try {
+      await deletePolicyRecord(r.id, agent.agentId);
+      setSource((prev) => prev.filter((s) => s.id !== r.id));
+      toast({ title: t("policies.deleted_title"), description: t("policies.deleted_desc") });
+    } catch (e: any) {
+      void load();
+      toast({ title: t("policies.delete_failed"), description: e?.message, variant: "destructive" });
+    } finally {
+      setBusyId(null);
+      setConfirmId(null);
     }
   };
 
@@ -239,9 +309,9 @@ export default function LifePolicies() {
           <table className="table-cards w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left">
-                {["col_client", "col_type", "col_cover", "col_premium", "col_end", "col_surrender"].map((h) => (
+                {["col_client", "col_type", "col_cover", "col_premium", "col_end", "col_surrender", "col_actions"].map((h) => (
                   <th key={h} className="px-4 py-3 text-sm font-bold text-slate-600">
-                    {h === "col_end" && typeChip === "term" ? t("life.col_cover_ends") : t(`life.${h}`)}
+                    {h === "col_actions" ? t("policies.col_actions") : h === "col_end" && typeChip === "term" ? t("life.col_cover_ends") : t(`life.${h}`)}
                   </th>
                 ))}
               </tr>
@@ -356,6 +426,42 @@ export default function LifePolicies() {
                       ) : null}
                       </div>
                     </td>
+                    <td className="px-2 py-3" data-label={t("policies.col_actions")} data-cell="actions" onClick={(e) => e.stopPropagation()}>
+                      {confirmId === r.id ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          <button type="button" disabled={busyId === r.id} onClick={() => void remove(r)} className="min-h-11 rounded bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-50">
+                            {t("common.delete")}
+                          </button>
+                          <button type="button" onClick={() => setConfirmId(null)} className="min-h-11 rounded px-3 text-sm font-semibold text-slate-600">
+                            {t("common.cancel")}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <button
+                            type="button" className={iconBtn} title={t("policies.draft_whatsapp")} aria-label={t("policies.draft_whatsapp")}
+                            onClick={() => setDraftTarget({
+                              type: "client", id: r.id, name: r.clientName, phone: meta.get(r.id)?.client_phone,
+                              insurer: r.insurer, renewalDate: dueIso,
+                            })}
+                          >
+                            <Sparkles className="h-4 w-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button" className={iconBtn} disabled={!meta.get(r.id)?.pdf_url || busyId === r.id}
+                            title={t("policies.download_pdf")} aria-label={t("policies.download_pdf")} onClick={() => void download(r)}
+                          >
+                            <Download className="h-4 w-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button" className={iconBtn} title={t("policies.delete_policy")} aria-label={t("policies.delete_policy")}
+                            onClick={() => setConfirmId(r.id)}
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          </button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -368,6 +474,8 @@ export default function LifePolicies() {
         <p>{t("life.foot_dates")}</p>
         <p>{t("life.foot_no_totals")}</p>
       </div>
+
+      <DraftMessageDialog target={draftTarget} open={!!draftTarget} onClose={() => setDraftTarget(null)} />
     </div>
   );
 }
