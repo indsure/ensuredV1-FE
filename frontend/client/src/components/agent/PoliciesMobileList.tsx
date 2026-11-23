@@ -111,7 +111,7 @@ export function PoliciesMobileList({
         const type = (p.insurance_type || "health") as InsuranceType
         const isHealth = type === "health"
         const motor = type === "motor" ? motorScore(p.extracted_data) : null
-        const chip = renewalChip(getNextPremiumDate(p.expiry_date, p.extracted_data), t, locale, p.insurance_type)
+        const chip = renewalChip(getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type), t, locale, p.insurance_type)
 
         return (
           <button

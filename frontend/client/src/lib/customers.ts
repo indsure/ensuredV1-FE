@@ -288,7 +288,7 @@ export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats
       if (prem != null) totalPremium = (totalPremium ?? 0) + prem;
     }
 
-    const np = getNextPremiumDate(p.expiry_date, p.extracted_data);
+    const np = getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type);
     if (np) {
       const d = new Date(np);
       if (!isNaN(d.getTime()) && d >= today) {

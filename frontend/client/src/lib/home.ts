@@ -26,12 +26,13 @@
  */
 
 import { readFrequency } from "@/lib/policyValue";
+import { LATE_WINDOW_DAYS, nextLifePremium } from "@/lib/lifePremium";
 import { ONE_TIME_TYPES, inForce, parseAmount, toMoney, type BusinessRow, type PolicyMoney } from "@/lib/business";
 
 const DAY = 86_400_000;
 const LIFE_TYPES = new Set(["life", "term"]);
-/** How far back a missed due date stays on the page. */
-export const LATE_WINDOW_DAYS = 30;
+/** How far back a missed due date stays on the page (shared with lib/lifePremium). */
+export { LATE_WINDOW_DAYS };
 /** "This week" = late + the next 7 days; "this month" = days 8 to 30. */
 export const WEEK_DAYS = 7;
 export const MONTH_DAYS = 30;
@@ -71,10 +72,6 @@ function parseDate(raw: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function addMonths(d: Date, months: number): Date {
-  return new Date(d.getFullYear(), d.getMonth() + months, d.getDate());
-}
-
 export function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -105,34 +102,26 @@ export function dueOf(r: HomeRow, today: Date): Due | null {
     ({ row: r, type, date, days: daysBetween(t0, date), amount, perYear, premiumDate });
 
   if (LIFE_TYPES.has(type)) {
-    const raw = readFrequency(r.x_freq);
-    if (raw === "single") return null;
-    const perYear: Frequency = raw;
+    // The date itself comes from lib/lifePremium, shared with the Policies list.
+    // A yearly or half-yearly date that passed in the last 30 days comes back as
+    // "passed", so the advisor checks it was paid. Monthly and quarterly roll
+    // straight to the next instalment: that is the one worth a call.
+    const due = nextLifePremium({ next: r.x_next, start: r.x_start, freq: r.x_freq, ppt: r.x_ppt }, t0);
+    if (!due) return null;
+    const perYear: Frequency = due.perYear;
     const printed = parseAmount(r.x_premium);
     const annual = parseAmount(r.x_annual);
     const instalment = perYear ? (annual != null ? annual / perYear : printed) : printed;
 
-    const commenced = parseDate(r.x_start);
-    const ppt = parseAmount(r.x_ppt);
-    const payingEnds = commenced && ppt ? addMonths(commenced, Math.round(ppt * 12)) : null;
-    if (payingEnds && payingEnds.getTime() <= t0.getTime()) return null;
-
-    const next = parseDate(r.x_next);
-    // A yearly or half-yearly premium date that passed in the last 30 days is
-    // shown as passed, so the advisor checks it was paid. Monthly and quarterly
-    // roll straight to the next instalment: that is the one worth a call.
-    if (next && next.getTime() < t0.getTime() && inWindow(next) && (perYear === 1 || perYear === 2)) {
-      return make(next, instalment, perYear, true);
-    }
-    let d = next ?? commenced;
-    if (!d) return null;
+    if (due.kind === "passed") return make(due.date, instalment, perYear, true);
     // No readable frequency: show the printed date once, but its amount is not
     // summed anywhere (lib/business.ts leaves the same policy out of the chart).
-    if (!perYear) return inWindow(d) && d.getTime() >= t0.getTime() ? { ...make(d, instalment, null, true), uncounted: true } : null;
-    const step = 12 / perYear;
-    for (let guard = 0; d.getTime() < t0.getTime() && guard < 1200; guard++) d = addMonths(d, step);
-    if (payingEnds && d.getTime() >= payingEnds.getTime()) return null;
-    return inWindow(d) ? make(d, instalment, perYear, true) : null;
+    if (due.kind === "printed") {
+      return inWindow(due.date) && due.date.getTime() >= t0.getTime()
+        ? { ...make(due.date, instalment, null, true), uncounted: true }
+        : null;
+    }
+    return inWindow(due.date) ? make(due.date, instalment, perYear, true) : null;
   }
 
   const renews = parseDate(r.expiry_date);

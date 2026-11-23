@@ -758,7 +758,19 @@
     "download_pdf": "Download original PDF",
     "no_pdf": "No PDF stored",
     "showing": "Showing {{shown}} of {{total}} policies",
-    "delete_policy": "Delete policy"
+    "delete_policy": "Delete policy",
+    "tab_premium_due": "Premium due soon",
+    "tab_maturing": "Maturing soon",
+    "tab_cover_ending": "Cover ending soon",
+    "stat_policies": "Policies",
+    "stat_premium_due": "Premium due in 30 days",
+    "stat_maturing": "Maturing in 90 days",
+    "stat_cover_ending": "Cover ends in 90 days",
+    "sort_premium_due": "Premium due soonest",
+    "sort_maturity": "Maturity soonest",
+    "sort_cover_end": "Cover ends soonest",
+    "col_maturity": "Maturity",
+    "col_cover_ends": "Cover ends"
   },
   "customers": {
     "still_loading": "Still loading your account",

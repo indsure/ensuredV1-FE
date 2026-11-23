@@ -758,7 +758,19 @@
     "download_pdf": "असली PDF डाउनलोड करें",
     "no_pdf": "कोई PDF सेव नहीं",
     "showing": "{{total}} में से {{shown}} पॉलिसी दिख रही हैं",
-    "delete_policy": "पॉलिसी हटाएँ"
+    "delete_policy": "पॉलिसी हटाएँ",
+    "tab_premium_due": "प्रीमियम जल्द देना है",
+    "tab_maturing": "जल्द मैच्योर होंगी",
+    "tab_cover_ending": "कवर जल्द खत्म होगा",
+    "stat_policies": "पॉलिसी",
+    "stat_premium_due": "30 दिन में प्रीमियम देना है",
+    "stat_maturing": "90 दिन में मैच्योर",
+    "stat_cover_ending": "90 दिन में कवर खत्म",
+    "sort_premium_due": "सबसे पहले प्रीमियम",
+    "sort_maturity": "सबसे पहले मैच्योरिटी",
+    "sort_cover_end": "सबसे पहले कवर खत्म",
+    "col_maturity": "मैच्योरिटी",
+    "col_cover_ends": "कवर खत्म"
   },
   "customers": {
     "still_loading": "आपका खाता अभी लोड हो रहा है",

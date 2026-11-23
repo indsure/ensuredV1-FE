@@ -407,7 +407,7 @@ export default function CustomerDetail() {
                     )}
                     {policies.map(p => {
                       const type = (p.insurance_type || "health") as InsuranceType;
-                      const np = getNextPremiumDate(p.expiry_date, p.extracted_data);
+                      const np = getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type);
                       return (
                         <tr
                           key={p.id}

@@ -466,7 +466,10 @@ export default function PolicyDetail() {
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
           </Button>
-          {!isDataEntry && (
+          {/* Data-entry policies (life, term, motor...) share their read details
+              through shared/dataEntryShare.ts, which withholds the policy number,
+              nominee and life assured. The list row has always offered this. */}
+          {(!isDataEntry || canShare) && (
             <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!canShare || busy === "share"}>
               {t("policy_detail.share_report")}
             </Button>
@@ -540,7 +543,7 @@ export default function PolicyDetail() {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3 items-center w-full">
-                {!isDataEntry && (
+                {(!isDataEntry || canShare) && (
                   <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!canShare || busy === "share"}>
                     <Copy className="mr-2 h-4 w-4" />
                     {t("policy_detail.share_report")}
@@ -765,7 +768,7 @@ export default function PolicyDetail() {
                     {isDataEntry ? t("policy_detail.reread_cost") : t("policy_detail.rerun_cost")}
                   </p>
                   <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>{t("policy_detail.edit_client")}</Button>
-                  {!isDataEntry && (
+                  {(!isDataEntry || canShare) && (
                     <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!canShare || busy === "share"}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       {t("policy_detail.share_link")}
