@@ -408,6 +408,30 @@ function playgroundApiResponse(url: string, init?: any): Response {
     return json({ ok: true, extracted_data: row?.extracted_data ?? patch, rev: row?.extracted_data?._rev ?? null });
   }
 
+  /* Life <-> term on the Life section. Same rules as the server
+     (changeInsuranceType): only between life and term, the read kept as it is,
+     expiry_date taken from the new type's own date, else the other one. */
+  const typeChange = url.match(/\/api\/agent\/clients\/([^/]+)\/insurance-type/);
+  if (typeChange) {
+    let to: unknown = null;
+    try { to = JSON.parse(init?.body ?? "{}").to; } catch { /* ignore */ }
+    const row = getStore().clients.find((c) => c.id === decodeURIComponent(typeChange[1]));
+    if (!row) return json({ error: "Client not found" }, 404);
+    if (to !== "life" && to !== "term") return json({ error: "INVALID_TYPE", message: "A policy can only be changed to life or term." }, 400);
+    if (row.insurance_type !== "life" && row.insurance_type !== "term") {
+      return json({ error: "NOT_LIFE_LANE", message: "Only a life or term policy can be changed between life and term." }, 409);
+    }
+    if (row.insurance_type === to) return json({ ok: true, insurance_type: to, changed: false });
+    const d = row.extracted_data ?? {};
+    const own = to === "life" ? d.maturity_date : d.cover_end_date;
+    const other = to === "life" ? d.cover_end_date : d.maturity_date;
+    row.insurance_type = to;
+    row.expiry_date = own || other || row.expiry_date || null;
+    const rev = Number.isInteger(d._rev) ? d._rev : 0;
+    row.extracted_data = { ...d, _rev: rev + 1 };
+    return json({ ok: true, insurance_type: to, changed: true, rev: rev + 1 });
+  }
+
   /* Policy terms read from a document. The demo has no reader, so the savings
      policies start with the terms the general reader would return for them
      (./policyTermsSeed); that is what fills the Policy summary table. Review

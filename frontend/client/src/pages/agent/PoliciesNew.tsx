@@ -73,24 +73,6 @@ function NextPremiumBadge({ dateStr, type }: { dateStr: string | null; type?: st
   );
 }
 
-/** Life: maturity date. Term: cover end date. Both live in expiry_date. A date
- *  that has passed is shown plainly: we do not know the policy's status. */
-function MaturityCell({ dateStr }: { dateStr: string | null }) {
-  const { t, locale } = useLanguage();
-  if (!dateStr) return <span className="text-slate-500 text-sm">—</span>;
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return <span className="text-slate-500 text-sm">—</span>;
-  const days = getDays(dateStr);
-  return (
-    <div className="flex flex-col leading-tight">
-      <span className="text-sm font-semibold text-slate-700">{format(d, "d MMM yyyy", { locale: dateLocale(locale) })}</span>
-      {days !== null && days >= 0 && days <= MATURING_DAYS && (
-        <span className="text-sm text-teal-700">{t("common.in_days", { days })}</span>
-      )}
-    </div>
-  );
-}
-
 function ScoreBadge({ score }: { score: number | null }) {
   if (score === null) return <span className="text-slate-400 text-sm">—</span>;
   const cls = score >= 80
@@ -223,17 +205,16 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
   );
 }
 
-/** "expiring" reads the date in the Next Premium column. The life and term
- *  views use "premium_due" (same date) and "maturing" (maturity or cover end). */
-type FilterTab = "all" | "expiring" | "switch" | "healthy" | "premium_due" | "maturing";
-/** "expiry" sorts by the Next Premium column's date; "maturity" by maturity or
- *  cover end, life and term views only. */
-type SortKey = "expiry" | "maturity" | "score" | "name";
+/** "expiring" reads the date in the Next Premium column. */
+type FilterTab = "all" | "expiring" | "switch" | "healthy";
+/** "expiry" sorts by the Next Premium column's date. */
+type SortKey = "expiry" | "score" | "name";
 
-/** Premium due soon / Expiring soon = the Next Premium date within this many days. */
+/** Expiring soon = the Next Premium date within this many days. */
 const PREMIUM_DUE_DAYS = 30;
-/** Maturing soon = maturity (life) or cover end (term) within this many days. */
-const MATURING_DAYS = 90;
+
+/** Life and term have their own section, /agent/life (life rebuild D1, 2026-11-24). */
+const LIFE_LANE = ["life", "term"];
 
 /** "others" is the sidebar's catch-all: everything outside the four types it
  *  names. It is not an `insurance_type` value, only a filter. */
@@ -247,6 +228,13 @@ function normaliseType(raw: string | null): TypeFilter {
   if (!raw || raw === "all") return "all";
   if (raw === "others") return "others";
   return raw in TYPE_META ? (raw as InsuranceType) : "all";
+}
+
+/** Desktop table columns. Score is shown where a score exists (health, and the
+ *  motor cover score); Recommendation is a health verdict only. On Others both
+ *  columns were a row of dashes, so they are left out. */
+function showScoreFor(typeFilter: TypeFilter): boolean {
+  return typeFilter === "all" || typeFilter === "health" || typeFilter === "motor";
 }
 
 export default function PoliciesNew() {
@@ -263,15 +251,19 @@ export default function PoliciesNew() {
   const search_ = useSearch();
   const urlType = new URLSearchParams(search_).get("type");
   const typeFilter = normaliseType(urlType);
-  /** Life and term have no score and no switch verdict, and their expiry_date is
-   *  the maturity or cover end date, so they get their own tabs and columns. */
-  const lifeView = typeFilter === "life" || typeFilter === "term";
+  /** Old links to Policies > Life or Term (sidebar, bookmarks, help pages) land on the Life section. */
+  const toLife = urlType === "life" || urlType === "term" ? urlType : null;
+  useEffect(() => {
+    if (toLife) setLocation(`/agent/life?type=${toLife}`, { replace: true });
+  }, [toLife, setLocation]);
   /** Score, Recommendation and the Switch/Healthy tabs are a health verdict. */
   const healthVerdicts = typeFilter === "all" || typeFilter === "health";
   /** Writing the filter to the URL rather than to state keeps the sidebar, the
    *  chips and the address bar from disagreeing with each other. */
   const setTypeFilter = useCallback(
-    (tk: TypeFilter) => setLocation(tk === "all" ? "/agent/policies" : `/agent/policies?type=${tk}`),
+    (tk: TypeFilter) => setLocation(
+      LIFE_LANE.includes(tk) ? "/agent/life" : tk === "all" ? "/agent/policies" : `/agent/policies?type=${tk}`
+    ),
     [setLocation]
   );
   const [sort, setSort] = useState<SortKey>("expiry");
@@ -377,45 +369,37 @@ export default function PoliciesNew() {
 
   /* One date per row, the one the Next Premium column shows. "Expiring soon",
      "Premium due soon" and the default sort all read it, so a tab can never
-     disagree with the column beside it. Life and term never fall back to the
-     maturity date (lib/lifePremium). */
+     disagree with the column beside it. */
   const nextDays = useCallback(
     (r: ClientRow) => getDays(getNextPremiumDate(r.expiry_date, r.extracted_data, r.insurance_type)),
     []
   );
-  /** Life: maturity date. Term: cover end date. Both are stored in expiry_date. */
-  const maturityDays = useCallback((r: ClientRow) => getDays(r.expiry_date), []);
   const within = (d: number | null, max: number) => d !== null && d >= 0 && d <= max;
 
   /** The rows of the selected type, before search and tabs. Stats and tab
-   *  counts read these, so the Life view counts life policies only. */
+   *  counts read these. Life and term rows live in the Life section, not here. */
   const typed = useMemo(() => {
     if (typeFilter === "others") return rows.filter(r => !NAMED_TYPES.includes(r.insurance_type || "health"));
-    if (typeFilter === "all") return rows;
+    if (typeFilter === "all") return rows.filter(r => !LIFE_LANE.includes(r.insurance_type || "health"));
     return rows.filter(r => (r.insurance_type || "health") === typeFilter);
   }, [rows, typeFilter]);
 
   const stats = useMemo(() => {
     const expiringSoon = typed.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS)).length;
-    const maturingSoon = typed.filter(r => within(maturityDays(r), MATURING_DAYS)).length;
     /* Scored on WORDING, so health only. A motor score measures how completely
        a vehicle is covered: sweeping a motor 55 into "should switch" would put
        a health judgement on a number that cannot carry one. */
     const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
     const shouldSwitch = typed.filter(r => isHealthRow(r) && r.score !== null && r.score < 70).length;
     const healthy = typed.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70).length;
-    return { total: typed.length, expiringSoon, maturingSoon, shouldSwitch, healthy };
-  }, [typed, nextDays, maturityDays]);
+    return { total: typed.length, expiringSoon, shouldSwitch, healthy };
+  }, [typed, nextDays]);
 
   /* A tab or sort picked in one view may not exist in the next (Should Switch
-     has no meaning on Life). Fall back instead of showing an empty list. */
-  const lifeTabs: FilterTab[] = ["all", "premium_due", "maturing"];
-  const otherTabs: FilterTab[] = healthVerdicts ? ["all", "expiring", "switch", "healthy"] : ["all", "expiring"];
-  const activeTab: FilterTab = (lifeView ? lifeTabs : otherTabs).includes(tab) ? tab : "all";
-  const activeSort: SortKey =
-    (lifeView && sort === "score") || (!lifeView && sort === "maturity") || (!healthVerdicts && sort === "score")
-      ? "expiry"
-      : sort;
+     has no meaning on Motor). Fall back instead of showing an empty list. */
+  const tabKeys: FilterTab[] = healthVerdicts ? ["all", "expiring", "switch", "healthy"] : ["all", "expiring"];
+  const activeTab: FilterTab = tabKeys.includes(tab) ? tab : "all";
+  const activeSort: SortKey = !showScoreFor(typeFilter) && sort === "score" ? "expiry" : sort;
 
   // Filtered + sorted
   const filtered = useMemo(() => {
@@ -425,8 +409,7 @@ export default function PoliciesNew() {
       (r.insurer || "").toLowerCase().includes(q) ||
       (r.policy_identifier || "").toLowerCase().includes(q)
     );
-    if (activeTab === "expiring" || activeTab === "premium_due") list = list.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS));
-    if (activeTab === "maturing") list = list.filter(r => within(maturityDays(r), MATURING_DAYS));
+    if (activeTab === "expiring") list = list.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS));
     // Same rule as the stats above: these two tabs are a health verdict.
     const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
     if (activeTab === "switch") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score < 70);
@@ -434,35 +417,26 @@ export default function PoliciesNew() {
 
     return [...list].sort((a, b) => {
       if (activeSort === "expiry") return (nextDays(a) ?? 99999) - (nextDays(b) ?? 99999);
-      if (activeSort === "maturity") return (maturityDays(a) ?? 99999) - (maturityDays(b) ?? 99999);
       if (activeSort === "score") return (a.score ?? 999) - (b.score ?? 999);
       return (a.policyholder_name || a.name || "").localeCompare(b.policyholder_name || b.name || "");
     });
-  }, [typed, search, activeTab, activeSort, nextDays, maturityDays]);
+  }, [typed, search, activeTab, activeSort, nextDays]);
 
-  const term = typeFilter === "term";
-  const tabs: { key: FilterTab; label: string; count: number }[] = lifeView
-    ? [
-        { key: "all", label: t("policies.tab_all"), count: stats.total },
-        { key: "premium_due", label: t("policies.tab_premium_due"), count: stats.expiringSoon },
-        { key: "maturing", label: t(term ? "policies.tab_cover_ending" : "policies.tab_maturing"), count: stats.maturingSoon },
-      ]
-    : [
-        { key: "all", label: t("policies.tab_all"), count: stats.total },
-        { key: "expiring", label: t("policies.tab_expiring"), count: stats.expiringSoon },
-        ...(healthVerdicts
-          ? [
-              { key: "switch" as FilterTab, label: t("policies.tab_switch"), count: stats.shouldSwitch },
-              { key: "healthy" as FilterTab, label: t("policies.tab_healthy"), count: stats.healthy },
-            ]
-          : []),
-      ];
-  /** Desktop table columns. Score is shown where a score exists (health, and the
-   *  motor cover score); Recommendation is a health verdict only. On Life, Term
-   *  and Others both columns were a row of dashes, so they are left out. */
-  const showScore = healthVerdicts || typeFilter === "motor";
+  const tabs: { key: FilterTab; label: string; count: number }[] = [
+    { key: "all", label: t("policies.tab_all"), count: stats.total },
+    { key: "expiring", label: t("policies.tab_expiring"), count: stats.expiringSoon },
+    ...(healthVerdicts
+      ? [
+          { key: "switch" as FilterTab, label: t("policies.tab_switch"), count: stats.shouldSwitch },
+          { key: "healthy" as FilterTab, label: t("policies.tab_healthy"), count: stats.healthy },
+        ]
+      : []),
+  ];
+  const showScore = showScoreFor(typeFilter);
   const showRecommendation = healthVerdicts;
-  const colCount = 6 + (lifeView ? 1 : 0) + (showScore ? 1 : 0) + (showRecommendation ? 1 : 0);
+  const colCount = 6 + (showScore ? 1 : 0) + (showRecommendation ? 1 : 0);
+
+  if (toLife) return null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -496,24 +470,22 @@ export default function PoliciesNew() {
 
       {/* STAT STRIP */}
       {!loading && (
-        <div className={`grid ${lifeView || healthVerdicts ? "grid-cols-3" : "grid-cols-2"} gap-2 sm:gap-4`}>
+        <div className={`grid ${healthVerdicts ? "grid-cols-3" : "grid-cols-2"} gap-2 sm:gap-4`}>
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 sm:p-5 min-w-0">
-            <p className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide sm:tracking-widest mb-1">{t(lifeView ? "policies.stat_policies" : "policies.stat_total")}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_total")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-slate-800 tabular-nums">{stats.total}</p>
           </div>
           <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-amber-400 min-w-0">
-            <p className="text-[11px] sm:text-xs font-bold text-amber-500 uppercase tracking-wide sm:tracking-widest mb-1">{t(lifeView ? "policies.stat_premium_due" : "policies.stat_expiring")}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-amber-500 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_expiring")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums">{stats.expiringSoon}</p>
           </div>
-          {/* Third card: Maturing soon on Life/Term, Should Switch where a health verdict applies. */}
-          {(lifeView || healthVerdicts) && (
-            <div className={`bg-white rounded-xl border shadow-sm p-3 sm:p-5 border-l-4 min-w-0 ${lifeView ? "border-slate-100 border-l-teal-500" : "border-red-100 border-l-red-400"}`}>
-              <p className={`text-[11px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-widest mb-1 ${lifeView ? "text-teal-700" : "text-red-400"}`}>
-                {lifeView ? t(term ? "policies.stat_cover_ending" : "policies.stat_maturing") : t("policies.stat_switch")}
+          {/* Third card: Should Switch, only where a health verdict applies. */}
+          {healthVerdicts && (
+            <div className="bg-white rounded-xl border border-red-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-red-400 min-w-0">
+              <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-widest mb-1 text-red-400">
+                {t("policies.stat_switch")}
               </p>
-              <p className={`text-2xl sm:text-3xl font-extrabold tabular-nums ${lifeView ? "text-teal-700" : "text-red-500"}`}>
-                {lifeView ? stats.maturingSoon : stats.shouldSwitch}
-              </p>
+              <p className="text-2xl sm:text-3xl font-extrabold tabular-nums text-red-500">{stats.shouldSwitch}</p>
             </div>
           )}
         </div>
@@ -526,11 +498,12 @@ export default function PoliciesNew() {
 
           {/* TYPE FILTER */}
           <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
-            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]), "others"] as TypeFilter[]).map(tk => {
+            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]).filter(k => k !== "term"), "others"] as TypeFilter[]).map(tk => {
               const active = typeFilter === tk;
               const label =
                 tk === "all" ? t("common.all_types")
                 : tk === "others" ? t("common.others")
+                : tk === "life" ? `${TYPE_META.life.emoji} ${t("policies.chip_life_section")}`
                 : `${TYPE_META[tk].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk].label)}`;
               return (
                 <button
@@ -579,8 +552,7 @@ export default function PoliciesNew() {
                 onChange={e => setSort(e.target.value as SortKey)}
                 className="min-w-0 shrink-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 sm:py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
               >
-                <option value="expiry">{t(lifeView ? "policies.sort_premium_due" : "policies.sort_expiry")}</option>
-                {lifeView && <option value="maturity">{t(term ? "policies.sort_cover_end" : "policies.sort_maturity")}</option>}
+                <option value="expiry">{t("policies.sort_expiry")}</option>
                 {showScore && <option value="score">{t("policies.sort_score")}</option>}
                 <option value="name">{t("policies.sort_name")}</option>
               </select>
@@ -606,7 +578,6 @@ export default function PoliciesNew() {
                   <th className="px-6 py-3.5 text-left">{t("policies.col_type")}</th>
                   <th className="px-6 py-3.5 text-left">{t("policies.col_insurer")}</th>
                   <th className="px-6 py-3.5 text-left">{t("policies.col_next_premium")}</th>
-                  {lifeView && <th className="px-6 py-3.5 text-left">{t(term ? "policies.col_cover_ends" : "policies.col_maturity")}</th>}
                   {showScore && <th className="px-6 py-3.5 text-left">{t("policies.col_score")}</th>}
                   {showRecommendation && <th className="px-6 py-3.5 text-left">{t("policies.col_recommendation")}</th>}
                   <th className="px-6 py-3.5 text-left">{t("policies.col_views")}</th>
@@ -669,11 +640,6 @@ export default function PoliciesNew() {
                       </td>
                       <td className="px-6 py-4 text-slate-500" data-label={t("policies.col_insurer")}>{p.insurer || "—"}</td>
                       <td className="px-6 py-4" data-label={t("policies.col_next_premium")}><NextPremiumBadge dateStr={npDate} type={p.insurance_type} /></td>
-                      {lifeView && (
-                        <td className="px-6 py-4" data-label={t(term ? "policies.col_cover_ends" : "policies.col_maturity")}>
-                          <MaturityCell dateStr={p.expiry_date} />
-                        </td>
-                      )}
                       {showScore && <td className="px-6 py-4" data-label={t("policies.col_score")}>{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>}
                       {showRecommendation && (
                         <td className="px-6 py-4" data-label={t("policies.col_recommendation")} onClick={e => e.stopPropagation()}>

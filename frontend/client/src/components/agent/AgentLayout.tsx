@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { Lock, BookOpen, ChevronRight, CreditCard, FileText, HelpCircle, LayoutDashboard, MessageCircle, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { Lock, BookOpen, ChevronRight, CreditCard, FileText, HeartHandshake, HelpCircle, LayoutDashboard, MessageCircle, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -121,14 +121,24 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         icon: <FileText className="h-4 w-4" />,
         // Type children map to `insurance_type` values that already exist in
         // DATA_ENTRY_TYPES. "others" is the catch-all the Policies page resolves
-        // to everything outside health/life/term/motor.
+        // to everything outside health/life/term/motor. Life and term have their
+        // own section below (2026-11-24, life rebuild D1).
         children: [
           { label: label("layout.nav_overview", "Overview"), href: "/agent/policies" },
           { label: label("layout.type_health", "Health"), href: "/agent/policies?type=health" },
-          { label: label("layout.type_life", "Life"), href: "/agent/policies?type=life" },
-          { label: label("layout.type_term", "Term"), href: "/agent/policies?type=term" },
           { label: label("layout.type_motor", "Motor"), href: "/agent/policies?type=motor" },
           { label: label("layout.type_others", "Others"), href: "/agent/policies?type=others" },
+        ],
+      },
+      {
+        // One Life section; Life and Term are tags on its rows (2026-11-24, D1).
+        key: "life",
+        label: label("layout.nav_life", "Life"),
+        href: "/agent/life",
+        icon: <HeartHandshake className="h-4 w-4" />,
+        children: [
+          { label: label("layout.life_all", "Life and term policies"), href: "/agent/life" },
+          { label: label("layout.policy_values", "Surrender Value"), href: "/agent/values" },
         ],
       },
       {
@@ -139,7 +149,6 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
         children: [
           { label: label("layout.nav_compare", "Compare Policies"), href: "/agent/compare" },
           { label: label("layout.nav_calculator", "Cover Calculator"), href: "/agent/calculator" },
-          { label: label("layout.policy_values", "Surrender Value"), href: "/agent/values" },
           { label: label("layout.claims", "Claims"), href: "/agent/claims" },
           { label: label("layout.nav_my_website", "My Website"), href: "/agent/my-page" },
         ],

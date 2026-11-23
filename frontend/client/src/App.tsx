@@ -45,6 +45,7 @@ import {
   AgentUploads,
   PoliciesNew,
   PolicyValues,
+  LifePolicies,
   AgentCalculator,
   AgentCompare,
   AgentCatalogCompare,
@@ -268,6 +269,9 @@ function App() {
                       </Route>
                       <Route path="/agent/policies">
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/life">
+                        {() => <AgentProtectedRoute><LifePolicies /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/values">
                         {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_values"><PolicyValues /></PaidOnly></AgentProtectedRoute>}

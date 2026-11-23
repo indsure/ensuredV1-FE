@@ -18,7 +18,7 @@ import {
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
-import { loadPolicyValueRows, saveExtractedData } from "./services/policyValueStore";
+import { changeInsuranceType, loadPolicyValueRows, saveExtractedData } from "./services/policyValueStore";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
@@ -6406,6 +6406,24 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       res.status(result.status).json(result.body);
     } catch (err: any) {
       console.error("Save extracted-data error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  /* ── Agent: Change a policy between life and term ───────────────────
+     Same read lane, same document: no re-read, no check used, no model call.
+     Rules and the expiry_date re-derivation live in services/policyValueStore.ts. */
+
+  app.patch("/api/agent/clients/:id/insurance-type", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const { id } = req.params;
+      const result = await changeInsuranceType(pool, agentId, id, req.body, { deriveSharedColumns });
+      if (result.status === 200 && (result.body as any).changed) recordAccess(req, agentId, id, "change_insurance_type");
+      res.status(result.status).json(result.body);
+    } catch (err: any) {
+      console.error("Change insurance type error:", err?.message);
       res.status(500).json({ error: "Internal server error" });
     }
   });

@@ -49,7 +49,9 @@ export function AgentTabBar({ onMore, limited = false }: { onMore: () => void; l
   const PEOPLE_CHILDREN = ["/agent/leads", "/agent/renewals"]
   const under = (href: string) => location === href || location.startsWith(href + "/")
   const isActive = (href: string) =>
-    under(href) || (href === "/agent/customers" && PEOPLE_CHILDREN.some(under))
+    under(href) || (href === "/agent/customers" && PEOPLE_CHILDREN.some(under)) ||
+    // Life has no tab of its own on a phone (it is in More); keep Policies lit.
+    (href === "/agent/policies" && under("/agent/life"))
 
   return (
     <nav

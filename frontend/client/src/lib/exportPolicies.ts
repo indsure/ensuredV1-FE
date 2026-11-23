@@ -1,6 +1,8 @@
 import { getFields, typeLabel, isDataEntryType, type InsuranceType } from "./insuranceTypes";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
 import { scoreMotorPolicy } from "@shared/motorScore";
+import { isoDay } from "./lifePremium";
+import type { LifeListRow } from "./lifeList";
 
 /** Minimal shape the exporter needs from a policy row. */
 export interface ExportablePolicy {
@@ -91,4 +93,31 @@ export async function exportPoliciesToExcel(
   const stamp = new Date().toISOString().slice(0, 10);
   const suffix = typeFilter === "all" ? "" : `-${typeFilter}`;
   XLSX.writeFile(wb, `indsure-policies${suffix}-${stamp}.xlsx`);
+}
+
+/** The Life section's rows (lib/lifeList), in the columns that list shows. No surrender column:
+ *  its figures come on different bases and the Free plan does not see them. */
+export async function exportLifePolicies(
+  rows: LifeListRow[],
+  typeFilter: "all" | "life" | "term"
+): Promise<void> {
+  const XLSX = await import("xlsx");
+  const data = rows.map((r) => ({
+    Customer: r.clientName,
+    Type: r.type === "term" ? "Term" : "Life",
+    Insurer: r.insurer ?? "",
+    "Plan / Policy": r.planName ?? "",
+    "Policy number": r.policyNumber ?? "",
+    "Sum assured": r.sumAssured ?? "",
+    Premium: r.premium ?? "",
+    "Premium frequency": r.frequency ?? "",
+    "Next premium": r.due ? isoDay(r.due.date) : "",
+    "Next premium basis": r.due ? r.due.basis : "",
+    "Maturity / cover ends": r.endDate ?? "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Life");
+  const stamp = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `indsure-life${typeFilter === "all" ? "" : `-${typeFilter}`}-${stamp}.xlsx`);
 }

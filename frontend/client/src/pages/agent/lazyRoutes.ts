@@ -12,6 +12,7 @@ export const LeadRenewals = lazyWithPreload(() => import("@/pages/agent/LeadRene
 export const AgentUploads = lazyWithPreload(() => import("@/pages/agent/AgentUploads"));
 export const PoliciesNew = lazyWithPreload(() => import("@/pages/agent/PoliciesNew"));
 export const PolicyValues = lazyWithPreload(() => import("@/pages/agent/PolicyValues"));
+export const LifePolicies = lazyWithPreload(() => import("@/pages/agent/LifePolicies"));
 export const AgentCalculator = lazyWithPreload(() => import("@/pages/agent/AgentCalculator"));
 export const AgentCompare = lazyWithPreload(() => import("@/pages/agent/Compare"));
 export const AgentCatalogCompare = lazyWithPreload(() => import("@/pages/agent/CatalogCompare"));
@@ -50,6 +51,7 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
   AgentCompare,
   AgentCalculator,
   PolicyValues,
+  LifePolicies,
   Claims,
   AgentMyPage,
   AgentCatalogCompare,
@@ -96,6 +98,7 @@ const ROUTE_BY_PATH: Record<string, PreloadableComponent<any>> = {
   "/agent/uploads": AgentUploads,
   "/agent/policies": PoliciesNew,
   "/agent/values": PolicyValues,
+  "/agent/life": LifePolicies,
   "/agent/customers": CustomersNew,
   "/agent/team": AgentTeam,
   "/agent/claims": Claims,

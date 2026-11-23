@@ -18,24 +18,13 @@ import { tOr } from "@/i18n";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
-import { getApiBase } from "@/lib/queryClient";
+import { fetchPolicyValueRows } from "@/lib/lifeApi";
+import { SurrenderCell } from "@/components/agent/life/SurrenderCell";
 import {
   STATE_ORDER, bookTotals, buildBook, type BookRow, type RowState, type SourceRow,
 } from "@/lib/policyBook";
 import { BASIS_TEXT, REASON_TEXT, prettyIso, rupees } from "@/lib/policyValueText";
 import type { Reason } from "@/lib/policyValue";
-
-/** The advisor's life and term policies, read through the backend so the agent is the verified one. */
-async function fetchPolicyValueRows(): Promise<SourceRow[]> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const headers: Record<string, string> = {};
-  if (session) headers.Authorization = `Bearer ${session.access_token}`;
-  const res = await fetch(`${getApiBase()}/api/agent/policy-values`, { headers });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const body = await res.json();
-  return Array.isArray(body?.rows) ? body.rows : [];
-}
 
 const STATE_TONE: Record<RowState, string> = {
   calculated: "border-[#0D9488]/40 bg-[#0D9488]/10 text-[#0f766e]",
@@ -227,7 +216,6 @@ export default function PolicyValues() {
 function BookRowView({ r, onOpen, reason }: { r: BookRow; onOpen: () => void; reason: (x: Reason | null) => string }) {
   const { t } = useLanguage();
   const v = r.valuation;
-  const sp = v?.values.surrender_payable;
   const lr = v?.values.loan_remaining;
   const mat = v?.values.maturity_guaranteed;
   const basis = (b: keyof typeof BASIS_TEXT) => tOr(t, `pvb.${b}`, BASIS_TEXT[b]);
@@ -248,23 +236,7 @@ function BookRowView({ r, onOpen, reason }: { r: BookRow; onOpen: () => void; re
         {v?.policyYear && v.term ? `${v.policyYear}/${v.term}` : ""}
       </td>
       <td className="px-4 py-3" data-label={t("pv.col_surrender")}>
-        {v && sp && v.cash.surrender && sp.amount !== null ? (
-          <>
-            <div className="font-semibold tabular-nums text-slate-900">{rupees(sp.amount)}</div>
-            <div className="text-sm text-slate-600">
-              {basis(sp.basis)}{sp.basis === "insurer_quote" && sp.asOf ? ` · ${t("pv.as_of", { date: prettyIso(sp.asOf) })}` : ""}
-            </div>
-          </>
-        ) : sp?.upperBound !== null && sp?.upperBound !== undefined ? (
-          <>
-            <div className="font-semibold tabular-nums text-slate-700">{t("pv.at_most", { amount: rupees(sp.upperBound) })}</div>
-            <div className="text-sm text-slate-600">{t("pv.at_most_note")}</div>
-          </>
-        ) : (
-          <div className="text-sm text-slate-600">
-            {r.state === "term_cover" ? reason("term_no_surrender") : reason(r.reason) || t("pv.not_available")}
-          </div>
-        )}
+        <SurrenderCell r={r} />
       </td>
       <td className="px-4 py-3" data-label={t("pv.col_borrow")}>
         {v && lr && v.cash.borrow && lr.amount !== null ? (
