@@ -57,7 +57,26 @@ export type DraftTarget = {
   renewalDate?: string | null; // ISO date string
   weakPoint?: string | null;   // top failure point, for the upgrade nudge
   interest?: string | null;    // lead's insurance interest
+  /** Life and term policies: no verdict drafts, and "Premium due" only with a coming date. */
+  lifeLane?: boolean;
 };
+
+/** Drafts that claim something we do not know about a life or term policy. */
+const NOT_FOR_LIFE: DraftKind[] = ["upgrade_weak", "renewal", "review"];
+
+export function draftKindsFor(target: DraftTarget | null | undefined): DraftKind[] {
+  const isClient = target?.type === "client";
+  return DRAFT_KINDS.filter((k) =>
+    (isClient || !DRAFT_KIND_META[k].clientOnly) &&
+    !(target?.lifeLane && (NOT_FOR_LIFE.includes(k) || (k === "premium_due" && !target.renewalDate)))
+  );
+}
+
+export function defaultDraftKind(target: DraftTarget | null | undefined): DraftKind {
+  if (target?.type !== "client") return "follow_up";
+  if (target.lifeLane) return target.renewalDate ? "premium_due" : "follow_up";
+  return "upgrade_weak";
+}
 
 /* ── Template builder ───────────────────────────────────────────────────── */
 

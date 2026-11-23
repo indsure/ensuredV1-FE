@@ -442,7 +442,8 @@ export default function LifePolicies() {
                             type="button" className={iconBtn} title={t("policies.draft_whatsapp")} aria-label={t("policies.draft_whatsapp")}
                             onClick={() => setDraftTarget({
                               type: "client", id: r.id, name: r.clientName, phone: meta.get(r.id)?.client_phone,
-                              insurer: r.insurer, renewalDate: dueIso,
+                              insurer: r.insurer, lifeLane: true,
+                              renewalDate: r.due?.kind === "scheduled" ? dueIso : null,
                             })}
                           >
                             <Sparkles className="h-4 w-4" aria-hidden />
