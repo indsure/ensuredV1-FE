@@ -20,8 +20,9 @@
 // before organisations existed; its ids are stored as they were, every other organisation's carry an "o<id>~"
 // prefix that no request can spell. The email and password logins are organisation 1 only.
 //
-// The portal saves its records as one book, so the server can refuse a Read-only login's save but cannot
-// tell which part of the book an Operations or Accounts login changed. Those limits are on the screens.
+// The portal saves its records as one book, so the server refuses any save from a role that may change nothing,
+// but cannot tell which part of the book another role changed, and every signed-in person of an organisation can
+// read its book. Those limits are on the screens.
 
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
@@ -32,6 +33,7 @@ import { pool as realPool } from "./lib/db";
 import { log } from "./lib/logger";
 import { sendMail as realSendMail } from "./lib/mailer";
 import * as auth from "./services/corpAuth";
+import * as access from "./services/corpAccess";
 
 const BUCKET = "corporate-files";
 const SESSION_HOURS = 12;
@@ -166,6 +168,9 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
   };
   // The organisation's owner. The first email login counts as organisation 1's owner.
   const ownerOnly = (req: Request, res: Response, next: NextFunction) => { const u = (req as any).corpUser; if (u?.kind !== "owner" && !u?.owner) return res.status(403).json({ error: "owner only" }); next(); };
+  // Owner and Admins invite and manage people. What an Admin may not do to another Admin is checked in corpAuth.
+  const managers = (req: Request, res: Response, next: NextFunction) => { const u = (req as any).corpUser; if (u?.kind !== "owner" && !u?.owner && u?.role !== "admin") return res.status(403).json({ error: "Only the owner or an Admin can do this." }); next(); };
+  const needAccess = async (_req: Request, res: Response, next: NextFunction) => { try { if (await access.accessOn(pool)) return next(); res.status(503).json({ error: "not set up" }); } catch (e) { fail(res, e, "check setup"); } };
   // The email logins belong to organisation 1 and are managed only there.
   const orgOneOnly = (req: Request, res: Response, next: NextFunction) => { if (orgOf(req) !== 1) return res.status(403).json({ error: "not available" }); next(); };
   const needOrgs = async (_req: Request, res: Response, next: NextFunction) => { try { if (await orgsOn()) return next(); res.status(503).json({ error: "not set up" }); } catch (e) { fail(res, e, "check setup"); } };
@@ -279,38 +284,73 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
 
   // ---- The team of one organisation, managed by its owner
   const me = (req: Request) => (req as any).corpUser as auth.Session;
+  const inTx = async (res: Response, what: string, fn: (tx: any) => Promise<{ status: number; error?: string }>) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const r = await fn(client);
+      await client.query(r.error ? "ROLLBACK" : "COMMIT");
+      res.status(r.status).json(r.error ? { error: r.error } : { ok: true });
+    } catch (e) { await client.query("ROLLBACK").catch(() => {}); fail(res, e, what); } finally { client.release(); }
+  };
   const inviteMail = async (to: string, org: string, link: string, kind: "join" | "pin") => sendMail({ to, subject: kind === "pin" ? "Set a new PIN for IndSure Commercial" : `${org} has invited you to IndSure Commercial`, text: `${kind === "pin" ? "Your owner sent you a link to set a new PIN." : `${org} has added you to IndSure Commercial. Open this link to set up your profile and choose your PIN.`}\n\n${link}\n\nThe link works once and for ${auth.JOIN_DAYS} days. If you were not expecting it, ignore this email.` }).catch(() => false);
   const orgName = async (org: number) => (await pool.query("SELECT name FROM corp_orgs WHERE id = $1", [org])).rows[0]?.name || "Your organisation";
-  app.get("/api/corp/team", ready, apiLimit, signedIn, needOrgs, ownerOnly, async (req, res) => {
+  app.get("/api/corp/team", ready, apiLimit, signedIn, needOrgs, managers, async (req, res) => {
     try {
-      const m = await pool.query("SELECT id, user_code, email, name, designation, departments, role, active, last_login, created_at FROM corp_members WHERE org_id = $1 ORDER BY name", [orgOf(req)]);
-      const i = await pool.query("SELECT id, email, role, expires_at, created_at FROM corp_invites WHERE org_id = $1 AND kind = 'join' AND used_at IS NULL AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 200", [orgOf(req)]);
+      const m = await pool.query(`SELECT id, user_code, email, name, designation, departments, role, active, last_login, created_at${(await access.accessOn(pool)) ? ", staff_code" : ""} FROM corp_members WHERE org_id = $1 ORDER BY name`, [orgOf(req)]);
+      const i = await pool.query(`SELECT id, email, role, expires_at, created_at${(await access.accessOn(pool)) ? ", teams" : ""} FROM corp_invites WHERE org_id = $1 AND kind = 'join' AND used_at IS NULL AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 200`, [orgOf(req)]);
       const o = await pool.query("SELECT code, name FROM corp_orgs WHERE id = $1", [orgOf(req)]);
-      res.json({ org: o.rows[0], members: m.rows, invites: i.rows });
+      res.json({ org: o.rows[0], members: m.rows, invites: i.rows, roles: await access.rolesOf(pool, orgOf(req)), teams: await access.teamsOf(pool, orgOf(req)), access: await access.accessOn(pool), owner: auth.isOwner(me(req)) });
     } catch (e) { fail(res, e, "list team"); }
   });
-  app.post("/api/corp/team/invite", ready, apiLimit, signedIn, needOrgs, ownerOnly, express.json({ limit: "10kb" }), async (req, res) => {
+  app.post("/api/corp/team/invite", ready, apiLimit, signedIn, needOrgs, managers, express.json({ limit: "10kb" }), async (req, res) => {
     try {
-      const r = await auth.inviteMember(pool, me(req), req.body?.email, req.body?.role);
+      const r = await auth.inviteMember(pool, me(req), req.body?.email, req.body?.role, req.body?.teams);
       if (!r.invite) return res.status(r.status).json({ error: r.error });
       const emailed = await inviteMail(r.email!, await orgName(orgOf(req)), r.invite.link, "join");
       res.json({ id: r.invite.id, link: r.invite.link, expiresAt: r.invite.expiresAt, emailed });
     } catch (e) { fail(res, e, "invite"); }
   });
-  app.post("/api/corp/team/invite/:id/cancel", ready, apiLimit, signedIn, needOrgs, ownerOnly, async (req, res) => {
+  app.post("/api/corp/team/invite/:id/cancel", ready, apiLimit, signedIn, needOrgs, managers, async (req, res) => {
     if (!/^\d{1,15}$/.test(String(req.params.id))) return res.status(404).json({ error: "No such invite." });
     try {
-      const r = await pool.query("UPDATE corp_invites SET revoked_at = now() WHERE id = $1 AND org_id = $2 AND used_at IS NULL AND revoked_at IS NULL RETURNING email", [req.params.id, orgOf(req)]);
+      const r = await pool.query("UPDATE corp_invites SET revoked_at = now() WHERE id = $1 AND org_id = $2 AND kind = 'join' AND (role <> 'admin' OR $3) AND used_at IS NULL AND revoked_at IS NULL RETURNING email", [req.params.id, orgOf(req), auth.isOwner(me(req))]);
       if (!r.rows.length) return res.status(404).json({ error: "No such invite." });
       await auth.logEvent(pool, orgOf(req), me(req).name, "Invite cancelled", r.rows[0].email);
       res.json({ ok: true });
     } catch (e) { fail(res, e, "cancel invite"); }
   });
-  app.patch("/api/corp/team/:id", ready, apiLimit, signedIn, needOrgs, ownerOnly, express.json({ limit: "10kb" }), async (req, res) => {
+  app.patch("/api/corp/team/:id", ready, apiLimit, signedIn, needOrgs, managers, express.json({ limit: "10kb" }), async (req, res) => {
     if (!/^\d{1,15}$/.test(String(req.params.id))) return res.status(404).json({ error: "No such person." });
-    try { const r = await auth.changeMember(pool, me(req), String(req.params.id), req.body || {}); res.status(r.status).json(r.error ? { error: r.error } : { ok: true }); } catch (e) { fail(res, e, "change person"); }
+    await inTx(res, "change person", (tx) => auth.changeMember(tx, me(req), String(req.params.id), req.body || {}));
   });
-  app.post("/api/corp/team/:id/new-pin", ready, apiLimit, signedIn, needOrgs, ownerOnly, async (req, res) => {
+  // Who is signed in, what they may see and do now, and the teams (for filters). Read on opening and on coming back.
+  app.get("/api/corp/me", ready, apiLimit, signedIn, async (req, res) => {
+    const u = me(req);
+    try {
+      const roles = await access.rolesOf(pool, u.org), mayPick = u.role === "admin";
+      res.json({ role: u.role, owner: auth.isOwner(u), roles: mayPick ? roles : roles.filter((r) => r.key === u.role), teams: (await access.teamsOf(pool, u.org)).map((t: any) => ({ id: String(t.id), name: t.name, lead: t.lead_name || "", mine: t.members.some((m: any) => u.kind === "member" && String(m.id) === u.uid), codes: [...new Set(t.members.map((m: any) => m.staff_code).filter(Boolean))] })) });
+    } catch (e) { fail(res, e, "read access"); }
+  });
+  app.post("/api/corp/roles", ready, apiLimit, signedIn, needOrgs, needAccess, ownerOnly, express.json({ limit: "20kb" }), async (req, res) => {
+    try { const r = await access.saveRole(pool, me(req), null, req.body); res.status(r.status).json(r.error ? { error: r.error } : { key: r.key }); } catch (e) { fail(res, e, "add role"); }
+  });
+  app.post("/api/corp/roles/:key", ready, apiLimit, signedIn, needOrgs, needAccess, ownerOnly, express.json({ limit: "20kb" }), async (req, res) => {
+    try { const r = await access.saveRole(pool, me(req), String(req.params.key), req.body); res.status(r.status).json(r.error ? { error: r.error } : { key: r.key }); } catch (e) { fail(res, e, "change role"); }
+  });
+  app.post("/api/corp/roles/:key/remove", ready, apiLimit, signedIn, needOrgs, needAccess, ownerOnly, async (req, res) => {
+    try { const r = await access.dropRole(pool, me(req), String(req.params.key)); res.status(r.status).json(r.error ? { error: r.error } : { ok: true }); } catch (e) { fail(res, e, "remove role"); }
+  });
+  app.post("/api/corp/teams", ready, apiLimit, signedIn, needOrgs, needAccess, managers, express.json({ limit: "20kb" }), async (req, res) => { await inTx(res, "add team", (tx) => access.saveTeam(tx, me(req), null, req.body)); });
+  app.post("/api/corp/teams/:id", ready, apiLimit, signedIn, needOrgs, needAccess, managers, express.json({ limit: "20kb" }), async (req, res) => {
+    if (!/^\d{1,15}$/.test(String(req.params.id))) return res.status(404).json({ error: "No such team." });
+    await inTx(res, "change team", (tx) => access.saveTeam(tx, me(req), String(req.params.id), req.body));
+  });
+  app.post("/api/corp/teams/:id/remove", ready, apiLimit, signedIn, needOrgs, needAccess, managers, async (req, res) => {
+    if (!/^\d{1,15}$/.test(String(req.params.id))) return res.status(404).json({ error: "No such team." });
+    try { const r = await access.dropTeam(pool, me(req), String(req.params.id)); res.status(r.status).json(r.error ? { error: r.error } : { ok: true }); } catch (e) { fail(res, e, "delete team"); }
+  });
+  app.post("/api/corp/team/:id/new-pin", ready, apiLimit, signedIn, needOrgs, managers, async (req, res) => {
     if (!/^\d{1,15}$/.test(String(req.params.id))) return res.status(404).json({ error: "No such person." });
     try {
       const r = await auth.invitePin(pool, me(req), String(req.params.id));
@@ -382,7 +422,7 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
     } catch (e) { fail(res, e, "read text"); }
   });
   app.post("/api/corp/doctext", ready, apiLimit, signedIn, express.json({ limit: MAX_BOOK }), async (req, res) => {
-    if ((req as any).corpUser?.role === "readonly") return res.status(403).json({ error: "read only" });
+    try { if (!(await access.maySave(pool, orgOf(req), me(req).role))) return res.status(403).json({ error: "read only" }); } catch (e) { return fail(res, e, "check role"); }
     const items = Array.isArray(req.body?.items) ? req.body.items : [];
     if (items.some((x: any) => !/^[\w-]{1,64}$/.test(String(x?.id)) || !Array.isArray(x?.lines))) return res.status(400).json({ error: "check the details" });
     try {
@@ -393,8 +433,8 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
 
   // baseVersion must match what is stored, so two people cannot silently overwrite each other.
   app.put("/api/corp/book", ready, apiLimit, signedIn, express.json({ limit: MAX_BOOK }), async (req, res) => {
-    if ((req as any).corpUser?.role === "readonly") return res.status(403).json({ error: "read only" });
     const body = req.body || {}, org = orgOf(req);
+    try { if (!(await access.maySave(pool, org, me(req).role))) return res.status(403).json({ error: "read only" }); } catch (e) { return fail(res, e, "check role"); }
     // A window still holding another organisation's records can never save them here.
     if (body.org !== undefined && body.org !== org) return res.status(403).json({ error: "another organisation" });
     if (!validBook(body.db)) return res.status(400).json({ error: "not a valid book" });

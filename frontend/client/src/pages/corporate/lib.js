@@ -157,7 +157,7 @@ export function businessRows(db, f) {
   const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(f.fy);
   const rows = [];
   let drafts = 0;
-  const passes = (p, c, v) => (f.vertical === "ALL" || c.vertical === f.vertical) && (!f.insurer || p.insurerId === f.insurer) && (!f.dept || p.dept === f.dept) && (!f.cse || c.cse === f.cse) && (!f.rm || c.rm === f.rm) && (!f.currency || v.currency === f.currency);
+  const passes = (p, c, v) => (f.vertical === "ALL" || c.vertical === f.vertical) && (!f.insurer || p.insurerId === f.insurer) && (!f.dept || p.dept === f.dept) && (!f.cse || c.cse === f.cse) && (!f.rm || c.rm === f.rm) && (!f.teamCodes || f.teamCodes.includes(c.cse) || f.teamCodes.includes(c.rm)) && (!f.currency || v.currency === f.currency);
   // One report row for a term. Fleet rows start from this and replace the money.
   const rowOf = (t) => {
     const p = db.policies.find((x) => x.id === t.policyId);
@@ -193,6 +193,7 @@ export function businessRows(db, f) {
     if (f.dept && p.dept !== f.dept) continue;
     if (f.cse && c.cse !== f.cse) continue;
     if (f.rm && c.rm !== f.rm) continue;
+    if (f.teamCodes && !f.teamCodes.includes(c.cse) && !f.teamCodes.includes(c.rm)) continue;
     if (f.nr && t.nr !== f.nr) continue;
     if (f.currency && v.currency !== f.currency) continue;
     const ins = insurerOf(db, p.insurerId), br = branchOf(db, p.insurerId, p.branchId);
@@ -258,6 +259,7 @@ export function renewalRows(db, f) {
     const p = db.policies.find((x) => x.id === t.policyId), c = db.customers.find((x) => x.id === p.customerId);
     if (f.vertical !== "ALL" && c.vertical !== f.vertical) continue;
     if (f.insurer && p.insurerId !== f.insurer) continue;
+    if (f.teamCodes && !f.teamCodes.includes(c.cse) && !f.teamCodes.includes(c.rm)) continue;
     if (f.outcome && t.outcome !== f.outcome) continue;
     const next = t.nextTermId ? db.terms.find((x) => x.id === t.nextTermId) : null;
     const draftNext = db.terms.find((x) => x.prevTermId === t.id && x.status === "draft");

@@ -464,8 +464,13 @@
 .ic-root .corp-login-seg button { justify-content: center; min-height: 44px; }
 .ic-root .corp-login-hint { font-weight: 400; }
 .ic-root .corp-join { max-width: 520px; }
-.ic-root .corp-depts { border: 1px solid var(--s200); border-radius: 12px; padding: 10px 14px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ic-root .corp-depts { border: 1px solid var(--s200); border-radius: 12px; padding: 10px 14px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr)); gap: 8px; }
 .ic-root .corp-depts legend { font-weight: 600; padding: 0 4px; }
 .ic-root .corp-ids { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
 .ic-root .corp-ids dt { color: var(--s600); }
 .ic-root .corp-ids dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+
+.ic-root .sb-invite { display: flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: #FFFFFF; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 10px 16px; font-weight: 700; font-size: .95rem; cursor: pointer; }
+.ic-root .sb-invite:hover { background: rgba(255,255,255,.1); }
+.ic-root .corp-depts input[type="checkbox"] { flex: none; }
+.ic-root .plainset { border: 0; padding: 0; margin: 0; min-width: 0; }

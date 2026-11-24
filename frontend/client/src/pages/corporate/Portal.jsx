@@ -6,9 +6,10 @@ import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Emp
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills, DeleteDoc } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
-import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText } from "./store.js";
+import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText, fetchMe } from "./store.js";
 import { CorpLogin, JoinPage, joinToken, MySignIn } from "./login.jsx";
-import { EmployeesTab } from "./employees.jsx";
+import { UsersPage, InviteUser, TeamFilter } from "./users.jsx";
+import { DEFAULT_ROLES, pageAllowed } from "./access.js";
 import { QuickAdd, createPolicy } from "./add.jsx";
 import { Guide } from "./guide.jsx";
 import { BulkPage, DraftsPage, bindBulk, bulkBusy } from "./bulk.jsx";
@@ -25,34 +26,30 @@ import { useState, useEffect, useMemo, useRef } from "react";
 
 // Live and demo records never share storage.
 const STORE = LIVE ? "indsure-commercial-live-v1" : "indsure-commercial-demo-v1";
-const ROLES = {
-  ops: { label: "Operations / BD", who: LIVE ? "Operations user" : "Meera Joshi (CSC014)", perms: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch"] },
-  accounts: { label: "Accounts", who: LIVE ? "Accounts user" : "Farah Khan (ACC02)", perms: ["receipt", "export", "finalize", "addDoc"] },
-  admin: { label: "Admin", who: LIVE ? "Admin" : "Admin (demo)", perms: "*" },
-  readonly: { label: "Read-only", who: "Read-only viewer", perms: [] },
-};
+const DEMO_WHO = { ops: LIVE ? "Operations user" : "Meera Joshi (CSC014)", accounts: LIVE ? "Accounts user" : "Farah Khan (ACC02)", admin: LIVE ? "Admin" : "Admin (demo)", readonly: "Read-only viewer" };
 const NAV = [
   { group: "Operations", items: [
-    { key: "home", label: "Today", icon: "home", roles: ["ops", "admin"] },
-    { key: "customers", label: "Customers", icon: "users", roles: ["ops", "accounts", "admin", "readonly"] },
-    { key: "new", label: "New business", icon: "plus", roles: ["ops", "admin"] },
-    { key: "bulk", label: "Bulk upload", icon: "upload", roles: ["ops", "admin"] },
-    { key: "drafts", label: "Drafts", icon: "list", roles: ["ops", "admin"] },
-    { key: "register", label: "Policy register", icon: "file", roles: ["ops", "accounts", "admin", "readonly"] },
-    { key: "expiry", label: "Renewals due", icon: "refresh", roles: ["ops", "admin", "readonly"] }] },
+    { key: "home", label: "Today", icon: "home" },
+    { key: "customers", label: "Customers", icon: "users" },
+    { key: "new", label: "New business", icon: "plus" },
+    { key: "bulk", label: "Bulk upload", icon: "upload" },
+    { key: "drafts", label: "Drafts", icon: "list" },
+    { key: "register", label: "Policy register", icon: "file" },
+    { key: "expiry", label: "Renewals due", icon: "refresh" }] },
   { group: "Accounts", items: [
-    { key: "business", label: "Business report", icon: "chart", roles: ["accounts", "admin", "readonly"] },
-    { key: "brokerage", label: "Brokerage received", icon: "wallet", roles: ["accounts", "admin", "readonly"] },
-    { key: "renewreport", label: "Renewals report", icon: "list", roles: ["accounts", "admin", "readonly"] },
-    { key: "snapshots", label: "Locked reports", icon: "lock", roles: ["accounts", "admin"] }] },
+    { key: "business", label: "Business report", icon: "chart" },
+    { key: "brokerage", label: "Brokerage received", icon: "wallet" },
+    { key: "renewreport", label: "Renewals report", icon: "list" },
+    { key: "snapshots", label: "Locked reports", icon: "lock" }] },
   { group: "Admin", items: [
-    { key: "masters", label: "Lists and team", icon: "db", roles: ["admin"] },
-    { key: "fx", label: "Exchange rates", icon: "rupee", roles: ["accounts", "admin"] },
-    { key: "presets", label: "Brokerage rates", icon: "percent", roles: ["accounts", "admin"] },
-    { key: "reminders", label: "Reminders", icon: "bell", roles: ["ops", "admin"] }] },
+    { key: "users", label: "Users", icon: "users" },
+    { key: "masters", label: "Lists and team", icon: "db" },
+    { key: "fx", label: "Exchange rates", icon: "rupee" },
+    { key: "presets", label: "Brokerage rates", icon: "percent" },
+    { key: "reminders", label: "Reminders", icon: "bell" }] },
   { group: "Help", items: [
-    { key: "guide", label: "How to", icon: "help", roles: ["ops", "accounts", "admin", "readonly"] },
-    { key: "feedback", label: "Report a problem", icon: "alert", roles: ["ops", "accounts", "admin", "readonly"] }] },
+    { key: "guide", label: "How to", icon: "help" },
+    { key: "feedback", label: "Report a problem", icon: "alert" }] },
 ];
 
 
@@ -66,13 +63,27 @@ export function App({ onSignedOut }) {
     if (!isRemote()) return "ops";
     const mine = currentUser()?.role || "ops";
     if (mine !== "admin") return mine;
-    try { const saved = localStorage.getItem(TEAM_KEY); return saved && ROLES[saved] ? saved : "admin"; } catch (e) { return "admin"; }
+    try { return localStorage.getItem(TEAM_KEY) || "admin"; } catch (e) { return "admin"; }
   });
-  const canChooseTeam = !isRemote() || currentUser()?.role === "admin";
+  // Online, the server says what each role may see and do, and which teams there are. Until it has, the defaults.
+  const [me, setMe] = useState(() => ({ role: currentUser()?.role, roles: DEFAULT_ROLES, teams: [], owner: currentUser()?.kind === "owner" || !!currentUser()?.owner }));
+  const roles = me.roles;
+  const mayPick = (isRemote() ? me.role || currentUser()?.role : "admin") === "admin";
+  const canChooseTeam = !isRemote() || mayPick;
+  const manager = isRemote() && (me.owner || me.role === "admin");
+  // An unknown role (deleted, or not read yet) sees nothing but help.
+  const R0 = roles.find((r) => r.key === role) || (mayPick ? roles.find((r) => r.key === "admin") : null) || { key: role, name: "", pages: [], actions: [] };
+  const shows = (key, r = R0) => key === "users" ? manager : pageAllowed(r, key);
+  const firstPage = (r = R0) => NAV.flatMap((g) => g.items).find((i) => i.key !== "users" && shows(i.key, r))?.key || "guide";
+  const readMe = async () => { if (!isRemote()) return; const r = await fetchMe(); if (r.ok && typeof r.body?.role === "string" && Array.isArray(r.body.roles) && Array.isArray(r.body.teams)) { setMe(r.body); if (r.body.role !== "admin") setRole(r.body.role); } };
+  useEffect(() => { let last = Date.now(); const f = () => { if (document.visibilityState === "visible" && Date.now() - last > 15000) { last = Date.now(); readMe(); } }; document.addEventListener("visibilitychange", f); window.addEventListener("focus", f); return () => { document.removeEventListener("visibilitychange", f); window.removeEventListener("focus", f); }; }, []);
+  const [inviting, setInviting] = useState(false);
+  // While opening, land on the first page the role the server named can see.
+  useEffect(() => { if (!db) setRoute({ view: firstPage() }); }, [me, role]);
   const lastPage = useRef("");
   const [fy, setFy] = useState("2026-27");
   // Open on the first page this team can use: Accounts and Read-only have no "Today" page.
-  const [route, setRoute] = useState(() => ({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role))?.key || "register" }));
+  const [route, setRoute] = useState(() => ({ view: firstPage() }));
   const [toasts, setToasts] = useState([]);
   const [menu, setMenu] = useState(false);
   const [backup, setBackup] = useState(false);
@@ -91,7 +102,8 @@ export function App({ onSignedOut }) {
   // Load once. A book that has never been saved (a fresh seed) is saved straight away.
   useEffect(() => {
     onSaveStatus(setSaveState);
-    openStore(STORE, seed).then((raw) => {
+    // Access first, so nothing a role may not see is drawn even for a moment.
+    readMe().catch(() => {}).then(() => openStore(STORE, seed)).then((raw) => {
       let d = upgradeBook(raw);
       const upgraded = d !== raw;
       // The role once called CSE is now CSC. Books saved before the rename are brought up to date once.
@@ -123,8 +135,8 @@ export function App({ onSignedOut }) {
     if (saveState.state !== "conflict") return;
     reloadLatest().then((d) => { loaded.current = d; setDb(d); toast("Another window saved changes first. The latest records are shown; redo your last change if it is missing.", "bad"); }).catch(() => {});
   }, [saveState]);
-  const R = isRemote() && currentUser() ? { ...ROLES[role], who: currentUser().name } : ROLES[role];
-  const can = (a) => R.perms === "*" || R.perms.includes(a);
+  const R = { ...R0, label: R0.name, who: isRemote() && currentUser() ? currentUser().name : DEMO_WHO[role] };
+  const can = (a) => R.key === "admin" || R.actions.includes(a);
   const log = (d, o) => d.audit.push({ id: `A${++d.seq}`, at: nowIso(), who: R.who, ...(isRemote() && currentUser()?.uid ? { uid: currentUser().uid } : {}), ...o });
   // Runs straight away, so code after update() can use what it produced (a new customer's id, say).
   const latestDb = useRef(db); latestDb.current = db;
@@ -132,29 +144,29 @@ export function App({ onSignedOut }) {
   const update = (fn) => { const d = structuredClone(latestDb.current); fn(d); latestDb.current = d; setDb(d); };
   const toast = (msg, tone = "good") => { const id = Math.random(); setToasts((t) => [...t, { id, msg, tone }]); setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3600); };
   const go = (r) => { setRoute(r); setMenu(false); mainRef.current?.scrollTo?.(0, 0); window.scrollTo(0, 0); };
-  const visible = (key) => NAV.flatMap((g) => g.items).find((i) => i.key === key)?.roles.includes(role);
+  const visible = (key) => shows(key);
   const switchRole = (r) => {
     if (isRemote()) { try { localStorage.setItem(TEAM_KEY, r); } catch (e) { /* storage blocked */ } }
     setRole(r);
-    const first = NAV.flatMap((g) => g.items).find((i) => i.roles.includes(r));
-    const keep = ["customer", "policy"].includes(route.view) || NAV.flatMap((g) => g.items).find((i) => i.key === route.view)?.roles.includes(r);
-    if (!keep) setRoute({ view: first.key });
+    const next = roles.find((x) => x.key === r);
+    if (!["customer", "policy"].includes(route.view) && !shows(route.view, next)) setRoute({ view: firstPage(next) });
   };
-  const reset = () => { setDb(seed()); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast(LIVE ? "All records in this browser were deleted" : "Demo reset to the starting example data"); };
+  const reset = () => { setDb(seed()); setRoute({ view: firstPage() }); toast(LIVE ? "All records in this browser were deleted" : "Demo reset to the starting example data"); };
   if (loadErr) return <div className="ic-loading" role="alert"><p>Your records could not be opened just now. Nothing was changed.</p><button className="btn btn-primary" onClick={() => window.location.reload()}>Try again</button></div>;
   if (!db) return <div className="ic-loading" role="status">Opening your records...</div>;
-  const ctx = { db, update, can, log, toast, who: R.who, role, fy, go, latest: () => latestDb.current };
+  const ctx = { db, update, can, log, toast, who: R.who, role, fy, go, visible, teams: me.teams, teamCodes: (id) => me.teams.find((x) => x.id === id)?.codes || null, latest: () => latestDb.current };
   bindBulk(ctx);
 
   let view;
   const v = route.view;
-  if (v === "policy") view = <PolicyView key={route.id + (route.termId || "")} policyId={route.id} termId={route.termId} tab={route.tab} endorseFx={route.endorseFx} go={go} />;
+  if ((v === "policy" || v === "customer") && !visible("customers") && !visible("register")) view = <Empty title="This page is not available for your role">Choose a page from the menu.</Empty>;
+  else if (v === "policy") view = <PolicyView key={route.id + (route.termId || "")} policyId={route.id} termId={route.termId} tab={route.tab} endorseFx={route.endorseFx} go={go} />;
   else if (v === "customer") view = <CustomerView id={route.id} />;
   else if (v === "add") view = <QuickAdd key={route.nonce || "add"} inboxId={route.inboxId} />;
-  else if (!visible(v)) view = <Empty title="This page is not available for your team">Choose a page from the menu.</Empty>;
+  else if (!visible(v)) view = <Empty title="This page is not available for your role">Choose a page from the menu.</Empty>;
   else view = {
     home: <HomeView />, customers: <CustomersView />, new: <NewBusiness key={(route.customerId || "new") + (route.fx?.id || "")} presetCustomer={route.customerId} presetFx={route.fx} />, register: <RegisterView />, expiry: <ExpiryView />,
-    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, bulk: <BulkPage />, drafts: <DraftsPage />, feedback: <FeedbackPage page={lastPage.current} />,
+    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, bulk: <BulkPage />, drafts: <DraftsPage />, feedback: <FeedbackPage page={lastPage.current} />, users: <UsersPage onInvite={() => setInviting(true)} onChanged={readMe} />,
   }[v];
 
   return (
@@ -169,8 +181,9 @@ export function App({ onSignedOut }) {
           <button ref={closeBtn} className="sb-close" aria-label="Close menu" onClick={() => { setMenu(false); menuBtn.current?.focus(); }}><Icon name="x" /></button>
           <div className="sb-brand"><img src={"/logo-white.png"} alt="" /><div><strong>IndSure</strong><span>Commercial</span></div></div>
           {can("newBusiness") && <button className={`sb-cta ${route.view === "add" ? "on" : ""}`} onClick={() => go({ view: "add", nonce: Date.now() })}><Icon name="upload" /> Add a policy</button>}
+          {manager && <button className="sb-invite" onClick={() => { setMenu(false); setInviting(true); }}><Icon name="users" /> Invite user</button>}
           <nav className="sidenav" aria-label="Workspaces">
-            {NAV.map((g) => { const items = g.items.filter((i) => i.roles.includes(role)); return items.length ? (
+            {NAV.map((g) => { const items = g.items.filter((i) => shows(i.key)); return items.length ? (
               <div key={g.group} className="navgroup"><div className="navhead">{g.group}</div>
                 {items.map((i) => <button key={i.key} className={`navitem ${route.view === i.key ? "on" : ""}`} aria-current={route.view === i.key ? "page" : undefined} onClick={() => go({ view: i.key })}><Icon name={i.icon} />{i.label}</button>)}
               </div>) : null; })}
@@ -186,10 +199,10 @@ export function App({ onSignedOut }) {
           <div className="demo-banner">
             <span className="row gap-xs"><Icon name="sparkle" size={16} /> {!LIVE ? "Demo prototype: fictional data, nothing leaves this browser." : isRemote() ? "Beta: your records are saved securely online." : storeInfo().kind === "server" ? "Your records are saved on this computer, not online." : "Beta: your records are kept in this browser only. Download a backup regularly."}</span>
             <div className="banner-ctl">
-              {canChooseTeam && <label className="pillsel" title="Show the pages for this team"><span className="sr">Team</span><select id="role" value={role} onChange={(e) => switchRole(e.target.value)}>{Object.entries(ROLES).map(([k, x]) => <option key={k} value={k}>Team: {x.label}</option>)}</select></label>}
+              {canChooseTeam && <label className="pillsel" title="See the portal as this role does"><span className="sr">View as</span><select id="role" value={R0.key} onChange={(e) => switchRole(e.target.value)}>{roles.map((x) => <option key={x.key} value={x.key}>View as: {x.name}</option>)}</select></label>}
               <label className="pillsel"><span className="sr">Financial year</span><select id="fy" value={fy} onChange={(e) => setFy(e.target.value)}>{FY_OPTIONS.map((f) => <option key={f} value={f}>F.Y. {f}</option>)}</select></label>
               {import.meta.env.DEV && <a className="btn btn-banner" href={LIVE ? "?demo" : "?"}>{LIVE ? "Open the demo" : "Back to my records"}</a>}
-              <Btn kind="banner" onClick={() => setBackup(true)}>Backup</Btn>
+              {can("backup") && <Btn kind="banner" onClick={() => setBackup(true)}>Backup</Btn>}
               {isRemote() && <Btn kind="banner" onClick={() => setMine(true)}>My sign-in</Btn>}
               {isRemote() && <Btn kind="banner" onClick={() => { logout(); onSignedOut?.(); }}>Sign out</Btn>}
               {isRemote() ? null : LIVE ? <AskFirst label="Clear all data" question="Delete every record in this browser? Download a backup first." yes="Delete everything" onYes={reset} kind="banner" />
@@ -200,7 +213,8 @@ export function App({ onSignedOut }) {
           <main className="main" ref={mainRef}>{view}</main>
           <footer className="foot">{LIVE ? isRemote() ? "IndSure Commercial beta. Records and original files are saved online behind this sign-in. No email or payment is sent from here." : `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
           {mine && <MySignIn onClose={() => setMine(false)} />}
-          {backup && <BackupModal db={db} onRestore={(d) => { setDb(upgradeBook(d)); setBackup(false); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
+          {inviting && <InviteUser onClose={() => setInviting(false)} />}
+          {backup && <BackupModal db={db} onRestore={(d) => { setDb(upgradeBook(d)); setBackup(false); setRoute({ view: firstPage() }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
         </div>
         <PlaceLists />
         <div className="toasts" aria-live="polite">{toasts.map((t) => <div key={t.id} className={`toast toast-${t.tone}`}>{t.msg}</div>)}</div>
@@ -406,20 +420,23 @@ function CustomerForm({ onDone, initial, onUseExisting, offerPolicy }) {
 }
 
 function CustomersView() {
-  const { db, go, can } = useApp();
+  const { db, go, can, teamCodes } = useApp();
   const [q, setQ] = useState("");
+  const [team, setTeam] = useState("");
+  const tc = teamCodes(team);
   const [adding, setAdding] = useState(false);
   const s = q.trim().toLowerCase();
-  const list = db.customers.filter((c) => !s || [c.name, c.code, c.city, c.gst, teamName(db, c.cse), teamName(db, c.rm)].join(" ").toLowerCase().includes(s));
+  const list = db.customers.filter((c) => (!tc || tc.includes(c.cse) || tc.includes(c.rm)) && (!s || [c.name, c.code, c.city, c.gst, teamName(db, c.cse), teamName(db, c.rm)].join(" ").toLowerCase().includes(s)));
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Customers</h1><p className="muted">The customer is the insured named on the policy. One customer holds every policy, of any type. Search by insured name, code, city, GSTIN or team member.</p></div>{can("createCustomer") && !adding && <Btn kind="primary" onClick={() => setAdding(true)}>Add customer</Btn>}</header>
       {adding && <Card title="New customer"><CustomerForm offerPolicy onDone={(id, fx) => { setAdding(false); if (id) go(fx ? { view: "new", customerId: id, fx } : { view: "customer", id }); }} onUseExisting={(id, fx) => { setAdding(false); go(fx && !fx.noText ? { view: "new", customerId: id, fx } : { view: "customer", id }); }} /></Card>}
       <div className="searchbar"><label htmlFor="cs-q" className="sr">Search customers</label><input id="cs-q" type="search" placeholder="Search by insured name, code, city, GSTIN, CSC or RM" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      <TeamFilter id="cs-team" value={team} onChange={setTeam} />
       {list.length ? (
         <Table><thead><tr><th>Code</th><th>Insured</th><th>Customer type</th><th>City</th><th>CSC</th><th>RM</th><th className="num">Policies</th></tr></thead>
           <tbody>{list.map((c) => <tr key={c.id} className="clickrow" onClick={() => go({ view: "customer", id: c.id })}><td>{c.code}</td><td><button className="linkbtn">{c.name}</button></td><td>{c.vertical}</td><td>{[c.city, c.state].filter(Boolean).join(", ")}<div className="small muted">{c.country}</div></td><td>{teamName(db, c.cse)}</td><td>{c.rm ? teamName(db, c.rm) : "--"}</td><td className="num">{db.policies.filter((p) => p.customerId === c.id).length}</td></tr>)}</tbody></Table>
-      ) : <Empty title={`No customer matches "${q}"`}>Check the spelling, or add a new customer.</Empty>}
+      ) : <Empty title={q ? `No customer matches "${q}"` : "No customers for this team"}>Check the spelling, or add a new customer.</Empty>}
     </div>
   );
 }
@@ -451,12 +468,12 @@ function CustomerView({ id }) {
               {use.policies ? <p className="small">{c.name} has {plural(use.policies, "policy", "policies")}, so it cannot be deleted. If it is a duplicate, merge it into the right customer below.</p>
                 : <div className="row gap-s wrap"><AskFirst kind="danger" label="Delete customer" question={`Delete ${c.name} (${c.code})${use.documents ? ` and ${plural(use.documents, "document")} kept on it` : ""}?`} yes="Delete customer"
                   onYes={() => { update((d) => { log(d, { action: "Customer deleted", detail: deleteCustomer(d, c.id) }); }); toast("Customer deleted"); go({ view: "customers" }); }} /><span className="small muted">It has no policies.</span></div>}
-              {can("*") && others.length > 0 && <div className="row gap-s wrap">
+              {can("deletePolicy") && others.length > 0 && <div className="row gap-s wrap">
                 <Labeled label="Same customer as" htmlFor="cv-merge" hint="Moves its policies and documents to the customer you choose, then removes this one."><Select id="cv-merge" value={mergeTo} onChange={setMergeTo} placeholder="Choose" options={others} /></Labeled>
                 <AskFirst label="Merge" disabled={!mergeTo} why="Choose the customer to keep first" question={target ? `Move ${plural(use.policies, "policy", "policies")} and ${plural(use.documents, "document")} to ${target.name} (${target.code}) and remove ${c.code}?` : ""} yes="Merge"
                   onYes={() => { const to = mergeTo; update((d) => { log(d, { customerId: to, action: "Customer merged", detail: mergeCustomer(d, c.id, to) }); }); toast("Customers merged"); setMergeTo(""); go({ view: "customer", id: to }); }} />
               </div>}
-              {!can("*") && use.policies > 0 && <p className="small muted">An Admin can merge duplicate customers.</p>}
+              {!can("deletePolicy") && use.policies > 0 && <p className="small muted">An Admin can merge duplicate customers.</p>}
             </div>
           </Card>
         );
@@ -589,14 +606,16 @@ function NewBusiness({ presetCustomer, presetFx }) {
 
 // ---------------------------------------------------------------- register
 function RegisterView() {
-  const { db, go } = useApp();
+  const { db, go, teamCodes } = useApp();
+  const [team, setTeam] = useState("");
+  const tc = teamCodes(team);
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("");
   const [rec, setRec] = useState("");
   const [cov, setCov] = useState("");
   const [vert, setVert] = useState("");
   const rows = db.policies.map((p) => ({ p, t: latestTerm(db, p), c: db.customers.find((x) => x.id === p.customerId) }))
-    .filter(({ p, t, c }) => (!vert || c.vertical === vert) && (!dept || p.dept === dept) && (!rec || completeness(t).label === rec) && (!cov || coverage(t).label === cov) && (!q.trim() || `${c.name} ${c.code} ${p.controlNo} ${t.values.policyNo} ${p.type}`.toLowerCase().includes(q.trim().toLowerCase())));
+    .filter(({ p, t, c }) => (!tc || tc.includes(c.cse) || tc.includes(c.rm)) && (!vert || c.vertical === vert) && (!dept || p.dept === dept) && (!rec || completeness(t).label === rec) && (!cov || coverage(t).label === cov) && (!q.trim() || `${c.name} ${c.code} ${p.controlNo} ${t.values.policyNo} ${p.type}`.toLowerCase().includes(q.trim().toLowerCase())));
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Policy register</h1><p className="muted">The latest year of every policy. Search, or filter by customer type, department or status.</p></div></header>
@@ -604,6 +623,7 @@ function RegisterView() {
         <Labeled label="Search" htmlFor="rg-q"><input id="rg-q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Insured, code, policy or control no." /></Labeled>
         <Labeled label="Customer type" htmlFor="rg-vert"><Select id="rg-vert" value={vert} onChange={setVert} placeholder="All" options={["Corporate", "Retail"]} /></Labeled>
         <Labeled label="Department" htmlFor="rg-dept"><Select id="rg-dept" value={dept} onChange={setDept} placeholder="All" options={Object.keys(DEPARTMENTS)} /></Labeled>
+        <TeamFilter id="rg-team" value={team} onChange={setTeam} />
         <Labeled label="Record" htmlFor="rg-rec"><Select id="rg-rec" value={rec} onChange={setRec} placeholder="All" options={["Draft", "Complete"]} /></Labeled>
         <Labeled label="Cover" htmlFor="rg-cov"><Select id="rg-cov" value={cov} onChange={setCov} placeholder="All" options={["Scheduled", "Active", "Expired", "Cancelled", "Not confirmed"]} /></Labeled>
       </div>
@@ -616,18 +636,21 @@ function RegisterView() {
 
 // ---------------------------------------------------------------- expiry view
 function ExpiryView() {
-  const { db, go } = useApp();
+  const { db, go, teamCodes } = useApp();
+  const [team, setTeam] = useState("");
+  const tc = teamCodes(team);
   const [win, setWin] = useState("60");
   const [showDone, setShowDone] = useState(false);
   const rows = db.terms.filter((t) => t.status === "confirmed" && t.values.riskEnd).map((t) => ({ t, p: db.policies.find((x) => x.id === t.policyId) }))
     .map((x) => ({ ...x, c: db.customers.find((y) => y.id === x.p.customerId), days: daysBetween(TODAY, x.t.values.riskEnd), draft: db.terms.find((y) => y.prevTermId === x.t.id && y.status === "draft") }))
-    .filter(({ days, t }) => days >= -45 && days <= +win && (showDone || t.outcome === "Open"))
+    .filter(({ days, t, c }) => (!tc || tc.includes(c.cse) || tc.includes(c.rm)) && days >= -45 && days <= +win && (showDone || t.outcome === "Open"))
     .sort((a, b) => a.days - b.days);
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Renewals due</h1><p className="muted">Every policy ending in the window, including ones marked non-renewable. Renew starts a draft; confirming it completes the renewal.</p></div></header>
       <div className="filters">
         <Labeled label="Ending within" htmlFor="ex-win"><Select id="ex-win" value={win} onChange={setWin} options={[{ value: "30", label: "30 days" }, { value: "60", label: "60 days" }, { value: "90", label: "90 days" }, { value: "365", label: "12 months" }]} /></Labeled>
+        <TeamFilter id="ex-team" value={team} onChange={setTeam} />
         <div className="fld"><label className="check"><input id="ex-done" type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} /> Also show renewed and lost (last 45 days)</label></div>
       </div>
       {rows.length ? <Table><thead><tr><th>Ends</th><th>Insured</th><th>Policy type</th><th>Policy no.</th><th>Renewable</th><th>Outcome</th><th /></tr></thead>
@@ -663,7 +686,7 @@ function CsvFallback({ data, onClose }) {
 }
 
 // ---------------------------------------------------------------- business report
-const FILTER0 = { basis: "bookDate", vertical: "ALL", insurer: "", dept: "", cse: "", rm: "", nr: "", currency: "", useRange: false, from: "", to: "" };
+const FILTER0 = { basis: "bookDate", vertical: "ALL", insurer: "", dept: "", team: "", cse: "", rm: "", nr: "", currency: "", useRange: false, from: "", to: "" };
 function ReportFilters({ f, setF, withBasis = true, extra }) {
   const { db, fy } = useApp();
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
@@ -675,6 +698,7 @@ function ReportFilters({ f, setF, withBasis = true, extra }) {
         {f.useRange && <><Labeled label="From" htmlFor="bf-from" error={f.from && f.to && f.to < f.from ? "End is before start" : null}><DateInput id="bf-from" value={f.from} onChange={(e) => set("from")(e.target.value)} /></Labeled><Labeled label="To" htmlFor="bf-to"><DateInput id="bf-to" value={f.to} onChange={(e) => set("to")(e.target.value)} /></Labeled></>}
         <fieldset className="fld radios"><legend>Customer type</legend>{["ALL", "Corporate", "Retail"].map((x) => <label key={x} className="check"><input type="radio" name="vertical" checked={f.vertical === x} onChange={() => set("vertical")(x)} /> {x === "ALL" ? "All" : x}</label>)}</fieldset>
         <Labeled label="Insurer" htmlFor="bf-ins"><Select id="bf-ins" value={f.insurer} onChange={set("insurer")} placeholder="All insurers" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
+        <TeamFilter id="bf-team" value={f.team} onChange={set("team")} />
         {extra}
       </div>
     </Card>
@@ -682,13 +706,13 @@ function ReportFilters({ f, setF, withBasis = true, extra }) {
 }
 
 function BusinessReport() {
-  const { db, fy, can, update, log, toast, who } = useApp();
+  const { db, fy, can, update, log, toast, who, teams, teamCodes } = useApp();
   const [f, setF] = useState(FILTER0);
   const [g, setG] = useState("insurer");
   const [out, setOut] = useState("screen");
   const [fallback, setFallback] = useState(null);
   const [printedAt] = useState(nowIso());
-  const fl = { ...f, fy };
+  const fl = { ...f, fy, teamCodes: teamCodes(f.team) };
   const { rows, drafts, from, to } = businessRows(db, fl);
   const groups = groupRows(rows, g);
   const T = totals(rows);
@@ -697,7 +721,7 @@ function BusinessReport() {
   const basisLabel = DATE_BASES.find((b) => b.key === f.basis).label;
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   const missingRate = [...new Set(rows.filter((r) => r.fxRate == null).map((r) => `${r.currency} ${fmtMonth(r.fxMonth)}`))];
-  const filterText = [`Vertical: ${f.vertical}`, f.insurer && `Insurer: ${insurerOf(db, f.insurer).name}`, f.dept && `Department: ${f.dept}`, f.cse && `CSC: ${teamName(db, f.cse)}`, f.rm && `RM: ${teamName(db, f.rm)}`, f.nr && `N/R: ${f.nr}`, f.currency && `Currency: ${f.currency}`].filter(Boolean).join("; ");
+  const filterText = [`Vertical: ${f.vertical}`, f.insurer && `Insurer: ${insurerOf(db, f.insurer).name}`, f.dept && `Department: ${f.dept}`, f.team && `Team: ${teams.find((x) => x.id === f.team)?.name || ""}`, f.cse && `CSC: ${teamName(db, f.cse)}`, f.rm && `RM: ${teamName(db, f.rm)}`, f.nr && `N/R: ${f.nr}`, f.currency && `Currency: ${f.currency}`].filter(Boolean).join("; ");
   const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSC", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Gross premium", "GST", "Stamp duty", "Net premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Gross premium INR", "GST INR", "Net premium INR", "Brokerage INR", ...GST_COLUMNS.map(([, l]) => l), ...GST_COLUMNS.map(([, l]) => `${l} INR`)];
   const csv = () => toCsv([
     ["Report", LIVE ? "Business report, IndSure Commercial beta" : "Business report, IndSure Commercial demo prototype (fictional data)"], ["Financial year", f.useRange ? "Custom range" : `F.Y. ${fy}`], ["Period", `${from} to ${to}`], ["Date basis", basisLabel], ["Filters", filterText], ["Grouping", GROUPINGS.find((x) => x.key === g).label], ["Printed", printedAt.replace("T", " ")], ["Excluded drafts", String(drafts)], ["FX", "Demo monthly rates, not market data. Month follows the date basis (open decision)."]],
@@ -765,16 +789,16 @@ function TotalsBlock({ T, consistent }) {
 
 // ---------------------------------------------------------------- renewals report
 function RenewalsReport() {
-  const { db, fy, can, toast } = useApp();
+  const { db, fy, can, toast, teams, teamCodes } = useApp();
   const [f, setF] = useState({ ...FILTER0, outcome: "" });
   const [fallback, setFallback] = useState(null);
   const [printedAt] = useState(nowIso());
-  const rows = renewalRows(db, { ...f, fy });
+  const rows = renewalRows(db, { ...f, fy, teamCodes: teamCodes(f.team) });
   const [from, to] = f.useRange && f.from && f.to ? [f.from, f.to] : fyRange(fy);
   const byIns = groupRows(rows.map((r) => ({ ...r, basisDate: r.riskEnd, month: r.riskEnd.slice(0, 7), fxRate: 1, grossInr: 0, gstInr: 0, netInr: 0, brokerageInr: 0, siInr: 0, grossPremium: 0, gst: 0, brokerage: 0 })), "insurer");
   const count = (o) => rows.filter((r) => r.outcome === o).length;
   const header = ["Insurer", "S.No", "Control no", "Policy no", "Start date", "Expiry date", "Policy type", "Customer group", "Insured (customer)", "Cust code", "Location", "Currency", "Sum insured", "Net premium", "Brokerage", "RM", "CSC", "Renewable", "Outcome", "Renewed as", "Loss detail (LossBy meaning open)"];
-  const csv = () => toCsv([["Report", LIVE ? "Renewals report, IndSure Commercial beta" : "Renewals report, IndSure Commercial demo prototype (fictional data)"], ["Date basis", "Risk end (expiry) date"], ["Period", `${from} to ${to}`], ["Printed", printedAt.replace("T", " ")], ["Counts", `Renewed ${count("Renewed")}, Lost ${count("Lost")}, Open ${count("Open")}`]], header,
+  const csv = () => toCsv([["Report", LIVE ? "Renewals report, IndSure Commercial beta" : "Renewals report, IndSure Commercial demo prototype (fictional data)"], ["Date basis", "Risk end (expiry) date"], ...(f.team ? [["Team", teams.find((x) => x.id === f.team)?.name || ""]] : []), ["Period", `${from} to ${to}`], ["Printed", printedAt.replace("T", " ")], ["Counts", `Renewed ${count("Renewed")}, Lost ${count("Lost")}, Open ${count("Open")}`]], header,
     byIns.flatMap((g) => g.rows.map((r, i) => [g.key, i + 1, r.controlNo, r.policyNo, r.riskStart, r.riskEnd, r.type, r.group, r.customer, r.custCode, r.location, r.currency, r.sumInsured, r.netPremium, r.brokerage, r.rm, r.cse, r.renewable, r.outcome, r.nextPolicyNo, r.lossDetail])));
   return (
     <div className="stack">
@@ -954,7 +978,7 @@ function ReadingTab() {
   const [err, setErr] = useState("");
   const [key, setKey] = useState("");
   const [fallback, setFallback] = useState(null);
-  const edit = role === "admin";
+  const edit = can("settings");
   const saveSet = (vals) => {
     const n = { green: +vals.green, amber: +vals.amber, gap: +vals.gap };
     if (![n.green, n.amber, n.gap].every((x) => isNum(x) && x >= 0 && x <= 100)) return setErr("Enter numbers from 0 to 100");
@@ -1018,7 +1042,8 @@ function ReadingTab() {
 }
 
 function Masters() {
-  const { db, update, log, toast } = useApp();
+  const { db, update, log, toast, can } = useApp();
+  const edit0 = can("settings");
   const [tab, setTab] = useState("insurers");
   const [ni, setNi] = useState("");
   const [nb, setNb] = useState({ ins: "", name: "", city: "", state: "", country: "India" });
@@ -1039,8 +1064,10 @@ function Masters() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Lists and team</h1><p className="muted">Your insurers, policy types and team. Every screen picks from these.</p></div></header>
-      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() && (currentUser()?.kind === "owner" || currentUser()?.owner) ? [{ key: "employees", label: "Employees" }] : []), ...(isRemote() && (currentUser()?.kind || "legacy") === "legacy" ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
+      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() && (currentUser()?.kind || "legacy") === "legacy" ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
+      {!edit0 && <p className="muted small">Your role can look at these lists but not change them.</p>}
+      <fieldset className="plainset stack" disabled={!edit0}>
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
         <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><PlaceFields id="ms-b" value={nb} req countryReq onChange={(x) => setNb({ ...nb, ...x })} /><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
@@ -1053,14 +1080,14 @@ function Masters() {
           <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, state: b.state, country: b.country })}>Edit</Btn></div> : <span className="muted">No branches yet</span>}</td>
           <td>{b?.city || ""}</td><td>{b?.state || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
       </>}
-      {tab === "employees" && <EmployeesTab />}
       {tab === "logins" && <LoginsTab />}
       {tab === "brokerbranches" && <BrokerBranches />}
-      {tab === "reading" && <ReadingTab />}
       {tab === "types" && <Card title="Departments and policy types" >
         <div className="typegrid">{Object.entries(DEPARTMENTS).map(([dpt, types]) => <div key={dpt}><h4>{dpt} <span className="muted small">({types.length})</span></h4><ul>{types.map((t) => <li key={t}>{t}{typeCount[t] > 1 && <Pill tone="warn" title="Listed under more than one department">Also elsewhere</Pill>}</li>)}</ul>{dpt === "Miscellaneous" && <p className="small muted">Visible portion only; the source list scrolls further.</p>}</div>)}</div>
       </Card>}
       {tab === "team" && <TeamMaster />}
+      </fieldset>
+      {tab === "reading" && <ReadingTab />}
     </div>
   );
 }
@@ -1166,7 +1193,7 @@ function TeamMaster() {
 
 function FxView() {
   const { db, update, can, log, toast, role, who } = useApp();
-  const edit = role === "admin";
+  const edit = can("settings");
   const months = [...new Set(db.fx.map((x) => x.month))].sort();
   const [ed, setEd] = useState(null);
   const [val, setVal] = useState("");
@@ -1197,8 +1224,8 @@ function FxView() {
 }
 
 function PresetsView() {
-  const { db, update, log, toast, role, who } = useApp();
-  const edit = role === "admin";
+  const { db, update, log, toast, can, who } = useApp();
+  const edit = can("settings");
   const [nv, setNv] = useState({});
   const [np, setNp] = useState({ ins: "", type: "", pct: "" });
   const [err, setErr] = useState("");
@@ -1223,7 +1250,7 @@ function PresetsView() {
 
 const REMIND_DAYS = [60, 30, 15];
 function Reminders() {
-  const { db, update, log, toast, role } = useApp();
+  const { db, update, log, toast, can } = useApp();
   const [th, setTh] = useState(db.settings.balanceThresholdPct ?? 30);
   const [sent, setSent] = useState([]);
   useEffect(() => { let on = true; remindersSent().then((r) => on && setSent(r)); return () => { on = false; }; }, []);
@@ -1246,8 +1273,8 @@ function Reminders() {
       </Card>
       <Card title="Open policy balance" sub="An email goes out once when a cargo open policy falls below this level.">
         <div className="row gap-s wrap">
-          <Labeled label="Remind when less than this % of sum insured is left" htmlFor="rm-th"><input id="rm-th" inputMode="decimal" value={th} onChange={(e) => setTh(e.target.value)} disabled={role !== "admin"} /></Labeled>
-          {role === "admin" && <Btn onClick={() => { if (!isNum(th) || +th < 0 || +th > 100) { toast("Enter a number from 0 to 100", "bad"); return; } update((d) => { d.settings.balanceThresholdPct = +th; log(d, { action: "Reminder level saved", detail: th + "% of sum insured" }); }); toast("Reminder level saved"); }}>Save</Btn>}
+          <Labeled label="Remind when less than this % of sum insured is left" htmlFor="rm-th"><input id="rm-th" inputMode="decimal" value={th} onChange={(e) => setTh(e.target.value)} disabled={!can("settings")} /></Labeled>
+          {can("settings") && <Btn onClick={() => { if (!isNum(th) || +th < 0 || +th > 100) { toast("Enter a number from 0 to 100", "bad"); return; } update((d) => { d.settings.balanceThresholdPct = +th; log(d, { action: "Reminder level saved", detail: th + "% of sum insured" }); }); toast("Reminder level saved"); }}>Save</Btn>}
         </div>
         {bal.length ? <Table><thead><tr><th>Insured</th><th>Policy</th><th className="num">Sum insured left<Tip k="Sum insured left" /></th><th className="num">% left</th><th>Below the level?</th><th>Goes to</th></tr></thead><tbody>{bal.map(({ t, pct, bal: b }) => <tr key={t.id}><td>{C(t).name}</td><td>{t.values.policyNo}</td><td className="num">{fmtMoney(b)}</td><td className="num">{pct}%</td><td>{pct < level ? <Pill tone="warn">Yes</Pill> : "No"}</td><td>{goesTo(t)}</td></tr>)}</tbody></Table> : <Empty title="No cargo open policies" />}
       </Card>

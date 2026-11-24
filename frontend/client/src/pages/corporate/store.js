@@ -212,7 +212,12 @@ const tryApi = async (m, p, b) => { try { return await api(m, p, b); } catch (e)
 export const joinLook = (token) => tryApi("POST", "/api/corp/join/look", { token });
 export async function joinAccept(details) { const r = await tryApi("POST", "/api/corp/join", details); if (r.ok) openSession(r.body); return r; }
 export const listTeam = () => tryApi("GET", "/api/corp/team");
-export const inviteEmployee = (email, role) => tryApi("POST", "/api/corp/team/invite", { email, role });
+export const inviteEmployee = (email, role, teams = []) => tryApi("POST", "/api/corp/team/invite", { email, role, teams });
+export const fetchMe = () => tryApi("GET", "/api/corp/me");
+export const saveRole = (key, r) => tryApi("POST", key ? `/api/corp/roles/${key}` : "/api/corp/roles", r);
+export const removeRole = (key) => tryApi("POST", `/api/corp/roles/${key}/remove`, {});
+export const saveTeam = (id, t) => tryApi("POST", id ? `/api/corp/teams/${id}` : "/api/corp/teams", t);
+export const removeTeam = (id) => tryApi("POST", `/api/corp/teams/${id}/remove`, {});
 export const cancelInvite = (id) => tryApi("POST", `/api/corp/team/invite/${id}/cancel`, {});
 export const changeEmployee = (id, patch) => tryApi("PATCH", `/api/corp/team/${id}`, patch);
 export const newPinLink = (id) => tryApi("POST", `/api/corp/team/${id}/new-pin`, {});

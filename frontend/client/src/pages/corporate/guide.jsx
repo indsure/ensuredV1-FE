@@ -95,9 +95,13 @@ export const GUIDE = [
   // ---- Team
   { group: "Team and settings", id: "team", title: "Add a team member (CSC, RM)", roles: ["admin"], go: "masters", words: "team member csc rm code add staff email masters new joiner left",
     steps: ["Open Lists and team, and go to Team.", "Enter the code, name, email and role, then click \"Add\".", "When someone leaves, click Edit to move their customers to someone else, or switch them off. Their history stays."] },
-  { group: "Team and settings", id: "employees", title: "Invite an employee", roles: ["admin"], go: "masters", words: "invite employee login user id org id pin owner join email switch off forgot",
-    steps: ["Sign in as Owner, open Lists and team, and go to Employees.", "Enter their email, choose a role and click \"Send invite\". They open the link, fill their name, designation and departments, and choose a 6-digit PIN.", "They sign in as Employee with their UserID, your OrgID and their PIN. Forgotten? Click \"New PIN link\". To stop someone signing in, click \"Switch off\"."],
+  { group: "Team and settings", id: "employees", title: "Invite a user", roles: ["admin"], go: "users", words: "invite employee login user id org id pin owner join email switch off forgot",
+    steps: ["Click \"Invite user\" in the menu (owner or Admin).", "Enter their email, choose a role and any teams, and click \"Send invite\". They open the link, fill in their name, designation and departments, choose a 6-digit PIN, and get a UserID.", "They sign in as Employee with their UserID, your OrgID and their PIN.", "Open Users to change a role, edit someone, send a new PIN link or switch a login off. Only the owner can change an Admin."],
     tip: "Invite links work once, for 7 days. If the email does not arrive, copy the link and send it yourself." },
+  { group: "Team and settings", id: "roles", title: "Choose what a role sees and can do", roles: ["admin"], go: "users", words: "role access permission rights tick pages custom claims manager",
+    steps: ["Sign in as Owner, open Users and go to Roles.", "Click Edit on a role, or \"Add role\" for your own.", "Tick the pages it sees and what it can do, then click \"Save role\".", "Admin always has everything. People get the change the next time they open the portal or come back to its tab."] },
+  { group: "Team and settings", id: "teams", title: "Group people into teams", roles: ["admin"], go: "users", words: "team group lead members filter",
+    steps: ["Open Users and go to Teams (owner or Admin).", "Click \"Add team\", name it, tick its people and choose a lead.", "To filter customers, policies and reports by team, open People, click Edit on each person and choose their CSC or RM code.", "A team hides nothing: everyone still sees every customer."] },
   { group: "Team and settings", id: "logins", title: "Give someone an email login", roles: ["admin"], go: "masters", words: "login password user account add switch off role access forgot",
     steps: ["Open Lists and team, and go to Logins.", "Enter their name, email, role and a password, then click \"Add login\". Share the password with them privately.", "Forgotten password? Click \"New password\". To stop someone signing in, click \"Switch off\"."],
     tip: "Give each person their own login, so the history shows who did what." },
@@ -144,6 +148,7 @@ const hayOf = (x) => [x.title, x.q, x.a, x.when, x.words, x.tip, x.group, x.word
 const matches = (x, terms) => { const h = hayOf(x); return terms.every((t) => h.includes(t)); };
 
 function Topic({ g, open, role, go, roleLabels = true }) {
+  const { can, visible } = useApp();
   return (
     <details className="guide-topic" open={open}>
       <summary>{g.title}</summary>
@@ -151,7 +156,7 @@ function Topic({ g, open, role, go, roleLabels = true }) {
       <ol className="guide-steps">{g.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
       {g.tip && <p className="small note">{g.tip}</p>}
       <div className="row gap-s wrap" style={{ marginTop: 10 }}>
-        {g.go && g.roles.includes(role) && <Btn onClick={() => go(g.go === "add" ? { view: "add", nonce: Date.now() } : { view: g.go })}>Open</Btn>}
+        {g.go && (g.go === "add" ? can("newBusiness") : visible(g.go)) && <Btn onClick={() => go(g.go === "add" ? { view: "add", nonce: Date.now() } : { view: g.go })}>Open</Btn>}
         {roleLabels && g.roles.length < 4 && g.roles.map((r) => <Pill key={r} tone={r === role ? "info" : "muted"}>{ROLE_LABEL[r]}</Pill>)}
       </div>
     </details>
@@ -161,7 +166,7 @@ function Topic({ g, open, role, go, roleLabels = true }) {
 export function Guide() {
   const { role, go } = useApp();
   const [q, setQ] = useState("");
-  const [who, setWho] = useState(role);
+  const [who, setWho] = useState(ALL.includes(role) ? role : "all");
   const terms = useMemo(() => q.toLowerCase().split(/\s+/).filter(Boolean), [q]);
   const searching = terms.length > 0;
   const topics = useMemo(() => {

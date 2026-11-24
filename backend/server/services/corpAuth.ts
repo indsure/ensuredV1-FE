@@ -8,6 +8,7 @@
 // before the PIN is checked, so many tries at once cannot slip past the limit. Invite links are random,
 // single use, expire, and only their hash is stored.
 import crypto from "crypto";
+import * as access from "./corpAccess";
 
 export type Db = { query: (sql: string, params?: any[]) => Promise<{ rows: any[]; rowCount?: number | null }> };
 export const ROLES = ["ops", "accounts", "admin", "readonly"];
@@ -140,18 +141,25 @@ export async function createOrg(db: Db, name: string, email: string) {
   throw new Error("could not find a free OrgID");
 }
 
-export async function inviteMember(db: Db, by: Session, emailRaw: unknown, role: unknown) {
+// The owner, or the first email login. Only an owner may make, change or reset an Admin.
+export const isOwner = (by: Session) => by.kind === "owner" || !!(by as any).owner;
+export async function inviteMember(db: Db, by: Session, emailRaw: unknown, role: unknown, teamsRaw: unknown = []) {
   const email = cleanEmail(emailRaw);
-  if (!emailOk(email) || !ROLES.includes(String(role))) return { status: 400, error: "Enter a valid email and choose a role." };
+  if (!emailOk(email) || !(await access.roleOf(db, by.org, String(role)))) return { status: 400, error: "Enter a valid email and choose a role." };
+  if (role === "admin" && !isOwner(by)) return { status: 403, error: "Only the owner can invite an Admin." };
+  const teams = await access.ownTeams(db, by.org, teamsRaw);
+  if (!teams) return { status: 400, error: "Choose teams from your list." };
   const dup = await db.query("SELECT 1 FROM corp_members WHERE org_id = $1 AND email = $2", [by.org, email]);
   if (dup.rows.length) return { status: 409, error: "That email already belongs to someone in your organisation." };
   const inv = await newInvite(db, { org: by.org, kind: "join", email, role: String(role), days: JOIN_DAYS });
+  if (teams.length) await db.query("UPDATE corp_invites SET teams = $2::jsonb WHERE id = $1", [inv.id, JSON.stringify(teams)]);
   await logEvent(db, by.org, by.name, "Invited", `${email} as ${role}`);
   return { status: 200, invite: inv, email };
 }
 export async function invitePin(db: Db, by: Session, memberId: string) {
-  const { rows } = await db.query("SELECT id, email, name FROM corp_members WHERE id = $1 AND org_id = $2", [memberId, by.org]);
+  const { rows } = await db.query("SELECT id, email, name, role FROM corp_members WHERE id = $1 AND org_id = $2", [memberId, by.org]);
   if (!rows.length) return { status: 404, error: "No such person." };
+  if (rows[0].role === "admin" && !isOwner(by)) return { status: 403, error: "Only the owner can do this for an Admin." };
   const inv = await newInvite(db, { org: by.org, kind: "pin", email: rows[0].email, memberId: rows[0].id, days: JOIN_DAYS });
   await logEvent(db, by.org, by.name, "New PIN link sent", rows[0].email, rows[0].id);
   return { status: 200, invite: inv, email: rows[0].email as string };
@@ -195,6 +203,7 @@ export async function acceptInvite(tx: Db, token: unknown, b: any): Promise<{ st
       const r = await tx.query("INSERT INTO corp_members (org_id, user_code, email, name, designation, departments, role, pin_hash, last_login) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, now()) ON CONFLICT DO NOTHING RETURNING id", [seen.org_id, userCode, seen.email, cleanLine(b.name, 120), cleanLine(b.designation, 120), JSON.stringify([...new Set(b.departments)]), seen.role, hashPin(String(b.pin))]);
       if (r.rows.length) id = r.rows[0].id; else break;
     }
+    if (id && Array.isArray(seen.teams) && seen.teams.length) await access.setTeams(tx, seen.org_id, String(id), seen.teams.map(String));
     if (!id) return { status: 409, error: "That email already belongs to someone in this organisation." };
   }
   const { rows } = await tx.query(`${MEMBER_SQL} WHERE m.id = $1`, [id]);
@@ -225,7 +234,13 @@ export async function changeOwnPassword(db: Db, s: Session, current: string, nex
 }
 
 export async function changeMember(db: Db, by: Session, id: string, b: any): Promise<{ status: number; error?: string }> {
-  if (b.role !== undefined && !ROLES.includes(b.role)) return { status: 400, error: "Choose a role." };
+  if (b.role !== undefined && !(await access.roleOf(db, by.org, String(b.role)))) return { status: 400, error: "Choose a role." };
+  const who = (await db.query("SELECT role FROM corp_members WHERE id = $1 AND org_id = $2 FOR UPDATE", [id, by.org])).rows[0];
+  if (!who) return { status: 404, error: "No such person." };
+  if ((who.role === "admin" || b.role === "admin") && !isOwner(by)) return { status: 403, error: "Only the owner can make or change an Admin." };
+  const teams = b.teams === undefined ? null : await access.ownTeams(db, by.org, b.teams);
+  if (b.teams !== undefined && !teams) return { status: 400, error: "Choose teams from your list." };
+  const code = b.staff_code === undefined ? null : cleanLine(b.staff_code, 40);
   if (b.departments !== undefined && (!Array.isArray(b.departments) || !b.departments.length || b.departments.some((d: any) => !DEPARTMENTS.includes(d)))) return { status: 400, error: "Choose at least one department." };
   if (b.designation !== undefined && !cleanLine(b.designation, 120)) return { status: 400, error: "Enter a designation." };
   const { rows } = await db.query(
@@ -233,7 +248,9 @@ export async function changeMember(db: Db, by: Session, id: string, b: any): Pro
     [id, by.org, b.role ?? null, typeof b.active === "boolean" ? b.active : null, b.designation !== undefined ? cleanLine(b.designation, 120) : null, b.departments !== undefined ? JSON.stringify([...new Set(b.departments)]) : null],
   );
   if (!rows.length) return { status: 404, error: "No such person." };
-  const what = [b.role !== undefined && `role ${b.role}`, typeof b.active === "boolean" && (b.active ? "switched on" : "switched off"), b.designation !== undefined && "designation", b.departments !== undefined && `departments ${b.departments.join(", ")}`].filter(Boolean).join("; ");
+  const what = [b.role !== undefined && `role ${b.role}`, typeof b.active === "boolean" && (b.active ? "switched on" : "switched off"), b.designation !== undefined && "designation", b.departments !== undefined && `departments ${b.departments.join(", ")}`, teams && "teams", code !== null && `code ${code || "none"}`].filter(Boolean).join("; ");
+  if (teams && (await access.accessOn(db))) await access.setTeams(db, by.org, id, teams);
+  if (code !== null && (await access.accessOn(db))) await db.query("UPDATE corp_members SET staff_code = $2 WHERE id = $1", [id, code]);
   await logEvent(db, by.org, by.name, "Login changed", `${rows[0].name}: ${what}`, id);
   return { status: 200 };
 }
