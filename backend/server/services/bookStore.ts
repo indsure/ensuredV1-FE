@@ -8,6 +8,7 @@
  * fake one with two agents.
  */
 import { parseIsoDate, parseRupees } from "../../../shared/policyNumbers";
+import { ADDED_BY_HAND } from "../../../shared/dataEntryShare";
 import { isDataEntryType } from "./extractionFields";
 import { validatePatch } from "./policyValueStore";
 import type { Db, SaveResult } from "./policyValueStore";
@@ -137,7 +138,6 @@ export async function saveHealthFacts(db: Db, agentId: string, id: string, body:
 
 /* ── Adding a policy by hand ────────────────────────────────────────────── */
 
-export const ADDED_BY_HAND = "Added by hand";
 
 /** The dates and amounts that go into typed columns must be readable there. */
 function checkShared(shared: Record<string, any>) {
@@ -189,10 +189,11 @@ export async function addManualPolicy(
     const errors = [...v.errors, ...checkShared(shared)];
     if (errors.length) return invalid(errors);
   }
+  // share_enabled is true by default in the database; here the advisor has not chosen to share.
   const ins = await db.query(
     `INSERT INTO clients (agent_id, status, filename, file_size, policyholder_name, client_email, client_phone,
-        policy_identifier, insurance_type, extracted_data, insurer, policy_name, expiry_date, sum_insured, customer_id, created_at)
-     VALUES ($1, 'done', $2, 0, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW()) RETURNING id`,
+        policy_identifier, insurance_type, extracted_data, insurer, policy_name, expiry_date, sum_insured, customer_id, share_enabled, created_at)
+     VALUES ($1, 'done', $2, 0, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, false, NOW()) RETURNING id`,
     [
       agentId, ADDED_BY_HAND, holder, text(body.client_email), text(body.client_phone, 30), number, type, JSON.stringify(data),
       shared.insurer ?? null, shared.policy_name ?? null, shared.expiry_date ?? null, shared.sum_insured ?? null, customerId,
@@ -344,8 +345,8 @@ export async function carryLeadPolicies(runTx: RunTx, agentId: string, leadId: s
         const lifeEnd = parseIsoDate(data.maturity_date ?? data.cover_end_date ?? "");
         await tx.query(
           `INSERT INTO clients (id, agent_id, status, filename, file_size, policyholder_name, client_email, client_phone, insurance_type,
-              extracted_data, insurer, policy_name, expiry_date, sum_insured, customer_id, agent_notes, pdf_url, created_at)
-           VALUES ($1, $2, 'done', $3, 0, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())`,
+              extracted_data, insurer, policy_name, expiry_date, sum_insured, customer_id, agent_notes, pdf_url, share_enabled, created_at)
+           VALUES ($1, $2, 'done', $3, 0, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, false, NOW())`,
           [
             id, agentId, p.file_name || ADDED_BY_HAND, p.policyholder_name || lead.name, lead.email ?? null, lead.phone ?? null, type,
             JSON.stringify(data), p.insurer ?? null, p.policy_name ?? null,

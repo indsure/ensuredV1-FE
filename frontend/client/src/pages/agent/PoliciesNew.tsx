@@ -9,6 +9,7 @@ import { deletePolicyRecord } from "@/lib/policyDelete"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
+import { canOpenShare } from "@shared/dataEntryShare"
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { TYPE_META, typeLabel, isDataEntryType, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
@@ -615,7 +616,7 @@ export default function PoliciesNew() {
                 {!loading && filtered.map(p => {
                   const npDate = getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type);
                   const shouldSwitch = p.score !== null && p.score < 70;
-                  const shareUrl = p.share_token ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;
+                  const shareUrl = p.share_token && canOpenShare(p) ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;
                   const views = p.views ?? 0;
                   const isHealth = (p.insurance_type || "health") === "health";
                   const isMotor = p.insurance_type === "motor";

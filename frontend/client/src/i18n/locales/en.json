@@ -5175,6 +5175,7 @@
     "no_due_not_read": "Premium dates not read"
   },
   "book": {
+    "share_by_hand": "These details were entered by your advisor.",
     "unlock_title": "This PDF is locked",
     "unlock_body": "Enter its password. The file is opened on your own device and the password is not sent to us.",
     "unlock_label": "PDF password",

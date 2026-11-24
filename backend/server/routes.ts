@@ -23,7 +23,7 @@ import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
-import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
+import { shareDetails } from "../../shared/dataEntryShare";
 import { AGENT_TABLES, INDIVIDUAL_TABLES, ownsStoragePath, selectForTable, type OwnedTable } from "./services/accountData";
 import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
@@ -6882,7 +6882,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         `SELECT
           id, report_data, score, insurer, policy_name, policyholder_name,
           filename, created_at, status, share_enabled,
-          insurance_type, extracted_data
+          insurance_type, extracted_data, sum_insured, left(expiry_date::text, 10) AS expiry_date
         FROM clients
         WHERE share_token = $1`,
         [shareToken]
@@ -6907,9 +6907,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
          when it has finished AND has at least one publishable field. A row that
          finished with nothing readable still answers report_not_ready rather
          than rendering an empty page with the customer's name on it. */
-      const isDataEntryShare =
-        client.status === "done" &&
-        hasShareableContent(client.insurance_type, client.extracted_data);
+      const details = client.status === "done" ? shareDetails(client) : null;
+      const isDataEntryShare = details !== null;
 
       if (!isDataEntryShare && (!client.report_data || client.status !== "done")) {
         return res.status(404).json({ error: "report_not_ready" });
@@ -6950,12 +6949,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
          leave this function. The motor add-on scan rides along because it is the
          substance of a motor policy, and it holds no personal data — it is a
          list of cover names with the document line each was read from. */
-      if (isDataEntryShare) {
+      if (details) {
         const addOns = (client.extracted_data as any)?.[ADD_ON_FINDINGS_KEY] ?? null;
         return res.json({
           kind: "data_entry",
-          insurance_type: client.insurance_type,
-          fields: pickShareableFields(client.insurance_type, client.extracted_data),
+          insurance_type: details.type,
+          fields: details.fields,
+          by_hand: details.byHand,
           add_ons: addOns,
           insurer: client.insurer,
           policy_name: client.policy_name,
