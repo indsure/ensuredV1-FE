@@ -25,6 +25,7 @@
  *    when the same family holds a policy of the same type that runs longer.
  */
 
+import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
 import { readFrequency } from "@/lib/policyValue";
 import { LATE_WINDOW_DAYS, nextLifePremium } from "@/lib/lifePremium";
 import { ONE_TIME_TYPES, inForce, parseAmount, toMoney, type BusinessRow, type PolicyMoney } from "@/lib/business";
@@ -36,6 +37,20 @@ export { LATE_WINDOW_DAYS };
 /** "This week" = late + the next 7 days; "this month" = days 8 to 30. */
 export const WEEK_DAYS = 7;
 export const MONTH_DAYS = 30;
+
+export const HOME_SELECT = [
+  "id", "insurance_type", "insurer", "sum_insured", "expiry_date", "customer_id",
+  "policyholder_name", "name", "policy_name", "created_at", "score",
+  "x_premium:extracted_data->premium",
+  "x_annual:extracted_data->annualised_premium",
+  "x_freq:extracted_data->>premium_frequency",
+  "x_next:extracted_data->>next_premium_date",
+  "x_start:extracted_data->>start_date",
+  "x_ppt:extracted_data->premium_paying_term_years",
+  `x_addons:extracted_data->${ADD_ON_FINDINGS_KEY}`,
+  "x_cov:extracted_data->>coverage_type",
+  "h_premium:report_data->premium",
+].join(", ");
 
 /** The narrow row Home selects. Business columns plus what the lists show. */
 export type HomeRow = BusinessRow & {
@@ -91,12 +106,12 @@ export function familyKey(r: HomeRow): string | null {
  * The next date this policy needs the advisor, inside [today - 30, today + 30],
  * or null when it is outside that window, has no date, or never renews.
  */
-export function dueOf(r: HomeRow, today: Date): Due | null {
+export function dueOf(r: HomeRow, today: Date, ahead: number = MONTH_DAYS): Due | null {
   const type = r.insurance_type || "health";
   if (ONE_TIME_TYPES.has(type)) return null;
   const t0 = startOfDay(today);
   const earliest = addDays(t0, -LATE_WINDOW_DAYS);
-  const latest = addDays(t0, MONTH_DAYS);
+  const latest = addDays(t0, ahead);
   const inWindow = (d: Date) => d.getTime() >= earliest.getTime() && d.getTime() <= latest.getTime();
   const make = (date: Date, amount: number | null, perYear: Frequency, premiumDate: boolean): Due =>
     ({ row: r, type, date, days: daysBetween(t0, date), amount, perYear, premiumDate });
@@ -126,8 +141,8 @@ export function dueOf(r: HomeRow, today: Date): Due | null {
 
   const renews = parseDate(r.expiry_date);
   if (!renews || !inWindow(renews)) return null;
-  const amount = type === "health" ? parseAmount(r.h_premium?.amount) : parseAmount(r.x_premium);
-  const freq = readFrequency(type === "health" ? r.h_premium?.frequency : r.x_freq);
+  const amount = type === "health" ? parseAmount(r.h_premium?.amount ?? r.x_premium) : parseAmount(r.x_premium);
+  const freq = readFrequency(type === "health" ? r.h_premium?.frequency ?? r.x_freq : r.x_freq);
   // A multi-year single premium is not what this renewal will cost; leave it unread.
   const yearly = amount == null || freq === "single" ? null : amount * (freq ?? 1);
   return make(renews, yearly, 1, false);
@@ -147,7 +162,12 @@ function renewalKey(r: HomeRow): string | null {
 }
 
 /** Every policy due in the window, soonest first, with renewed copies removed. */
-export function dueList(rows: HomeRow[], today: Date): Due[] {
+export function dueList(
+  rows: HomeRow[],
+  today: Date,
+  /** `ahead`: days forward (Home uses 30). `replaced`: policies with a newer one linked to them. */
+  opts: { ahead?: number; replaced?: Set<string> } = {},
+): Due[] {
   // Expiry dates per renewal key, to spot a row whose renewal is already on file:
   // another copy of the same policy expiring about a year after this one.
   const expiries = new Map<string, number[]>();
@@ -169,7 +189,8 @@ export function dueList(rows: HomeRow[], today: Date): Due[] {
   };
   const out: Due[] = [];
   for (const r of rows) {
-    const d = dueOf(r, today);
+    if (opts.replaced?.has(r.id)) continue;
+    const d = dueOf(r, today, opts.ahead);
     if (!d) continue;
     if (!d.premiumDate && renewedAlready(d)) continue;
     out.push(d);

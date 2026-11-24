@@ -35,6 +35,8 @@ import { supabase } from "@/lib/supabase";
 import { fetchAllRows } from "@/lib/fetchAllRows";
 import { getApiBase } from "@/lib/queryClient";
 import { deletePolicyRecord } from "@/lib/policyDelete";
+import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover";
+import { setShare } from "@/lib/bookApi";
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog";
 import type { DraftTarget } from "@/lib/draftMessage";
 import { exportLifePolicies } from "@/lib/exportPolicies";
@@ -45,8 +47,7 @@ type TypeChip = "all" | LifeType;
 
 /** Columns the surrender API does not send: read the way the Policies page reads them. */
 type RowMeta = {
-  id: string; expiry_date: string | null; client_phone: string | null; pdf_url: string | null; filename: string | null;
-};
+  id: string; expiry_date: string | null; client_phone: string | null; pdf_url: string | null; filename: string | null; share_token?: string | null; share_enabled?: boolean | null };
 
 const iconBtn =
   "inline-flex h-11 w-11 items-center justify-center rounded text-slate-600 hover:bg-teal-50 hover:text-[#0D9488] disabled:cursor-not-allowed disabled:opacity-30";
@@ -98,7 +99,7 @@ export default function LifePolicies() {
         fetchAllRows((from, to) =>
           supabase
             .from("clients")
-            .select("id, expiry_date, client_phone, pdf_url, filename, insurance_type")
+            .select("id, expiry_date, client_phone, pdf_url, filename, insurance_type, share_token, share_enabled")
             .eq("agent_id", agent.agentId!)
             .in("insurance_type", ["life", "term"])
             .order("id")
@@ -454,6 +455,14 @@ export default function LifePolicies() {
                           >
                             <Download className="h-4 w-4" aria-hidden />
                           </button>
+                          <ShareLinkPopover
+                            shareUrl={meta.get(r.id)?.share_token ? `${window.location.origin}/shared/report/${meta.get(r.id)!.share_token}` : null}
+                            shareEnabled={meta.get(r.id)?.share_enabled === true}
+                            onToggle={async (enabled) => {
+                              await setShare(r.id, enabled);
+                              setMeta((m) => new Map(m).set(r.id, { ...m.get(r.id)!, share_enabled: enabled }));
+                            }}
+                          />
                           <button
                             type="button" className={iconBtn} title={t("policies.delete_policy")} aria-label={t("policies.delete_policy")}
                             onClick={() => setConfirmId(r.id)}

@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useAgent } from "@/context/AgentContext";
+import { CustomerActions, CustomerClaims, MergeCustomer } from "@/components/agent/CustomerExtras";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { BackLink } from "@/components/agent/BackLink";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export default function CustomerDetail() {
   const [busy, setBusy] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [draft, setDraft] = useState({ name: "", phone: "", email: "", city: "", notes: "" });
+  const [draft, setDraft] = useState({ name: "", phone: "", email: "", city: "", dob: "", notes: "" });
   const [addPolicyId, setAddPolicyId] = useState("");
   const [calcReports, setCalcReports] = useState<{ id: string; created_at: string; result_data: any }[]>([]);
 
@@ -87,6 +88,7 @@ export default function CustomerDetail() {
         phone: cust.phone ?? "",
         email: cust.email ?? "",
         city: cust.city ?? "",
+        dob: cust.dob?.slice(0, 10) ?? "",
         notes: cust.notes ?? "",
       });
     } catch (e: unknown) {
@@ -228,7 +230,7 @@ export default function CustomerDetail() {
                 <div>
                   <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-slate-900">{customer.name}</h1>
                   <p className="mt-2 text-sm text-slate-500">
-                    {[customer.phone, customer.email, customer.city].filter(Boolean).join(" · ") || t("customer_detail.no_contact")}
+                    {[customer.phone, customer.email, customer.city, customer.dob && t("book.born", { date: format(new Date(`${customer.dob.slice(0, 10)}T00:00:00`), "d MMM yyyy", dl) })].filter(Boolean).join(" · ") || t("customer_detail.no_contact")}
                   </p>
                   {customer.notes && <p className="mt-2 text-sm text-slate-400 italic">{customer.notes}</p>}
                 </div>
@@ -249,13 +251,16 @@ export default function CustomerDetail() {
                 </div>
               </div>
 
+              <CustomerActions customer={customer} />
+
               {editOpen && (
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <Input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder={t("customers.ph_name")} />
                   <Input value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder={t("customers.ph_phone")} />
                   <Input value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder={t("customers.ph_email")} />
                   <Input value={draft.city} onChange={e => setDraft(d => ({ ...d, city: e.target.value }))} placeholder={t("customers.ph_city")} />
-                  <Input value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder={t("customer_detail.ph_notes")} className="lg:col-span-2" />
+                  <label className="flex items-center gap-2 text-sm text-slate-600"><span className="shrink-0">{t("book.dob")}</span><Input type="date" max={new Date().toISOString().slice(0, 10)} value={draft.dob} onChange={e => setDraft(d => ({ ...d, dob: e.target.value }))} /></label>
+                  <Input value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder={t("customer_detail.ph_notes")} />
                   <div className="flex gap-3 sm:col-span-2 lg:col-span-3">
                     <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={saveDetails} disabled={busy === "edit"}>
                       {busy === "edit" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t("customer_detail.save")}
@@ -266,6 +271,8 @@ export default function CustomerDetail() {
               )}
             </CardContent>
           </Card>
+
+          <MergeCustomer customer={customer} onMerged={() => void load()} />
 
           {/* AGGREGATE STATS */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -506,6 +513,8 @@ export default function CustomerDetail() {
               </div>
             </CardContent>
           </Card>
+
+          <CustomerClaims customerId={customer.id} />
         </>
       )}
 

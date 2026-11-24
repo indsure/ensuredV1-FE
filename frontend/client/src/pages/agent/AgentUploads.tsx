@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Upload, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2, ShieldAlert, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import UnlockPdfDialog from "@/components/UnlockPdfDialog";
+import { linkRenewal } from "@/lib/bookApi";
+import { tagPolicyToCustomer } from "@/lib/customers";
+import { needsPassword } from "@/lib/unlockPdf";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { getValidSession } from "@/lib/auth-helper";
@@ -110,14 +114,42 @@ export default function AgentUploads() {
   const { agent, ocrRemaining } = useAgent();
   const { t } = useLanguage();
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
-  const [insuranceType, setInsuranceType] = useState<InsuranceType>("health");
+  const params = new URLSearchParams(useSearch());
+  const askedType = params.get("type") ?? "";
+  const [insuranceType, setInsuranceType] = useState<InsuranceType>(askedType in TYPE_META ? (askedType as InsuranceType) : "health");
+  // Opened from a policy ("renew") or from a customer: the new policy joins it.
+  const [link, setLink] = useState<{ kind: "renews" | "customer"; id: string; name: string | null } | null>(() => {
+    const r = params.get("renews");
+    const c = params.get("customer");
+    return r ? { kind: "renews", id: r, name: null } : c ? { kind: "customer", id: c, name: null } : null;
+  });
+  useEffect(() => {
+    if (!agent?.agentId || !link || link.name !== null) return;
+    let on = true;
+    const q = link.kind === "renews"
+      ? supabase.from("clients").select("policyholder_name, name").eq("id", link.id).eq("agent_id", agent.agentId).maybeSingle()
+      : supabase.from("customers").select("name").eq("id", link.id).eq("agent_id", agent.agentId).maybeSingle();
+    void Promise.resolve(q).then(({ data }: any) => {
+      if (!on) return;
+      // Not theirs, or gone: an ordinary upload.
+      setLink(data ? { ...link, name: data.policyholder_name || data.name || "" } : null);
+    });
+    return () => { on = false; };
+  }, [agent?.agentId, link]);
+
+  // Locked PDFs wait here for their password, one at a time.
+  const [locked, setLocked] = useState<{ file: File; use: (f: File) => void }[]>([]);
+  async function whenOpen(file: File, use: (f: File) => void) {
+    if (await needsPassword(file)) setLocked((q) => [...q, { file, use }]);
+    else use(file);
+  }
+  const pickCover = (set: (f: File | null) => void) => (f: File | null) => { if (f) void whenOpen(f, set); else set(null); };
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [policyIdentifier, setPolicyIdentifier] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
-  const [consentChecked, setConsentChecked] = useState(false);
   // Files chosen but NOT yet sent. Nothing is analysed until the agent presses
   // "Analyze" — they need time to attach the other cover first.
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
@@ -358,6 +390,15 @@ export default function AgentUploads() {
         ));
 
         void followJob(key, clientId, jobId);
+        if (link && acceptedFiles.length === 1) {
+          try {
+            if (link.kind === "renews") await linkRenewal(clientId, link.id);
+            else await tagPolicyToCustomer(clientId, link.id);
+            setLink(null);
+          } catch (e: any) {
+            toast({ variant: "destructive", title: t("book.link_failed"), description: e?.message });
+          }
+        }
 
       } catch (error: any) {
         setUploads(prev => prev.map((u) =>
@@ -388,6 +429,11 @@ export default function AgentUploads() {
       return;
     }
 
+    for (const f of acceptedFiles) void whenOpen(f, stage);
+  };
+
+  const stage = (file: File) => {
+    const acceptedFiles = [file];
     setStagedFiles((current) => {
       // Skip files already staged, so dropping the same PDF twice is harmless.
       const seen = new Set(current.map((f) => `${f.name}:${f.size}`));
@@ -413,7 +459,6 @@ export default function AgentUploads() {
   // Opens the consent step. Nothing has been sent at this point.
   function startAnalysis() {
     if (stagedFiles.length === 0) return;
-    setConsentChecked(false);
     setShowConsentModal(true);
   }
 
@@ -428,7 +473,6 @@ export default function AgentUploads() {
   // Backing out of consent must not throw away what they queued up.
   function handleConsentCancel() {
     setShowConsentModal(false);
-    setConsentChecked(false);
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -466,6 +510,11 @@ export default function AgentUploads() {
 
   return (
     <>
+      <UnlockPdfDialog
+        file={locked[0]?.file ?? null}
+        onUnlocked={(_, open) => { locked[0]?.use(open); setLocked((q) => q.slice(1)); }}
+        onCancel={() => setLocked((q) => q.slice(1))}
+      />
       {showConsentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 flex flex-col gap-5">
@@ -475,17 +524,6 @@ export default function AgentUploads() {
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900">{t("uploads.consent_title")}</h2>
-                <p className="mt-1 text-sm text-slate-600 leading-relaxed">{t("uploads.consent_body")}</p>
-                <p className="mt-3 text-sm text-slate-600 leading-relaxed">{t("uploads.consent_ilovepdf")}</p>
-                <a
-                  href="https://www.ilovepdf.com/unlock_pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0D9488] hover:underline"
-                >
-                  {t("uploads.consent_link")}
-                </a>
-                <p className="mt-3 text-sm text-slate-600">{t("uploads.consent_after")}</p>
               </div>
             </div>
 
@@ -498,9 +536,6 @@ export default function AgentUploads() {
                   {ayushmanFile && <li className="break-all">{t("uploads.sent_ayushman", { name: ayushmanFile.name })}</li>}
                   {hasAyushman && !ayushmanFile && <li>{t("uploads.sent_ayushman_declared")}</li>}
                 </ul>
-                <p className="mt-1.5 text-xs text-slate-500">
-                  {t("uploads.consent_covers")}
-                </p>
               </div>
             )}
 
@@ -519,19 +554,10 @@ export default function AgentUploads() {
               </div>
             )}
 
-            <label className="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                checked={consentChecked}
-                onChange={(e) => setConsentChecked(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded accent-[#0D9488] cursor-pointer flex-shrink-0"
-              />
-              <span className="text-sm font-medium text-slate-700">{t("uploads.consent_checkbox")}</span>
-            </label>
 
             <div className="flex gap-3 justify-end">
               <Button variant="outline" className="border-slate-200" onClick={handleConsentCancel}>{t("uploads.consent_cancel")}</Button>
-              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" disabled={!consentChecked} onClick={handleConsentConfirm}>
+              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={handleConsentConfirm}>
                 {t("uploads.consent_confirm")}
               </Button>
             </div>
@@ -541,7 +567,17 @@ export default function AgentUploads() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("uploads.title")}</h1>
+        {!agent?.limitedFree && <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setLocation("/agent/policies/add")}>{t("book.add_by_hand")}</Button>}
       </div>
+      {link?.name && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 px-5 py-4 text-sm text-slate-800">
+          <span>
+            {t(link.kind === "renews" ? "book.link_renews" : "book.link_customer", { name: link.name })}
+            {stagedFiles.length > 1 && <strong className="mt-1 block text-amber-800">{t("book.link_one")}</strong>}
+          </span>
+          <button type="button" className="min-h-11 font-semibold text-slate-600 underline" onClick={() => setLink(null)}>{t("book.link_drop")}</button>
+        </div>
+      )}
 
       {/* Insurance-type selector */}
       <div>
@@ -699,14 +735,14 @@ export default function AgentUploads() {
                     label={COMPANION_SLOTS[0].label}
                     hint={COMPANION_SLOTS[0].hint}
                     file={superTopupFile}
-                    onPick={setSuperTopupFile}
+                    onPick={pickCover(setSuperTopupFile)}
                     disabled={isProcessing}
                   />
                   <CompanionSlot
                     label={COMPANION_SLOTS[1].label}
                     hint={COMPANION_SLOTS[1].hint}
                     file={corporateFile}
-                    onPick={setCorporateFile}
+                    onPick={pickCover(setCorporateFile)}
                     disabled={isProcessing}
                   />
 
@@ -746,7 +782,7 @@ export default function AgentUploads() {
                             accept="application/pdf,image/*"
                             className="hidden"
                             disabled={isProcessing}
-                            onChange={(e) => setAyushmanFile(e.target.files?.[0] ?? null)}
+                            onChange={(e) => pickCover(setAyushmanFile)(e.target.files?.[0] ?? null)}
                           />
                         </label>
                       )}

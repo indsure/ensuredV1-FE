@@ -73,6 +73,8 @@ export type Claim = {
   insurer: string | null;
   tpa: string | null;
   policy_number: string | null;
+  /** The policy it is on (migration 040). */
+  client_id?: string | null;
   hospital: string | null;
   ailment: string | null;
   claimed_amount: string | number | null;
@@ -126,6 +128,7 @@ export type NewClaimDraft = {
   insurer?: string;
   tpa?: string;
   policy_number?: string;
+  client_id?: string | null;
   hospital?: string;
   ailment?: string;
   claimed_amount?: string;
@@ -140,6 +143,11 @@ export async function createClaim(draft: NewClaimDraft): Promise<Claim> {
       body: JSON.stringify(draft),
     })
   );
+}
+
+export async function deleteClaim(id: string): Promise<void> {
+  if (isPlaygroundMode()) return playgroundClaims.remove(id);
+  await json(await apiFetch(`/api/agent/claims/${id}`, { method: "DELETE" }));
 }
 
 export async function updateClaim(id: string, patch: Record<string, unknown>): Promise<Claim> {

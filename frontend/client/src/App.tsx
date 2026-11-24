@@ -50,6 +50,7 @@ import {
   AgentCompare,
   AgentCatalogCompare,
   RiderDirectory,
+  AddPolicy,
   PolicyDetail,
   CustomersNew,
   CustomerDetail,
@@ -275,6 +276,9 @@ function App() {
                       </Route>
                       <Route path="/agent/values">
                         {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_values"><PolicyValues /></PaidOnly></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/policies/add">
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_queue"><AddPolicy /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies/:id">
                         {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}

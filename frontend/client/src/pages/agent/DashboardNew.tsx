@@ -4,6 +4,7 @@ import { Cake, HeartPulse, Lock, MessageCircle, Phone, Play, RefreshCw, ShieldPl
 
 import { supabase } from "@/lib/supabase";
 import { fetchAllRows } from "@/lib/fetchAllRows";
+import { fetchReplacedIds } from "@/lib/bookApi";
 import { rerunPolicy } from "@/lib/rerun";
 import { toast } from "@/hooks/use-toast";
 import { useAgent } from "@/context/AgentContext";
@@ -14,13 +15,12 @@ import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { typeLabel } from "@/lib/insuranceTypes";
 import { fullInr, renewalBuckets, shortInr as shortInrFor } from "@/lib/business";
 import {
-  dueList, splitDue, startOfDay, sumDue, summarise, upcomingBirthdays, LATE_WINDOW_DAYS, MONTH_DAYS, WEEK_DAYS,
+  dueList, HOME_SELECT, splitDue, startOfDay, sumDue, summarise, upcomingBirthdays, LATE_WINDOW_DAYS, MONTH_DAYS, WEEK_DAYS,
   type Due, type HomeRow,
 } from "@/lib/home";
 import { fetchLeads, isFollowUpDue, telHref, waHref, type Lead } from "@/lib/leads";
 import { fetchDueLeadPolicies, daysUntilDue, type LeadPolicyWithLead } from "@/lib/leadPolicies";
 import { fetchRenewalStatuses, renewalKey, setRenewalStatus, type RenewalStatus } from "@/lib/renewals";
-import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
 import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore";
 
 /**
@@ -36,19 +36,7 @@ import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/mot
  * Plan: docs/plans/2026-11-19-advisor-home.md.
  */
 
-const SELECT = [
-  "id", "insurance_type", "insurer", "sum_insured", "expiry_date", "customer_id",
-  "policyholder_name", "name", "policy_name", "created_at", "score",
-  "x_premium:extracted_data->premium",
-  "x_annual:extracted_data->annualised_premium",
-  "x_freq:extracted_data->>premium_frequency",
-  "x_next:extracted_data->>next_premium_date",
-  "x_start:extracted_data->>start_date",
-  "x_ppt:extracted_data->premium_paying_term_years",
-  `x_addons:extracted_data->${ADD_ON_FINDINGS_KEY}`,
-  "x_cov:extracted_data->>coverage_type",
-  "h_premium:report_data->premium",
-].join(", ");
+const SELECT = HOME_SELECT;
 
 /** PostgREST returns at most 1000 rows a call; a partial book is a wrong total. */
 const PAGE = 1000;
@@ -76,6 +64,7 @@ export default function DashboardNew() {
   const [queue, setQueue] = useState<number | null>(null);
   const [failed, setFailed] = useState<Failed[]>([]);
   // null until loaded, and stays null if the table is not there yet (migration 039).
+  const [replaced, setReplaced] = useState<Set<string>>(new Set());
   const [statuses, setStatuses] = useState<Map<string, RenewalStatus> | null>(null);
   const [saving, setSaving] = useState<Set<string>>(new Set());
   const [retrying, setRetrying] = useState<string | null>(null);
@@ -109,7 +98,7 @@ export default function DashboardNew() {
 
       // Side blocks. Each one failing only empties its own block.
       const t0 = startOfDay(new Date());
-      const [cust, leads, prospects, q, f, st] = await Promise.allSettled([
+      const [cust, leads, prospects, q, f, st, rep] = await Promise.allSettled([
         fetchAllRows<Person>((from, to) =>
           supabase.from("customers").select("id, name, phone, dob").eq("agent_id", agentId).order("id").range(from, to)),
         fetchLeads(agentId),
@@ -123,7 +112,9 @@ export default function DashboardNew() {
           new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - LATE_WINDOW_DAYS),
           new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() + MONTH_DAYS),
         ),
+        fetchReplacedIds(agentId),
       ]);
+      setReplaced(rep.status === "fulfilled" ? rep.value : new Set());
       setStatuses(st.status === "fulfilled" ? st.value : null);
       setPeople(cust.status === "fulfilled" ? new Map(cust.value.map((p) => [p.id, p])) : new Map());
       setLeadsDue(leads.status === "fulfilled" ? leads.value.filter(isFollowUpDue) : []);
@@ -189,7 +180,7 @@ export default function DashboardNew() {
 
   const today = useMemo(() => startOfDay(new Date()), [rows]);
   const s = useMemo(() => summarise(rows, today), [rows, today]);
-  const due = useMemo(() => dueList(rows, today), [rows, today]);
+  const due = useMemo(() => dueList(rows, today, { replaced }), [rows, today, replaced]);
   const { week, month } = useMemo(() => splitDue(due), [due]);
   const weekShown = typeFilter === "all" ? week : week.filter((d) => d.type === typeFilter);
   const monthShown = typeFilter === "all" ? month : month.filter((d) => d.type === typeFilter);

@@ -6,13 +6,14 @@ import {
 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { BackLink } from "@/components/agent/BackLink";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
 import { formatAmount } from "@/lib/customers";
 import {
-  addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaimDocument, deleteQuery,
+  addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaim, deleteClaimDocument, deleteQuery,
   extendRetention, fetchClaim, formatDate, formatDay, openClaimDocument, PERSONAL_DOCS,
   renameClaimDocument, setClaimStatus, spineIndex, telLink, updateClaim, updateQuery,
   uploadClaimDocument, waLink,
@@ -39,6 +40,8 @@ export default function ClaimDetail() {
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<"settled" | "rejected" | null>(null);
   const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [, go] = useLocation();
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -82,6 +85,18 @@ export default function ClaimDetail() {
     <div className="space-y-5 animate-in fade-in duration-500 max-w-5xl">
 
       <BackLink to="/agent/claims" label={t("claim_detail.back")} />
+      <ConfirmationDialog
+        open={removing} onOpenChange={setRemoving} variant="destructive"
+        title={t("book.claim_delete_title")} description={t("book.claim_delete_desc")}
+        confirmText={t("book.claim_delete")} cancelText={t("common.cancel")}
+        onConfirm={() => {
+          setRemoving(false);
+          deleteClaim(claim.id).then(
+            () => { toast({ variant: "success", title: t("book.claim_deleted") }); go("/agent/claims"); },
+            (e: unknown) => toast({ variant: "destructive", title: t("book.claim_delete_failed"), description: e instanceof Error ? e.message : undefined }),
+          );
+        }}
+      />
 
       {/* HEADER */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
@@ -97,7 +112,11 @@ export default function ClaimDetail() {
               {claim.claim_type === "cashless" ? t("claims.cashless") : t("claims.reimbursement")}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {claim.client_id && (
+              <button type="button" onClick={() => go(`/agent/policies/${claim.client_id}`)} className="h-10 px-3.5 inline-flex items-center rounded-lg border border-slate-200 text-sm font-bold text-[#0f766e] hover:bg-slate-50">{t("book.claim_open_policy")}</button>
+            )}
+            <button type="button" onClick={() => setRemoving(true)} className="h-10 px-3.5 inline-flex items-center rounded-lg border border-red-200 text-sm font-bold text-red-700 hover:bg-red-50">{t("common.delete")}</button>
             {/* Copy the claim's own address. The route already opens the right
                 claim, so nothing new is being published here: the link is
                 useless to anyone who cannot log in as this advisor, which is

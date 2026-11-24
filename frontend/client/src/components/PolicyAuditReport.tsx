@@ -760,6 +760,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     </Button>
                 </div>
 
+                {(data as any).__corrected_on && (
+                    <p className="mb-8 rounded-lg border border-[var(--color-border-light)] bg-white px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                        {t("book.corrected_note", { date: String((data as any).__corrected_on).split("-").reverse().join("-") })}
+                    </p>
+                )}
                 {locale === "hi" && (
                     <p className="mb-8 rounded-lg border border-[var(--color-border-light)] bg-white px-4 py-3 text-sm text-[var(--color-text-secondary)] print:hidden">
                         {t("rpt.english_note")}

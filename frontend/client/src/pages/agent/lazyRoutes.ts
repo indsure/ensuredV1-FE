@@ -17,6 +17,7 @@ export const AgentCalculator = lazyWithPreload(() => import("@/pages/agent/Agent
 export const AgentCompare = lazyWithPreload(() => import("@/pages/agent/Compare"));
 export const AgentCatalogCompare = lazyWithPreload(() => import("@/pages/agent/CatalogCompare"));
 export const RiderDirectory = lazyWithPreload(() => import("@/pages/agent/RiderDirectory"));
+export const AddPolicy = lazyWithPreload(() => import("@/pages/agent/AddPolicy"));
 export const PolicyDetail = lazyWithPreload(() => import("@/pages/agent/PolicyDetail"));
 export const CustomersNew = lazyWithPreload(() => import("@/pages/agent/CustomersNew"));
 export const CustomerDetail = lazyWithPreload(() => import("@/pages/agent/CustomerDetail"));

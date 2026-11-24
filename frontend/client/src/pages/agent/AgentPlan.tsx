@@ -29,7 +29,7 @@ const btnOutline = "inline-flex h-12 w-full items-center justify-center gap-2 ro
 
 export default function AgentPlan() {
   const { t, locale } = useLanguage()
-  const { agent, creditsRemaining, refresh } = useAgent()
+  const { agent, creditsRemaining, ocrRemaining, refresh } = useAgent()
   const [billing, setBilling] = useState<Billing | null>(null)
   const [failed, setFailed] = useState(false)
   const [payOn, setPayOn] = useState<boolean | null>(null)
@@ -75,7 +75,7 @@ export default function AgentPlan() {
 
       {/* CURRENT PLAN (not in the demo: it has no real plan to show) */}
       {!demo && <Card className="border-none shadow-sm bg-white">
-        <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">{t("agentplan.your_plan")}</p>
             <p className="mt-1 text-2xl font-bold text-slate-900">{t(`agentplan.plan_${plan === "agent" || plan === "agency" ? plan : "free"}`)}</p>
@@ -90,6 +90,13 @@ export default function AgentPlan() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">{t("agentplan.checks_left")}</p>
             <p className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{creditsRemaining}</p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">{t("book.reads_left")}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900 tabular-nums">{ocrRemaining}</p>
+            <a href={teamWaLink("Hi, I need more data entry reads on IndSure.")} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[#0f766e] underline">
+              <MessageCircle className="h-4 w-4" aria-hidden="true" /> {t("book.reads_more")}
+            </a>
           </div>
         </CardContent>
       </Card>}

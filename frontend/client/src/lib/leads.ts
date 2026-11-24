@@ -174,11 +174,12 @@ export async function deleteLead(id: string): Promise<void> {
  * customer id so the caller can jump to the portfolio. Idempotent-ish: if the
  * lead is already linked, returns the existing customer id.
  */
-export async function convertLeadToCustomer(agentId: string, lead: Lead): Promise<string> {
+export async function convertLeadToCustomer(agentId: string, lead: Lead, existingId?: string): Promise<string> {
   assertCrmWritable();
   if (lead.customer_id) return lead.customer_id;
 
-  const customer = await createCustomer(agentId, {
+  // The person may already be a customer: then the lead joins that record.
+  const customer = existingId ? { id: existingId } : await createCustomer(agentId, {
     name: lead.name,
     phone: lead.phone,
     email: lead.email,

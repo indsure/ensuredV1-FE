@@ -50,6 +50,7 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("compare.save_failed"));
       const json = await res.json();
       setUuid(json.uuid);
+      window.dispatchEvent(new Event("indsure:comparison-saved"));
     } catch (e: any) {
       setErr(e.message || t("compare.save_failed_desc"));
     } finally {

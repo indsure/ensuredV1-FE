@@ -6,7 +6,7 @@ import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog";
 import type { DraftTarget } from "@/lib/draftMessage";
-import LeadRenewals from "@/pages/agent/LeadRenewals";
+import { LeadRenewals } from "@/pages/agent/LeadRenewals";
 import { fetchDueLeadPolicies, daysUntilDue } from "@/lib/leadPolicies";
 import { toast } from "@/hooks/use-toast";
 import { formatAmount } from "@/lib/customers";

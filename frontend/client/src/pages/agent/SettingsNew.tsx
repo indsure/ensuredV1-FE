@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import DeleteAgentAccount from "@/components/agent/DeleteAgentAccount"
 import TeamAccessLog from "@/components/agent/TeamAccessLog"
 import { FormFieldSkeleton } from "@/components/ui/skeleton"
 import { supabase } from "@/lib/supabase"
@@ -276,6 +277,8 @@ export default function SettingsNew() {
 
       {/* Renders only for an advisor who is on someone's team. */}
       <TeamAccessLog />
+
+      <DeleteAgentAccount />
     </div>
   );
 }

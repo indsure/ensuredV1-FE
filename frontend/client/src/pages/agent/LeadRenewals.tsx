@@ -5,10 +5,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { CalendarClock, Check, MessageCircle, Phone } from "lucide-react";
 
 import { useAgent } from "@/context/AgentContext";
+import OwnRenewals from "@/components/agent/OwnRenewals";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { toast } from "@/hooks/use-toast";
 import { formatAmount } from "@/lib/customers";
@@ -29,7 +30,29 @@ import { dateLocale, tOr } from "@/i18n";
 
 type Bucket = { key: string; label: string; rows: LeadPolicyWithLead[]; tone: string };
 
-export default function LeadRenewals({ embedded = false }: { embedded?: boolean }) {
+/** /agent/renewals: the advisor's own customers, and prospects' policies beside them. */
+export default function Renewals() {
+  const { t } = useLanguage();
+  const [, setLocation] = useLocation();
+  const leads = new URLSearchParams(useSearch()).get("tab") === "leads";
+  return (
+    <div className="space-y-6 pb-8">
+      <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-800">
+        <CalendarClock className="h-6 w-6" style={{ color: "#0D9488" }} /> {t("renewals.title")}
+      </h1>
+      <div role="tablist" className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
+        {([["", "book.tab_own"], ["leads", "book.tab_leads"]] as const).map(([k, label]) => (
+          <button key={k} role="tab" type="button" aria-selected={leads === (k === "leads")}
+            onClick={() => setLocation(k ? "/agent/renewals?tab=leads" : "/agent/renewals", { replace: true })}
+            className={`min-h-11 shrink-0 rounded-lg px-4 text-sm font-bold ${leads === (k === "leads") ? "bg-slate-900 text-white" : "text-slate-600"}`}>{t(label)}</button>
+        ))}
+      </div>
+      {leads ? <LeadRenewals embedded /> : <OwnRenewals />}
+    </div>
+  );
+}
+
+export function LeadRenewals({ embedded = false }: { embedded?: boolean }) {
   const [, setLocation] = useLocation();
   const { agent } = useAgent();
   const { t } = useLanguage();

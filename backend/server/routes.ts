@@ -44,6 +44,7 @@ import { registerPlanRecommendRoutes } from "./services/planRecommend";
 import { registerPaymentRoutes } from "./services/payments";
 import { log } from "./lib/logger";
 import { isLimitedFree, NEEDS_UPGRADE } from "./lib/entitlement";
+import { registerBookRoutes } from "./services/bookRoutes";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -2875,7 +2876,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     const {
       customer_id, new_customer_name, new_customer_phone,
       claim_type, insurer, tpa, policy_number, hospital, ailment,
-      claimed_amount, admitted_on, discharged_on,
+      claimed_amount, admitted_on, discharged_on, client_id,
     } = req.body ?? {};
 
     const type = String(claim_type || "reimbursement").toLowerCase();
@@ -2922,6 +2923,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         ]
       );
       const claim = ins.rows[0];
+      // Which policy it is on. Best effort: the column arrives with migration 040.
+      if (typeof client_id === "string" && /^[0-9a-f-]{36}$/i.test(client_id)) {
+        try {
+          const linked = await pool.query(
+            `UPDATE claims SET client_id = $1 WHERE id = $2 AND agent_id = $3
+                AND EXISTS (SELECT 1 FROM clients WHERE id = $1 AND agent_id = $3) RETURNING client_id`,
+            [client_id, claim.id, agentId]
+          );
+          if (linked.rows[0]) claim.client_id = linked.rows[0].client_id;
+        } catch (e: any) {
+          if (e?.code !== "42703") console.error("claim policy link failed:", e?.message);
+        }
+      }
       await logClaimEvent(claim.id, agentId, "opened", "Claim opened");
       void recordAccess(req, agentId, claim.id, "claim_open");
       return res.json(claim);
@@ -5274,7 +5288,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         out.fullName = fullName;
       }
       if (typeof req.body?.phone === "string") {
-        const phone = req.body.phone.replace(/[^\d+\-() ]/g, "").trim().slice(0, 20) || null;
+        // Login looks the account up by these ten digits, so nothing else is stored.
+        const phone = req.body.phone.replace(/\D/g, "").slice(-10);
+        if (!/^[6-9][0-9]{9}$/.test(phone)) {
+          return res.status(400).json({ error: "BAD_PHONE", message: "Enter a 10 digit mobile number." });
+        }
         sets.push(`phone = $${sets.length + 1}`);
         vals.push(phone);
         out.phone = phone;
@@ -5294,6 +5312,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       );
       return res.json(out);
     } catch (err: any) {
+      if (err?.code === "23505") {
+        return res.status(409).json({ error: "PHONE_TAKEN", message: "Another account already uses this mobile number." });
+      }
       console.error("Consumer profile update error:", err);
       return res.status(500).json({ error: "Internal server error" });
     }
@@ -6442,7 +6463,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const { id } = req.params;
 
       const clientRes = await pool.query(
-        "SELECT id, status, pdf_url, filename, insurance_type, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
+        "SELECT id, status, error_message, pdf_url, filename, insurance_type, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
       );
       if (clientRes.rows.length === 0) {
@@ -6452,6 +6473,28 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       recordAccess(req, agentId, id, "rerun_client");
       const client = clientRes.rows[0];
 
+      /* `insurance_type` in the body reads the document again as a different type.
+         The new type is stored only when that read succeeds; otherwise the row goes
+         back to exactly what it was. Absent, nothing below behaves differently. */
+      const storedType = (client.insurance_type || "health").toLowerCase();
+      const wanted = req.body?.insurance_type === undefined ? storedType : String(req.body.insurance_type).toLowerCase();
+      const retype = wanted !== storedType;
+      if (retype && !isSupportedInsuranceType(wanted)) {
+        return res.status(400).json({ error: "UNSUPPORTED_INSURANCE_TYPE", message: "Pick one of the listed policy types." });
+      }
+      if (retype && (client.status === "processing" || client.status === "pending")) {
+        return res.status(409).json({ error: "BUSY", message: "This policy is still being read. Try again when it is done." });
+      }
+      if (retype && !client.pdf_url) {
+        // Added by hand: there is no document to read, so only the type changes.
+        const changed = await pool.query(
+          "UPDATE clients SET insurance_type = $1, share_enabled = false, score = NULL WHERE id = $2 AND agent_id = $3 AND report_data IS NULL",
+          [wanted, id, agentId]
+        );
+        if (!changed.rowCount) return res.status(409).json({ error: "NO_PDF", message: "The original document isn't stored, so it cannot be read as another type. Upload it again." });
+        return res.json({ ok: true, clientId: id, status: "done", read: false });
+      }
+
       if (!client.pdf_url) {
         return res.status(409).json({
           error: "NO_PDF",
@@ -6460,7 +6503,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         });
       }
 
-      const insuranceType = (client.insurance_type || "health").toLowerCase();
+      const insuranceType = wanted;
       const isDataEntry = isDataEntryType(insuranceType);
 
       // Health is the only line with an audit. A legacy row can still carry a
@@ -6513,6 +6556,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         [id]
       );
       res.json({ ok: true, clientId: id, status: "processing" });
+
+      // What a failed read writes. A failed change of type puts the row back instead.
+      const failRow = (message: string | undefined) =>
+        retype
+          ? pool.query("UPDATE clients SET status = $1, error_message = $2 WHERE id = $3", [client.status, client.error_message ?? null, id])
+          : pool.query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [message ?? null, id]);
 
       // Background processing — mirrors the analyze flow with the stored file.
       (async () => {
@@ -6593,12 +6642,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   motorScore,
                 ]
               );
+              // The old type's report must not sit behind the new type's fields, and a
+              // link the customer already holds must not start showing something else.
+              if (retype) {
+                await pool.query(
+                  "UPDATE clients SET insurance_type = $1, report_data = NULL, flaws = NULL, share_enabled = false WHERE id = $2",
+                  [insuranceType, id]
+                );
+              }
             } else {
               await giveBack();
-              await pool.query(
-                "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
-                [extraction.error, id]
-              );
+              await failRow(extraction.error);
             }
             return;
           }
@@ -6725,24 +6779,22 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 id,
               ]
             );
+            if (retype) {
+              await pool.query(
+                "UPDATE clients SET insurance_type = $1, extracted_data = NULL, share_enabled = false WHERE id = $2",
+                [insuranceType, id]
+              );
+            }
 
             await recordPlanProvenance(id, result.metadata);
           } else {
             await giveBack();
-            await pool.query(
-              "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
-              [result.error, id]
-            );
+            await failRow(result.error);
           }
         } catch (err: any) {
           console.error(`[Rerun ${id}] error:`, err);
           await giveBack();
-          await pool
-            .query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [
-              err.message || "Re-run failed",
-              id,
-            ])
-            .catch(() => {});
+          await failRow(err.message || "Re-run failed").catch(() => {});
         } finally {
           for (const p of [tempPath, ...companionTemps]) {
             try {
@@ -7630,6 +7682,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      Kept in services/payments.ts with its webhook, which index.ts has to mount
      before express.json(). Read that file's header before changing anything. */
   registerPaymentRoutes(app, { getUserIdFromToken });
+
+  // Edits to the advisor's own book: health corrections, adding by hand, renewals, merges.
+  registerBookRoutes(app, { verifyJwt, recordAccess, supabaseAdmin, pdfBucket: PDF_BUCKET, ownedStorageObject });
 
   log.info("routes registered");
   return _httpServer;

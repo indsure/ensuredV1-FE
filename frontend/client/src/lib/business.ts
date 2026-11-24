@@ -146,9 +146,9 @@ export function toMoney(r: BusinessRow, today: Date): PolicyMoney {
   }
 
   // Health, motor, property, fire: yearly products that renew on their expiry date.
-  const amount = type === "health" ? parseAmount(r.h_premium?.amount) : parseAmount(r.x_premium);
+  const amount = type === "health" ? parseAmount(r.h_premium?.amount ?? r.x_premium) : parseAmount(r.x_premium);
   if (amount == null) return base;
-  const freq = readFrequency(type === "health" ? r.h_premium?.frequency : r.x_freq);
+  const freq = readFrequency(type === "health" ? r.h_premium?.frequency ?? r.x_freq : r.x_freq);
   if (freq === "single") return { ...base, status: "single" };
   const yearly = amount * (freq ?? 1);
   const renews = parseDate(r.expiry_date);

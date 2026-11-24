@@ -105,6 +105,19 @@ export async function updateCustomer(id: string, draft: CustomerDraft): Promise<
   if (error) throw new Error(error.message);
 }
 
+/** Adds many at once, 200 a request. Returns how many went in; throws if one batch fails. */
+export async function createCustomers(agentId: string, drafts: CustomerDraft[]): Promise<number> {
+  assertCrmWritable();
+  let done = 0;
+  for (let i = 0; i < drafts.length; i += 200) {
+    const batch = drafts.slice(i, i + 200).map((d) => ({ agent_id: agentId, ...cleanDraft(d) }));
+    const { error } = await supabase.from("customers").insert(batch);
+    if (error) throw new Error(error.message);
+    done += batch.length;
+  }
+  return done;
+}
+
 /** Deleting a customer never deletes policies — the FK sets customer_id NULL. */
 export async function deleteCustomer(id: string): Promise<void> {
   assertCrmWritable();
@@ -200,6 +213,21 @@ export function suggestCustomers(
   }
 
   return ranked.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+/**
+ * An existing customer who is probably the same person: the same phone, or the
+ * same email. A family often shares both, so this only ever asks; it never blocks.
+ */
+export function findDuplicate(
+  customers: Customer[],
+  who: { name?: string | null; phone?: string | null; email?: string | null },
+): CustomerSuggestion | null {
+  const best = suggestCustomers(customers, { phone: who.phone, email: who.email }, 5);
+  if (!best.length) return null;
+  // With several on one number, the one whose name also matches comes first.
+  const named = suggestCustomers(best.map((b) => b.customer), { name: who.name }, 1)[0];
+  return best.find((b) => b.customer === named?.customer) ?? best[0];
 }
 
 /* ── Portfolio aggregates ──────────────────────────────────────────────── */

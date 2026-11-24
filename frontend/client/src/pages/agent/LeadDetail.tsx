@@ -15,7 +15,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { dateLocale } from "@/i18n";
 import { statusLabel, sourceLabel, interestLabel } from "@/lib/leadLabels";
 import { InterestPicker } from "@/components/agent/InterestPicker";
-import { formatAmount } from "@/lib/customers";
+import { carryLeadPolicies } from "@/lib/bookApi";
+import { fetchCustomers, findDuplicate, formatAmount, type Customer } from "@/lib/customers";
+import { fetchLeadPolicies } from "@/lib/leadPolicies";
 import {
   convertLeadToCustomer,
   deleteLead,
@@ -51,6 +53,10 @@ export default function LeadDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draft, setDraft] = useState<DraftState | null>(null);
 
+  const [match, setMatch] = useState<Customer | null>(null);
+  /** Policies still on a lead that is already a customer. */
+  const [left, setLeft] = useState(0);
+
   const load = useCallback(async () => {
     if (!id || !agent?.agentId) return;
     setLoading(true);
@@ -59,6 +65,9 @@ export default function LeadDetail() {
       const l = await fetchLead(agent.agentId, id);
       if (!l) throw new Error(t("lead_detail.not_found"));
       setLead(l);
+      // Both only add an offer to the page, so neither can stop it opening.
+      if (!l.customer_id) fetchCustomers(agent.agentId).then((c) => setMatch(findDuplicate(c, l)?.customer ?? null)).catch(() => {});
+      else fetchLeadPolicies(l.id).then((p) => setLeft(p.length)).catch(() => {});
       setDraft({
         name: l.name,
         phone: l.phone ?? "",
@@ -110,11 +119,30 @@ export default function LeadDetail() {
     }
   }
 
-  async function convert() {
+  async function carry(leadId: string) {
+    try {
+      const { moved } = await carryLeadPolicies(leadId);
+      if (moved) toast({ variant: "success", title: t("book.carried", { count: moved }) });
+      return true;
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: t("book.carry_failed"), description: e instanceof Error ? e.message : undefined });
+      return false;
+    }
+  }
+
+  async function carryNow() {
+    if (!lead) return;
+    setBusy("carry");
+    if (await carry(lead.id)) setLocation(`/agent/customers/${lead.customer_id}`);
+    setBusy(null);
+  }
+
+  async function convert(existingId?: string) {
     if (!lead || !agent?.agentId) return;
     setBusy("convert");
     try {
-      const customerId = await convertLeadToCustomer(agent.agentId, lead);
+      const customerId = await convertLeadToCustomer(agent.agentId, lead, existingId);
+      await carry(lead.id);
       toast({ variant: "success", title: t("lead_detail.converted"), description: t("lead_detail.converted_desc") });
       setLocation(`/agent/customers/${customerId}`);
     } catch (e: unknown) {
@@ -240,10 +268,22 @@ export default function LeadDetail() {
                       {t("lead_detail.convert_banner")}
                     </p>
                   </div>
-                  <Button onClick={convert} disabled={busy === "convert"} className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
+                  <Button onClick={() => void convert()} disabled={busy === "convert"} className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
                     {busy === "convert" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                    {t("lead_detail.save_as_customer")}
+                    {t(match ? "book.convert_new" : "lead_detail.save_as_customer")}
                   </Button>
+                </div>
+              )}
+              {!lead.customer_id && match && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <span>{t("book.dupe_found", { name: match.name })}</span>
+                  <Button variant="outline" className="border-amber-300 bg-white" disabled={busy === "convert"} onClick={() => void convert(match.id)}>{t("book.convert_join", { name: match.name })}</Button>
+                </div>
+              )}
+              {lead.customer_id && left > 0 && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                  <span>{t("book.carry_left", { count: left })}</span>
+                  <Button className="bg-emerald-600 text-white hover:bg-emerald-700" disabled={busy === "carry"} onClick={() => void carryNow()}>{busy === "carry" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{t("book.carry_btn")}</Button>
                 </div>
               )}
             </CardContent>
