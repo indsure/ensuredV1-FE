@@ -7,7 +7,8 @@ import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills, DeleteDoc } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
 import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText } from "./store.js";
-import { CorpLogin } from "./login.jsx";
+import { CorpLogin, JoinPage, joinToken, MySignIn } from "./login.jsx";
+import { EmployeesTab } from "./employees.jsx";
 import { QuickAdd, createPolicy } from "./add.jsx";
 import { Guide } from "./guide.jsx";
 import { BulkPage, DraftsPage, bindBulk, bulkBusy } from "./bulk.jsx";
@@ -75,6 +76,7 @@ export function App({ onSignedOut }) {
   const [toasts, setToasts] = useState([]);
   const [menu, setMenu] = useState(false);
   const [backup, setBackup] = useState(false);
+  const [mine, setMine] = useState(false);
   const menuBtn = useRef(null);
   const closeBtn = useRef(null);
   // Phone menu: focus moves into the drawer, Escape closes it from anywhere, focus returns to the Menu button.
@@ -123,7 +125,7 @@ export function App({ onSignedOut }) {
   }, [saveState]);
   const R = isRemote() && currentUser() ? { ...ROLES[role], who: currentUser().name } : ROLES[role];
   const can = (a) => R.perms === "*" || R.perms.includes(a);
-  const log = (d, o) => d.audit.push({ id: `A${++d.seq}`, at: nowIso(), who: R.who, ...o });
+  const log = (d, o) => d.audit.push({ id: `A${++d.seq}`, at: nowIso(), who: R.who, ...(isRemote() && currentUser()?.uid ? { uid: currentUser().uid } : {}), ...o });
   // Runs straight away, so code after update() can use what it produced (a new customer's id, say).
   const latestDb = useRef(db); latestDb.current = db;
   if (route.view !== "feedback") lastPage.current = `${route.view}${route.id ? ` ${route.id}` : ""}`;
@@ -176,7 +178,8 @@ export function App({ onSignedOut }) {
           <div className="sb-foot">
             <span className="navhead">Signed in as</span>
             <strong>{R.who}</strong>
-            <span>{R.label}</span>
+            <span>{isRemote() && currentUser()?.kind === "owner" ? "Owner" : R.label}</span>
+            {isRemote() && currentUser()?.orgName && <span>{currentUser().orgName}</span>}
           </div>
         </aside>
         <div className="content">
@@ -187,6 +190,7 @@ export function App({ onSignedOut }) {
               <label className="pillsel"><span className="sr">Financial year</span><select id="fy" value={fy} onChange={(e) => setFy(e.target.value)}>{FY_OPTIONS.map((f) => <option key={f} value={f}>F.Y. {f}</option>)}</select></label>
               {import.meta.env.DEV && <a className="btn btn-banner" href={LIVE ? "?demo" : "?"}>{LIVE ? "Open the demo" : "Back to my records"}</a>}
               <Btn kind="banner" onClick={() => setBackup(true)}>Backup</Btn>
+              {isRemote() && <Btn kind="banner" onClick={() => setMine(true)}>My sign-in</Btn>}
               {isRemote() && <Btn kind="banner" onClick={() => { logout(); onSignedOut?.(); }}>Sign out</Btn>}
               {isRemote() ? null : LIVE ? <AskFirst label="Clear all data" question="Delete every record in this browser? Download a backup first." yes="Delete everything" onYes={reset} kind="banner" />
                 : <AskFirst label="Reset demo" question="Put all example data back?" yes="Reset" onYes={reset} kind="banner" />}
@@ -195,6 +199,7 @@ export function App({ onSignedOut }) {
           <p className="rolebar">{LIVE ? "Today" : "Today in this demo"}: {fmtDate(TODAY)}. <SaveLine s={saveState} /></p>
           <main className="main" ref={mainRef}>{view}</main>
           <footer className="foot">{LIVE ? isRemote() ? "IndSure Commercial beta. Records and original files are saved online behind this sign-in. No email or payment is sent from here." : `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
+          {mine && <MySignIn onClose={() => setMine(false)} />}
           {backup && <BackupModal db={db} onRestore={(d) => { setDb(upgradeBook(d)); setBackup(false); setRoute({ view: NAV.flatMap((g) => g.items).find((i) => i.roles.includes(role)).key }); toast("Backup restored"); }} onClose={() => setBackup(false)} />}
         </div>
         <PlaceLists />
@@ -208,11 +213,12 @@ export function App({ onSignedOut }) {
 function SaveLine({ s }) {
   const k = storeInfo().kind;
   const at = s.at ? ` at ${String(s.at.getHours()).padStart(2, "0")}:${String(s.at.getMinutes()).padStart(2, "0")}` : "";
+  if (s.state === "signedout") return <span className="save-line bad-text">Your sign-in has ended and recent changes are NOT saved. Download a backup, then sign in again.</span>;
+  if (s.state === "refused") return <span className="save-line bad-text">Your login cannot save changes here, so the last change was NOT saved. Ask your owner.</span>;
   if (k === "server") {
     if (s.state === "offline") return <span className="save-line bad-text">Local server not answering. Changes will save when it is back; keep this tab open.</span>;
     return <span className="save-line" title={isRemote() ? "Saved online" : `Saved in ${storeInfo().dataDir}`}>{s.state === "saving" ? (isRemote() ? "Saving..." : "Saving on this computer...") : isRemote() ? `Saved${at}.` : `Saved on this computer${at}.`}</span>;
   }
-  if (s.state === "signedout") return <span className="save-line bad-text">Your sign-in has ended and recent changes are NOT saved. Download a backup, then sign in again.</span>;
   if (s.state === "error") return <span className="save-line bad-text">{s.reason === "full" ? "This browser's storage is full: recent changes are not saved. Download a backup." : "This browser blocked storage: changes last until you reload."}</span>;
   if (k === "browser-fallback") return <span className="save-line warn-text">The local server is not running, so records are kept in this browser only. Start it with the launcher.</span>;
   return <span className="save-line">Changes stay in this browser.</span>;
@@ -1032,7 +1038,7 @@ function Masters() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Lists and team</h1><p className="muted">Your insurers, policy types and team. Every screen picks from these.</p></div></header>
-      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
+      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() && (currentUser()?.kind === "owner" || currentUser()?.owner) ? [{ key: "employees", label: "Employees" }] : []), ...(isRemote() && (currentUser()?.kind || "legacy") === "legacy" ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {tab === "insurers" && <>
         <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
@@ -1046,6 +1052,7 @@ function Masters() {
           <td>{b ? <div className="row gap-s wrap"><span>{b.name}</span><Btn onClick={() => setEdit({ kind: "branch", insId: i.id, brId: b.id, name: b.name, city: b.city, state: b.state, country: b.country })}>Edit</Btn></div> : <span className="muted">No branches yet</span>}</td>
           <td>{b?.city || ""}</td><td>{b?.state || ""}</td><td>{b?.country || ""}</td></tr>))}</tbody></Table>
       </>}
+      {tab === "employees" && <EmployeesTab />}
       {tab === "logins" && <LoginsTab />}
       {tab === "brokerbranches" && <BrokerBranches />}
       {tab === "reading" && <ReadingTab />}
@@ -1250,6 +1257,9 @@ function Reminders() {
 // Scoped root: every rule in commercial.css sits under .ic-root, so nothing leaks into the rest of the app.
 export default function CommercialPortal() {
   const [locked, setLocked] = useState(needsLogin());
+  const [join, setJoin] = useState(isRemote() ? joinToken() : "");
+  // Opening an invite link while the portal is already open in this tab.
+  useEffect(() => { const h = () => { if (isRemote() && joinToken()) setJoin(joinToken()); }; window.addEventListener("hashchange", h); return () => window.removeEventListener("hashchange", h); }, []);
   const [notice, setNotice] = useState("");
   // Hidden page: nothing links here and search engines are told to stay away.
   useEffect(() => {
@@ -1259,6 +1269,7 @@ export default function CommercialPortal() {
     const was = document.title; document.title = "IndSure Commercial";
     return () => { m.remove(); document.title = was; };
   }, []);
+  if (join) return <div className="ic-root"><JoinPage token={join} onDone={() => { setJoin(""); setNotice(""); setLocked(needsLogin()); }} /></div>;
   if (locked) return <div className="ic-root"><CorpLogin notice={notice} onDone={() => { setNotice(""); setLocked(false); }} /></div>;
   return <div className="ic-root"><App onSignedOut={() => { setNotice("Please sign in again."); setLocked(true); }} /></div>;
 }

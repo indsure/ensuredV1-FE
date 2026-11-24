@@ -21,14 +21,22 @@ function session() {
 export const needsLogin = () => REMOTE && !session();
 export const isRemote = () => REMOTE;
 export function logout() { try { localStorage.removeItem(SESSION); } catch (e) { /* storage blocked */ } }
-export async function login(email, password) {
+// A new sign-in starts clean: nothing read or waiting to be saved for the last person may reach the next one's
+// organisation. Record ids repeat between organisations.
+function openSession(j) {
+  texts.clear(); sent.clear(); toSend.clear();
+  pending = null; version = 0; textStore = false;
+  localStorage.setItem(SESSION, JSON.stringify(j));
+}
+export const login = (email, password) => signIn({ email, password });
+/** { org, password } for the owner, { org, user, pin } for an employee, { email, password } for the older logins. */
+export async function signIn(details) {
   try {
-    const r = await fetch(`${API}/api/corp/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
+    const r = await fetch(`${API}/api/corp/login`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(details) });
     if (r.status === 401) return { ok: false, reason: "wrong" };
     if (r.status === 429) return { ok: false, reason: "limit" };
     if (!r.ok) return { ok: false, reason: "down" };
-    const j = await r.json();
-    localStorage.setItem(SESSION, JSON.stringify(j));
+    openSession(await r.json());
     return { ok: true };
   } catch (e) { return { ok: false, reason: "down" }; }
 }
@@ -136,8 +144,8 @@ async function flush() {
     try {
       const small = stripBook(job.d);
       await sendTexts();
-      const r = await fetch(`${SERVER}/api/corp/book`, { method: "PUT", headers: { "content-type": "application/json", ...auth() }, body: JSON.stringify({ baseVersion: version, db: small, note: job.note }) });
-      if (r.status === 401) { pending = job; status({ state: "signedout" }); break; }
+      const r = await fetch(`${SERVER}/api/corp/book`, { method: "PUT", headers: { "content-type": "application/json", ...auth() }, body: JSON.stringify({ baseVersion: version, db: small, note: job.note, org: REMOTE ? session()?.user?.org : undefined }) });
+      if (r.status === 401 || r.status === 403) { pending = r.status === 401 ? job : null; status({ state: r.status === 401 ? "signedout" : "refused" }); break; }
       if (r.status === 409) { status({ state: "conflict" }); break; }
       if (!r.ok) throw new Error(`save failed ${r.status}`);
       const j = await r.json();
@@ -190,6 +198,17 @@ async function api(method, path, body) {
 export async function listLogins() { const r = await api("GET", "/api/corp/users"); if (!r.ok) throw new Error("logins"); return r.body; }
 export async function addLogin(u) { try { return await api("POST", "/api/corp/users", u); } catch (e) { return { ok: false }; } }
 export async function changeLogin(email, patch) { try { return await api("PATCH", `/api/corp/users/${encodeURIComponent(email)}`, patch); } catch (e) { return { ok: false }; } }
+// ---- Organisations: invite links, employees, one's own PIN or password
+const tryApi = async (m, p, b) => { try { return await api(m, p, b); } catch (e) { return { ok: false, status: 0, body: null }; } };
+export const joinLook = (token) => tryApi("POST", "/api/corp/join/look", { token });
+export async function joinAccept(details) { const r = await tryApi("POST", "/api/corp/join", details); if (r.ok) openSession(r.body); return r; }
+export const listTeam = () => tryApi("GET", "/api/corp/team");
+export const inviteEmployee = (email, role) => tryApi("POST", "/api/corp/team/invite", { email, role });
+export const cancelInvite = (id) => tryApi("POST", `/api/corp/team/invite/${id}/cancel`, {});
+export const changeEmployee = (id, patch) => tryApi("PATCH", `/api/corp/team/${id}`, patch);
+export const newPinLink = (id) => tryApi("POST", `/api/corp/team/${id}/new-pin`, {});
+// The same person stays signed in with the new session, so nothing already open is cleared.
+export async function changeSecret(current, next) { const r = await tryApi("POST", "/api/corp/me/secret", { current, next }); if (r.ok) { try { localStorage.setItem(SESSION, JSON.stringify(r.body)); } catch (e) { /* storage blocked */ } } return r; }
 export async function remindersSent() { if (!REMOTE) return []; try { const r = await api("GET", "/api/corp/reminders"); return r.ok ? r.body : []; } catch (e) { return []; } }
 export async function sendFeedback(report) {
   if (kind !== "server") return { ok: false };

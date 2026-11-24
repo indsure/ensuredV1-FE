@@ -374,7 +374,8 @@
 .ic-root .corp-login-card h1 { margin: 0; font-size: 1.5rem; }
 .ic-root .corp-login-card p { margin: 0; }
 .ic-root .corp-login-field { display: grid; gap: 6px; font-weight: 600; }
-.ic-root .corp-login-field input { width: 100%; font-weight: 400; }
+.ic-root .corp-login-field input { width: 100%; font-weight: 400; border: 1px solid var(--s300); border-radius: 12px; padding: 11px 14px; min-height: 46px; background: var(--white); }
+.ic-root .corp-login-field input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(13,148,136,.15); }
 .ic-root .corp-login-btn { width: 100%; justify-content: center; }
 .ic-root .fld-top { display: flex; align-items: center; gap: 6px; }
 .ic-root .tip { width: 18px; height: 18px; flex: none; display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; padding: 0; border-radius: 50%; border: 1px solid var(--s200); background: var(--white); color: var(--s500); font: italic 700 11px/1 Georgia, serif; text-transform: none; cursor: help; vertical-align: middle; }
@@ -457,3 +458,14 @@
 /* Rec GST / Pay GST */
 .ic-root .gst-pair { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--s200); border-radius: 14px; padding: 12px 14px; background: var(--white); margin-top: 10px; max-width: 520px; }
 .ic-root .gst-pair .fld { max-width: 320px; }
+
+/* Sign-in as Employee or Owner, joining, employees */
+.ic-root .corp-login-seg { display: grid; grid-template-columns: 1fr 1fr; }
+.ic-root .corp-login-seg button { justify-content: center; min-height: 44px; }
+.ic-root .corp-login-hint { font-weight: 400; }
+.ic-root .corp-join { max-width: 520px; }
+.ic-root .corp-depts { border: 1px solid var(--s200); border-radius: 12px; padding: 10px 14px 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ic-root .corp-depts legend { font-weight: 600; padding: 0 4px; }
+.ic-root .corp-ids { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
+.ic-root .corp-ids dt { color: var(--s600); }
+.ic-root .corp-ids dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
