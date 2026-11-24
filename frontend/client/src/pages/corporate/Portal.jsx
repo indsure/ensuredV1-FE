@@ -214,6 +214,7 @@ function SaveLine({ s }) {
   const k = storeInfo().kind;
   const at = s.at ? ` at ${String(s.at.getHours()).padStart(2, "0")}:${String(s.at.getMinutes()).padStart(2, "0")}` : "";
   if (s.state === "signedout") return <span className="save-line bad-text">Your sign-in has ended and recent changes are NOT saved. Download a backup, then sign in again.</span>;
+  if (s.state === "othersignin") return <span className="save-line bad-text">Someone else signed in on this browser, so changes in this tab are NOT saved. <button type="button" className="linkbtn" onClick={() => window.location.reload()}>Reload this tab</button></span>;
   if (s.state === "refused") return <span className="save-line bad-text">Your login cannot save changes here, so the last change was NOT saved. Ask your owner.</span>;
   if (k === "server") {
     if (s.state === "offline") return <span className="save-line bad-text">Local server not answering. Changes will save when it is back; keep this tab open.</span>;

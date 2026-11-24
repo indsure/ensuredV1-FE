@@ -5,7 +5,9 @@ import { useState, useEffect } from "react";
 import { signIn, login, joinLook, joinAccept, changeSecret, currentUser } from "./store.js";
 import { useApp, Modal, Btn } from "./ui.jsx";
 
-const ORG_KEY = "indsure-commercial-org", USER_KEY = "indsure-commercial-user";
+const ORG_KEY = "indsure-commercial-org", USER_KEY = "indsure-commercial-user", MODE_KEY = "indsure-commercial-mode";
+// The way this browser last signed in. An old email sign-in still stored here opens on email.
+const lastMode = () => { const m = remembered(MODE_KEY); if (["employee", "owner", "email"].includes(m)) return m; try { const s = JSON.parse(localStorage.getItem("indsure-commercial-session") || "null"); return s && s.user && !s.user.kind ? "email" : "employee"; } catch (e) { return "employee"; } };
 const remembered = (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
 const remember = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked */ } };
 const WHY = { limit: "Too many tries. Wait 15 minutes and try again.", down: "Could not reach IndSure just now. Check your internet and try again." };
@@ -16,7 +18,7 @@ function Field({ id, label, hint, ...rest }) {
 }
 
 export function CorpLogin({ onDone, notice }) {
-  const [mode, setMode] = useState("employee"); // employee | owner | email
+  const [mode, setMode] = useState(lastMode); // employee | owner | email
   const [org, setOrg] = useState(remembered(ORG_KEY));
   const [user, setUser] = useState(remembered(USER_KEY));
   const [pin, setPin] = useState("");
@@ -34,7 +36,7 @@ export function CorpLogin({ onDone, notice }) {
     setBusy(true); setErr("");
     const r = mode === "email" ? await login(email.trim(), password) : await signIn(mode === "owner" ? { org: org.trim(), password } : { org: org.trim(), user: user.trim(), pin });
     setBusy(false);
-    if (r.ok) { if (mode !== "email") remember(ORG_KEY, org.trim().toUpperCase()); if (mode === "employee") remember(USER_KEY, user.trim().toUpperCase()); setPin(""); setPassword(""); onDone(); return; }
+    if (r.ok) { remember(MODE_KEY, mode); if (mode !== "email") remember(ORG_KEY, org.trim().toUpperCase()); if (mode === "employee") remember(USER_KEY, user.trim().toUpperCase()); setPin(""); setPassword(""); onDone(); return; }
     setPin("");
     setErr(WHY[r.reason] || (mode === "employee" ? "Those details are not right. After 5 wrong tries the login is locked for 15 minutes." : mode === "owner" ? "That OrgID or password is not right." : "That email or password is not right."));
   };

@@ -84,7 +84,7 @@ export const docText = (d) => (d ? d.lines || texts.get(d.textId || d.id) || nul
 /** Fetches any text not already here. Never rejects: a document without text simply shows none. */
 export async function loadTexts(ids) {
   const need = [...new Set(ids.filter(Boolean))].filter((id) => !texts.has(id));
-  if (!textStore || !need.length) return;
+  if (!textStore || !need.length || !stillMine()) return;
   for (let i = 0; i < need.length; i += 40) {
     try {
       const b = await getJson(`${SERVER}/api/corp/doctext?ids=${encodeURIComponent(need.slice(i, i + 40).join(","))}`, 30000);
@@ -98,10 +98,17 @@ export async function fileBlobUrl(id) {
 // The text store may not be on the server yet: until it is, text simply stays inside the book, as before.
 async function checkTextStore() { try { const b = await getJson(`${SERVER}/api/corp/doctext?ids=`, 8000); textStore = b.status === 200; } catch (e) { textStore = false; } }
 
+// Whose records this tab holds. The sign-in is shared by every tab of a browser, so before anything is written
+// or read for them, it must still be the same person in the same organisation.
+let holder = null;
+const signedInAs = () => { const u = session()?.user; return u ? `${u.org || 1}|${u.uid || u.email || ""}` : null; };
+const stillMine = (who = holder) => !REMOTE || (!!who && who === signedInAs());
+if (REMOTE && typeof window !== "undefined") window.addEventListener("storage", (e) => { if (e.key === SESSION && holder && signedInAs() && !stillMine()) status({ state: "othersignin" }); });
+
 // Loads the book. seed() gives the starting book when nothing has been saved yet.
 export async function openStore(key, seed) {
   if (REMOTE) {
-    kind = "server";
+    kind = "server"; holder = signedInAs();
     const b = await getJson(`${SERVER}/api/corp/book`);
     if (b.status === 401) { logout(); throw new SignedOut(); }
     if (b.status === 200) { version = b.body.version; await checkTextStore(); return b.body.db; }
@@ -133,13 +140,14 @@ export function save(key, d, note = "") {
     catch (e) { status({ state: "error", reason: e?.name === "QuotaExceededError" ? "full" : "blocked" }); }
     return;
   }
-  pending = { d, note };
+  pending = { d, note, who: holder };
   if (!busy) flush();
 }
 async function flush() {
   busy = true;
   while (pending) {
     const job = pending; pending = null;
+    if (!stillMine(job.who) || (REMOTE && job.who !== holder)) { status({ state: session() ? "othersignin" : "signedout" }); break; }
     status({ state: "saving" });
     try {
       const small = stripBook(job.d);
@@ -162,6 +170,7 @@ async function flush() {
 
 // Another window saved first: take its book and carry on from there.
 export async function reloadLatest() {
+  if (!stillMine()) { status({ state: "othersignin" }); throw new Error("another sign-in"); }
   const b = await getJson(`${SERVER}/api/corp/book`);
   if (b.status !== 200) throw new Error("could not reload");
   version = b.body.version;
@@ -173,7 +182,7 @@ export async function getVersion(v) { const r = await getJson(`${SERVER}/api/cor
 
 // Keeps the original PDF or photo on this computer. Returns its id, or null when there is no server.
 export async function saveFile(file) {
-  if (kind !== "server" || !file || file.size > 40 * 1024 * 1024) return null;
+  if (kind !== "server" || !file || file.size > 40 * 1024 * 1024 || !stillMine()) return null;
   try {
     const h = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     const pdf = String.fromCharCode(...h.slice(0, 5)) === "%PDF-", png = h[0] === 0x89 && h[1] === 0x50, jpg = h[0] === 0xff && h[1] === 0xd8;

@@ -168,7 +168,7 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
   // The email logins belong to organisation 1 and are managed only there.
   const orgOneOnly = (req: Request, res: Response, next: NextFunction) => { if (orgOf(req) !== 1) return res.status(403).json({ error: "not available" }); next(); };
   const needOrgs = async (_req: Request, res: Response, next: NextFunction) => { try { if (await orgsOn()) return next(); res.status(503).json({ error: "not set up" }); } catch (e) { fail(res, e, "check setup"); } };
-  const open = (s: auth.Session) => { const exp = Date.now() + SESSION_HOURS * 3600 * 1000; return { token: sign("session", exp, { kind: s.kind, org: s.org, uid: s.uid, pv: s.pv }, s.org), fileKey: sign("files", exp, undefined, s.org), exp, user: { email: s.email, name: s.name, role: s.role, kind: s.kind, uid: s.uid, org: s.org, code: s.code, orgName: s.orgName, designation: s.designation || "", departments: s.departments || [] } }; };
+  const open = (s: auth.Session) => { const exp = Date.now() + SESSION_HOURS * 3600 * 1000; return { token: sign("session", exp, { kind: s.kind, org: s.org, uid: s.uid, pv: s.pv }, s.org), fileKey: sign("files", exp, { kind: s.kind, org: s.org, uid: s.uid, pv: s.pv }, s.org), exp, user: { email: s.email, name: s.name, role: s.role, kind: s.kind, uid: s.uid, org: s.org, code: s.code, orgName: s.orgName, designation: s.designation || "", departments: s.departments || [] } }; };
   const adminOnly = (req: Request, res: Response, next: NextFunction) => { if ((req as any).corpUser?.role !== "admin") return res.status(403).json({ error: "admin only" }); next(); };
 
   app.post("/api/corp/login", ready, loginLimit, express.json({ limit: "10kb" }), async (req, res) => {
@@ -195,7 +195,7 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
     } catch (e) { return fail(res, e, "login"); }
     if (!user) return res.status(401).json({ error: "wrong email or password" });
     const exp = Date.now() + SESSION_HOURS * 3600 * 1000;
-    res.json({ token: sign("session", exp, user), fileKey: sign("files", exp), exp, user: { ...user, kind: "legacy", org: 1, uid: `email:${user.email}`, owner: user.email === ownerEmail() } });
+    res.json({ token: sign("session", exp, user), fileKey: sign("files", exp, { email: user.email }), exp, user: { ...user, kind: "legacy", org: 1, uid: `email:${user.email}`, owner: user.email === ownerEmail() } });
   });
 
   // ---- Invite links. The token is posted, never in an address, so it stays out of server logs.
@@ -405,6 +405,11 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
     const t = readToken(req.query.t, "files");
     if (!t) return res.status(401).json({ error: "sign in" });
     const org = Number(t.org || 1);
+    // A person's key stops when their login does. A report's screenshot link carries no person.
+    try {
+      if (t.user?.kind) { if (!(await auth.freshSession(pool, t.user))) return res.status(401).json({ error: "sign in" }); }
+      else if (t.user?.email && t.user.email !== ownerEmail()) { const { rows } = await pool.query("SELECT active FROM corp_users WHERE email = $1", [t.user.email]); if (!rows[0]?.active) return res.status(401).json({ error: "sign in" }); }
+    } catch (e) { return fail(res, e, "check file key"); }
     try {
       const { rows } = await pool.query("SELECT name, ext FROM corp_files WHERE id = $1", [key(org, String(req.params.id))]);
       if (!rows.length) return res.status(404).json({ error: "no such file" });
