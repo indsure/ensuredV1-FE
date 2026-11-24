@@ -39,7 +39,7 @@ import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
 import { deletePolicyRecord } from "@/lib/policyDelete";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
-import { hasShareableContent } from "@shared/dataEntryShare";
+import { ADDED_BY_HAND, canOpenShare } from "@shared/dataEntryShare";
 
 type PolicyRow = {
   id: string;
@@ -216,7 +216,11 @@ export default function PolicyDetail() {
      link. Health needs its audit; a data-entry policy needs at least one
      publishable field. This mirrors the readiness test the server applies in
      /api/shared/report/:token, so the button and the link agree with it. */
-  const canShare = Boolean(reportData) || hasShareableContent(insuranceType, extractedData);
+  const canShare = canOpenShare({
+    insurance_type: insuranceType, extracted_data: extractedData, report_data: reportData, filename: fileMeta?.file_path,
+    policyholder_name: policy?.client_name, insurer: policy?.insurer_name, policy_name: policy?.product_name,
+    sum_insured: cover, expiry_date: policy?.policy_end_date,
+  });
 
   async function loadDetail() {
     if (!id || !agent?.agentId) return;
@@ -735,7 +739,7 @@ export default function PolicyDetail() {
                       {t("policy_detail.check_failed_hint")}
                     </div>
                   </div>
-                ) : policy.status === "done" && !hasFile ? (
+                ) : policy.status === "done" && !hasFile && fileMeta?.file_path === ADDED_BY_HAND ? (
                   t("book.by_hand_health")
                 ) : policy.status === "done" ? (
                   t("policy_detail.bad_format")

@@ -164,3 +164,24 @@ test("claim delete: own claims only; kept when the files cannot go; foreign path
   assert.equal((await deleteClaim(mk(), A, P, async (p) => { sent = p; return true; })).status, 200);
   assert.deepEqual(sent, [`${A}/claims/1.pdf`]);
 });
+
+test("sharing a hand-added policy: health shows what was typed, never the number; nothing typed, no link", async () => {
+  const { shareDetails, canOpenShare, ADDED_BY_HAND } = await import("../../../shared/dataEntryShare");
+  const h = { insurance_type: "health", filename: ADDED_BY_HAND, policyholder_name: "R", insurer: "Care", sum_insured: 500000, expiry_date: "2027-01-02", extracted_data: { premium: 2000, premium_frequency: "monthly", policy_number: "SECRET" } };
+  const d = shareDetails(h)!;
+  assert.equal(d.type, "other");
+  assert.equal(d.byHand, true);
+  assert.deepEqual(Object.keys(d.fields).sort(), ["insurer", "policy_expiry_date", "policy_type_stated", "policyholder_name", "sum_insured"]);
+  assert.equal(shareDetails({ ...h, extracted_data: { premium: 24000, premium_frequency: "yearly" } })!.fields.premium, 24000);
+  assert.equal(canOpenShare({ insurance_type: "health", filename: ADDED_BY_HAND, policyholder_name: "R", extracted_data: {} }), false);
+  assert.equal(shareDetails({ ...h, report_data: { a: 1 } }), null, "a report is shared as the report");
+  assert.equal(shareDetails({ ...h, filename: "x.pdf" }), null);
+  assert.equal(shareDetails({ insurance_type: "motor", filename: ADDED_BY_HAND, extracted_data: { policyholder_name: "R" } }), null);
+  assert.equal(shareDetails({ insurance_type: "motor", filename: "x.pdf", extracted_data: { insurer: "A" } })!.byHand, false);
+});
+
+test("hand-added policies start with sharing off", async () => {
+  const d = db([[/^INSERT INTO clients/, () => [{ id: P }]]]);
+  await addManualPolicy(d, A, { type: "motor", policyholder_name: "R" }, { deriveSharedColumns: deriveSharedColumns as any });
+  assert.match(d.calls[0].sql, /customer_id, share_enabled, created_at\).*\$13, false, NOW\(\)/);
+});

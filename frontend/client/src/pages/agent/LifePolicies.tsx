@@ -35,6 +35,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchAllRows } from "@/lib/fetchAllRows";
 import { getApiBase } from "@/lib/queryClient";
 import { deletePolicyRecord } from "@/lib/policyDelete";
+import { canOpenShare, type ShareSource } from "@shared/dataEntryShare";
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover";
 import { setShare } from "@/lib/bookApi";
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog";
@@ -456,7 +457,7 @@ export default function LifePolicies() {
                             <Download className="h-4 w-4" aria-hidden />
                           </button>
                           <ShareLinkPopover
-                            shareUrl={meta.get(r.id)?.share_token ? `${window.location.origin}/shared/report/${meta.get(r.id)!.share_token}` : null}
+                            shareUrl={meta.get(r.id)?.share_token && canOpenShare(source.find((x) => x.id === r.id) as ShareSource) ? `${window.location.origin}/shared/report/${meta.get(r.id)!.share_token}` : null}
                             shareEnabled={meta.get(r.id)?.share_enabled === true}
                             onToggle={async (enabled) => {
                               await setShare(r.id, enabled);

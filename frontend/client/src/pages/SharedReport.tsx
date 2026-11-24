@@ -17,6 +17,7 @@ type DataEntryPayload = {
   policy_name?: string | null;
   policyholder_name?: string | null;
   created_at?: string | null;
+  by_hand?: boolean;
 };
 
 interface SharedReportProps {
@@ -220,6 +221,7 @@ export default function SharedReport({ token }: SharedReportProps) {
           policyName={dataEntry.policy_name}
           policyholderName={dataEntry.policyholder_name}
           createdAt={dataEntry.created_at}
+          byHand={dataEntry.by_hand}
         />
       </PageChrome>
     );

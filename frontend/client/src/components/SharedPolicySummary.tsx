@@ -40,6 +40,8 @@ interface Props {
   policyName?: string | null;
   policyholderName?: string | null;
   createdAt?: string | null;
+  /** Typed in by the advisor: no document was read. */
+  byHand?: boolean;
 }
 
 function formatValue(value: unknown, format: ShareFormat, locale: Locale = "en"): string {
@@ -73,6 +75,7 @@ export default function SharedPolicySummary({
   policyName,
   policyholderName,
   createdAt,
+  byHand,
 }: Props) {
   const { t, locale } = useLanguage();
   if (!isShareableType(insuranceType)) return null;
@@ -124,7 +127,7 @@ export default function SharedPolicySummary({
       <p className="mt-8 flex items-start gap-2 text-sm leading-relaxed text-slate-500">
         <FileText className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
-          {createdAt ? t("share_sum.read_on", { date: formatValue(createdAt, "date", locale) }) : t("share_sum.read")}{" "}
+          {byHand ? t("book.share_by_hand") : createdAt ? t("share_sum.read_on", { date: formatValue(createdAt, "date", locale) }) : t("share_sum.read")}{" "}
           {t("share_sum.final_word")}
         </span>
       </p>
