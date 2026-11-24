@@ -11,6 +11,7 @@
 //   CORP_SESSION_SECRET  signs session tokens
 //   CORP_FEEDBACK_TO     where problem reports are emailed (default tech@indsure.in)
 //   CORP_PIN_PEPPER      optional, mixed into employee PINs (default: the session secret). Never change it once set.
+//   CORP_ADMIN_TOKEN     32+ characters, shared with IndSure's admin portal server only. Without it those routes are off.
 //   CORP_PORTAL_URL      where invite links point (default https://beta.indsure.in/corporate)
 // With any of the first three missing, every route answers 503 and nothing else changes.
 //
@@ -218,6 +219,62 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
       sendMail({ to: s.email, subject: `Your IndSure Commercial sign-in: ${s.orgName}`, text: `Hello ${s.name},\n\n${ids}\n\n${auth.portalUrl()}\n\nKeep this email. IndSure will never ask for your PIN or password.` }).catch(() => {});
       res.json({ ...open(s), userCode: r.userCode || null });
     } catch (e) { await client.query("ROLLBACK").catch(() => {}); fail(res, e, "accept invite"); } finally { client.release(); }
+  });
+
+  // ---- Organisations, managed by IndSure's admin portal. Its server sends the token; a browser never holds it.
+  const adminLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skipSuccessfulRequests: true, standardHeaders: true, legacyHeaders: false, message: { error: "Too many refused tries. Wait 15 minutes." } });
+  const indsureAdmin = (req: Request, res: Response, next: NextFunction) => {
+    const want = String(process.env.CORP_ADMIN_TOKEN || ""), got = String(req.headers["x-corp-admin"] || "");
+    if (want.length < 32) return res.status(503).json({ error: "The server's admin key is not set. Run the deploy kit." });
+    const h = (s: string) => crypto.createHash("sha256").update(s).digest();
+    if (!crypto.timingSafeEqual(h(want), h(got))) return res.status(401).json({ error: "The admin key was not accepted." });
+    next();
+  };
+  const ADMIN = "IndSure admin";
+  const ownerMail = (to: string, org: string, code: string, link: string) => sendMail({ to, subject: `Set up ${org} on IndSure Commercial`, text: `Your organisation, ${org}, is on IndSure Commercial. Its OrgID is ${code}.\n\nOpen this link to set your owner password:\n\n${link}\n\nThe link works once and for 3 days. If you were not expecting it, ignore this email.` }).catch(() => false);
+  app.get("/api/corp/admin/orgs", ready, adminLimit, indsureAdmin, needOrgs, async (_req, res) => {
+    try { res.json(await auth.listOrgs(pool)); } catch (e) { fail(res, e, "list organisations"); }
+  });
+  app.post("/api/corp/admin/orgs", ready, adminLimit, indsureAdmin, needOrgs, express.json({ limit: "10kb" }), async (req, res) => {
+    const name = auth.cleanLine(req.body?.name, 120), email = auth.cleanEmail(req.body?.email);
+    if (!name || !auth.emailOk(email)) return res.status(400).json({ error: "Enter the organisation's name and a valid owner email." });
+    try {
+      if ((await pool.query("SELECT 1 FROM corp_orgs WHERE lower(name) = lower($1)", [name])).rows.length) return res.status(409).json({ error: "An organisation with this name already exists." });
+      const o = await auth.createOrg(pool, name, email);
+      await auth.logEvent(pool, o.id, ADMIN, "Organisation created", `${name}, owner ${email}`);
+      res.json({ code: o.code, name, email, link: o.link, expiresAt: o.expiresAt, emailed: await ownerMail(email, name, o.code, o.link) });
+    } catch (e) { fail(res, e, "create organisation"); }
+  });
+  app.post("/api/corp/admin/orgs/:code/:action", ready, adminLimit, indsureAdmin, needOrgs, express.json({ limit: "10kb" }), async (req, res) => {
+    const action = String(req.params.action);
+    try {
+      const o = (await pool.query("SELECT id, code, name, active FROM corp_orgs WHERE code = $1", [auth.cleanCode(req.params.code)])).rows[0];
+      if (!o) return res.status(404).json({ error: "No such organisation." });
+      if (action === "owner") {
+        const email = auth.cleanEmail(req.body?.email);
+        if (!auth.emailOk(email)) return res.status(400).json({ error: "Enter a valid owner email." });
+        if (!o.active) return res.status(409).json({ error: "Switch the organisation on first. Its links do not work while it is off." });
+        const i = await auth.inviteOwner(pool, o.id, email);
+        await auth.logEvent(pool, o.id, ADMIN, "Organisation owner link", email);
+        return res.json({ code: o.code, name: o.name, email, link: i.link, expiresAt: i.expiresAt, emailed: await ownerMail(email, o.name, o.code, i.link) });
+      }
+      if (action === "rename") {
+        const name = auth.cleanLine(req.body?.name, 120);
+        if (!name) return res.status(400).json({ error: "Enter a name." });
+        if ((await pool.query("SELECT 1 FROM corp_orgs WHERE lower(name) = lower($1) AND id <> $2", [name, o.id])).rows.length) return res.status(409).json({ error: "An organisation with this name already exists." });
+        await pool.query("UPDATE corp_orgs SET name = $2 WHERE id = $1", [o.id, name]);
+        await auth.logEvent(pool, o.id, ADMIN, "Organisation renamed", `${o.name} to ${name}`);
+      } else if (action === "on" || action === "off") {
+        // Its email logins have no switch here, so "off" would look like more than it does.
+        if (action === "off" && o.id === 1) return res.status(409).json({ error: "This organisation also has email logins, which this switch does not stop, so it cannot be switched off here." });
+        await pool.query("UPDATE corp_orgs SET active = $2 WHERE id = $1", [o.id, action === "on"]);
+        await auth.logEvent(pool, o.id, ADMIN, `Organisation switched ${action}`);
+      } else if (action === "unlock") {
+        await pool.query("UPDATE corp_orgs SET failed = 0, locked_until = NULL WHERE id = $1", [o.id]);
+        await auth.logEvent(pool, o.id, ADMIN, "Organisation owner unlocked");
+      } else return res.status(404).json({ error: "No such action." });
+      res.json({ ok: true });
+    } catch (e) { fail(res, e, "change organisation"); }
   });
 
   // ---- The team of one organisation, managed by its owner

@@ -46,7 +46,7 @@ export const passwordProblem = (p: string): string | null => (p.length < 10 ? "T
 export const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 200;
 export const cleanEmail = (e: unknown) => String(e || "").trim().toLowerCase();
 export const cleanCode = (c: unknown) => String(c || "").trim().toUpperCase().replace(/\s+/g, "").slice(0, 40);
-const cleanLine = (s: unknown, n: number) => String(s || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
+export const cleanLine = (s: unknown, n: number) => String(s || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, n);
 
 // ---- codes
 const digits = (n: number) => String(crypto.randomInt(10 ** (n - 1), 10 ** n));
@@ -113,13 +113,23 @@ export const inviteLink = (token: string) => `${portalUrl()}#join=${token}`; // 
 
 async function newInvite(db: Db, v: { org: number; kind: "owner" | "join" | "pin"; email: string; role?: string | null; memberId?: any; days: number }) {
   const token = crypto.randomBytes(32).toString("base64url");
-  // A newer link replaces an older unused one for the same person.
-  await db.query("UPDATE corp_invites SET revoked_at = now() WHERE org_id = $1 AND email = $2 AND kind = $3 AND used_at IS NULL AND revoked_at IS NULL", [v.org, v.email, v.kind]);
+  // A newer link replaces an older unused one for the same person. An organisation has one owner, so a new owner
+  // link replaces any other, including one sent to a mistyped email.
+  await db.query("UPDATE corp_invites SET revoked_at = now() WHERE org_id = $1 AND (email = $2 OR kind = 'owner') AND kind = $3 AND used_at IS NULL AND revoked_at IS NULL", [v.org, v.email, v.kind]);
   const { rows } = await db.query("INSERT INTO corp_invites (org_id, kind, email, role, member_id, token_hash, expires_at) VALUES ($1, $2, $3, $4, $5, $6, now() + ($7 || ' days')::interval) RETURNING id, expires_at", [v.org, v.kind, v.email, v.role ?? null, v.memberId ?? null, tokenHash(token), String(v.days)]);
   return { id: rows[0].id, expiresAt: rows[0].expires_at, link: inviteLink(token), token };
 }
 export const inviteOwner = (db: Db, org: number, email: string) => newInvite(db, { org, kind: "owner", email, days: OWNER_DAYS });
 
+// ---- organisations, managed by IndSure from its admin portal. Never touches an organisation's records.
+export async function listOrgs(db: Db) {
+  const orgs = (await db.query(`SELECT o.code, o.name, o.owner_name, o.owner_email, o.owner_hash IS NOT NULL AS owner_ready, o.active, o.last_login, o.created_at,
+    COALESCE(o.locked_until > now(), false) AS locked, (SELECT count(*)::int FROM corp_members m WHERE m.org_id = o.id AND m.active) AS people,
+    i.email AS link_email, i.expires_at AS link_expires
+    FROM corp_orgs o LEFT JOIN LATERAL (SELECT email, expires_at FROM corp_invites WHERE org_id = o.id AND kind = 'owner' AND used_at IS NULL AND revoked_at IS NULL ORDER BY id DESC LIMIT 1) i ON true ORDER BY o.id`)).rows;
+  const history = (await db.query("SELECT e.at, o.code, e.who, e.event, e.detail FROM corp_auth_events e JOIN corp_orgs o ON o.id = e.org_id WHERE e.event LIKE 'Organisation %' ORDER BY e.id DESC LIMIT 100")).rows;
+  return { orgs, history };
+}
 export async function createOrg(db: Db, name: string, email: string) {
   const org = cleanLine(name, 120), mail = cleanEmail(email);
   if (!org || !emailOk(mail)) throw new Error("an organisation name and a valid owner email are needed");
