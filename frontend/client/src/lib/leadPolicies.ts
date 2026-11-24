@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { assertCrmWritable } from "@/lib/entitlement";
 import { getApiBase } from "@/lib/queryClient";
 import { apiFetch, apiOk } from "@/lib/api";
@@ -87,14 +88,17 @@ export async function fetchLeadPolicies(leadId: string): Promise<LeadPolicy[]> {
 /** All of an agent's lead policies that have a due date, joined with the lead,
  *  soonest first — the "who to chase" hit-list. The page buckets by urgency. */
 export async function fetchDueLeadPolicies(agentId: string): Promise<LeadPolicyWithLead[]> {
-  const { data, error } = await supabase
-    .from("lead_policies")
-    .select("*, agent_leads ( id, name, phone )")
-    .eq("agent_id", agentId)
-    .not("due_date", "is", null)
-    .order("due_date", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as LeadPolicyWithLead[];
+  const rows = await fetchAllRows((from, to) =>
+    supabase
+      .from("lead_policies")
+      .select("*, agent_leads ( id, name, phone )")
+      .eq("agent_id", agentId)
+      .not("due_date", "is", null)
+      .order("due_date", { ascending: true })
+      .order("id")
+      .range(from, to)
+  );
+  return rows as unknown as LeadPolicyWithLead[];
 }
 
 /* ── Mutations (manual add + edits go straight through supabase) ────────── */

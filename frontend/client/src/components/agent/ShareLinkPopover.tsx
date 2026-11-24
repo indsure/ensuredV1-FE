@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Check, Copy, Link2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -12,15 +12,15 @@ type Props = {
   shareUrl: string | null
   shareEnabled: boolean
   disabled?: boolean
-  onDisable: () => Promise<void>
+  onToggle: (enabled: boolean) => Promise<void>
 }
 
-export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }: Props) {
+export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onToggle }: Props) {
   const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const canShare = useMemo(() => !!shareUrl && shareEnabled, [shareUrl, shareEnabled])
+  const canShare = !!shareUrl && shareEnabled
 
   async function copy() {
     if (!shareUrl) return
@@ -33,12 +33,12 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
     }
   }
 
-  async function disable() {
+  async function toggle(enabled: boolean) {
     setBusy(true)
     try {
-      await onDisable()
+      await onToggle(enabled)
     } catch {
-      toast({ variant: "destructive", title: t("share_popover.update_failed"), description: t("share_popover.disable_failed") })
+      toast({ variant: "destructive", title: t("share_popover.update_failed"), description: t("share_popover.toggle_failed") })
     } finally {
       setBusy(false)
     }
@@ -64,18 +64,18 @@ export function ShareLinkPopover({ shareUrl, shareEnabled, disabled, onDisable }
         </div>
 
         <div className="flex gap-2">
-          <Input readOnly value={shareUrl ?? ""} />
-          <Button variant="outline" onClick={copy} disabled={!shareUrl}>
+          <Input readOnly value={canShare ? shareUrl ?? "" : ""} placeholder={t("share_popover.off")} />
+          <Button variant="outline" onClick={copy} disabled={!canShare}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </Button>
         </div>
 
         <div className="flex items-center justify-between gap-3 rounded-md border p-3">
           <div className="space-y-0.5">
-            <div className="text-sm font-medium">{t("share_popover.disable")}</div>
-            <div className="text-xs text-slate-600">{t("share_popover.disable_desc")}</div>
+            <div className="text-sm font-medium">{t("share_popover.toggle")}</div>
+            <div className="text-xs text-slate-600">{t(canShare ? "share_popover.on_desc" : "share_popover.off_desc")}</div>
           </div>
-          <Switch checked={!canShare} onCheckedChange={() => void disable()} disabled={busy || disabled} />
+          <Switch aria-label={t("share_popover.toggle")} checked={canShare} onCheckedChange={(v) => void toggle(v)} disabled={busy || disabled} />
         </div>
       </PopoverContent>
     </Popover>

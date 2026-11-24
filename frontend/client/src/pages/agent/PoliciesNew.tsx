@@ -403,12 +403,21 @@ export default function PoliciesNew() {
 
   // Filtered + sorted
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    let list = typed.filter(r =>
-      (r.policyholder_name || r.name || "").toLowerCase().includes(q) ||
-      (r.insurer || "").toLowerCase().includes(q) ||
-      (r.policy_identifier || "").toLowerCase().includes(q)
-    );
+    const q = search.toLowerCase().trim();
+    // Numbers are printed with spaces, dashes and slashes ("MH 02 AB 1234"), so
+    // they also match with every separator taken out on both sides.
+    const squash = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^\p{L}\p{M}\p{N}]/gu, "");
+    const qs = squash(q);
+    let list = !q ? typed : typed.filter(r => {
+      const customer = r.customer_id ? customersById.get(r.customer_id) : undefined;
+      const words = [r.policyholder_name, r.name, r.insurer, r.policy_name, customer?.name];
+      const numbers = [
+        r.policy_identifier, r.extracted_data?.policy_number,
+        r.extracted_data?.vehicle_registration_no, r.client_phone, customer?.phone,
+      ];
+      return words.some(v => (v ?? "").toLowerCase().includes(q)) ||
+        numbers.some(v => String(v ?? "").toLowerCase().includes(q) || (qs.length >= 3 && squash(v).includes(qs)));
+    });
     if (activeTab === "expiring") list = list.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS));
     // Same rule as the stats above: these two tabs are a health verdict.
     const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
@@ -420,7 +429,7 @@ export default function PoliciesNew() {
       if (activeSort === "score") return (a.score ?? 999) - (b.score ?? 999);
       return (a.policyholder_name || a.name || "").localeCompare(b.policyholder_name || b.name || "");
     });
-  }, [typed, search, activeTab, activeSort, nextDays]);
+  }, [typed, search, activeTab, activeSort, nextDays, customersById]);
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all", label: t("policies.tab_all"), count: stats.total },
@@ -733,21 +742,21 @@ export default function PoliciesNew() {
                           {/* Share */}
                           <ShareLinkPopover
                             shareUrl={shareUrl}
-                            shareEnabled={p.share_enabled ?? true}
+                            shareEnabled={p.share_enabled === true}
                             disabled={!shareUrl}
-                            onDisable={async () => {
+                            onToggle={async (enabled) => {
                               const { data: { session } } = await supabase.auth.getSession();
-                              if (!session) return;
+                              if (!session) throw new Error(t("common.not_signed_in"));
                               const res = await fetch(`${getApiBase()}/api/agent/clients/${p.id}/share/toggle`, {
                                 method: "POST",
                                 headers: {
                                   Authorization: `Bearer ${session.access_token}`,
                                   "Content-Type": "application/json",
                                 },
-                                body: JSON.stringify({ enabled: false }),
+                                body: JSON.stringify({ enabled }),
                               });
                               if (!res.ok) throw new Error(t("common.request_failed"));
-                              setRows(prev => prev.map(x => x.id === p.id ? { ...x, share_enabled: false } : x));
+                              setRows(prev => prev.map(x => x.id === p.id ? { ...x, share_enabled: enabled } : x));
                             }}
                           />
 

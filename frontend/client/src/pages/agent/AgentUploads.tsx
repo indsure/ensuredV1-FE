@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Upload, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2, ShieldAlert, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
@@ -15,8 +15,12 @@ import { supabase } from "@/lib/supabase";
 import { tOr } from "@/i18n";
 
 type UploadStatus = {
+  /** Identity of this row. Never the array position: a second upload can start
+   *  while the first is still being read. */
+  key: string;
+  insuranceType: InsuranceType;
   filename: string;
-  status: "pending" | "uploading" | "analyzing" | "completed" | "error";
+  status: "pending" | "uploading" | "analyzing" | "completed" | "error" | "slow";
   clientId?: string;
   jobId?: string;
   error?: string;
@@ -172,6 +176,52 @@ export default function AgentUploads() {
     [stagedFiles, existingNames]
   );
 
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  /**
+   * Waits for one document to be read. A check that could not be asked about is
+   * not a check that failed: a dropped connection or a server restart used to
+   * mark the row as failed while the reading carried on, and the advisor
+   * uploaded it again on a second check. Only the server, or the policy row
+   * itself, can say it failed.
+   */
+  async function followJob(key: string, clientId: string, jobId: string) {
+    const set = (patch: Partial<UploadStatus>) =>
+      setUploads(prev => prev.map((u) => (u.key === key ? { ...u, ...patch } : u)));
+    const maxAttempts = 120; // 10 minutes at 5 second intervals
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      if (!mounted.current) return;
+      let status: string | null = null;
+      let reason: string | undefined;
+      try {
+        const session = await getValidSession(); // refreshed, so a long read outlives the first token
+        const res = await fetch(`${getApiBase()}/api/agent/analyze/status/${jobId}`, {
+          headers: { "Authorization": `Bearer ${session.access_token}` },
+        });
+        if (res.ok) ({ status, error: reason } = await res.json());
+      } catch { /* asked again below and on the next turn */ }
+      if (status === null) {
+        try {
+          const { data } = await supabase
+            .from("clients").select("status, error_message").eq("id", clientId).maybeSingle();
+          if (data?.status === "done") status = "completed";
+          else if (data?.status === "error") { status = "error"; reason = data.error_message ?? undefined; }
+        } catch { /* still offline: keep waiting */ }
+      }
+      if (!mounted.current) return;
+      if (status === "completed") return set({ status: "completed", progress: 100 });
+      if (status === "error") return set({ status: "error", error: reason, progress: 0 });
+      set({ progress: Math.min(30 + attempt * 2, 90) });
+    }
+    // Not a failure: it is still being read, or we cannot reach the server.
+    set({ status: "slow" });
+  }
+
   const processFiles = async (acceptedFiles: File[]) => {
     if (!agent?.agentId) {
       toast({ variant: "destructive", title: t("uploads.error"), description: t("uploads.not_signed_in") });
@@ -196,21 +246,26 @@ export default function AgentUploads() {
     setIsProcessing(true);
 
     // Initialize upload statuses
-    const initialStatuses: UploadStatus[] = acceptedFiles.map(file => ({
+    const batch = `${Date.now()}`;
+    const initialStatuses: UploadStatus[] = acceptedFiles.map((file, i) => ({
+      key: `${batch}-${i}`,
+      insuranceType,
       filename: file.name,
       status: "pending",
       progress: 0
     }));
-    setUploads(initialStatuses);
+    // Anything still being read stays on screen beside the new files.
+    setUploads(prev => [...prev.filter(u => u.status === "analyzing"), ...initialStatuses]);
 
     // Process files sequentially
     for (let i = 0; i < acceptedFiles.length; i++) {
       const file = acceptedFiles[i];
+      const key = initialStatuses[i].key;
       
       try {
         // Update status to uploading
-        setUploads(prev => prev.map((u, idx) =>
-          idx === i ? { ...u, status: "uploading", progress: 10 } : u
+        setUploads(prev => prev.map((u) =>
+          u.key === key ? { ...u, status: "uploading", progress: 10 } : u
         ));
 
         // Get auth token with automatic refresh
@@ -298,65 +353,15 @@ export default function AgentUploads() {
         const { clientId, jobId } = await uploadRes.json();
 
         // Update status to analyzing
-        setUploads(prev => prev.map((u, idx) =>
-          idx === i ? { ...u, status: "analyzing", clientId, jobId, progress: 30 } : u
+        setUploads(prev => prev.map((u) =>
+          u.key === key ? { ...u, status: "analyzing", clientId, jobId, progress: 30 } : u
         ));
 
-        // Poll for completion
-        let attempts = 0;
-        const maxAttempts = 120; // 10 minutes max (5s intervals)
-        
-        const pollInterval = setInterval(async () => {
-          attempts++;
-          
-          try {
-            const statusRes = await fetch(`${getApiBase()}/api/agent/analyze/status/${jobId}`, {
-              headers: {
-                "Authorization": `Bearer ${session.access_token}`
-              }
-            });
-
-            if (!statusRes.ok) {
-              throw new Error(t("uploads.status_failed"));
-            }
-
-            const statusData = await statusRes.json();
-
-            if (statusData.status === "completed") {
-              clearInterval(pollInterval);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "completed", progress: 100 } : u
-              ));
-            } else if (statusData.status === "error") {
-              clearInterval(pollInterval);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "error", error: statusData.error, progress: 0 } : u
-              ));
-            } else {
-              // Still processing - update progress
-              const progress = Math.min(30 + (attempts * 2), 90);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, progress } : u
-              ));
-            }
-
-            if (attempts >= maxAttempts) {
-              clearInterval(pollInterval);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "error", error: t("uploads.timeout"), progress: 0 } : u
-              ));
-            }
-          } catch (pollError: any) {
-            clearInterval(pollInterval);
-            setUploads(prev => prev.map((u, idx) =>
-              idx === i ? { ...u, status: "error", error: pollError.message, progress: 0 } : u
-            ));
-          }
-        }, 5000); // Poll every 5 seconds
+        void followJob(key, clientId, jobId);
 
       } catch (error: any) {
-        setUploads(prev => prev.map((u, idx) =>
-          idx === i ? { ...u, status: "error", error: error.message, progress: 0 } : u
+        setUploads(prev => prev.map((u) =>
+          u.key === key ? { ...u, status: "error", error: error.message, progress: 0 } : u
         ));
       }
     }
@@ -445,7 +450,7 @@ export default function AgentUploads() {
 
   const completedCount = uploads.filter(u => u.status === "completed").length;
   const errorCount = uploads.filter(u => u.status === "error").length;
-  const allDone = uploads.length > 0 && uploads.every(u => u.status === "completed" || u.status === "error");
+  const allDone = uploads.length > 0 && uploads.every(u => u.status === "completed" || u.status === "error" || u.status === "slow");
 
   const handleViewResults = () => {
     if (completedCount === 1) {
@@ -455,7 +460,7 @@ export default function AgentUploads() {
       }
     } else {
       // Life and term policies are listed in their own section.
-      setLocation(insuranceType === "life" || insuranceType === "term" ? "/agent/life" : "/agent/policies");
+      setLocation(uploads.length > 0 && uploads.every(u => u.insuranceType === "life" || u.insuranceType === "term") ? "/agent/life" : "/agent/policies");
     }
   };
 
@@ -803,8 +808,8 @@ export default function AgentUploads() {
             {uploads.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-slate-700">{t("uploads.upload_progress")}</h4>
-                {uploads.map((upload, idx) => (
-                  <div key={idx} className="border border-slate-100 rounded-lg p-4">
+                {uploads.map((upload) => (
+                  <div key={upload.key} className="border border-slate-100 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-slate-400" />
@@ -818,7 +823,7 @@ export default function AgentUploads() {
                     </div>
                     
                     {/* Progress Bar */}
-                    {upload.status !== "error" && upload.status !== "completed" && (
+                    {upload.status !== "error" && upload.status !== "completed" && upload.status !== "slow" && (
                       <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
                         <div
                           className="bg-[#0D9488] h-2 rounded-full transition-all duration-300"
@@ -832,6 +837,7 @@ export default function AgentUploads() {
                       {upload.status === "uploading" && t("uploads.status_uploading")}
                       {upload.status === "analyzing" && t("uploads.status_analyzing")}
                       {upload.status === "completed" && t("uploads.status_done")}
+                      {upload.status === "slow" && t("uploads.status_slow")}
                       {upload.status === "error" && (
                         <span className="text-red-600">{t("uploads.error_prefix", { message: upload.error ?? "" })}</span>
                       )}

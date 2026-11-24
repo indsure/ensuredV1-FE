@@ -13,6 +13,8 @@ import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import ScanNotice, { isReadFromScan } from "@/components/ScanNotice";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
+import { daysUntil, toLifeRow, type LifeSourceRow } from "@/lib/lifeList";
+import { isoDay } from "@/lib/lifePremium";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
 import {
   scoreMotorPolicy, motorScoreCaption, motorScoreVerdict, motorScoreTone,
@@ -114,6 +116,17 @@ function expiryMeta(value: string | null, t: T) {
   return { label: t("policy_detail.days_left", { days }), className: "bg-emerald-50 text-emerald-700" };
 }
 
+function lifePremiumMeta(type: string, data: Record<string, any> | null, t: T, locale: Parameters<typeof intlLocale>[0]) {
+  const row = toLifeRow({ id: "", insurance_type: type, extracted_data: data } as LifeSourceRow, new Date());
+  const grey = "bg-slate-100 text-slate-600";
+  if (!row?.due) return { label: t(`life.no_due_${row?.noDue ?? "not_read"}`), className: grey };
+  const date = row.due.date.toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", year: "numeric" });
+  if (row.due.kind === "passed") return { label: t("life.due_passed", { date }), className: "bg-amber-50 text-amber-700" };
+  const days = daysUntil(isoDay(row.due.date), new Date());
+  const soon = row.due.kind === "scheduled" && days !== null && days <= 30;
+  return { label: t("life.due_next", { date }), className: soon ? "bg-amber-50 text-amber-700" : grey };
+}
+
 async function copyText(text: string, title: string, t: T) {
   try {
     await navigator.clipboard.writeText(text);
@@ -152,6 +165,7 @@ export default function PolicyDetail() {
   const [readFromScan, setReadFromScan] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareEnabled, setShareEnabled] = useState(false);
   const [fileMeta, setFileMeta] = useState<FileRow | null>(null);
   const [notes, setNotes] = useState("");
   const [clientMeta, setClientMeta] = useState<ClientMeta>({ email: "", phone: "" });
@@ -184,7 +198,11 @@ export default function PolicyDetail() {
         : null,
     [insuranceType, extractedData],
   );
-  const expiry = expiryMeta(policy?.policy_end_date ?? null, t);
+  /* Life and term: `expiry_date` is the maturity or cover end date, so the badge
+     shows the next premium instead, the same reading as the Life list. */
+  const expiry = insuranceType === "life" || insuranceType === "term"
+    ? lifePremiumMeta(insuranceType, extractedData, t, locale)
+    : expiryMeta(policy?.policy_end_date ?? null, t);
   const isDataEntry = isDataEntryType(insuranceType);
   /** The list this policy is in: life and term have their own section. */
   const listPath = insuranceType === "life" || insuranceType === "term" ? "/agent/life" : "/agent/policies";
@@ -227,7 +245,8 @@ export default function PolicyDetail() {
         insurer_name: clientData.insurer,
         product_name: clientData.policy_name,
         product_name_suggested: clientData.policy_name_suggested ?? null,
-        policy_number: clientData.policy_name,
+        // The number the advisor typed. Never the plan name: this is printed on the PDF.
+        policy_number: clientData.policy_identifier,
         status: clientData.status,
         error_message: clientData.error_message ?? null,
         score: clientData.score,
@@ -260,6 +279,7 @@ export default function PolicyDetail() {
       
       // Set share token
       setShareToken(clientData.share_token);
+      setShareEnabled(clientData.share_enabled === true);
       
       setNotes((clientData as any).agent_notes || "");
       setClientMeta({
@@ -380,6 +400,7 @@ export default function PolicyDetail() {
         }),
       );
       setShareToken(newToken);
+      setShareEnabled(true);
 
       // Not the server's shareUrl: that is built from the API host (api.indsure.in), which serves
       // no pages, so the customer got a 404. The report page lives on this site's origin.
@@ -564,7 +585,7 @@ export default function PolicyDetail() {
                   copy an address that answers "report_not_ready" to their
                   customer. The Share button above has always been gated this
                   way; this block was not. */}
-              {shareToken && canShare && (
+              {shareToken && shareEnabled && canShare && (
                 <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#0D9488]/10 bg-slate-50 p-4">
                   <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{shareLink}</div>
                   <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, t("policy_detail.report_link_copied"), t)}>

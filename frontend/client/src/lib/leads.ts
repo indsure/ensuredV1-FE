@@ -14,6 +14,7 @@
 import { supabase } from "@/lib/supabase";
 import { assertCrmWritable } from "@/lib/entitlement";
 import { createCustomer } from "@/lib/customers";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 /**
  * Table name is `agent_leads`, NOT `leads`. `leads` is the pre-existing PUBLIC
@@ -109,13 +110,15 @@ export type LeadDraft = {
 /* ── CRUD ──────────────────────────────────────────────────────────────── */
 
 export async function fetchLeads(agentId: string): Promise<Lead[]> {
-  const { data, error } = await supabase
-    .from(LEADS_TABLE)
-    .select("*")
-    .eq("agent_id", agentId)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Lead[];
+  return fetchAllRows<Lead>((from, to) =>
+    supabase
+      .from(LEADS_TABLE)
+      .select("*")
+      .eq("agent_id", agentId)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, to)
+  );
 }
 
 export async function fetchLead(agentId: string, id: string): Promise<Lead | null> {

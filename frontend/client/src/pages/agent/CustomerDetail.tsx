@@ -4,6 +4,7 @@ import { Calculator, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Trash2, X }
 import { format } from "date-fns";
 
 import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { BackLink } from "@/components/agent/BackLink";
@@ -57,12 +58,15 @@ export default function CustomerDetail() {
     try {
       const [cust, polsRes, calcsRes] = await Promise.all([
         fetchCustomer(agent.agentId, id),
-        supabase
-          .from("clients")
-          .select(PORTFOLIO_POLICY_COLUMNS)
-          .eq("agent_id", agent.agentId)
-          .eq("status", "done")
-          .order("created_at", { ascending: false }),
+        fetchAllRows((from, to) =>
+          supabase
+            .from("clients")
+            .select(PORTFOLIO_POLICY_COLUMNS)
+            .eq("agent_id", agent.agentId!)
+            .eq("status", "done")
+            .order("created_at", { ascending: false })
+            .order("id")
+            .range(from, to)),
         supabase
           .from("calculator_reports")
           .select("id, created_at, result_data")
@@ -71,11 +75,10 @@ export default function CustomerDetail() {
           .limit(10),
       ]);
       if (!cust) throw new Error(t("customer_detail.not_found"));
-      if (polsRes.error) throw new Error(polsRes.error.message);
       // Calculator history is best-effort — never blocks the portfolio.
       setCalcReports(calcsRes.error ? [] : (calcsRes.data ?? []));
 
-      const all = (polsRes.data ?? []) as PortfolioPolicy[];
+      const all = polsRes as unknown as PortfolioPolicy[];
       setCustomer(cust);
       setPolicies(all.filter(p => p.customer_id === id));
       setUntagged(all.filter(p => !p.customer_id));
@@ -289,7 +292,7 @@ export default function CustomerDetail() {
                 </p>
               )}
               {stats.totalPremium != null && (
-                <p className="mt-2 text-[11px] text-slate-400 font-medium">{t("customer_detail.premium_extracted", { amount: formatAmount(stats.totalPremium) })}</p>
+                <p className="mt-2 text-[11px] text-slate-400 font-medium">{t("customer_detail.premium_yearly", { amount: formatAmount(Math.round(stats.totalPremium)), priced: stats.pricedCount, total: stats.inForceCount })}</p>
               )}
             </div>
             <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-5 border-l-4 border-l-amber-400">
