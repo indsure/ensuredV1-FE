@@ -8,6 +8,7 @@ import { saveFile, fileUrl } from "./store.js";
 import { docInUse, deleteDoc, deleteReceipt, discardDraftYear } from "./deletes.js";
 import { OcrReview, DocPane, PdfAttach } from "./review.jsx";
 import { dropCands } from "./confidence.js";
+import { GstCard } from "./gstside.jsx";
 import { instalmentTable } from "./extract-extra.js";
 import { docText, loadTexts } from "./store.js";
 import { useState, useEffect, useRef } from "react";
@@ -198,6 +199,7 @@ function Overview({ p, term, go, openDoc }) {
           </Table>
         </Card>
       ))}
+      <GstCard policyId={p.id} customerId={p.customerId} term={term} />
       {(v.otherDetails || []).length > 0 && (
         <Card title="Other details">
           <Table><thead><tr><th>Detail</th><th>What the policy says</th></tr></thead>

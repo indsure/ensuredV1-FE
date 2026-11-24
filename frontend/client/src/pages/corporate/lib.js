@@ -1,4 +1,5 @@
 // Pure helpers: formatting, the four separate state axes, FX lookup, report building, CSV.
+import { gstRow } from "./gst.js";
 import { TODAY, FIELDS, FIELD, isWC } from "./data.js";
 
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -176,7 +177,7 @@ export function businessRows(db, f) {
       currency: v.currency, sumInsured: +v.sumInsured || 0, grossPremium: +v.grossPremium || 0, gst: +v.gst || 0, stampDuty: +v.stampDuty || 0, netPremium: +v.netPremium || 0,
       brokeragePct: +v.brokeragePct || 0, brokerage, presetNote: t.brokerageSnap ? `Preset v${t.brokerageSnap.version}` : "Entered manually",
       fxMonth: month, fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
-      grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
+      grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured), ...gstRow(v, toInr),
       ref: c.source === "Referral" ? c.referral || "Referral" : "Direct business", location: c.city,
     };
   };
@@ -206,7 +207,7 @@ export function businessRows(db, f) {
       currency: v.currency, sumInsured: +v.sumInsured || 0, grossPremium: +v.grossPremium || 0, gst: +v.gst || 0, stampDuty: +v.stampDuty || 0, netPremium: +v.netPremium || 0,
       brokeragePct: +v.brokeragePct || 0, brokerage, presetNote: t.brokerageSnap ? `Preset v${t.brokerageSnap.version}` : "Entered manually",
       fxMonth: month, fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
-      grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured),
+      grossInr: toInr(v.grossPremium), gstInr: toInr(v.gst), netInr: toInr(v.netPremium), brokerageInr: toInr(brokerage), siInr: toInr(v.sumInsured), ...gstRow(v, toInr),
       ref: c.source === "Referral" ? c.referral || "Referral" : "Direct business", location: c.city,
     });
   }
@@ -222,7 +223,7 @@ export function businessRows(db, f) {
       const inr = (x) => (fx ? r2(+x * fx.rate) : null);
       rows.push({ ...base, rowKey: `${t.id}:${s.version}`, nr: "Fleet change", basisDate: ch.effDate, month: ch.effDate.slice(0, 7), fxMonth: ch.effDate.slice(0, 7), fxRate: fx ? fx.rate : null, fxVersion: fx ? fx.version : null,
         sumInsured: 0, grossPremium: +ch.premiumAdj || 0, gst: 0, stampDuty: 0, netPremium: +ch.premiumAdj || 0, brokerage: +ch.brokerageAdj || 0, presetNote: "Insurer's figure",
-        grossInr: inr(ch.premiumAdj || 0), gstInr: 0, netInr: inr(ch.premiumAdj || 0), brokerageInr: inr(ch.brokerageAdj || 0), siInr: 0 });
+        grossInr: inr(ch.premiumAdj || 0), gstInr: 0, netInr: inr(ch.premiumAdj || 0), brokerageInr: inr(ch.brokerageAdj || 0), siInr: 0, ...gstRow({}) });
     }
   }
   rows.sort((a, b) => a.basisDate.localeCompare(b.basisDate) || a.controlNo.localeCompare(b.controlNo));

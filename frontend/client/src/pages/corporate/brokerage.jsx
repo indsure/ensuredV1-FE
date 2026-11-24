@@ -5,6 +5,8 @@ import { fmtDate, fmtMoney, fmtNum, isNum, r2, nowIso, fxRate, brokerageOf, brok
 import { useApp, Pill, Card, Empty, Btn, Labeled, Select, Table, DocModal, DateInput, Tip, AskFirst } from "./ui.jsx";
 import { deleteRemittance } from "./deletes.js";
 import { brokerageQuery } from "./docs.js";
+import { gstRow, gstTotals } from "./gst.js";
+import { GstTotalsCard } from "./gstside.jsx";
 
 const STATUS_TONE = { Paid: "good", "Short paid": "warn", "Not received": "bad", Overpaid: "info" };
 
@@ -20,7 +22,7 @@ export function brokerageLedger(db) {
     const out = r2(expected - received);
     const status = received === 0 ? "Not received" : out > 0.5 ? "Short paid" : out < -0.5 ? "Overpaid" : "Paid";
     const fx = fxRate(db, (v.bookDate || v.issueDate || TODAY).slice(0, 7), v.currency);
-    return { t, p, c, insurerId: p.insurerId, policyNo: v.policyNo, controlNo: p.controlNo, insured: c.name, type: p.type, currency: v.currency, gross: brokerageBase(v), onNet: !!v.brokerageOnNet, pct: +v.brokeragePct || 0, expected, received, out, status, pays, rate: fx?.rate ?? null };
+    return { t, p, c, insurerId: p.insurerId, policyNo: v.policyNo, controlNo: p.controlNo, insured: c.name, type: p.type, currency: v.currency, gross: brokerageBase(v), onNet: !!v.brokerageOnNet, pct: +v.brokeragePct || 0, expected, received, out, status, pays, rate: fx?.rate ?? null, ...gstRow(v, (x) => (fx ? r2(x * fx.rate) : null)) };
   });
 }
 
@@ -97,6 +99,7 @@ export function BrokerageView() {
         <Labeled label="Insurer" htmlFor="bk-ins"><Select id="bk-ins" value={ins} onChange={setIns} placeholder="All insurers" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled>
         <Labeled label="Status" htmlFor="bk-st"><Select id="bk-st" value={st} onChange={setSt} placeholder="All" options={["Not received", "Short paid", "Paid", "Overpaid"]} /></Labeled>
       </div>
+      <GstTotalsCard T={gstTotals(all)} title="GST on brokerage" only="brokerage" />
       {!groups.length && <Empty title="No policies match these filters">Clear a filter to see more.</Empty>}
       {groups.map(({ i, rows: gr, allRows }) => {
         const owed = allRows.filter((r) => r.out > 0.5);
@@ -109,12 +112,13 @@ export function BrokerageView() {
               <Btn disabled={!owed.length} why="Nothing outstanding" onClick={() => setDoc(brokerageQuery({ insurer: i.name, lines: owed.map((r) => ({ ...r, refs: r.pays.map((x) => x.ref).join(", ") })) }))}>Draft query email{owed.length ? ` (${owed.length})` : ""}</Btn></>}>
             {paying === i.id && <PaymentForm insurer={i} rows={allRows} onDone={() => setPaying(null)} />}
             {gr.length > 0 && (
-              <Table><thead><tr><th>Policy</th><th>Insured</th><th className="num">Brokerage on<Tip k="Brokerage (%)" /></th><th className="num">Brokerage due</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
+              <Table><thead><tr><th>Policy</th><th>Insured</th><th className="num">Brokerage on<Tip k="Brokerage (%)" /></th><th className="num">Brokerage due</th><th className="num">GST on brokerage</th><th className="num">Received</th><th className="num">Outstanding</th><th>Status</th></tr></thead>
                 <tbody>{gr.map((r) => <tr key={r.t.id}>
                   <td>{r.policyNo}<div className="small muted">{r.controlNo}</div></td>
                   <td>{r.insured}<div className="small muted">{r.type}</div></td>
                   <td className="num">{fmtMoney(r.gross, r.currency)}<div className="small muted">{r.onNet ? "net" : "gross"}, at {fmtNum(r.pct)}%</div></td>
                   <td className="num">{fmtMoney(r.expected, r.currency)}</td>
+                  <td className="num">{r.brokGstRec ? <>{fmtMoney(r.brokGstRec, r.currency)}<div className="small muted">Rec GST</div></> : r.brokGstPay ? <>{fmtMoney(r.brokGstPay, r.currency)}<div className="small muted">Pay GST</div></> : "--"}</td>
                   <td className="num">{fmtMoney(r.received, r.currency)}{r.pays.length > 0 && <div className="small muted">{r.pays.map((x) => `${x.ref}, ${fmtDate(x.date)}`).join("; ")}</div>}</td>
                   <td className="num">{r.out > 0.5 ? <strong className="bad-text">{fmtMoney(r.out, r.currency)}</strong> : fmtMoney(Math.max(0, r.out), r.currency)}</td>
                   <td><Pill tone={STATUS_TONE[r.status]}>{r.status}</Pill></td>

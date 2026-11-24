@@ -9,6 +9,8 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { judgeField, judgeAny, ocrSettings, pickCandidates, logEntry, addLog, PICK_LABELS } from "./confidence.js";
 import { StateChip, SourceLine, CandidatePicker, PdfView } from "./picks.jsx";
 import { crossChecks } from "./checks.js";
+import { GstPair } from "./gstside.jsx";
+import { GST_KEYS, cleanGst, gstErrors } from "./gst.js";
 import { insurerKey } from "./tidy.js";
 
 // Policy number and sum insured get the full scoring, a pick list whenever they are not green, and a log row
@@ -187,6 +189,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     // Booked date starts as the issue date and stays editable.
     if (!vals.bookDate && vals.issueDate) { vals.bookDate = vals.issueDate; srcs.bookDate = { conf: "issue" }; }
     vals.brokerageOnNet = !!initial.brokerageOnNet;
+    GST_KEYS.forEach((k) => { vals[k] = initial[k] ?? ""; });
     // A policy that ends when the voyage or transit completes has no calendar end date.
     vals.noFixedEnd = initial.noFixedEnd ?? (!vals.riskEnd && !!fixture.info?.noFixedEnd);
     vals.otherDetails = initial.otherDetails || fixture.other || [];
@@ -289,6 +292,7 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
   const setNet = (v) => { setVals((p) => ({ ...p, netPremium: v })); setSrcs((p) => ({ ...p, netPremium: { conf: "calc" } })); };
   const lowConf = FIELDS.filter((f) => srcs[f.key]?.conf === "low" && !srcs[f.key]?.edited && !srcs[f.key]?.checked);
   const blockers = [...missing.map((f) => `${f.label} is missing`), ...Object.entries(errors).map(([k, e]) => `${FIELD[k].label}: ${e}`)];
+  Object.values(gstErrors(vals)).forEach((e) => blockers.push(e));
   if (!brokOk) blockers.push("Tick the brokerage confirmation");
   if (twinPolicy) blockers.push(`Policy number ${vals.policyNo} is already in your register as ${twinPolicy.controlNo}`);
   if (lowConf.length) blockers.push(`${lowConf.length} low-confidence value${lowConf.length > 1 ? "s" : ""} not yet checked`);
@@ -302,6 +306,10 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
     FIELDS.forEach((f) => { const v = vals[f.key]; clean[f.key] = NUMERIC.has(f.key) && isNum(v) ? +v : v; });
     const snap = srcs.brokeragePct?.conf === "preset" ? { presetId: srcs.brokeragePct.presetId, version: srcs.brokeragePct.version, pct: +vals.brokeragePct } : null;
     clean.noFixedEnd = !!vals.noFixedEnd; if (clean.noFixedEnd) clean.riskEnd = "";
+    // Kept beside the standard fields: these were once shown here but lost on save.
+    clean.brokerageOnNet = !!vals.brokerageOnNet;
+    clean.otherDetails = (vals.otherDetails || []).filter((o) => String(o.label || "").trim() || String(o.value || "").trim());
+    Object.assign(clean, cleanGst(vals));
     clean.sumInsuredNA = policyType ? isWC(policyType) : !!initial.sumInsuredNA;
     return { values: clean, sources: srcs, brokerageConfirmed: brokOk, brokerageSnap: snap, ...(askPayment && paid.how === "full" ? { payment: { date: paid.date, mode: paid.mode, ref: paid.ref.trim() } } : {}) };
   };
@@ -414,6 +422,8 @@ export function OcrReview({ fixture, initial = {}, initialSources = {}, initialB
                   </div>
                 );
               })}
+              {g === "Amounts" && <GstPair kind="premium" idBase="rv-gst" vals={vals} showErr={tried} onChange={(p) => setVals((x) => ({ ...x, ...p }))} />}
+              {g === "Brokerage" && <GstPair kind="brokerage" idBase="rv-gst" vals={vals} showErr={tried} onChange={(p) => setVals((x) => ({ ...x, ...p }))} />}
               {g === "Brokerage" && (
                 <div className="brok">
                   <p className="small">{preset ? <>Your rate for {ins?.name}, {policyType}: <strong>{preset.pct}%</strong>. You can change it for this policy.</> : <>No saved rate for this insurer and policy type, so please enter it.</>}</p>

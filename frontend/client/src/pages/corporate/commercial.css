@@ -453,3 +453,7 @@
 .ic-root .cf-set-amber { border-color: #FDE68A; background: #FFFEF7; }
 .ic-root .cf-set-red { border-color: #FECACA; background: #FFFBFB; }
 .ic-root .cf-issue { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; padding: 8px 10px; border: 1px solid #FECACA; background: #FEF2F2; border-radius: 12px; color: #7F1D1D; }
+
+/* Rec GST / Pay GST */
+.ic-root .gst-pair { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--s200); border-radius: 14px; padding: 12px 14px; background: var(--white); margin-top: 10px; max-width: 520px; }
+.ic-root .gst-pair .fld { max-width: 320px; }

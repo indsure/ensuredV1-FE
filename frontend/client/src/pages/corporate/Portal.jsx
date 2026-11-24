@@ -17,6 +17,8 @@ import { placeOf } from "./places.js";
 import { duplicateInsurers, insurerUse, isUnused, mergeInsurer, mergeBranch, sameInsurer } from "./tidy.js";
 import { irdaiCsv } from "./irdai.js";
 import { ocrSettings, OCR_DEFAULTS, POINTS, POINT_WORDS, PICK_LABELS, localStamp } from "./confidence.js";
+import { GstTotalsCard } from "./gstside.jsx";
+import { gstTotals, GST_COLUMNS } from "./gst.js";
 import { customerUse, deleteCustomer, mergeCustomer } from "./deletes.js";
 import { useState, useEffect, useMemo, useRef } from "react";
 
@@ -689,10 +691,10 @@ function BusinessReport() {
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   const missingRate = [...new Set(rows.filter((r) => r.fxRate == null).map((r) => `${r.currency} ${fmtMonth(r.fxMonth)}`))];
   const filterText = [`Vertical: ${f.vertical}`, f.insurer && `Insurer: ${insurerOf(db, f.insurer).name}`, f.dept && `Department: ${f.dept}`, f.cse && `CSC: ${teamName(db, f.cse)}`, f.rm && `RM: ${teamName(db, f.rm)}`, f.nr && `N/R: ${f.nr}`, f.currency && `Currency: ${f.currency}`].filter(Boolean).join("; ");
-  const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSC", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Gross premium", "GST", "Stamp duty", "Net premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Gross premium INR", "GST INR", "Net premium INR", "Brokerage INR"];
+  const header = ["Group", "Control no", "Policy no", "Cust code", "Insured (customer)", "Vertical", "Department", "Policy type", "Insurer", "Insurer branch", "CSC", "RM", "N/R", `Basis date (${basisLabel})`, "Proposal date", "Issue date", "Risk start", "Risk end", "Business booked", "Currency", "Sum insured", "Gross premium", "GST", "Stamp duty", "Net premium", "Brokerage %", "Brokerage", "Brokerage source", "FX month", "FX rate (demo)", "FX rate version", "Gross premium INR", "GST INR", "Net premium INR", "Brokerage INR", ...GST_COLUMNS.map(([, l]) => l), ...GST_COLUMNS.map(([, l]) => `${l} INR`)];
   const csv = () => toCsv([
     ["Report", LIVE ? "Business report, IndSure Commercial beta" : "Business report, IndSure Commercial demo prototype (fictional data)"], ["Financial year", f.useRange ? "Custom range" : `F.Y. ${fy}`], ["Period", `${from} to ${to}`], ["Date basis", basisLabel], ["Filters", filterText], ["Grouping", GROUPINGS.find((x) => x.key === g).label], ["Printed", printedAt.replace("T", " ")], ["Excluded drafts", String(drafts)], ["FX", "Demo monthly rates, not market data. Month follows the date basis (open decision)."]],
-    header, groups.flatMap((gr) => gr.rows.map((r) => [gr.key, r.controlNo, r.policyNo, r.custCode, r.customer, r.vertical, r.dept, r.type, r.insurer, r.branch, r.cse, r.rm, r.nr, r.basisDate, r.proposalDate, r.issueDate, r.riskStart, r.riskEnd, r.bookDate, r.currency, r.sumInsured, r.grossPremium, r.gst, r.stampDuty, r.netPremium, r.brokeragePct, r.brokerage, r.presetNote, r.fxMonth, r.fxRate ?? "NO RATE", r.fxVersion ?? "", r.grossInr ?? "", r.gstInr ?? "", r.netInr ?? "", r.brokerageInr ?? ""])).concat([["TOTAL (INR, rows with a rate)", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", T.grossInr, T.gstInr, T.netInr, T.brokerageInr]]));
+    header, groups.flatMap((gr) => gr.rows.map((r) => [gr.key, r.controlNo, r.policyNo, r.custCode, r.customer, r.vertical, r.dept, r.type, r.insurer, r.branch, r.cse, r.rm, r.nr, r.basisDate, r.proposalDate, r.issueDate, r.riskStart, r.riskEnd, r.bookDate, r.currency, r.sumInsured, r.grossPremium, r.gst, r.stampDuty, r.netPremium, r.brokeragePct, r.brokerage, r.presetNote, r.fxMonth, r.fxRate ?? "NO RATE", r.fxVersion ?? "", r.grossInr ?? "", r.gstInr ?? "", r.netInr ?? "", r.brokerageInr ?? "", ...GST_COLUMNS.map(([k]) => r[k] || ""), ...GST_COLUMNS.map(([k]) => (r[k] ? r[`${k}Inr`] ?? "NO RATE" : ""))])).concat([["TOTAL (INR, rows with a rate)", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", T.grossInr, T.gstInr, T.netInr, T.brokerageInr, "", "", "", "", ...GST_COLUMNS.map(([k]) => gstTotals(rows).inr[k])]]));
   const finalize = () => {
     update((d) => { d.snapshots.push({ id: `S${++d.seq}`, at: nowIso(), by: who, title: `Business report, ${f.useRange ? `${from} to ${to}` : `F.Y. ${fy}`}, ${basisLabel}`, basisLabel, filterText, grouping: GROUPINGS.find((x) => x.key === g).label, rows, totals: T, groupKey: g }); log(d, { action: "Report finalized", detail: `Business report frozen with ${rows.length} rows and the FX rates used at the time.` }); });
     toast("Report finalized. Later FX edits will not change it");
@@ -733,6 +735,7 @@ function BusinessReport() {
               </div>
             ))}
             <TotalsBlock T={T} consistent={consistent} />
+            <GstTotalsCard T={gstTotals(rows)} />
           </>
         )}
       </div>
