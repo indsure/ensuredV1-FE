@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, CheckCircle2, Copy, Loader2, MessageCircle, Share2 } from "lucide-react";
 
 import { apiFetch } from "@/lib/api";
 import { type ComparisonResult } from "@/lib/wordingProfile";
+import { useAgent } from "@/context/AgentContext";
+import { fetchCustomers, type Customer } from "@/lib/customers";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
@@ -35,6 +37,12 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
   const [uuid, setUuid] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const { agent } = useAgent();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerId, setCustomerId] = useState("");
+  useEffect(() => {
+    if (agent?.agentId && !agent.limitedFree) fetchCustomers(agent.agentId).then(setCustomers).catch(() => {});
+  }, [agent?.agentId, agent?.limitedFree]);
 
   const shareUrl = uuid ? `${window.location.origin}/compare/report/${uuid}` : null;
 
@@ -45,7 +53,7 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
       const res = await apiFetch("/api/compare/save-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ result: data, profiles }),
+        body: JSON.stringify({ result: data, profiles, customer_id: customerId || undefined }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("compare.save_failed"));
       const json = await res.json();
@@ -73,7 +81,13 @@ export default function ComparisonShareBar({ data, profiles }: Props) {
 
   if (!uuid) {
     return (
-      <div>
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
+        {customers.length > 0 && (
+          <select aria-label={t("book.customer")} value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:max-w-[240px]">
+            <option value="">{t("book.no_customer")}</option>
+            {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
         <button
           onClick={save}
           disabled={saving}

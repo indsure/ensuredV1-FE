@@ -3017,6 +3017,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       claim_type: "Type of claim",
     };
     const MONEY = new Set(["claimed_amount", "settled_amount"]);
+    const UUID_LIKE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     const sets: string[] = [];
     const vals: any[] = [];
@@ -3037,7 +3038,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       vals.push(value);
       sets.push(`${key} = $${vals.length}`);
     }
-    if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
+    const policyId = req.body?.client_id;
+    const linkPolicy = policyId === null || policyId === "" || (typeof policyId === "string" && UUID_LIKE.test(policyId));
+    if (sets.length === 0 && !linkPolicy) return res.status(400).json({ error: "Nothing to update" });
+    if (sets.length === 0) sets.push("updated_at = now()");
 
     try {
       const before = await claimForAgent(req.params.id, agentId);
@@ -3061,12 +3065,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       vals.push(req.params.id, agentId);
       const upd = await pool.query(
-        `UPDATE claims SET ${sets.join(", ")}, updated_at = now()
+        `UPDATE claims SET ${sets.filter((x) => !x.startsWith("updated_at")).map((x) => x + ", ").join("")}updated_at = now()
           WHERE id = $${vals.length - 1} AND agent_id = $${vals.length}
           RETURNING *`,
         vals
       );
       if (upd.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+      if (linkPolicy) {
+        const l = await pool.query(
+          `UPDATE claims SET client_id = $1::uuid WHERE id = $2 AND agent_id = $3
+              AND ($1::uuid IS NULL OR EXISTS (SELECT 1 FROM clients WHERE id = $1::uuid AND agent_id = $3)) RETURNING client_id`,
+          [policyId || null, req.params.id, agentId]
+        );
+        if (l.rows[0]) upd.rows[0].client_id = l.rows[0].client_id;
+      }
 
       // Compare loosely: numerics come back from pg as strings, and an
       // unchanged field resubmitted by the form must not fake a change.
@@ -7684,7 +7696,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   registerPaymentRoutes(app, { getUserIdFromToken });
 
   // Edits to the advisor's own book: health corrections, adding by hand, renewals, merges.
-  registerBookRoutes(app, { verifyJwt, recordAccess, supabaseAdmin, pdfBucket: PDF_BUCKET, ownedStorageObject });
+  registerBookRoutes(app, { verifyJwt, recordAccess, supabaseAdmin, pdfBucket: PDF_BUCKET, ownedStorageObject,
+    oneFile: [signedInBeforeUpload, (req: any, res: any, next: () => void) => upload.single("file")(req, res, (err: any) => {
+      if (err) return res.status(400).json({ error: "UPLOAD", message: "The file could not be uploaded. It must be under 25MB." });
+      next();
+    })] });
 
   log.info("routes registered");
   return _httpServer;

@@ -54,6 +54,8 @@ test("health facts: report and columns move together, score stays, old values ke
   assert.equal(next.__corrected_on, "2026-11-24");
   assert.equal(next.__internal.corrections[0].was["policy_timeline.policy_expiry_date"], "2026-01-01");
   assert.equal(u.params[2], false, "insurer was not sent, so it is not written");
+  assert.equal(JSON.parse(u.params[9])._rev, 1);
+  assert.equal((await saveHealthFacts(health({ extracted_data: { _rev: 4 } }), A, P, { premium: 1 }, new Date(), 3)).status, 409, "an older edit is refused");
 });
 
 test("health facts: refused while being read, for other types, and for unreadable values", async () => {
@@ -184,4 +186,25 @@ test("hand-added policies start with sharing off", async () => {
   const d = db([[/^INSERT INTO clients/, () => [{ id: P }]]]);
   await addManualPolicy(d, A, { type: "motor", policyholder_name: "R" }, { deriveSharedColumns: deriveSharedColumns as any });
   assert.match(d.calls[0].sql, /customer_id, share_enabled, created_at\).*\$13, false, NOW\(\)/);
+});
+
+test("attach: own policy without a file only; the mark of a typed policy stays until it is read", async () => {
+  const { attachDocument } = await import("../services/bookStore");
+  const { shareDetails } = await import("../../../shared/dataEntryShare");
+  const mk = (row: any, hit = 1) => db([
+    [/^SELECT status, pdf_url/, ([id, ag]) => (id === P && ag === A ? [row] : [])],
+    [/^UPDATE clients SET pdf_url/, () => ({ rows: [], rowCount: hit })],
+  ]);
+  const file = { name: "a.PDF", size: 9 };
+  const put: string[] = [];
+  const store = { put: async (p: string) => { put.push(p); return "u"; } };
+  assert.equal((await attachDocument(mk({ status: "done", pdf_url: null }), B, P, file, store)).status, 404);
+  assert.equal((await attachDocument(mk({ status: "done", pdf_url: "x" }), A, P, file, store)).status, 409);
+  assert.equal((await attachDocument(mk({ status: "processing", pdf_url: null }), A, P, file, store)).status, 409);
+  assert.equal((await attachDocument(mk({ status: "done", pdf_url: null }), A, P, { name: "a.html", size: 1 }, store)).status, 400);
+  assert.deepEqual(put, [], "nothing stored for a refused file");
+  assert.equal((await attachDocument(mk({ status: "done", pdf_url: null }), A, P, file, store)).status, 200);
+  assert.deepEqual(put, [`${A}/${P}.pdf`]);
+  assert.equal(shareDetails({ insurance_type: "motor", filename: "a.pdf", extracted_data: { insurer: "X", __by_hand: true } })!.byHand, true);
+  assert.deepEqual(Object.keys(shareDetails({ insurance_type: "motor", filename: "a.pdf", extracted_data: { insurer: "X", __by_hand: true } })!.fields), ["insurer"]);
 });

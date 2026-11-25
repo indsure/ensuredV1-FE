@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { CalendarPlus, Download, Loader2, Shapes, Sparkles } from "lucide-react";
+import { CalendarPlus, Download, Loader2, Paperclip, Shapes, Sparkles } from "lucide-react";
 
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog";
 import { selectCls } from "@/components/agent/HealthFactsForm";
@@ -9,7 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
-import { downloadPolicyFile, readAsType } from "@/lib/bookApi";
+import UnlockPdfDialog from "@/components/UnlockPdfDialog";
+import { needsPassword } from "@/lib/unlockPdf";
+import { attachPolicyFile, downloadPolicyFile, readAsType } from "@/lib/bookApi";
 import type { DraftTarget } from "@/lib/draftMessage";
 import { TYPE_META, typeLabel, type InsuranceType } from "@/lib/insuranceTypes";
 import { changeLifeType } from "@/lib/lifeApi";
@@ -45,6 +47,28 @@ export default function PolicyBookActions({ id, type, hasFile, filename, reading
     }
   }
 
+  const picker = useRef<HTMLInputElement>(null);
+  const [locked, setLocked] = useState<File | null>(null);
+  async function attach(file: File) {
+    if (file.size > 25 * 1024 * 1024) return toast({ variant: "destructive", title: t("uploads.too_large"), description: t("uploads.too_large_desc", { name: file.name }) });
+    setBusy("attach");
+    try {
+      await attachPolicyFile(id, file);
+      toast({ variant: "success", title: t("book.attached"), description: t("book.attached_desc") });
+      onChanged();
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: t("book.attach_failed"), description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(null);
+    }
+  }
+  async function pick(file: File | undefined) {
+    if (picker.current) picker.current.value = "";
+    if (!file) return;
+    if (await needsPassword(file)) setLocked(file);
+    else await attach(file);
+  }
+
   async function changeType() {
     if (!to) return;
     setBusy("type");
@@ -64,10 +88,17 @@ export default function PolicyBookActions({ id, type, hasFile, filename, reading
   const btn = "w-full border-slate-200 bg-white";
   return (
     <>
-      <Button variant="outline" className={btn} disabled={!hasFile || busy === "download"} onClick={download}>
+      <UnlockPdfDialog file={locked} onUnlocked={(_, open) => { setLocked(null); void attach(open); }} onCancel={() => setLocked(null)} />
+      <input ref={picker} type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic,.heif" className="hidden" aria-label={t("book.attach")} onChange={(e) => void pick(e.target.files?.[0])} />
+      {!hasFile && !reading && (
+        <Button variant="outline" className={btn} disabled={busy === "attach"} onClick={() => picker.current?.click()}>
+          {busy === "attach" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Paperclip className="mr-2 h-4 w-4" />} {t("book.attach")}
+        </Button>
+      )}
+      {hasFile && <Button variant="outline" className={btn} disabled={busy === "download"} onClick={download}>
         {busy === "download" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-        {t(hasFile ? "book.original" : "policies.no_pdf")}
-      </Button>
+        {t("book.original")}
+      </Button>}
       <Button variant="outline" className={btn} onClick={() => setDraftOpen(true)}>
         <Sparkles className="mr-2 h-4 w-4" /> {t("policies.draft_whatsapp")}
       </Button>

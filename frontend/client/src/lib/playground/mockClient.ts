@@ -618,10 +618,18 @@ function playgroundBookApi(url: string, init?: any): Response | null {
       customer_id: body.customer_id || null, insurer: f.insurer ?? null, policy_name: f.policy_name ?? f.plan_name ?? null,
       expiry_date: f.expiry_date ?? f.policy_expiry_date ?? f.maturity_date ?? f.cover_end_date ?? f.trip_end_date ?? f.project_completion_date ?? null,
       sum_insured: f.sum_insured ?? f.sum_assured ?? f.idv ?? f.contract_value ?? null, score: null, report_data: null,
-      extracted_data: { ...f, policyholder_name: body.policyholder_name, policy_number: body.policy_number || null },
+      extracted_data: { ...f, policyholder_name: body.policyholder_name, policy_number: body.policy_number || null, __by_hand: true },
       filename: "Added by hand", file_size: 0, pdf_url: null, share_token: null, share_enabled: false, views: 0, created_at: new Date().toISOString(),
     });
     return json({ ok: true, id });
+  }
+  const doc = at(/\/api\/agent\/policies\/([^/]+)\/document/);
+  if (doc) {
+    const row = find(st.clients, doc);
+    if (!row) return missing;
+    row.pdf_url = "demo";
+    row.filename = field(init, "file") ?? "policy.pdf";
+    return json({ ok: true });
   }
   const renews = at(/\/api\/agent\/policies\/([^/]+)\/renews/);
   if (renews) {
@@ -683,6 +691,7 @@ function playgroundBookApi(url: string, init?: any): Response | null {
     const id = demoUuid("demo-compare");
     const sides = body.result?.sides ?? [];
     demoComparisons.unshift({ id, name_a: sides[0]?.plan_name ?? null, name_b: sides[1]?.plan_name ?? null, created_at: new Date().toISOString(), customer_id: null, customer_name: null, plans: sides.length });
+    demoComparisons[0].customer_id = body.customer_id ?? null;
     return json({ uuid: id, success: true });
   }
   if (url.includes("/api/agent/comparisons")) {

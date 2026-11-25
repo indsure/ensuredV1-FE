@@ -169,11 +169,13 @@ const END = (key: string, label: string, extra: string[] = []): FixField => ({ k
 const COVER = (key: string, label: string): FixField => ({ key, label, kind: "money", words: ["sum insured", "cover", "cover amount", "sum assured", "idv"] });
 
 /**
- * The saved details of a NON-health policy that WhatsApp may fix, per type: the everyday ones,
- * never the valuation records or json. Keys are the portal's EXTRACTION_FIELDS keys.
- * Health is never here: its details belong to the stored check.
+ * The saved details of a policy that WhatsApp may fix, per type: the everyday ones, never the
+ * valuation records or json. Keys are the portal's EXTRACTION_FIELDS keys. Health has the three
+ * facts the portal lets an advisor correct there; they go through the portal's own save
+ * (services/bookStore.saveHealthFacts), never saveExtractedData, and the score is not touched.
  */
 export const POLICY_FIX_FIELDS: Record<string, FixField[]> = {
+  health: [PREMIUM, COVER("sum_insured", "Cover (sum insured)"), END("expiry_date", "Policy end date")],
   motor: [
     PREMIUM, COVER("idv", "IDV (sum insured)"), END("policy_expiry_date", "Policy expiry date"), START("policy_start_date"), POLICY_NO,
     { key: "vehicle_registration_no", label: "Vehicle registration no.", kind: "text", words: ["registration number", "registration no", "registration", "vehicle number", "car number", "bike number", "gaadi number"] },

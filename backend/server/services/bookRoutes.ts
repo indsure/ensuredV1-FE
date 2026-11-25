@@ -1,12 +1,13 @@
 /** Routes over services/bookStore.ts. Kept out of routes.ts so the rules and their tests sit together. */
 import type { Express, Request, Response } from "express";
 import crypto from "crypto";
+import fs from "fs";
 import { pool } from "../lib/db";
 import { log } from "../lib/logger";
 import { isLimitedFree, NEEDS_UPGRADE } from "../lib/entitlement";
 import { deriveSharedColumns } from "./extractionFields";
 import {
-  addManualPolicy, carryLeadPolicies, deleteClaim, isId, linkRenewal, mergeCustomers, saveHealthFacts, type RunTx,
+  addManualPolicy, attachDocument, carryLeadPolicies, deleteClaim, isId, linkRenewal, mergeCustomers, saveHealthFacts, type RunTx,
 } from "./bookStore";
 
 interface Deps {
@@ -14,6 +15,8 @@ interface Deps {
   recordAccess: (req: any, agentId: string, clientId: string | null, action: string) => unknown;
   supabaseAdmin: any;
   pdfBucket: string;
+  /** Sign-in check, then multer for one "file": an unsigned caller never writes to disk. */
+  oneFile: ((req: any, res: any, next: () => void) => void)[];
   ownedStorageObject: (url: unknown, accountId: string) => { bucket: string; path: string } | null;
 }
 
@@ -93,6 +96,23 @@ export function registerBookRoutes(app: Express, d: Deps) {
         if (owned) await store.from(owned.bucket).remove([owned.path]);
       },
     })));
+
+  app.post("/api/agent/policies/:id/document", ...d.oneFile, async (req: Request, res: Response) => {
+    const f = (req as any).file as { path: string; originalname: string; size: number; mimetype: string } | undefined;
+    try {
+      await route(false, "policy_attach_document", (_r, a) =>
+        attachDocument(pool as any, a, req.params.id as string, f ? { name: f.originalname, size: f.size } : null, {
+          async put(path) {
+            const up = await store.from(d.pdfBucket).upload(path, fs.readFileSync(f!.path), { contentType: f!.mimetype || "application/pdf", upsert: true });
+            if (up.error) return null;
+            const { data: signed } = await store.from(d.pdfBucket).createSignedUrl(path, 3600);
+            return signed?.signedUrl ?? null;
+          },
+        }))(req, res);
+    } finally {
+      if (f?.path) fs.promises.unlink(f.path).catch(() => {});
+    }
+  });
 
   app.delete("/api/agent/claims/:id", route(false, "claim_delete", (req, a) =>
     deleteClaim(pool as any, a, req.params.id as string, async (paths) => {

@@ -739,8 +739,8 @@ export default function PolicyDetail() {
                       {t("policy_detail.check_failed_hint")}
                     </div>
                   </div>
-                ) : policy.status === "done" && !hasFile && fileMeta?.file_path === ADDED_BY_HAND ? (
-                  t("book.by_hand_health")
+                ) : policy.status === "done" && (fileMeta?.file_path === ADDED_BY_HAND || extractedData?.__by_hand === true) ? (
+                  t(hasFile ? "book.not_checked" : "book.by_hand_health")
                 ) : policy.status === "done" ? (
                   t("policy_detail.bad_format")
                 ) : (
@@ -852,7 +852,7 @@ export default function PolicyDetail() {
                   {hasFile && <>
                   <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun" || policy.status === "processing"}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
-                    {isDataEntry ? t("policy_detail.reread") : t("policy_detail.rerun")}
+                    {isDataEntry ? t("policy_detail.reread") : reportData ? t("policy_detail.rerun") : t("book.check_now")}
                   </Button>
                   <p className="text-xs text-slate-500">
                     {isDataEntry ? t("policy_detail.reread_cost") : t("policy_detail.rerun_cost")} {t("book.reread_replaces")}

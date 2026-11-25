@@ -628,6 +628,15 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                     <Text style={s.eyebrow}>Forensic policy audit · {generatedLabel}</Text>
                 </View>
 
+                {/* The portal and the shared page say this too; a printed copy must not say less. */}
+                {(data as any).__corrected_on ? (
+                    <View style={{ marginBottom: 10, padding: 7, borderWidth: 0.7, borderColor: C.teal }}>
+                        <Text style={{ fontSize: 8.5, lineHeight: 1.4 }}>
+                            {`Some facts here were corrected by your advisor on ${String((data as any).__corrected_on).split('-').reverse().join('-')}. The score and comments are from the document as it was read.`}
+                        </Text>
+                    </View>
+                ) : null}
+
                 {/* ---------------------------------------------- verdict */}
                 <View style={s.verdictRow}>
                     <Svg width={7} height={7} viewBox="0 0 8 8" style={{ marginRight: 6 }}>

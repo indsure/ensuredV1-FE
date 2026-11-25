@@ -69,7 +69,7 @@ export function readFacts(body: any): { facts: Facts; errors: { field: string; r
  * customer opens cannot disagree. The score is not worked out again, and the
  * old values are kept under __internal, which never leaves the server.
  */
-export async function saveHealthFacts(db: Db, agentId: string, id: string, body: any, now = new Date()): Promise<SaveResult> {
+export async function saveHealthFacts(db: Db, agentId: string, id: string, body: any, now = new Date(), expectRev?: number): Promise<SaveResult> {
   if (!isId(id)) return notFound();
   const { facts, errors } = readFacts(body);
   if (errors.length) return invalid(errors);
@@ -112,6 +112,10 @@ export async function saveHealthFacts(db: Db, agentId: string, id: string, body:
       nextReport.__corrected_on = now.toISOString().slice(0, 10);
     }
   }
+  // Counts saves, so an edit started before this one (WhatsApp) cannot land on top of it.
+  const rev = Number.isInteger(extracted._rev) ? extracted._rev : 0;
+  if (expectRev !== undefined && expectRev !== rev) return bad("STALE", "This policy was changed somewhere else. Reload it and try again.", 409);
+  extracted._rev = rev + 1;
   if ("premium" in facts) extracted.premium = facts.premium;
   if ("premium_frequency" in facts) extracted.premium_frequency = facts.premium_frequency;
 
@@ -121,19 +125,20 @@ export async function saveHealthFacts(db: Db, agentId: string, id: string, body:
        expiry_date = CASE WHEN $5::boolean THEN $6 ELSE expiry_date END,
        sum_insured = CASE WHEN $7::boolean THEN $8 ELSE sum_insured END,
        report_data = COALESCE($9, report_data),
-       extracted_data = CASE WHEN $10::boolean THEN $11 ELSE extracted_data END
-     WHERE id = $1 AND agent_id = $2 AND status NOT IN ('processing', 'pending')`,
+       extracted_data = $10
+     WHERE id = $1 AND agent_id = $2 AND status NOT IN ('processing', 'pending')
+       AND COALESCE((extracted_data->>'_rev')::int, 0) = $11`,
     [
       id, agentId,
       "insurer" in facts, facts.insurer ?? null,
       "expiry_date" in facts, facts.expiry_date ?? null,
       "sum_insured" in facts, facts.sum_insured ?? null,
       nextReport ? JSON.stringify(nextReport) : null,
-      "premium" in facts || "premium_frequency" in facts, JSON.stringify(extracted),
+      JSON.stringify(extracted), rev,
     ]
   );
-  if ((upd.rowCount ?? 0) === 0) return bad("BUSY", "This policy is being read again. Try again when it is done.", 409);
-  return { status: 200, body: { ok: true } };
+  if ((upd.rowCount ?? 0) === 0) return bad("BUSY", "This policy changed while you were saving. Reload it and try again.", 409);
+  return { status: 200, body: { ok: true, rev: rev + 1 } };
 }
 
 /* ── Adding a policy by hand ────────────────────────────────────────────── */
@@ -179,11 +184,11 @@ export async function addManualPolicy(
   if (type === "health") {
     const { facts, errors } = readFacts(raw);
     if (errors.length) return invalid(errors);
-    data = { premium: facts.premium ?? null, premium_frequency: facts.premium_frequency ?? null };
+    data = { premium: facts.premium ?? null, premium_frequency: facts.premium_frequency ?? null, __by_hand: true };
     shared = { insurer: facts.insurer, expiry_date: facts.expiry_date, sum_insured: facts.sum_insured, policy_name: text(raw.policy_name) };
   } else {
     const v = validatePatch(type, {}, raw);
-    data = { ...v.clean, policyholder_name: holder };
+    data = { ...v.clean, policyholder_name: holder, __by_hand: true };
     if (number && !data.policy_number) data.policy_number = number;
     shared = deps.deriveSharedColumns(type, data);
     const errors = [...v.errors, ...checkShared(shared)];
@@ -332,6 +337,8 @@ export async function carryLeadPolicies(runTx: RunTx, agentId: string, leadId: s
           else if (type === "travel") data.trip_end_date = due;
           else data.policy_expiry_date = due;
         }
+        // No extracted_data on a lead's policy means its details were typed.
+        if (!p.extracted_data || type === "health") data.__by_hand = true;
         const id = files.newId();
         let url: string | null = null;
         if (p.file_url) {
@@ -383,4 +390,32 @@ export async function deleteClaim(
   }
   await db.query("DELETE FROM claims WHERE id = $1 AND agent_id = $2", [id, agentId]);
   return { status: 200, body: { ok: true, filesRemoved: paths.length } };
+}
+
+/* ── Attaching the document to a policy that has none ───────────────────── */
+
+export const DOC_EXT = ["pdf", "png", "jpg", "jpeg", "webp", "heic", "heif"];
+
+/** Stores the file only. Nothing is read and nothing is used up until the advisor asks for it. */
+export async function attachDocument(
+  db: Db, agentId: string, id: string, file: { name: string; size: number } | null,
+  store: { put(path: string): Promise<string | null> }
+): Promise<SaveResult> {
+  if (!isId(id)) return notFound();
+  if (!file) return bad("NO_FILE", "Choose a file.");
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  if (!DOC_EXT.includes(ext)) return bad("BAD_TYPE", "Choose a PDF or a photo.");
+  const own = await db.query("SELECT status, pdf_url FROM clients WHERE id = $1 AND agent_id = $2", [id, agentId]);
+  if (!own.rows[0]) return notFound();
+  if (own.rows[0].pdf_url) return bad("HAS_FILE", "This policy already has a document.", 409);
+  if (own.rows[0].status !== "done") return bad("BUSY", "This policy is still being read. Try again when it is done.", 409);
+  const path = `${agentId}/${id}.${ext}`;
+  const url = await store.put(path);
+  if (!url) return bad("STORE", "The file could not be saved. Try again.", 502);
+  const upd = await db.query(
+    "UPDATE clients SET pdf_url = $3, filename = $4, file_size = $5 WHERE id = $1 AND agent_id = $2 AND pdf_url IS NULL",
+    [id, agentId, url, file.name.slice(0, 200), file.size]
+  );
+  if ((upd.rowCount ?? 0) === 0) return bad("HAS_FILE", "This policy already has a document.", 409);
+  return { status: 200, body: { ok: true } };
 }

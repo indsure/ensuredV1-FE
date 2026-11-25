@@ -470,7 +470,7 @@ export type FullLead = {
   insurance_interest: string | null; expected_value: string | number | null; status: string; next_follow_up: string | null;
   notes: string | null; customer_id: string | null; created_at?: string; updated_at?: string;
 };
-/** One policy's editable details (GET /api/internal/wa/clients/:id/fields). `fields` is empty for health. */
+/** One policy's editable details (GET /api/internal/wa/clients/:id/fields). Health has premium, cover and end date. */
 export type PolicyFields = {
   id: string; type: string; status: string; shareEnabled: boolean; rev: number;
   client: { policyholder_name: string | null; policy_identifier: string | null; client_email: string | null; client_phone: string | null };

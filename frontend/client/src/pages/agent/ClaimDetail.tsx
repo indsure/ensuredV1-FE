@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { supabase } from "@/lib/supabase";
+import { useAgent } from "@/context/AgentContext";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { BackLink } from "@/components/agent/BackLink";
 import { toast } from "@/hooks/use-toast";
@@ -1294,6 +1296,7 @@ function EditDialog({
     insurer: claim.insurer ?? "",
     tpa: claim.tpa ?? "",
     policy_number: claim.policy_number ?? "",
+    client_id: claim.client_id ?? "",
     claim_type: claim.claim_type,
     claimed_amount: claim.claimed_amount != null ? String(claim.claimed_amount) : "",
     settled_amount: claim.settled_amount != null ? String(claim.settled_amount) : "",
@@ -1301,6 +1304,19 @@ function EditDialog({
     discharged_on: claim.discharged_on ?? "",
   });
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const { agent } = useAgent();
+  const [policies, setPolicies] = useState<{ id: string; insurer: string | null; policy_name: string | null; policy_identifier: string | null; policyholder_name: string | null }[]>([]);
+  useEffect(() => {
+    if (!agent?.agentId || !claim.customer_id) return;
+    let on = true;
+    void supabase.from("clients").select("id, insurer, policy_name, policy_identifier, policyholder_name")
+      .eq("agent_id", agent.agentId).eq("customer_id", claim.customer_id).eq("insurance_type", "health").eq("status", "done")
+      .order("created_at", { ascending: false }).then(({ data }) => { if (on) setPolicies((data ?? []) as any); });
+    return () => { on = false; };
+  }, [agent?.agentId, claim.customer_id]);
+  // A policy since moved to another customer stays in the list, or saving would drop it.
+  const linkedElsewhere = !!form.client_id && !policies.some((p) => p.id === form.client_id);
 
   // Checked as a pair: lowering the claimed amount below an existing settled
   // figure breaks the relationship just as surely as raising the settled one.
@@ -1342,6 +1358,21 @@ function EditDialog({
           <button onClick={onClose} aria-label={t("claim_detail.close")} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
         </div>
 
+        {(policies.length > 0 || linkedElsewhere) && (
+          <Field label={t("book.claim_policy")}>
+            <select
+              value={form.client_id} className={field}
+              onChange={(e) => {
+                const p = policies.find((x) => x.id === e.target.value);
+                setForm((f) => ({ ...f, client_id: e.target.value, insurer: p?.insurer || f.insurer, policy_number: p?.policy_identifier || f.policy_number }));
+              }}
+            >
+              <option value="">{t("book.claim_no_policy")}</option>
+              {linkedElsewhere && <option value={form.client_id}>{[claim.insurer, claim.policy_number].filter(Boolean).join(", ") || t("book.claim_open_policy")}</option>}
+              {policies.map((p) => <option key={p.id} value={p.id}>{[p.policyholder_name, p.insurer, p.policy_name, p.policy_identifier].filter(Boolean).join(", ")}</option>)}
+            </select>
+          </Field>
+        )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t("claim_detail.f_what")}><input value={form.ailment} onChange={(e) => set("ailment", e.target.value)} className={field} /></Field>
           <Field label={t("claim_detail.f_hospital")}><input value={form.hospital} onChange={(e) => set("hospital", e.target.value)} className={field} /></Field>

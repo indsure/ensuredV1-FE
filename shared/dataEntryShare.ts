@@ -272,7 +272,8 @@ export interface ShareSource {
  * one instalment, and a monthly figure would read as the yearly price.
  */
 export function shareDetails(p: ShareSource): { type: ShareableType; fields: Record<string, unknown>; byHand: boolean } | null {
-  const byHand = p.filename === ADDED_BY_HAND;
+  // Set when it was typed in. Reading the document replaces extracted_data, and the mark with it.
+  const byHand = p.filename === ADDED_BY_HAND || p.extracted_data?.__by_hand === true;
   const type = p.insurance_type || "health";
   if (type !== "health") {
     const fields = pickShareableFields(type, p.extracted_data);

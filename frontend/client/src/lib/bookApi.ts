@@ -50,6 +50,13 @@ export async function downloadPolicyFile(id: string, filename: string | null | u
   URL.revokeObjectURL(url);
 }
 
+/** Puts the document on a policy added by hand. Stores it only: nothing is read or used up. */
+export async function attachPolicyFile(id: string, file: File): Promise<void> {
+  const fd = new FormData();
+  fd.append("file", file);
+  await apiJson(apiFetch(`/api/agent/policies/${enc(id)}/document`, { method: "POST", body: fd }));
+}
+
 /** Policies already replaced by a newer one. Empty until migration 040 has run. */
 export async function fetchReplacedIds(agentId: string): Promise<Set<string>> {
   try {

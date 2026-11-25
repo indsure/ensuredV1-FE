@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { apiFetch } from "@/lib/api";
+import SavedComparisons from "@/components/agent/SavedComparisons";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import { type CompareResponse, type ComparisonResult } from "@/lib/wordingProfile";
 import ComparisonView, { TEAL, AMBER } from "@/components/ComparisonView";
@@ -263,6 +264,8 @@ export default function Compare() {
           {t("compare.sample")}
         </button>
       )}
+
+      <div className="mt-10"><SavedComparisons /></div>
 
       {/* Last stop before the spend. The price is on the card that got them
           here and on the line above the button; this is where they agree to it. */}
