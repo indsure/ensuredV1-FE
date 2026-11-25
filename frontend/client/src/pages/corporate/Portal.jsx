@@ -6,9 +6,10 @@ import { Ctx, useApp, SearchPick, Icon, PlaceFields, PlaceLists, Pill, Card, Emp
 import { OcrReview, PdfAttach, DocPane } from "./review.jsx";
 import { PolicyView, AddDocForm, DocViewer, StatePills, DeleteDoc } from "./policy.jsx";
 import { BrokerageView } from "./brokerage.jsx";
-import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText, fetchMe } from "./store.js";
+import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, listTeam, changeEmployee, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText, fetchMe } from "./store.js";
 import { CorpLogin, JoinPage, joinToken, MySignIn } from "./login.jsx";
 import { UsersPage, InviteUser, TeamFilter } from "./users.jsx";
+import { NamePick } from "./namepick.jsx";
 import { LogsPage } from "./logs.jsx";
 import { DEFAULT_ROLES, pageAllowed } from "./access.js";
 import { QuickAdd, createPolicy } from "./add.jsx";
@@ -156,7 +157,7 @@ export function App({ onSignedOut }) {
   const reset = () => { setDb(seed()); setRoute({ view: firstPage() }); toast(LIVE ? "All records in this browser were deleted" : "Demo reset to the starting example data"); };
   if (loadErr) return <div className="ic-loading" role="alert"><p>Your records could not be opened just now. Nothing was changed.</p><button className="btn btn-primary" onClick={() => window.location.reload()}>Try again</button></div>;
   if (!db) return <div className="ic-loading" role="status">Opening your records...</div>;
-  const ctx = { db, update, can, log, toast, who: R.who, role, fy, go, visible, teams: me.teams, teamCodes: (id) => me.teams.find((x) => x.id === id)?.codes || null, latest: () => latestDb.current };
+  const ctx = { db, update, can, log, toast, who: R.who, role, fy, go, visible, manager, readMe, teams: me.teams, teamCodes: (id) => me.teams.find((x) => x.id === id)?.codes || null, latest: () => latestDb.current };
   bindBulk(ctx);
 
   let view;
@@ -1099,8 +1100,19 @@ function Masters() {
 // changing it renames every reference, and nobody who still looks after a customer can be removed.
 const TEAM_ROLES = ["CSC", "RM", "Accounts"];
 function TeamMaster() {
-  const { db, update, log, toast } = useApp();
-  const [nt, setNt] = useState({ code: "", name: "", role: "CSC", email: "" });
+  const { db, update, log, toast, manager, readMe } = useApp();
+  const [nt, setNt] = useState({ code: "", name: "", role: "CSC", email: "", userId: "" });
+  // The people who can sign in, so a name is picked rather than typed again. Only the owner and Admins may list them.
+  const [users, setUsers] = useState([]);
+  useEffect(() => { if (manager) listTeam().then((r) => { if (r.ok && Array.isArray(r.body?.members)) setUsers([...(r.body.ownerInfo ? [{ id: "", name: r.body.ownerInfo.name, email: r.body.ownerInfo.email, note: "Owner" }] : []), ...r.body.members.filter((m) => m.active).map((m) => ({ id: String(m.id), name: m.name, email: m.email, note: m.user_code, code: m.staff_code || "", canLink: r.body.access && (m.role !== "admin" || r.body.owner) }))]); }); }, [manager]);
+  const badEmail = (e) => e.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+  // The next number after the highest code of that role, in the same style.
+  const nextCode = (role) => {
+    const nums = db.team.filter((t) => t.role === role).map((t) => /^(.*?)(\d+)$/.exec(t.code)).filter(Boolean).sort((a, b) => +b[2] - +a[2]);
+    const [pre, n, w] = nums.length ? [nums[0][1], +nums[0][2], nums[0][2].length] : [role === "Accounts" ? "ACC" : role, 0, 3];
+    for (let i = n + 1; ; i++) { const c = `${pre}${String(i).padStart(w, "0")}`; if (!codeTaken(c)) return c; }
+  };
+  const pickUser = (u) => setNt((x) => ({ ...x, name: u.name, email: u.email || "", userId: u.id, code: x.code.trim() || (u.code && !codeTaken(u.code) ? u.code : nextCode(x.role)) }));
   const [addErr, setAddErr] = useState("");
   const [edit, setEdit] = useState(null); // { code, f: { code, name, role }, moveTo, err }
   const [showInactive, setShowInactive] = useState(true);
@@ -1110,23 +1122,27 @@ function TeamMaster() {
     if (!nt.code.trim() || !nt.name.trim()) return setAddErr("Enter code and name");
     if (/\s/.test(nt.code.trim())) return setAddErr("Codes cannot contain spaces");
     if (codeTaken(nt.code)) return setAddErr("That code is already used");
-    update((d) => { d.team.push({ code: nt.code.trim().toUpperCase(), name: nt.name.trim(), role: nt.role, active: true }); log(d, { action: "Team member added", detail: `${nt.name.trim()} (${nt.code.trim().toUpperCase()}) as ${nt.role}` }); });
-    setNt({ code: "", name: "", role: "CSC", email: "" }); setAddErr(""); toast("Team member added");
+    if (badEmail(nt.email)) return setAddErr("Check the email address");
+    const code = nt.code.trim().toUpperCase(), who = users.find((u) => u.id && u.id === nt.userId);
+    update((d) => { d.team.push({ code: nt.code.trim().toUpperCase(), name: nt.name.trim(), role: nt.role, email: nt.email.trim(), active: true }); log(d, { action: "Team member added", detail: `${nt.name.trim()} (${nt.code.trim().toUpperCase()}) as ${nt.role}` }); });
+    setNt({ code: "", name: "", role: "CSC", email: "", userId: "" }); setAddErr(""); toast("Team member added");
+    // Links their sign-in to this code, so their team works as a filter. An existing link is left alone.
+    if (who?.canLink && !who.code) changeEmployee(who.id, { staff_code: code }).then((r) => { if (r.ok) { setUsers((l) => l.map((u) => (u.id === who.id ? { ...u, code } : u))); readMe(); } else toast(`Added, but the sign-in of ${who.name} could not be linked to ${code}. Set it in Users, Manage.`, "bad"); });
   };
-  const open = (t) => setEdit({ code: t.code, f: { code: t.code, name: t.name, role: t.role }, moveTo: "", err: "" });
+  const open = (t) => setEdit({ code: t.code, f: { code: t.code, name: t.name, role: t.role, email: t.email || "" }, moveTo: "", err: "" });
   const t0 = edit && db.team.find((t) => t.code === edit.code);
   const u0 = t0 && uses(t0.code);
   const assigned = u0 ? u0.cse.length + u0.rm.length : 0;
   const save = () => {
     const f = edit.f; const code = f.code.trim().toUpperCase();
-    const err = !code || !f.name.trim() ? "Enter code and name" : /\s/.test(code) ? "Codes cannot contain spaces" : codeTaken(code, t0.code) ? "That code is already used"
+    const err = !code || !f.name.trim() ? "Enter code and name" : /\s/.test(code) ? "Codes cannot contain spaces" : codeTaken(code, t0.code) ? "That code is already used" : badEmail(f.email) ? "Check the email address"
       : f.role !== t0.role && assigned ? `${t0.name} looks after ${assigned} customer${assigned === 1 ? "" : "s"} as ${t0.role}. Move them to someone else before changing the role.` : "";
     if (err) return setEdit({ ...edit, err });
     update((d) => {
       const t = d.team.find((x) => x.code === t0.code);
-      const changes = [t.name !== f.name.trim() && `name ${t.name} to ${f.name.trim()}`, t.code !== code && `code ${t.code} to ${code}`, t.role !== f.role && `role ${t.role} to ${f.role}`].filter(Boolean);
+      const changes = [t.name !== f.name.trim() && `name ${t.name} to ${f.name.trim()}`, t.code !== code && `code ${t.code} to ${code}`, t.role !== f.role && `role ${t.role} to ${f.role}`, (t.email || "") !== f.email.trim() && `email ${t.email || "none"} to ${f.email.trim() || "none"}`].filter(Boolean);
       if (t.code !== code) d.customers.forEach((c) => { if (c.cse === t.code) c.cse = code; if (c.rm === t.code) c.rm = code; });
-      Object.assign(t, { code, name: f.name.trim(), role: f.role });
+      Object.assign(t, { code, name: f.name.trim(), role: f.role, email: f.email.trim() });
       log(d, { action: "Team member updated", detail: changes.length ? `${changes.join(", ")}.${assigned && t0.code !== code ? ` ${assigned} customer record${assigned === 1 ? "" : "s"} updated to the new code.` : ""}` : "No change." });
     });
     setEdit(null); toast("Team member saved");
@@ -1141,15 +1157,15 @@ function TeamMaster() {
     });
     setEdit({ ...edit, moveTo: "", err: "" }); toast(`Customers moved to ${to.name}`);
   };
-  const setActive = (t, active) => { update((d) => { d.team.find((x) => x.code === t.code).active = active; log(d, { action: active ? "Team member reactivated" : "Team member deactivated", detail: `${t.name} (${t.code}). ${active ? "Back in the pickers." : "Kept on existing records and reports; no longer offered for new assignments."}` }); }); toast(active ? "Reactivated" : "Switch offd"); };
+  const setActive = (t, active) => { update((d) => { d.team.find((x) => x.code === t.code).active = active; log(d, { action: active ? "Team member reactivated" : "Team member deactivated", detail: `${t.name} (${t.code}). ${active ? "Back in the pickers." : "Kept on existing records and reports; no longer offered for new assignments."}` }); }); toast(active ? "Reactivated" : "Switched off"); };
   const remove = (t) => { update((d) => { d.team = d.team.filter((x) => x.code !== t.code); log(d, { action: "Team member removed", detail: `${t.name} (${t.code}), ${t.role}. Was not assigned to any customer.` }); }); setEdit(null); toast("Team member removed"); };
   const rows = db.team.filter((t) => showInactive || t.active !== false);
   return (<>
-    <Card className="addcard" title="Add team member" sub="CSC: the customer service coordinator who looks after the customer.">
+    <Card className="addcard" title="Add team member" sub="CSC: the customer service coordinator who looks after the customer. Renewal reminders go to their email.">
       <div className="filters">
         <Labeled label="Code" htmlFor="ms-tc"><input id="ms-tc" value={nt.code} onChange={(e) => setNt({ ...nt, code: e.target.value })} /></Labeled>
-        <Labeled label="Name" htmlFor="ms-tn"><input id="ms-tn" value={nt.name} onChange={(e) => setNt({ ...nt, name: e.target.value })} /></Labeled>
-        <Labeled label="Email" htmlFor="ms-te" hint="Reminders go here"><input id="ms-te" type="email" value={nt.email} onChange={(e) => setNt({ ...nt, email: e.target.value })} /></Labeled>
+        <Labeled label="Name" htmlFor="ms-tn"><NamePick id="ms-tn" value={nt.name} people={users} onType={(v) => setNt({ ...nt, name: v, userId: "" })} onPick={pickUser} /></Labeled>
+        <Labeled label="Email" htmlFor="ms-te"><input id="ms-te" type="email" value={nt.email} onChange={(e) => setNt({ ...nt, email: e.target.value })} /></Labeled>
         <Labeled label="Role" htmlFor="ms-tr"><Select id="ms-tr" value={nt.role} onChange={(v) => setNt({ ...nt, role: v })} options={TEAM_ROLES} /></Labeled>
         <div className="fld"><Btn kind="primary" onClick={add}>Add</Btn></div>
       </div>
@@ -1159,10 +1175,11 @@ function TeamMaster() {
     <Table><thead><tr><th>Code</th><th>Name</th><th>Email</th><th>Role</th><th className="num">Customers as CSC</th><th className="num">as RM</th><th>Status</th><th /></tr></thead>
       <tbody>{rows.map((t) => { const u = uses(t.code); return (
         <tr key={t.code} className={t.active === false ? "row-held" : ""}>
-          <td>{t.code}</td><td>{t.name}</td><td>{t.role}</td><td className="num">{u.cse.length}</td><td className="num">{u.rm.length}</td>
+          <td>{t.code}</td><td>{t.name}</td><td>{t.email || <span className="warn-text small">None, so no reminders</span>}</td><td>{t.role}</td><td className="num">{u.cse.length}</td><td className="num">{u.rm.length}</td>
           <td>{t.active === false ? <Pill tone="muted">Inactive</Pill> : <Pill tone="good">Active</Pill>}</td>
           <td><Btn onClick={() => (edit?.code === t.code ? setEdit(null) : open(t))}>{edit?.code === t.code ? "Close" : "Edit"}</Btn></td>
         </tr>); })}</tbody></Table>
+    {!rows.length && <p className="muted small">Nobody here yet.</p>}
     {edit && t0 && (
       <Card title={`Edit ${t0.name} (${t0.code})`} sub={assigned ? `Looks after ${u0.cse.length} customer${u0.cse.length === 1 ? "" : "s"} as CSC and ${u0.rm.length} as RM.` : "Not assigned to any customer."}>
         <div className="formgrid">
