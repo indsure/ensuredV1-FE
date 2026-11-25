@@ -13,11 +13,13 @@ export const ACTIONS = [
   { group: "Settings", items: [["settings", "Change lists, team codes, exchange and brokerage rates, reminders and reading settings"], ["backup", "Download or restore backups"]] },
 ];
 const ALL = ACTIONS.flatMap((g) => g.items.map(([k]) => k));
+// Everyone sees everything. New business only adds, so it comes with adding policies.
+const VIEW = PAGES.map((p) => p.key).filter((k) => k !== "new");
 export const DEFAULT_ROLES = [
-  { key: "ops", name: "Operations / BD", pages: ["home", "customers", "new", "register", "expiry", "reminders"], actions: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch", "backup"], builtIn: true },
-  { key: "accounts", name: "Accounts", pages: ["customers", "register", "business", "brokerage", "renewreport", "snapshots", "fx", "presets"], actions: ["receipt", "export", "finalize", "addDoc", "backup"], builtIn: true },
+  { key: "ops", name: "Operations / BD", pages: PAGES.map((p) => p.key), actions: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch", "backup"], builtIn: true },
+  { key: "accounts", name: "Accounts", pages: VIEW, actions: ["receipt", "export", "finalize", "addDoc", "backup"], builtIn: true },
   { key: "admin", name: "Admin", pages: PAGES.map((p) => p.key), actions: ALL, builtIn: true },
-  { key: "readonly", name: "Read-only", pages: ["customers", "register", "expiry", "business", "brokerage", "renewreport"], actions: ["backup"], builtIn: true },
+  { key: "readonly", name: "Read-only", pages: VIEW, actions: ["backup"], builtIn: true },
 ];
 /** Bulk upload and Drafts come with New business; Help is for everyone. */
 export const pageAllowed = (r, key) => ["guide", "feedback"].includes(key) || r.pages.includes(["bulk", "drafts"].includes(key) ? "new" : key);

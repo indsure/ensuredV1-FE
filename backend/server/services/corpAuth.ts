@@ -153,7 +153,7 @@ export async function inviteMember(db: Db, by: Session, emailRaw: unknown, role:
   if (dup.rows.length) return { status: 409, error: "That email already belongs to someone in your organisation." };
   const inv = await newInvite(db, { org: by.org, kind: "join", email, role: String(role), days: JOIN_DAYS });
   if (teams.length) await db.query("UPDATE corp_invites SET teams = $2::jsonb WHERE id = $1", [inv.id, JSON.stringify(teams)]);
-  await logEvent(db, by.org, by.name, "Invited", `${email} as ${role}`);
+  await logEvent(db, by.org, by.name, "Invited", `${email} as ${(await access.roleOf(db, by.org, String(role)))?.name || role}`);
   return { status: 200, invite: inv, email };
 }
 export async function invitePin(db: Db, by: Session, memberId: string) {
@@ -248,7 +248,7 @@ export async function changeMember(db: Db, by: Session, id: string, b: any): Pro
     [id, by.org, b.role ?? null, typeof b.active === "boolean" ? b.active : null, b.designation !== undefined ? cleanLine(b.designation, 120) : null, b.departments !== undefined ? JSON.stringify([...new Set(b.departments)]) : null],
   );
   if (!rows.length) return { status: 404, error: "No such person." };
-  const what = [b.role !== undefined && `role ${b.role}`, typeof b.active === "boolean" && (b.active ? "switched on" : "switched off"), b.designation !== undefined && "designation", b.departments !== undefined && `departments ${b.departments.join(", ")}`, teams && "teams", code !== null && `code ${code || "none"}`].filter(Boolean).join("; ");
+  const what = [b.role !== undefined && `role ${(await access.roleOf(db, by.org, String(b.role)))?.name || b.role}`, typeof b.active === "boolean" && (b.active ? "switched on" : "switched off"), b.designation !== undefined && "designation", b.departments !== undefined && `departments ${b.departments.join(", ")}`, teams && "teams", code !== null && `code ${code || "none"}`].filter(Boolean).join("; ");
   if (teams && (await access.accessOn(db))) await access.setTeams(db, by.org, id, teams);
   if (code !== null && (await access.accessOn(db))) await db.query("UPDATE corp_members SET staff_code = $2 WHERE id = $1", [id, code]);
   await logEvent(db, by.org, by.name, "Login changed", `${rows[0].name}: ${what}`, id);

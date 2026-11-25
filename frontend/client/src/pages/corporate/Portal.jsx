@@ -9,6 +9,7 @@ import { BrokerageView } from "./brokerage.jsx";
 import { openStore, save, onSaveStatus, storeInfo, reloadLatest, listVersions, getVersion, hasUnsaved, needsLogin, isRemote, logout, SignedOut, currentUser, remindersSent, loadTexts, docText, fetchMe } from "./store.js";
 import { CorpLogin, JoinPage, joinToken, MySignIn } from "./login.jsx";
 import { UsersPage, InviteUser, TeamFilter } from "./users.jsx";
+import { LogsPage } from "./logs.jsx";
 import { DEFAULT_ROLES, pageAllowed } from "./access.js";
 import { QuickAdd, createPolicy } from "./add.jsx";
 import { Guide } from "./guide.jsx";
@@ -43,6 +44,7 @@ const NAV = [
     { key: "snapshots", label: "Locked reports", icon: "lock" }] },
   { group: "Admin", items: [
     { key: "users", label: "Users", icon: "users" },
+    { key: "logs", label: "Logs", icon: "list" },
     { key: "masters", label: "Lists and team", icon: "db" },
     { key: "fx", label: "Exchange rates", icon: "rupee" },
     { key: "presets", label: "Brokerage rates", icon: "percent" },
@@ -73,8 +75,8 @@ export function App({ onSignedOut }) {
   const manager = isRemote() && (me.owner || me.role === "admin");
   // An unknown role (deleted, or not read yet) sees nothing but help.
   const R0 = roles.find((r) => r.key === role) || (mayPick ? roles.find((r) => r.key === "admin") : null) || { key: role, name: "", pages: [], actions: [] };
-  const shows = (key, r = R0) => key === "users" ? manager : pageAllowed(r, key);
-  const firstPage = (r = R0) => NAV.flatMap((g) => g.items).find((i) => i.key !== "users" && shows(i.key, r))?.key || "guide";
+  const shows = (key, r = R0) => key === "users" ? manager : key === "logs" ? isRemote() && me.owner : pageAllowed(r, key);
+  const firstPage = (r = R0) => NAV.flatMap((g) => g.items).find((i) => !["users", "logs"].includes(i.key) && shows(i.key, r))?.key || "guide";
   const readMe = async () => { if (!isRemote()) return; const r = await fetchMe(); if (r.ok && typeof r.body?.role === "string" && Array.isArray(r.body.roles) && Array.isArray(r.body.teams)) { setMe(r.body); if (r.body.role !== "admin") setRole(r.body.role); } };
   useEffect(() => { let last = Date.now(); const f = () => { if (document.visibilityState === "visible" && Date.now() - last > 15000) { last = Date.now(); readMe(); } }; document.addEventListener("visibilitychange", f); window.addEventListener("focus", f); return () => { document.removeEventListener("visibilitychange", f); window.removeEventListener("focus", f); }; }, []);
   const [inviting, setInviting] = useState(false);
@@ -166,7 +168,7 @@ export function App({ onSignedOut }) {
   else if (!visible(v)) view = <Empty title="This page is not available for your role">Choose a page from the menu.</Empty>;
   else view = {
     home: <HomeView />, customers: <CustomersView />, new: <NewBusiness key={(route.customerId || "new") + (route.fx?.id || "")} presetCustomer={route.customerId} presetFx={route.fx} />, register: <RegisterView />, expiry: <ExpiryView />,
-    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, bulk: <BulkPage />, drafts: <DraftsPage />, feedback: <FeedbackPage page={lastPage.current} />, users: <UsersPage onInvite={() => setInviting(true)} onChanged={readMe} />,
+    business: <BusinessReport />, brokerage: <BrokerageView />, renewreport: <RenewalsReport />, snapshots: <Snapshots openId={route.id} />, masters: <Masters />, fx: <FxView />, presets: <PresetsView />, reminders: <Reminders />, guide: <Guide />, bulk: <BulkPage />, drafts: <DraftsPage />, feedback: <FeedbackPage page={lastPage.current} />, users: <UsersPage onInvite={() => setInviting(true)} onChanged={readMe} />, logs: <LogsPage key={route.person || "all"} person={route.person} />,
   }[v];
 
   return (
@@ -1064,7 +1066,7 @@ function Masters() {
   return (
     <div className="stack">
       <header className="page-head"><div><h1>Lists and team</h1><p className="muted">Your insurers, policy types and team. Every screen picks from these.</p></div></header>
-      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() && (currentUser()?.kind || "legacy") === "legacy" ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
+      <Tabs tabs={[{ key: "insurers", label: "Insurers and branches" }, { key: "types", label: "Departments and policy types" }, { key: "team", label: "Team" }, { key: "brokerbranches", label: "Our branches" }, { key: "reading", label: "Reading and corrections" }, ...(isRemote() && (currentUser()?.kind || "legacy") === "legacy" && currentUser()?.role === "admin" ? [{ key: "logins", label: "Logins" }] : [])]} value={tab} onChange={(t) => { setTab(t); setErr(""); }} />
       {err && <div className="note note-bad" role="alert">{err}</div>}
       {!edit0 && <p className="muted small">Your role can look at these lists but not change them.</p>}
       <fieldset className="plainset stack" disabled={!edit0}>

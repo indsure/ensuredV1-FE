@@ -213,6 +213,7 @@ export const joinLook = (token) => tryApi("POST", "/api/corp/join/look", { token
 export async function joinAccept(details) { const r = await tryApi("POST", "/api/corp/join", details); if (r.ok) openSession(r.body); return r; }
 export const listTeam = () => tryApi("GET", "/api/corp/team");
 export const inviteEmployee = (email, role, teams = []) => tryApi("POST", "/api/corp/team/invite", { email, role, teams });
+export const fetchLogs = (f) => tryApi("GET", `/api/corp/logs?${new URLSearchParams(Object.entries(f).filter(([, v]) => v))}`);
 export const fetchMe = () => tryApi("GET", "/api/corp/me");
 export const saveRole = (key, r) => tryApi("POST", key ? `/api/corp/roles/${key}` : "/api/corp/roles", r);
 export const removeRole = (key) => tryApi("POST", `/api/corp/roles/${key}/remove`, {});

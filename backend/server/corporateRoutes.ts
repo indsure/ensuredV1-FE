@@ -34,6 +34,7 @@ import { log } from "./lib/logger";
 import { sendMail as realSendMail } from "./lib/mailer";
 import * as auth from "./services/corpAuth";
 import * as access from "./services/corpAccess";
+import * as logs from "./services/corpLogs";
 
 const BUCKET = "corporate-files";
 const SESSION_HOURS = 12;
@@ -191,12 +192,12 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
     let user: CorpUser | null = null;
     try {
       if (email === ownerEmail()) {
-        if (passwordMatches(password, String(process.env.CORP_LOGIN_HASH))) user = { email, name: "Admin", role: "admin" };
+        if (passwordMatches(password, String(process.env.CORP_LOGIN_HASH))) { user = { email, name: "Admin", role: "admin" }; if (await orgsOn()) await auth.logEvent(pool, 1, "Admin", "Signed in", "Email sign-in"); }
       } else {
         const { rows } = await pool.query("SELECT email, name, role, password_hash, active FROM corp_users WHERE email = $1", [email]).catch((e) => { if (missingTables(e)) return { rows: [] as any[] }; throw e; });
         // Hash even with no such login, so a wrong email takes as long as a wrong password.
         const ok = passwordMatches(password, rows[0]?.password_hash || process.env.CORP_LOGIN_HASH || "");
-        if (rows[0] && ok && rows[0].active) { user = { email, name: rows[0].name, role: rows[0].role }; pool.query("UPDATE corp_users SET last_login = now() WHERE email = $1", [email]).catch(() => {}); }
+        if (rows[0] && ok && rows[0].active) { user = { email, name: rows[0].name, role: rows[0].role }; if (await orgsOn()) await auth.logEvent(pool, 1, rows[0].name, "Signed in", "Email sign-in"); pool.query("UPDATE corp_users SET last_login = now() WHERE email = $1", [email]).catch(() => {}); }
       }
     } catch (e) { return fail(res, e, "login"); }
     if (!user) return res.status(401).json({ error: "wrong email or password" });
@@ -299,8 +300,9 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
     try {
       const m = await pool.query(`SELECT id, user_code, email, name, designation, departments, role, active, last_login, created_at${(await access.accessOn(pool)) ? ", staff_code" : ""} FROM corp_members WHERE org_id = $1 ORDER BY name`, [orgOf(req)]);
       const i = await pool.query(`SELECT id, email, role, expires_at, created_at${(await access.accessOn(pool)) ? ", teams" : ""} FROM corp_invites WHERE org_id = $1 AND kind = 'join' AND used_at IS NULL AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 200`, [orgOf(req)]);
-      const o = await pool.query("SELECT code, name FROM corp_orgs WHERE id = $1", [orgOf(req)]);
-      res.json({ org: o.rows[0], members: m.rows, invites: i.rows, roles: await access.rolesOf(pool, orgOf(req)), teams: await access.teamsOf(pool, orgOf(req)), access: await access.accessOn(pool), owner: auth.isOwner(me(req)) });
+      const o = await pool.query("SELECT code, name, owner_name, owner_email, last_login, owner_hash IS NOT NULL AS ready FROM corp_orgs WHERE id = $1", [orgOf(req)]);
+      const org = o.rows[0];
+      res.json({ org: { code: org.code, name: org.name }, ownerInfo: org.ready ? { name: org.owner_name, email: org.owner_email, last_login: org.last_login } : null, members: m.rows, invites: i.rows, roles: await access.rolesOf(pool, orgOf(req)), teams: await access.teamsOf(pool, orgOf(req)), access: await access.accessOn(pool), owner: auth.isOwner(me(req)) });
     } catch (e) { fail(res, e, "list team"); }
   });
   app.post("/api/corp/team/invite", ready, apiLimit, signedIn, needOrgs, managers, express.json({ limit: "10kb" }), async (req, res) => {
@@ -331,6 +333,16 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
       const roles = await access.rolesOf(pool, u.org), mayPick = u.role === "admin";
       res.json({ role: u.role, owner: auth.isOwner(u), roles: mayPick ? roles : roles.filter((r) => r.key === u.role), teams: (await access.teamsOf(pool, u.org)).map((t: any) => ({ id: String(t.id), name: t.name, lead: t.lead_name || "", mine: t.members.some((m: any) => u.kind === "member" && String(m.id) === u.uid), codes: [...new Set(t.members.map((m: any) => m.staff_code).filter(Boolean))] })) });
     } catch (e) { fail(res, e, "read access"); }
+  });
+  // Owner only: every sign-in, every change to users, roles and teams, and every change to the records.
+  app.get("/api/corp/logs", ready, apiLimit, signedIn, needOrgs, ownerOnly, async (req, res) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await logs.backfill(client, orgOf(req));
+      await client.query("COMMIT");
+      res.json(await logs.read(client, orgOf(req), req.query as any));
+    } catch (e) { await client.query("ROLLBACK").catch(() => {}); fail(res, e, "read logs"); } finally { client.release(); }
   });
   app.post("/api/corp/roles", ready, apiLimit, signedIn, needOrgs, needAccess, ownerOnly, express.json({ limit: "20kb" }), async (req, res) => {
     try { const r = await access.saveRole(pool, me(req), null, req.body); res.status(r.status).json(r.error ? { error: r.error } : { key: r.key }); } catch (e) { fail(res, e, "add role"); }
@@ -442,7 +454,7 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      const cur = await client.query("SELECT version FROM corp_book WHERE id = $1 FOR UPDATE", [org]);
+      const cur = await client.query("SELECT version, data->'audit' AS audit FROM corp_book WHERE id = $1 FOR UPDATE", [org]);
       const current = cur.rows[0]?.version ?? 0;
       if ((body.baseVersion ?? 0) !== current) { await client.query("ROLLBACK"); return res.status(409).json({ error: "changed elsewhere", version: current }); }
       const version = current + 1, at = new Date().toISOString(), data = JSON.stringify(body.db);
@@ -454,6 +466,12 @@ export function registerCorporateRoutes(app: Express, deps: Partial<Deps> & { st
       } else {
         await client.query("INSERT INTO corp_book_versions (version, data, saved_at, note) VALUES ($1, $2::jsonb, $3, $4)", [version, data, at, note]);
         await client.query("DELETE FROM corp_book_versions WHERE version <= $1", [version - KEEP_VERSIONS]);
+      }
+      // Kept apart from the records, under the name the server knows, so a saved book can neither forge nor erase it.
+      if (orgTables) {
+        await client.query("SAVEPOINT logs");
+        try { await logs.recordSave(client, org, me(req), cur.rows[0]?.audit || [], body.db.audit); await client.query("RELEASE SAVEPOINT logs"); }
+        catch (e: any) { await client.query("ROLLBACK TO SAVEPOINT logs"); log.error("[corp] log of a save failed", { message: e?.message }); }
       }
       await client.query("COMMIT");
       res.json({ version, savedAt: at });

@@ -11,12 +11,13 @@ export const ACTIONS = ["createCustomer", "editCustomer", "newBusiness", "editDr
 // These change no record. A role holding nothing else cannot save.
 const READ_ONLY_ACTIONS = ["export", "backup"];
 export type Role = { key: string; name: string; pages: string[]; actions: string[]; builtIn: boolean; edited?: boolean };
-// The same as the fixed roles before 042.
+// Everyone sees everything (founder, 25/11/2026). New business only adds, so it comes with adding policies.
+const VIEW = PAGES.filter((p) => p !== "new");
 const DEFAULTS: Role[] = [
-  { key: "ops", name: "Operations / BD", pages: ["home", "customers", "new", "register", "expiry", "reminders"], actions: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch", "backup"], builtIn: true },
-  { key: "accounts", name: "Accounts", pages: ["customers", "register", "business", "brokerage", "renewreport", "snapshots", "fx", "presets"], actions: ["receipt", "export", "finalize", "addDoc", "backup"], builtIn: true },
+  { key: "ops", name: "Operations / BD", pages: PAGES, actions: ["createCustomer", "editCustomer", "newBusiness", "editDraft", "endorse", "renew", "markLost", "fleet", "declare", "schedule", "receipt", "addDoc", "addBranch", "backup"], builtIn: true },
+  { key: "accounts", name: "Accounts", pages: VIEW, actions: ["receipt", "export", "finalize", "addDoc", "backup"], builtIn: true },
   { key: "admin", name: "Admin", pages: PAGES, actions: ACTIONS, builtIn: true },
-  { key: "readonly", name: "Read-only", pages: ["customers", "register", "expiry", "business", "brokerage", "renewreport"], actions: ["backup"], builtIn: true },
+  { key: "readonly", name: "Read-only", pages: VIEW, actions: ["backup"], builtIn: true },
 ];
 const BUILT_IN = DEFAULTS.map((r) => r.key);
 
