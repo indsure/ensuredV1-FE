@@ -53,7 +53,15 @@ export default function CommercialClient() {
   const load = useCallback(async () => {
     try { setData(await call("")); setError(""); } catch (e) { setError(e instanceof Error ? e.message : "Could not load."); }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  // Owners and employees join on the portal, so coming back to this tab reads the list again.
+  useEffect(() => {
+    void load();
+    const again = () => { if (document.visibilityState === "visible") void load(); };
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    const t = setInterval(again, 60000);
+    return () => { window.removeEventListener("focus", again); document.removeEventListener("visibilitychange", again); clearInterval(t); };
+  }, [load]);
 
   const start = (kind: Ask["kind"], org?: Org) => {
     setF({ name: kind === "rename" ? org?.name || "" : "", email: kind === "owner" ? org?.link_email || org?.owner_email || "" : "" });
@@ -89,7 +97,7 @@ export default function CommercialClient() {
           <h1 className="text-2xl font-bold text-slate-900">Commercial</h1>
           <p className="mt-1 text-sm text-slate-500">Organisations on IndSure Commercial. Their policies and clients are not shown here.</p>
         </div>
-        <Button onClick={() => start("create")} disabled={!data}><Plus className="mr-2 h-4 w-4" />New organisation</Button>
+        <div className="flex gap-2"><Button variant="outline" onClick={() => void load()}>Refresh</Button><Button onClick={() => start("create")} disabled={!data}><Plus className="mr-2 h-4 w-4" />New organisation</Button></div>
       </div>
 
       {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><span>{error}</span><Button variant="outline" onClick={() => void load()}>Reload</Button></div>}

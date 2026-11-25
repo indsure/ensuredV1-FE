@@ -491,3 +491,6 @@
   .ic-root .us-table td:has(.us-who)::before { display: none !important; }
   .ic-root .us-table .us-act .btn { width: 100%; justify-content: center; }
 }
+.ic-root .viewas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 32px; background: var(--warn-bg); border-bottom: 1px solid var(--warn-line); color: var(--s800); }
+.ic-root .plainset:disabled .addcard, .ic-root .plainset:disabled td .btn { display: none; }
+@media (max-width: 900px) { .ic-root .viewas { padding: 12px 16px; } }

@@ -60,12 +60,13 @@ export function App({ onSignedOut }) {
   const [loadErr, setLoadErr] = useState(false);
   const [saveState, setSaveState] = useState({ state: "idle" });
   const loaded = useRef(null);
-  const TEAM_KEY = "indsure-commercial-team";
   const [role, setRole] = useState(() => {
     if (!isRemote()) return "ops";
     const mine = currentUser()?.role || "ops";
     if (mine !== "admin") return mine;
-    try { return localStorage.getItem(TEAM_KEY) || "admin"; } catch (e) { return "admin"; }
+    // View as is never remembered: an owner left on another role looked locked out of their own portal.
+    try { localStorage.removeItem("indsure-commercial-team"); } catch (e) { /* storage blocked */ }
+    return "admin";
   });
   // Online, the server says what each role may see and do, and which teams there are. Until it has, the defaults.
   const [me, setMe] = useState(() => ({ role: currentUser()?.role, roles: DEFAULT_ROLES, teams: [], owner: currentUser()?.kind === "owner" || !!currentUser()?.owner }));
@@ -148,7 +149,6 @@ export function App({ onSignedOut }) {
   const go = (r) => { setRoute(r); setMenu(false); mainRef.current?.scrollTo?.(0, 0); window.scrollTo(0, 0); };
   const visible = (key) => shows(key);
   const switchRole = (r) => {
-    if (isRemote()) { try { localStorage.setItem(TEAM_KEY, r); } catch (e) { /* storage blocked */ } }
     setRole(r);
     const next = roles.find((x) => x.key === r);
     if (!["customer", "policy"].includes(route.view) && !shows(route.view, next)) setRoute({ view: firstPage(next) });
@@ -211,6 +211,7 @@ export function App({ onSignedOut }) {
                 : <AskFirst label="Reset demo" question="Put all example data back?" yes="Reset" onYes={reset} kind="banner" />}
             </div>
           </div>
+          {isRemote() && mayPick && R0.key !== "admin" && <div className="viewas" role="status"><span>You are viewing as <strong>{R0.name}</strong>, so some things are hidden or locked. Your own access has not changed.</span><Btn onClick={() => switchRole("admin")}>Back to my access</Btn></div>}
           <p className="rolebar">{LIVE ? "Today" : "Today in this demo"}: {fmtDate(TODAY)}. <SaveLine s={saveState} /></p>
           <main className="main" ref={mainRef}>{view}</main>
           <footer className="foot">{LIVE ? isRemote() ? "IndSure Commercial beta. Records and original files are saved online behind this sign-in. No email or payment is sent from here." : `IndSure Commercial beta. ${storeInfo().kind === "server" ? `Records and original PDFs are saved on this computer only (${storeInfo().dataDir}), never online.` : "Records you enter are kept in this browser only and are not sent anywhere."} PDFs are read on this computer, not uploaded anywhere. No email, payment or live system is used.` : <>IndSure Commercial demo prototype. All people, companies, insurers, policies, rates and amounts are fictional. No email, payment or live system is used. Sample documents use pre-written reading results; a PDF you attach is read inside this browser and not uploaded.</>}</footer>
@@ -948,7 +949,7 @@ function BrokerBranches() {
   return (
     <div className="stack">
       {err && <div className="note note-bad" role="alert">{err}</div>}
-      <Card title="Add one of our branches" sub="Each branch has a Qualified Person. Both appear in the IRDAI premium register. With only one branch, every customer uses it.">
+      <Card className="addcard" title="Add one of our branches" sub="Each branch has a Qualified Person. Both appear in the IRDAI premium register. With only one branch, every customer uses it.">
         <div className="filters">
           <Labeled label="Branch name" htmlFor="bb-name"><input id="bb-name" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled>
           <Labeled label="City" htmlFor="bb-city"><input id="bb-city" value={nb.city} onChange={(e) => setNb({ ...nb, city: e.target.value })} /></Labeled>
@@ -1071,8 +1072,8 @@ function Masters() {
       {!edit0 && <p className="muted small">Your role can look at these lists but not change them.</p>}
       <fieldset className="plainset stack" disabled={!edit0}>
       {tab === "insurers" && <>
-        <Card title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
-        <Card title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><PlaceFields id="ms-b" value={nb} req countryReq onChange={(x) => setNb({ ...nb, ...x })} /><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
+        <Card className="addcard" title="Add insurer"><div className="row gap-s wrap"><Labeled label="Insurer name" htmlFor="ms-ins"><input id="ms-ins" value={ni} onChange={(e) => setNi(e.target.value)} /></Labeled><Btn kind="primary" onClick={addIns}>Add insurer</Btn></div></Card>
+        <Card className="addcard" title="Add branch"><div className="filters"><Labeled label="Insurer" htmlFor="ms-bi"><Select id="ms-bi" value={nb.ins} onChange={(v) => setNb({ ...nb, ins: v })} placeholder="Choose" options={db.insurers.map((i) => ({ value: i.id, label: i.name }))} /></Labeled><Labeled label="Branch" htmlFor="ms-bn"><input id="ms-bn" value={nb.name} onChange={(e) => setNb({ ...nb, name: e.target.value })} /></Labeled><PlaceFields id="ms-b" value={nb} req countryReq onChange={(x) => setNb({ ...nb, ...x })} /><div className="fld"><Btn kind="primary" onClick={addBr}>Add branch</Btn></div></div></Card>
         {dups.length > 0 && !edit && <div className="note note-warn" role="status"><strong>Possible duplicates.</strong> These look like the same insurer. Merge them so every policy and report uses one name.
           {dupPlan.map(({ keep, rest }) => <div key={keep.id} className="row gap-s wrap" style={{ marginTop: 6 }}><span>{[keep, ...rest].map((i) => `${i.name} (${plural(insurerUse(db, i.id).policies, "policy", "policies")})`).join(" / ")}</span>{rest.map((r) => <Btn key={r.id} onClick={() => setEdit({ kind: "insurer", insId: r.id, name: r.name, mergeTo: keep.id })}>Choose what to keep</Btn>).slice(0, 1)}</div>)}
           <div className="row gap-s wrap" style={{ marginTop: 10 }}><AskFirst kind="primary" label={`Merge all duplicates (${plural(dupCount, "insurer")})`} question={`Merge ${plural(dupCount, "duplicate insurer")} into ${plural(dupPlan.length, "insurer")}? In each group the one with the most policies is kept, and everything moves to it. This cannot be undone, except from an earlier save.`} yes="Merge all" onYes={mergeAll} /></div></div>}
@@ -1144,7 +1145,7 @@ function TeamMaster() {
   const remove = (t) => { update((d) => { d.team = d.team.filter((x) => x.code !== t.code); log(d, { action: "Team member removed", detail: `${t.name} (${t.code}), ${t.role}. Was not assigned to any customer.` }); }); setEdit(null); toast("Team member removed"); };
   const rows = db.team.filter((t) => showInactive || t.active !== false);
   return (<>
-    <Card title="Add team member" sub="CSC: the customer service coordinator who looks after the customer.">
+    <Card className="addcard" title="Add team member" sub="CSC: the customer service coordinator who looks after the customer.">
       <div className="filters">
         <Labeled label="Code" htmlFor="ms-tc"><input id="ms-tc" value={nt.code} onChange={(e) => setNt({ ...nt, code: e.target.value })} /></Labeled>
         <Labeled label="Name" htmlFor="ms-tn"><input id="ms-tn" value={nt.name} onChange={(e) => setNt({ ...nt, name: e.target.value })} /></Labeled>
