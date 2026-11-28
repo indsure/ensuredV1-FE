@@ -9,7 +9,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { PassThrough } from "node:stream";
-import { exportReadme, planExportFiles, safeSegment } from "../services/accountExport";
+import { estimateZipBytes, exportReadme, planExportFiles, safeSegment } from "../services/accountExport";
 import { crc32, createZipWriter } from "../services/zipStream";
 
 const A = "11111111-2222-4333-8444-555555555555";
@@ -158,5 +158,33 @@ describe("exportReadme", () => {
     assert.match(txt, /3 files/);
     assert.match(txt, /policies\/a\.pdf/);
     assert.ok(!txt.includes("—"), "no em dashes");
+  });
+});
+
+describe("estimateZipBytes", () => {
+  it("matches the real zip exactly when every size is known", async () => {
+    const stream = new PassThrough();
+    const chunks: Buffer[] = [];
+    stream.on("data", (c) => chunks.push(c));
+    const zip = createZipWriter(stream);
+    const files = [
+      { name: "data.json", data: Buffer.from('{"a":1}') },
+      { name: "policies/रमेश - Star Health.pdf", data: Buffer.alloc(12345, 1) },
+      { name: "claims/x/discharge.pdf", data: Buffer.alloc(999, 2) },
+    ];
+    for (const f of files) await zip.addFile(f.name, f.data);
+    const note = Buffer.from("note text");
+    await zip.addFile("about-this-download.txt", note);
+    await zip.finish();
+    stream.end();
+    const actual = Buffer.concat(chunks).length;
+    const est = estimateZipBytes(files.map((f) => ({ name: f.name, size: f.data.length })), note.length);
+    assert.equal(est, actual);
+  });
+
+  it("counts a file of unknown size at the average of the others", () => {
+    const a = estimateZipBytes([{ name: "a", size: 100 }, { name: "b", size: 300 }, { name: "c", size: null }], 0);
+    const b = estimateZipBytes([{ name: "a", size: 100 }, { name: "b", size: 300 }, { name: "c", size: 200 }], 0);
+    assert.equal(a, b);
   });
 });

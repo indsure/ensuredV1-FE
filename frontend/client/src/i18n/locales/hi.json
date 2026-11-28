@@ -1272,6 +1272,16 @@
     "preparing": "आपकी फ़ाइल तैयार हो रही है...",
     "download": "मेरा डेटा डाउनलोड करें"
   },
+  "export_progress": {
+    "preparing": "आपकी फ़ाइलें तैयार हो रही हैं...",
+    "downloading": "डाउनलोड हो रहा है: {{total}} MB में से {{done}} MB",
+    "downloading_unknown": "डाउनलोड हो रहा है: अब तक {{done}} MB",
+    "seconds_left": "लगभग {{seconds}} सेकंड बाकी",
+    "almost": "लगभग पूरा",
+    "saving": "फ़ाइल सेव हो रही है...",
+    "busy": "आपका डाउनलोड पहले से तैयार हो रहा है। कृपया उसके पूरा होने तक रुकें।",
+    "aria": "डाउनलोड की प्रगति"
+  },
   "claim_docs": {
     "aadhaar_patient": "आधार (मरीज़ का)",
     "pan_card": "PAN कार्ड",

@@ -208,3 +208,24 @@ export function exportReadme(opts: {
   }
   return lines.join("\r\n") + "\r\n";
 }
+
+/**
+ * How many bytes the finished zip will be, so the page can show a real
+ * progress bar. Exact for every file whose size the storage listing reported
+ * (the STORE format adds fixed headers and nothing else); a file with no known
+ * size is counted at the average of the others. The closing note is not built
+ * until the end, so a generous allowance stands in for it. An estimate, never
+ * a promise: the page holds its bar short of 100% until the download ends.
+ */
+export function estimateZipBytes(entries: { name: string; size: number | null | undefined }[], noteAllowance = 4096): number {
+  const known = entries.filter((e) => typeof e.size === "number" && e.size >= 0);
+  const avg = known.length ? known.reduce((n, e) => n + (e.size as number), 0) / known.length : 0;
+  let total = 22; // end record
+  for (const e of entries) {
+    const n = Buffer.byteLength(e.name, "utf8");
+    const size = typeof e.size === "number" && e.size >= 0 ? e.size : avg;
+    total += 30 + n + size + 46 + n; // local header + data + directory entry
+  }
+  const noteName = Buffer.byteLength("about-this-download.txt", "utf8");
+  return Math.round(total + 30 + 46 + 2 * noteName + noteAllowance);
+}

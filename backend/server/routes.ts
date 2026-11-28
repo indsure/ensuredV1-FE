@@ -25,7 +25,7 @@ import { buildComparison, compareMany, type WordingProfile } from "./types/wordi
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { shareDetails } from "../../shared/dataEntryShare";
 import { AGENT_TABLES, INDIVIDUAL_TABLES, ownsStoragePath, selectForTable, type OwnedTable } from "./services/accountData";
-import { exportReadme, planExportFiles } from "./services/accountExport";
+import { estimateZipBytes, exportReadme, planExportFiles } from "./services/accountExport";
 import { createZipWriter } from "./services/zipStream";
 import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
@@ -5460,10 +5460,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
   /** Every object key under "<accountId>/" in the bucket. Storage lists one
    *  folder at a time, so this walks down. Bounded, so a runaway listing cannot
    *  hold the request open forever. */
-  async function listAccountKeys(accountId: string): Promise<string[]> {
-    const keys: string[] = [];
+  async function listAccountKeys(accountId: string): Promise<Map<string, number | null>> {
+    // key -> size in bytes, as storage reports it (null when it does not say).
+    const keys = new Map<string, number | null>();
     const walk = async (prefix: string, depth: number): Promise<void> => {
-      if (depth > 8 || keys.length >= 50000) return;
+      if (depth > 8 || keys.size >= 50000) return;
       // Advance by what came back and stop only on an empty page, so a server
       // that caps a page below the limit asked for cannot truncate the list.
       for (let offset = 0; ; ) {
@@ -5478,7 +5479,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
           const path = `${prefix}/${item.name}`;
           // A folder comes back with no id; a file has one.
           if (item.id == null) await walk(path, depth + 1);
-          else keys.push(path);
+          else {
+            const size = Number((item as any).metadata?.size);
+            keys.set(path, Number.isFinite(size) && size >= 0 ? size : null);
+          }
         }
       }
     };
@@ -5503,14 +5507,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const exportedAt = new Date();
       const data = await buildExport(accountId, tables);
 
-      let listed: string[] = [];
+      let listed = new Map<string, number | null>();
       try {
         listed = await listAccountKeys(accountId);
       } catch (err: any) {
         // The rows still name most files; carry on with those.
         log.error("export_storage_list_failed", { kind, message: err?.message });
       }
-      const plan = planExportFiles({ kind, accountId, bucket: PDF_BUCKET, data, listedKeys: listed });
+      const plan = planExportFiles({ kind, accountId, bucket: PDF_BUCKET, data, listedKeys: [...listed.keys()] });
+      const json = Buffer.from(JSON.stringify({ exported_at: exportedAt.toISOString(), account: kind, data }, null, 2), "utf8");
+      const expectedBytes = estimateZipBytes([
+        { name: "data.json", size: json.length },
+        ...plan.files.map((f) => ({ name: f.zipName, size: listed.get(f.key) })),
+      ]);
       if (plan.refused) log.warn("export_files_refused", { kind, accountId, count: plan.refused });
 
       const stamp = exportedAt.toISOString().slice(0, 10);
@@ -5520,9 +5529,15 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       res.setHeader("Cache-Control", "no-store");
       // Tell a proxy in front not to spool the whole zip to its own disk.
       res.setHeader("X-Accel-Buffering", "no");
+      // For the page's progress bar. Not Content-Length: it is an estimate, and a
+      // wrong Content-Length would make the browser throw the whole download away.
+      res.setHeader("X-Export-Bytes", String(expectedBytes));
+      res.setHeader("X-Export-Files", String(plan.files.length));
+      // The page is on another origin (beta.indsure.in -> api.indsure.in), and a
+      // browser hides custom response headers from it unless they are named here.
+      res.setHeader("Access-Control-Expose-Headers", "X-Export-Bytes, X-Export-Files, Content-Disposition");
       const zip = createZipWriter(res);
 
-      const json = Buffer.from(JSON.stringify({ exported_at: exportedAt.toISOString(), account: kind, data }, null, 2), "utf8");
       await zip.addFile("data.json", json, exportedAt);
 
       const missing: string[] = [];

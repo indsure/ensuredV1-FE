@@ -1272,6 +1272,16 @@
     "preparing": "Preparing your file...",
     "download": "Download my data"
   },
+  "export_progress": {
+    "preparing": "Getting your files ready...",
+    "downloading": "Downloading: {{done}} of {{total}} MB",
+    "downloading_unknown": "Downloading: {{done}} MB so far",
+    "seconds_left": "about {{seconds}} seconds left",
+    "almost": "almost done",
+    "saving": "Saving the file...",
+    "busy": "Your download is already being prepared. Please wait for it to finish.",
+    "aria": "Download progress"
+  },
   "claim_docs": {
     "aadhaar_patient": "Aadhaar (patient)",
     "pan_card": "PAN card",

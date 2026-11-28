@@ -4,6 +4,8 @@ import { ArrowLeft, Download, Loader2, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { downloadAccountExport, type ExportProgress } from "@/lib/exportDownload";
+import { ExportProgressBar } from "@/components/ExportProgressBar";
 import { clearSessionKeys } from "@/lib/clearSessionKeys";
 
 // The server only deletes when it receives this exact phrase (accountData.ts).
@@ -80,6 +82,7 @@ export default function Account() {
   const [who, setWho] = useState<{ email: string; name: string; phone: string } | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportErr, setExportErr] = useState<string | null>(null);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -96,29 +99,18 @@ export default function Account() {
     });
   }, []);
 
-  /* Fetched rather than linked, because the route needs the auth header and a
-     plain anchor cannot carry one. */
+  /* Live progress while the zip streams in; see lib/exportDownload.ts. */
   async function downloadData() {
     setExporting(true);
     setExportErr(null);
     try {
-      const res = await apiFetch("/api/me/export");
-      if (!res.ok) throw new Error();
-      // A zip from the current server, or records-only JSON from an older one.
-      const ext = (res.headers.get("Content-Type") || "").includes("zip") ? "zip" : "json";
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setExportErr(t("cflow.ac_export_failed"));
+      await downloadAccountExport("/api/me/export", setExportProgress);
+    } catch (err) {
+      const busy = err instanceof Error && err.message === "EXPORT_429";
+      setExportErr(busy ? t("export_progress.busy") : t("cflow.ac_export_failed"));
     } finally {
       setExporting(false);
+      setExportProgress(null);
     }
   }
 
@@ -204,6 +196,7 @@ export default function Account() {
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Download className="w-4 h-4" aria-hidden="true" />}
             {exporting ? t("cflow.ac_exporting") : t("cflow.ac_export_cta")}
           </button>
+          <ExportProgressBar progress={exportProgress} />
           {exportErr && <p role="alert" className="text-sm font-medium text-red-700">{exportErr}</p>}
         </section>
 

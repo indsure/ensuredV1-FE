@@ -10,9 +10,10 @@ import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
 import { toast } from "@/hooks/use-toast"
-import { apiFetch } from "@/lib/api"
 import WhatsAppConnectCard from "@/features/whatsapp/WhatsAppConnectCard" // WHATSAPP-PLUGIN
 import { useLanguage } from "@/i18n/LanguageContext"
+import { downloadAccountExport, type ExportProgress } from "@/lib/exportDownload"
+import { ExportProgressBar } from "@/components/ExportProgressBar"
 
 type AgentProfile = {
   id: string;
@@ -46,33 +47,24 @@ function roleBadge(role: string) {
 export default function SettingsNew() {
   const { t } = useLanguage()
   const [exporting, setExporting] = useState(false)
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null)
 
-  /* Fetched rather than linked, because the route needs the auth header and a
-     plain anchor cannot carry one. The blob is built in the browser and
-     released straight after, so nothing is left sitting in memory. */
+  /* Live progress while the zip streams in; see lib/exportDownload.ts. */
   async function exportAccount() {
     setExporting(true)
     try {
-      const res = await apiFetch("/api/agent/export")
-      if (!res.ok) throw new Error(t("settings.export_failed"))
-      // Name the file after what came back: a zip from the current server, or
-      // the records-only JSON from an older one (and from the demo), which a
-      // .zip name would make unopenable.
-      const ext = (res.headers.get("Content-Type") || "").includes("zip") ? "zip" : "json"
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.${ext}`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      await downloadAccountExport("/api/agent/export", setExportProgress)
       toast({ variant: "success", title: t("settings.downloaded") })
-    } catch {
-      toast({ variant: "destructive", title: t("settings.export_build_failed"), description: t("settings.try_moment") })
+    } catch (err) {
+      const busy = err instanceof Error && err.message === "EXPORT_429"
+      toast({
+        variant: "destructive",
+        title: busy ? t("export_progress.busy") : t("settings.export_build_failed"),
+        description: busy ? undefined : t("settings.try_moment"),
+      })
     } finally {
       setExporting(false)
+      setExportProgress(null)
     }
   }
 
@@ -276,6 +268,7 @@ export default function SettingsNew() {
           >
             {exporting ? t("settings.preparing") : t("settings.download")}
           </Button>
+          <ExportProgressBar progress={exportProgress} />
         </CardContent>
       </Card>
 
