@@ -53,7 +53,7 @@ export default function SettingsNew() {
   async function exportAccount() {
     setExporting(true)
     try {
-      await downloadAccountExport("/api/agent/export", setExportProgress)
+      await downloadAccountExport("/api/agent/export?format=zip", setExportProgress)
       toast({ variant: "success", title: t("settings.downloaded") })
     } catch (err) {
       const busy = err instanceof Error && err.message === "EXPORT_429"

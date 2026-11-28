@@ -5568,15 +5568,36 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   }
 
+  /* The zip is opt-in (?format=zip). This server also answers indsure.in, whose
+     pages save whatever comes back under a .json name; sending them a zip made a
+     file nobody could open. Anything that does not ask gets the records-only
+     JSON it was built for. */
+  async function sendExportJson(res: any, accountId: string, kind: "agent" | "individual", tables: OwnedTable[]) {
+    try {
+      const data = await buildExport(accountId, tables);
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
+      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: kind, data }, null, 2));
+    } catch (err: any) {
+      log.error(`${kind === "agent" ? "agent" : "me"}_export_failed`, { message: err?.message });
+      return res.status(500).json({ error: "Could not build your export. Try again." });
+    }
+  }
+
+  const wantsZip = (req: any) => req.query?.format === "zip";
+
   app.get("/api/me/export", async (req, res) => {
     const userId = await requireIndividual(req, res);
     if (!userId) return;
+    if (!wantsZip(req)) return sendExportJson(res, userId, "individual", INDIVIDUAL_TABLES);
     return sendExportZip(req, res, userId, "individual", INDIVIDUAL_TABLES);
   });
 
   app.get("/api/agent/export", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
+    if (!wantsZip(req)) return sendExportJson(res, agentId, "agent", AGENT_TABLES);
     return sendExportZip(req, res, agentId, "agent", AGENT_TABLES);
   });
 

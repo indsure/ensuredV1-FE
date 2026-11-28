@@ -104,7 +104,7 @@ export default function Account() {
     setExporting(true);
     setExportErr(null);
     try {
-      await downloadAccountExport("/api/me/export", setExportProgress);
+      await downloadAccountExport("/api/me/export?format=zip", setExportProgress);
     } catch (err) {
       const busy = err instanceof Error && err.message === "EXPORT_429";
       setExportErr(busy ? t("export_progress.busy") : t("cflow.ac_export_failed"));
