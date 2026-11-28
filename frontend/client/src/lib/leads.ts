@@ -12,6 +12,8 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { apiFetch, apiOk } from "@/lib/api";
+import { isPlaygroundMode } from "@/lib/playground/mode";
 import { assertCrmWritable } from "@/lib/entitlement";
 import { createCustomer } from "@/lib/customers";
 import { fetchAllRows } from "@/lib/fetchAllRows";
@@ -162,10 +164,17 @@ export async function setLeadStatus(id: string, status: LeadStatus): Promise<voi
   if (error) throw new Error(error.message);
 }
 
+/** Through the backend, so the files saved against the lead go too (the
+ *  browser delete cascaded to its lead policies and left their files in
+ *  storage). The playground has no backend and keeps the mock delete. */
 export async function deleteLead(id: string): Promise<void> {
   assertCrmWritable();
-  const { error } = await supabase.from("agent_leads").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (isPlaygroundMode()) {
+    const { error } = await supabase.from("agent_leads").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+  await apiOk(apiFetch(`/api/agent/leads/${encodeURIComponent(id)}`, { method: "DELETE" }));
 }
 
 /**

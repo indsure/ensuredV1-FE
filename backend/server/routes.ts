@@ -27,6 +27,7 @@ import { shareDetails } from "../../shared/dataEntryShare";
 import { AGENT_TABLES, INDIVIDUAL_TABLES, ownsStoragePath, selectForTable, type OwnedTable } from "./services/accountData";
 import { estimateZipBytes, exportReadme, planExportFiles } from "./services/accountExport";
 import { createZipWriter } from "./services/zipStream";
+import { companionUrls, listFolder } from "./services/storageWalk";
 import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
@@ -110,6 +111,24 @@ function ownedStorageObject(pdfUrl: unknown, accountId: string): { bucket: strin
     return null;
   }
   return { bucket, path };
+}
+
+/* Every stored file one policy row points at: its PDF and each extra cover,
+   ownership-checked like every other read. Used by the policy deletes so a
+   file whose name does not follow "<clientId>.<ext>" still goes with the row. */
+async function policyFileKeys(agentId: string, clientId: string): Promise<string[]> {
+  const r = await pool.query(
+    "SELECT pdf_url, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
+    [clientId, agentId]
+  );
+  const row = r.rows[0];
+  if (!row) return [];
+  const keys = new Set<string>();
+  for (const url of [row.pdf_url, ...companionUrls({ __companions: row.companions })]) {
+    const owned = ownedStorageObject(url, agentId);
+    if (owned) keys.add(owned.path);
+  }
+  return [...keys];
 }
 
 /* The document-rules store needs real transactions (a per-policy lock, then
@@ -3689,6 +3708,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!agentId) return;
 
       const { id } = req.params;
+      // No page calls this any more, but while it exists it must not leave the
+      // policy's files behind. See DELETE /api/agent/policies/:id.
+      const keys = await policyFileKeys(agentId, id);
+      if (keys.length > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(keys);
+        if (error) return res.status(502).json({ error: "FILE_DELETE_FAILED" });
+      }
       const result = await pool.query(
         "DELETE FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
@@ -4377,18 +4403,31 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         .from(PDF_BUCKET)
         .list(agentId, { search: clientId, limit: 100 });
       if (listErr) log.error("policy_delete_list_failed", { agentId, clientId, message: listErr.message });
-      const paths = (objs ?? [])
-        .map((o) => o.name)
-        .filter((n) => n.startsWith(`${clientId}.`) || n.startsWith(`${clientId}-`))
-        .map((n) => `${agentId}/${n}`);
-      if (paths.length > 0) {
-        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(paths);
-        if (error) log.error("policy_delete_remove_failed", { agentId, clientId, message: error.message });
+      const paths = new Set(
+        (objs ?? [])
+          .map((o) => o.name)
+          .filter((n) => n.startsWith(`${clientId}.`) || n.startsWith(`${clientId}-`))
+          .map((n) => `${agentId}/${n}`),
+      );
+      // Plus whatever the row itself points at, which need not follow the
+      // <clientId> naming (a batch upload, a carried lead file).
+      for (const p of await policyFileKeys(agentId, clientId)) paths.add(p);
+      if (listErr && paths.size === 0) {
+        return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not check the stored document. Nothing was removed. Please try again." });
+      }
+      if (paths.size > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove([...paths]);
+        if (error) {
+          // Stop rather than delete the row: a file with nothing pointing at it
+          // is the one thing a deletion must not leave behind.
+          log.error("policy_delete_remove_failed", { agentId, clientId, message: error.message });
+          return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not delete the stored document. Nothing was removed. Please try again." });
+        }
       }
 
       await pool.query("DELETE FROM clients WHERE id = $1 AND agent_id = $2", [clientId, agentId]);
       void recordAccess(req, agentId, clientId, "policy_delete");
-      return res.json({ ok: true, filesRemoved: paths.length });
+      return res.json({ ok: true, filesRemoved: paths.size });
     } catch (err: any) {
       console.error("policy delete error:", err);
       return res.status(500).json({ error: "Could not delete the policy" });
@@ -4412,7 +4451,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const owned = ownedStorageObject(row.rows[0].file_url, agentId);
       if (owned) {
         const { error } = await supabaseAdmin.storage.from(owned.bucket).remove([owned.path]);
-        if (error) log.error("lead_policy_delete_remove_failed", { agentId, message: error.message });
+        if (error) {
+          log.error("lead_policy_delete_remove_failed", { agentId, message: error.message });
+          return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not delete the stored document. Nothing was removed. Please try again." });
+        }
       }
 
       await pool.query("DELETE FROM lead_policies WHERE id = $1 AND agent_id = $2", [row.rows[0].id, agentId]);
@@ -4421,6 +4463,45 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     } catch (err: any) {
       console.error("lead policy delete error:", err);
       return res.status(500).json({ error: "Could not delete the policy" });
+    }
+  });
+
+  /* ── Agent: delete a lead, with every file saved against it ─────────────
+     Deleting the agent_leads row cascades to its lead_policies, and the
+     browser used to do exactly that, leaving every file the lead's policies
+     pointed at in storage. Files first, rows second, refusing on a failed
+     removal, as for a single policy. */
+  app.delete("/api/agent/leads/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      if (!UUID_RE.test(req.params.id)) return res.status(404).json({ error: "Lead not found" });
+      const lead = await pool.query("SELECT id FROM agent_leads WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      if (lead.rows.length === 0) return res.status(404).json({ error: "Lead not found" });
+
+      const files = await pool.query(
+        "SELECT file_url FROM lead_policies WHERE lead_id = $1 AND agent_id = $2 AND file_url IS NOT NULL",
+        [req.params.id, agentId]
+      );
+      const paths = new Set<string>();
+      for (const r of files.rows) {
+        const owned = ownedStorageObject(r.file_url, agentId);
+        if (owned) paths.add(owned.path);
+      }
+      if (paths.size > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove([...paths]);
+        if (error) {
+          log.error("lead_delete_remove_failed", { agentId, message: error.message });
+          return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not delete the lead's documents. Nothing was removed. Please try again." });
+        }
+      }
+
+      await pool.query("DELETE FROM agent_leads WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      void recordAccess(req, agentId, null, "lead_delete");
+      return res.json({ ok: true, filesRemoved: paths.size });
+    } catch (err: any) {
+      console.error("lead delete error:", err);
+      return res.status(500).json({ error: "Could not delete the lead" });
     }
   });
 
@@ -5463,32 +5544,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
    *  hold the request open forever. */
   async function listAccountKeys(accountId: string): Promise<Map<string, number | null>> {
     // key -> size in bytes, as storage reports it (null when it does not say).
-    const keys = new Map<string, number | null>();
-    const walk = async (prefix: string, depth: number): Promise<void> => {
-      if (depth > 8 || keys.size >= 50000) return;
-      // Advance by what came back and stop only on an empty page, so a server
-      // that caps a page below the limit asked for cannot truncate the list.
-      for (let offset = 0; ; ) {
-        const { data, error } = await supabaseAdmin.storage
-          .from(PDF_BUCKET)
-          .list(prefix, { limit: 1000, offset, sortBy: { column: "name", order: "asc" } });
-        if (error) throw new Error(error.message);
-        if (!data?.length) return;
-        offset += data.length;
-        for (const item of data) {
-          if (item.name === ".emptyFolderPlaceholder") continue; // storage bookkeeping, not a document
-          const path = `${prefix}/${item.name}`;
-          // A folder comes back with no id; a file has one.
-          if (item.id == null) await walk(path, depth + 1);
-          else {
-            const size = Number((item as any).metadata?.size);
-            keys.set(path, Number.isFinite(size) && size >= 0 ? size : null);
-          }
-        }
-      }
-    };
-    await walk(accountId, 0);
-    return keys;
+    const listed = await listFolder(supabaseAdmin.storage as any, PDF_BUCKET, accountId);
+    return new Map(listed.map((o) => [o.key, o.size]));
   }
 
   /* One export per account at a time. A second click while the first is still

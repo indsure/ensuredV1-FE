@@ -37,6 +37,7 @@ import rateLimit from "express-rate-limit";
 
 import { pool } from "../lib/db";
 import { log } from "../lib/logger";
+import { companionUrls, listFolder, type ListableStorage } from "./storageWalk";
 import {
   AGENT_TABLES,
   INDIVIDUAL_TABLES,
@@ -70,6 +71,7 @@ export interface AccountDeletionDeps {
     storage: {
       from(bucket: string): {
         remove(paths: string[]): Promise<{ error: { message?: string } | null }>;
+        list: ReturnType<ListableStorage["from"]>["list"];
       };
     };
     auth: {
@@ -441,10 +443,14 @@ export function registerAccountDeletionRoutes(app: Express, deps: AccountDeletio
 
     if (kind === "agent") {
       const clients = await client.query(
-        "SELECT pdf_url FROM clients WHERE agent_id = $1 AND pdf_url IS NOT NULL",
+        "SELECT pdf_url, report_data->'__companions' AS companions FROM clients WHERE agent_id = $1",
         [accountId],
       );
-      for (const r of clients.rows) takeUrl(r.pdf_url, "clients.pdf_url");
+      for (const r of clients.rows) {
+        takeUrl(r.pdf_url, "clients.pdf_url");
+        // Extra covers sent with a policy are named only inside report_data.
+        for (const u of companionUrls({ __companions: r.companions })) takeUrl(u, "clients.report_data.__companions");
+      }
 
       const leadPolicies = await client.query(
         "SELECT file_url FROM lead_policies WHERE agent_id = $1 AND file_url IS NOT NULL",
@@ -473,6 +479,19 @@ export function registerAccountDeletionRoutes(app: Express, deps: AccountDeletio
       [accountId],
     );
     for (const r of pending.rows) takePath(r.storage_path, "pending_uploads.storage_path", true);
+
+    // Everything else in the account's own folder: files whose row went long
+    // ago, batch uploads, anything a future upload site forgets to record. The
+    // whole folder belongs to this account by how every upload path is built,
+    // and the account is going, so its folder goes with it. A failed listing
+    // is reported and the row-named files above are still removed.
+    try {
+      const listed = await listFolder(supabaseAdmin.storage as ListableStorage, pdfBucket, accountId);
+      for (const o of listed) takePath(o.key, "account folder");
+    } catch (err: any) {
+      log.warn("account_delete_folder_list_failed", { accountId, message: err?.message });
+      warnings.push("We could not list every stored file for this account, so some may need removing by hand.");
+    }
 
     return refs;
   }
