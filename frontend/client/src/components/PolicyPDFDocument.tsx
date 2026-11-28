@@ -90,10 +90,12 @@ export function registerPdfFonts(
 export const C = {
     ink: '#101828',
     inkSoft: '#3F4654',
-    muted: '#8A8272',
-    faint: '#B4AC9B',
-    rule: '#E3DED3',
-    ruleSoft: '#EFEBE2',
+    // Darkened 2026-11-28 for legibility: muted 7:1, faint 5:1 on white
+    // (they were 3.8:1 and 2.25:1, below the 4.5:1 minimum for text).
+    muted: '#4F5563',
+    faint: '#666B78',
+    rule: '#CFC8BA',
+    ruleSoft: '#E6E1D6',
     paper: '#FFFFFF',
     white: '#FFFFFF',
     teal: '#0D9488',
@@ -153,14 +155,21 @@ const OTHER_COVER_LABEL: Record<string, string> = {
 
 /* ------------------------------------------------------------------ styles */
 
+/**
+ * Large-print scale (founder, 2026-11-28: "it is illegible"). The readers are
+ * 40+ and print these. Body text is 11pt, nothing is below 9pt, labels are
+ * sentence case rather than tracked capitals, and every text colour is at least
+ * 5:1 on white. Headings are the sans: the hairline display serif was part of
+ * what made the old document hard to read.
+ */
 const s = StyleSheet.create({
     page: {
-        paddingTop: 58,
-        paddingBottom: 58,
-        paddingHorizontal: 52,
+        paddingTop: 54,
+        paddingBottom: 62,
+        paddingHorizontal: 46,
         backgroundColor: C.paper,
         fontFamily: 'Sans',
-        fontSize: 9,
+        fontSize: 11,
         color: C.inkSoft,
         lineHeight: 1.5,
     },
@@ -168,225 +177,216 @@ const s = StyleSheet.create({
     /* running furniture */
     runHead: {
         position: 'absolute',
-        top: 26,
-        left: 52,
-        right: 52,
+        top: 22,
+        left: 46,
+        right: 46,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     runFoot: {
         position: 'absolute',
-        top: 786,
-        left: 52,
-        right: 52,
+        top: 792,
+        left: 46,
+        right: 46,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderTopWidth: 0.6,
+        borderTopWidth: 0.8,
         borderTopColor: C.rule,
-        paddingTop: 7,
+        paddingTop: 6,
     },
-    micro: { fontSize: 6.8, color: C.faint, letterSpacing: 0.2 },
+    micro: { fontSize: 9, color: C.muted },
 
     /* masthead */
     masthead: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 1,
         borderBottomColor: C.rule,
-        paddingBottom: 9,
-        marginBottom: 26,
+        paddingBottom: 10,
+        marginBottom: 18,
     },
-    /** The wordmark is 784x599; 54pt wide holds that ratio and keeps the rule
-     *  through the ascenders legible at print size. */
+    /** The wordmark is 784x599; 54pt wide holds that ratio. */
     wordmark: { width: 54, height: 41.3 },
+    eyebrow: { fontSize: 10, color: C.muted, textAlign: 'right' },
 
-    eyebrow: {
-        fontSize: 6.8,
-        fontWeight: 700,
-        letterSpacing: 1.15,
-        color: C.muted,
-        textTransform: 'uppercase',
+    /* page 1: the four answers */
+    ansTitle: { fontSize: 20, fontWeight: 700, color: C.ink, lineHeight: 1.25, marginBottom: 4 },
+    ansFor: { fontSize: 11, color: C.muted, marginBottom: 14 },
+    ansBox: { borderWidth: 1.4, borderRadius: 6, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 10 },
+    ansQ: { fontSize: 11.5, fontWeight: 700, marginBottom: 3 },
+    ansLine: { fontSize: 13, fontWeight: 600, color: C.ink, lineHeight: 1.4 },
+    ansMore: { fontSize: 11, color: C.muted, marginTop: 10 },
+
+    /* answer section heads */
+    aHead: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: 1.4,
+        borderBottomColor: C.ink,
+        paddingBottom: 7,
+        marginTop: 26,
+        marginBottom: 12,
     },
+    aNum: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: C.tealDeep,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    aNumText: { fontSize: 12, fontWeight: 700, color: C.white, lineHeight: 1 },
+    aTitle: { fontSize: 17, fontWeight: 700, color: C.ink },
 
     /* verdict */
-    verdictRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 9 },
-    verdictLabel: {
-        fontSize: 7,
-        fontWeight: 700,
-        letterSpacing: 1.15,
-        color: C.tealDeep,
-        textTransform: 'uppercase',
-    },
-    headline: {
-        fontFamily: 'Serif',
-        fontSize: 24,
-        lineHeight: 1.24,
-        color: C.ink,
-        marginBottom: 11,
-    },
-    deck: { fontSize: 9.5, lineHeight: 1.62, color: C.inkSoft, maxWidth: '92%' },
+    verdictRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+    verdictLabel: { fontSize: 11.5, fontWeight: 700, color: C.tealDeep },
+    headline: { fontFamily: 'Sans', fontSize: 16, fontWeight: 700, lineHeight: 1.35, color: C.ink, marginBottom: 8 },
+    deck: { fontSize: 11.5, lineHeight: 1.55, color: C.inkSoft },
 
     /* fact strip */
     facts: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        borderTopWidth: 0.6,
+        borderTopWidth: 0.8,
         borderTopColor: C.rule,
-        marginTop: 24,
+        marginTop: 16,
     },
     fact: {
         width: '33.33%',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 0.8,
         borderBottomColor: C.ruleSoft,
-        paddingVertical: 10,
-        paddingRight: 14,
+        paddingVertical: 8,
+        paddingRight: 12,
     },
-    factLabel: {
-        fontSize: 6.4,
-        fontWeight: 700,
-        letterSpacing: 1,
-        color: C.faint,
-        textTransform: 'uppercase',
-        marginBottom: 3,
-    },
-    factValue: { fontSize: 10, fontWeight: 600, color: C.ink, lineHeight: 1.3 },
+    factLabel: { fontSize: 9.5, color: C.muted, marginBottom: 2 },
+    factValue: { fontSize: 12, fontWeight: 600, color: C.ink, lineHeight: 1.3 },
 
     /* section heads */
     sectionHead: {
         flexDirection: 'row',
         alignItems: 'baseline',
         justifyContent: 'space-between',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 0.8,
         borderBottomColor: C.rule,
-        paddingBottom: 6,
-        marginTop: 21,
-        marginBottom: 12,
+        paddingBottom: 5,
+        marginTop: 18,
+        marginBottom: 10,
     },
-    sectionTitle: { fontFamily: 'Serif', fontSize: 14, color: C.ink },
-    sectionNote: { fontSize: 6.8, color: C.faint, letterSpacing: 0.6, textTransform: 'uppercase' },
+    sectionTitle: { fontFamily: 'Sans', fontSize: 13.5, fontWeight: 700, color: C.ink },
+    sectionNote: { fontSize: 9.5, color: C.muted },
 
     /* score */
-    scoreRow: { flexDirection: 'row', marginTop: 4 },
-    scoreLeft: { width: 158, paddingRight: 22 },
-    scoreNum: { fontFamily: 'Serif', fontSize: 58, color: C.ink, lineHeight: 1.32 },
-    scoreOf: { fontSize: 7, fontWeight: 700, color: C.faint, marginTop: 0, marginBottom: 11, letterSpacing: 1, textTransform: 'uppercase' },
-    scoreBucket: { fontSize: 9.5, fontWeight: 700, color: C.tealDeep, marginBottom: 5 },
-    scoreMeta: { fontSize: 7.6, color: C.muted, lineHeight: 1.55 },
-    scoreRight: { flex: 1, borderLeftWidth: 0.6, borderLeftColor: C.rule, paddingLeft: 22 },
+    scoreRow: { flexDirection: 'row', marginTop: 2 },
+    scoreLeft: { width: 150, paddingRight: 18 },
+    scoreNum: { fontFamily: 'Sans', fontSize: 40, fontWeight: 700, color: C.ink, lineHeight: 1.15 },
+    scoreOf: { fontSize: 10, color: C.muted, marginBottom: 8 },
+    scoreBucket: { fontSize: 12, fontWeight: 700, color: C.tealDeep, marginBottom: 4 },
+    scoreMeta: { fontSize: 10, color: C.muted, lineHeight: 1.5 },
+    scoreRight: { flex: 1, borderLeftWidth: 0.8, borderLeftColor: C.rule, paddingLeft: 18 },
 
-    meterRow: { marginBottom: 11 },
+    meterRow: { marginBottom: 10 },
     meterTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-    meterLabel: { fontSize: 8.2, fontWeight: 600, color: C.inkSoft },
-    meterVal: { fontSize: 8.2, fontWeight: 700 },
-    meterTrack: { height: 2.5, backgroundColor: C.ruleSoft },
-    meterFill: { height: 2.5 },
+    meterLabel: { fontSize: 10.5, fontWeight: 600, color: C.inkSoft },
+    meterVal: { fontSize: 10.5, fontWeight: 700 },
+    meterTrack: { height: 4, backgroundColor: C.ruleSoft },
+    meterFill: { height: 4 },
 
     /* deduction ledger */
-    dedRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-    dedDot: { width: 4, height: 4, borderRadius: 2, marginTop: 4.5, marginRight: 9 },
-    dedText: { flex: 1, fontSize: 8.6, color: C.inkSoft, lineHeight: 1.5 },
-    dedPts: { fontSize: 8.2, fontWeight: 700, color: C.ink, marginLeft: 10 },
+    dedRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 7 },
+    dedDot: { width: 6, height: 6, borderRadius: 3, marginTop: 5, marginRight: 9 },
+    dedText: { flex: 1, fontSize: 11, color: C.inkSoft, lineHeight: 1.45 },
+    dedPts: { fontSize: 11, fontWeight: 700, color: C.ink, marginLeft: 10 },
 
     /* two-column */
-    cols: { flexDirection: 'row', gap: 26 },
+    cols: { flexDirection: 'row', gap: 22 },
     col: { flex: 1 },
-    colHead: {
-        fontSize: 6.8,
-        fontWeight: 700,
-        letterSpacing: 1.1,
-        textTransform: 'uppercase',
-        marginBottom: 11,
-    },
+    colHead: { fontSize: 11.5, fontWeight: 700, marginBottom: 8 },
 
-    card: { borderLeftWidth: 1.6, paddingLeft: 11, marginBottom: 13 },
-    cardTitle: { fontSize: 9.5, fontWeight: 700, color: C.ink, marginBottom: 3 },
-    cardBody: { fontSize: 8.4, color: C.inkSoft, lineHeight: 1.55 },
-    cardFig: { fontSize: 8.4, fontWeight: 600, marginTop: 4 },
+    card: { borderLeftWidth: 2.4, paddingLeft: 10, marginBottom: 11 },
+    cardTitle: { fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 2 },
+    cardBody: { fontSize: 11, color: C.inkSoft, lineHeight: 1.5 },
+    cardFig: { fontSize: 11, fontWeight: 700, marginTop: 3 },
 
     /* simulation table */
     simHead: {
         flexDirection: 'row',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 0.8,
         borderBottomColor: C.rule,
-        paddingBottom: 5,
+        paddingBottom: 4,
     },
     simRow: {
         flexDirection: 'row',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 0.8,
         borderBottomColor: C.ruleSoft,
-        paddingVertical: 10,
+        paddingVertical: 8,
     },
-    simScenario: { flex: 1, paddingRight: 16 },
-    simNum: { width: 74, textAlign: 'right' },
-    simColLabel: {
-        fontSize: 6.2,
-        fontWeight: 700,
-        letterSpacing: 0.9,
-        color: C.faint,
-        textTransform: 'uppercase',
-    },
-    simTitle: { fontSize: 9.2, fontWeight: 600, color: C.ink, marginBottom: 3 },
-    simWhy: { fontSize: 7.6, color: C.muted, lineHeight: 1.5 },
-    simFig: { fontSize: 9.6, fontWeight: 600, color: C.ink },
+    simScenario: { flex: 1, paddingRight: 12 },
+    simNum: { width: 80, textAlign: 'right' },
+    simColLabel: { fontSize: 9.5, fontWeight: 700, color: C.muted },
+    simTitle: { fontSize: 11.5, fontWeight: 600, color: C.ink, marginBottom: 2 },
+    simWhy: { fontSize: 10, color: C.muted, lineHeight: 1.45 },
+    simFig: { fontSize: 12, fontWeight: 700, color: C.ink },
 
     /* definition list */
     defRow: {
         flexDirection: 'row',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 0.8,
         borderBottomColor: C.ruleSoft,
-        paddingVertical: 8,
+        paddingVertical: 7,
     },
-    defKey: { width: 128, fontSize: 8, color: C.muted, paddingRight: 12 },
-    defVal: { fontSize: 8.8, fontWeight: 600, color: C.ink },
+    defKey: { width: 118, fontSize: 10.5, color: C.muted, paddingRight: 10 },
+    defVal: { fontSize: 11.5, fontWeight: 600, color: C.ink },
 
     /* waiting periods */
-    wpRow: { marginBottom: 14 },
-    wpTop: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 9 },
-    wpTitle: { flex: 1, fontSize: 9.2, fontWeight: 600, color: C.ink, paddingRight: 10 },
-    wpStatus: { fontSize: 8, fontWeight: 700, textAlign: 'right' },
-    wpTrack: { height: 2.5, backgroundColor: C.ruleSoft },
-    wpFill: { height: 2.5, backgroundColor: C.amber },
-    wpNote: { fontSize: 7.5, color: C.muted, marginTop: 4, lineHeight: 1.5 },
+    wpRow: { marginBottom: 12 },
+    wpTop: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 6 },
+    wpTitle: { flex: 1, fontSize: 11.5, fontWeight: 600, color: C.ink, paddingRight: 10 },
+    wpStatus: { fontSize: 11, fontWeight: 700, textAlign: 'right' },
+    wpTrack: { height: 4, backgroundColor: C.ruleSoft },
+    wpFill: { height: 4, backgroundColor: C.amber },
+    wpNote: { fontSize: 10, color: C.muted, marginTop: 4, lineHeight: 1.45 },
 
     /* the verified policy sentence under a clause finding */
     srcQuote: {
         marginTop: 5,
-        paddingLeft: 7,
-        borderLeftWidth: 1.2,
+        paddingLeft: 8,
+        borderLeftWidth: 1.6,
         borderLeftColor: C.teal,
     },
-    srcQuoteText: { fontSize: 7.8, color: C.inkSoft, lineHeight: 1.5 },
-    srcQuoteFrom: { fontSize: 6.6, color: C.faint, marginTop: 2 },
+    srcQuoteText: { fontSize: 10, color: C.inkSoft, lineHeight: 1.45 },
+    srcQuoteFrom: { fontSize: 9, color: C.muted, marginTop: 2 },
 
     /* checklist */
-    checkRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 6.5 },
-    checkMark: { width: 14, marginTop: 1.5 },
-    checkTitle: { fontSize: 8.8, fontWeight: 600, color: C.ink },
-    checkNote: { fontSize: 7.5, color: C.muted, lineHeight: 1.5, marginTop: 2 },
+    checkRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 5 },
+    checkMark: { width: 16, marginTop: 2.5 },
+    checkTitle: { fontSize: 11.5, fontWeight: 600, color: C.ink },
+    checkNote: { fontSize: 10, color: C.muted, lineHeight: 1.45, marginTop: 1 },
 
     /* recommendations */
-    recRow: { flexDirection: 'row', marginBottom: 13 },
-    recNum: { fontFamily: 'Serif', fontSize: 19, color: C.faint, width: 30, marginTop: -3 },
-    recTitle: { fontSize: 10, fontWeight: 700, color: C.ink, marginBottom: 3 },
-    recBody: { fontSize: 8.6, color: C.inkSoft, lineHeight: 1.55 },
-    recRisk: { fontSize: 8.2, fontWeight: 600, color: C.red, marginTop: 4 },
+    recRow: { flexDirection: 'row', marginBottom: 11 },
+    recNum: { fontFamily: 'Sans', fontSize: 15, fontWeight: 700, color: C.muted, width: 28 },
+    recTitle: { fontSize: 12.5, fontWeight: 700, color: C.ink, marginBottom: 2 },
+    recBody: { fontSize: 11, color: C.inkSoft, lineHeight: 1.5 },
+    recRisk: { fontSize: 11, fontWeight: 600, color: C.red, marginTop: 3 },
 
     /* closing */
     quote: {
         fontFamily: 'Serif',
         fontStyle: 'italic',
-        fontSize: 14.5,
+        fontSize: 14,
         color: C.ink,
         textAlign: 'center',
-        marginTop: 28,
-        marginBottom: 8,
+        marginTop: 14,
+        marginBottom: 6,
         lineHeight: 1.45,
     },
-    quoteRule: { alignSelf: 'center', width: 42, height: 0.8, backgroundColor: C.teal, marginTop: 16 },
-    provenance: { fontSize: 7.2, color: C.faint, lineHeight: 1.6, marginTop: 22 },
+    quoteRule: { alignSelf: 'center', width: 42, height: 1, backgroundColor: C.teal, marginTop: 12 },
+    provenance: { fontSize: 9.5, color: C.muted, lineHeight: 1.55, marginTop: 18 },
 });
 
 /* ------------------------------------------------------------------ atoms */
@@ -421,7 +421,7 @@ export const Display: React.FC<{ style?: any; children?: string | null }> = ({ s
 };
 
 const SectionHead = ({ title, note }: { title: string; note?: string }) => (
-    <View style={s.sectionHead} minPresenceAhead={130}>
+    <View style={s.sectionHead} minPresenceAhead={150}>
         <Display style={s.sectionTitle}>{title}</Display>
         {note ? <Text style={s.sectionNote}>{note}</Text> : null}
     </View>
@@ -448,16 +448,9 @@ const b = StyleSheet.create({
      *  list of insured names cannot print over each other. */
     runLeft: { maxWidth: 240, textOverflow: 'ellipsis' } as any,
     runRight: { maxWidth: 240, textAlign: 'right', textOverflow: 'ellipsis' } as any,
-    avatar: { width: 38, height: 38, marginRight: 10 },
-    label: {
-        fontSize: 6.4,
-        fontWeight: 700,
-        letterSpacing: 1.1,
-        color: C.faint,
-        textTransform: 'uppercase',
-        marginBottom: 2,
-    },
-    name: { fontFamily: 'Sans', fontSize: 13, fontWeight: 700, color: C.ink, lineHeight: 1.25 },
+    avatar: { width: 46, height: 46, marginRight: 11 },
+    label: { fontSize: 10, color: C.muted, marginBottom: 1 },
+    name: { fontFamily: 'Sans', fontSize: 16, fontWeight: 700, color: C.ink, lineHeight: 1.25 },
 });
 
 /** Masthead left side: photo (or initials) and the advisor's name. */
@@ -487,7 +480,7 @@ export const BrandRunName = ({ brand, style }: { brand: PdfBrand; style: any }) 
         />
     ) : (
         <Text style={[style, b.runLeft]} {...ONE_LINE}>
-            {brand.name.toUpperCase()}
+            {brand.name}
         </Text>
     );
 
@@ -517,6 +510,49 @@ interface Props {
 }
 
 /* ------------------------------------------------------------------ doc */
+
+/** The four questions, worded exactly as the web report asks them (rpt.q1-q4). */
+const QUESTIONS = [
+    'Is this policy good enough?',
+    'What would a claim cost?',
+    'What could cut a claim?',
+    'What should we do?',
+] as const;
+
+const ANSWER_TONE = [C.tealDeep, C.amber, C.red, C.ink];
+
+/** Numbered head for one of the four answers, matching the web report. */
+const AnswerHead = ({ n, title, first = false }: { n: string; title: string; first?: boolean }) => (
+    <View style={[s.aHead, first ? { marginTop: 0 } : {}]}>
+        <View style={s.aNum}>
+            <Text style={s.aNumText}>{n}</Text>
+        </View>
+        <Text style={s.aTitle}>{title}</Text>
+    </View>
+);
+
+/**
+ * Keep a heading on the same page as the first thing under it. react-pdf's
+ * minPresenceAhead does not cascade (an answer head followed by a section head
+ * followed by a card), and both kinds of head were left stranded at a page foot.
+ * One unbreakable block of head + first row cannot be split.
+ */
+const glue = (head: React.ReactNode, rows: React.ReactNode[]): React.ReactNode[] =>
+    rows.length > 0
+        ? [
+              <View key="glue-head" wrap={false}>
+                  {head}
+                  {rows[0]}
+              </View>,
+              ...rows.slice(1),
+          ]
+        : [
+              <View key="glue-head" wrap={false}>
+                  {head}
+              </View>,
+          ];
+
+type WaitStatus ={ stated: boolean; served: boolean; pct: number; remaining: string };
 
 export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = null }) => {
     const cover = deriveCoverView(data);
@@ -562,12 +598,13 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
         : null;
 
     const bd = data.audit_score?.breakdown ?? ({} as Record<string, number>);
+    // Plain names for the four score parts; the maxima are the scoring engine's.
     const meters = [
         { key: 'claim_rejection_risk', label: 'Rules that cut your payout', max: 30 },
-        { key: 'oop_exposure', label: 'Out-of-pocket exposure', max: 30 },
-        { key: 'coverage_quality_gap', label: 'Coverage quality gap', max: 20 },
+        { key: 'oop_exposure', label: 'What you may pay yourself', max: 30 },
+        { key: 'coverage_quality_gap', label: 'Gaps in what is covered', max: 20 },
         // the net cover ladder runs to 60, not 20; at max 20 this printed "40 / 20"
-        { key: 'net_cover_penalty', label: 'Net cover penalty', max: 60 },
+        { key: 'net_cover_penalty', label: 'Cover too low for your needs', max: 60 },
     ].map((m) => {
         const v = (bd as any)[m.key] ?? 0;
         const colour = v === 0 ? C.teal : v / m.max >= 0.5 ? C.red : C.amber;
@@ -592,23 +629,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
     ];
     const port = data.recommendations?.should_port_to_better_policy;
 
-    /* one waiting-period row; title and status can no longer collide */
-    const wpRow = (title: string, wp: any, durationDays: number, key: string) => {
+    /* waiting-period state, shared by the answers page and the full rows */
+    const waitStatus = (wp: any, durationDays: number): WaitStatus | null => {
         if (!wp || wp.relevant === false) return null;
-
         const stated = wp.duration_months != null || wp.duration_days != null;
-        if (!stated) {
-            return (
-                <View style={s.wpRow} key={key} wrap={false}>
-                    <View style={s.wpTop}>
-                        <Text style={s.wpTitle}>{title}</Text>
-                        <Text style={[s.wpStatus, { color: C.amber }]}>Not stated</Text>
-                    </View>
-                    <Text style={s.wpNote}>Duration is absent from the policy document. Confirm with the insurer.</Text>
-                    <SourceQuote source={wp.source} />
-                </View>
-            );
-        }
+        if (!stated) return { stated, served: false, pct: 0, remaining: 'Not stated' };
 
         const served = wp.is_active_today === false || wp.months_remaining === 0 || ageDays >= durationDays;
         const pct = served ? 100 : Math.min(100, Math.max(0, (ageDays / durationDays) * 100));
@@ -631,7 +656,32 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                 remaining = `${days} ${days === 1 ? 'day' : 'days'} left`;
             }
         }
+        return { stated, served, pct, remaining };
+    };
 
+    const waits: { title: string; wp: any; days: number; key: string }[] = [
+        { title: 'Initial waiting period', wp: wpa.initial_waiting_period, days: wpa.initial_waiting_period?.duration_days ?? 30, key: 'iwp' },
+        { title: 'Pre-existing diseases', wp: wpa.pre_existing_disease, days: (wpa.pre_existing_disease?.duration_months ?? 0) * 30.44, key: 'ped' },
+        { title: 'Specific diseases', wp: wpa.specific_diseases, days: (wpa.specific_diseases?.duration_months ?? 0) * 30.44, key: 'spd' },
+        { title: 'Maternity', wp: wpa.maternity, days: (wpa.maternity?.duration_months ?? 0) * 30.44, key: 'mat' },
+    ];
+
+    /* one waiting-period row; title and status can no longer collide */
+    const wpRow = ({ title, wp, days, key }: (typeof waits)[number]) => {
+        const st = waitStatus(wp, days);
+        if (!st) return null;
+        if (!st.stated) {
+            return (
+                <View style={s.wpRow} key={key} wrap={false}>
+                    <View style={s.wpTop}>
+                        <Text style={s.wpTitle}>{title}</Text>
+                        <Text style={[s.wpStatus, { color: C.amber }]}>Not stated</Text>
+                    </View>
+                    <Text style={s.wpNote}>Duration is absent from the policy document. Confirm with the insurer.</Text>
+                    <SourceQuote source={wp.source} />
+                </View>
+            );
+        }
         return (
             <View style={s.wpRow} key={key} wrap={false}>
                 <View style={s.wpTop}>
@@ -639,18 +689,74 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                         {title}
                         {wp.stated === false ? ' (estimated)' : ''}
                     </Text>
-                    <Text style={[s.wpStatus, { color: served ? C.tealDeep : C.amber }]}>
-                        {served ? 'Served' : remaining}
-                    </Text>
+                    <Text style={[s.wpStatus, { color: st.served ? C.tealDeep : C.amber }]}>{st.remaining}</Text>
                 </View>
                 <View style={s.wpTrack}>
-                    <View style={[s.wpFill, { width: `${pct}%`, backgroundColor: served ? C.teal : C.amber }]} />
+                    <View style={[s.wpFill, { width: `${st.pct}%`, backgroundColor: st.served ? C.teal : C.amber }]} />
                 </View>
                 {wp.risk_commentary ? <Text style={s.wpNote}>{wp.risk_commentary}</Text> : null}
                 <SourceQuote source={wp.source} />
             </View>
         );
     };
+
+    /* ---------------------------------------------- the four one-line answers
+       Every line is read off this report; nothing is written that the report
+       does not already say further down. A question with nothing to report gets
+       a plain statement to that effect, never a blank box. */
+    const verdictWord = data.final_verdict?.label
+        ? titleCaseKey(String(data.final_verdict.label).toLowerCase())
+        : null;
+    const scoreText =
+        typeof data.audit_score?.score === 'number'
+            ? `Score ${data.audit_score.score} out of 100${data.audit_score.bucket_label ? ` (${String(data.audit_score.bucket_label).toLowerCase()})` : ''}.`
+            : null;
+
+    const answer1: string[] = [];
+    if (cover.effectiveCover > 0 && cover.rct) {
+        answer1.push(
+            cover.effectiveCover >= cover.rct
+                ? `You have ${inr(cover.effectiveCover)}. That meets the ${inr(cover.rct)} recommended for you.`
+                : `You have ${inr(cover.effectiveCover)}. Recommended for you: ${inr(cover.rct)}.`,
+        );
+        if (cover.stack && cover.stack.combined > cover.effectiveCover) {
+            answer1.push(`With your other cover: ${inr(cover.stack.combined)} in all.`);
+        }
+    } else if (cover.effectiveCover > 0) {
+        answer1.push(`You have ${inr(cover.effectiveCover)} of cover.`);
+    }
+    if (verdictWord || scoreText) answer1.push([verdictWord ? `${verdictWord}.` : null, scoreText].filter(Boolean).join(' '));
+    if (answer1.length === 0 && data.final_verdict?.summary) answer1.push(data.final_verdict.summary);
+
+    const answer2 = sims.slice(0, 3).map((sim: any) =>
+        `${sim.scenario}: you pay ${inrLoose(sim.patient_oop ?? 0)}.`,
+    );
+    if (answer2.length === 0) answer2.push('This report did not work out any claim examples.');
+
+    const activeWaits = waits
+        .map((w) => ({ w, st: waitStatus(w.wp, w.days) }))
+        .filter(({ st }) => st && st.stated && !st.served)
+        .map(({ w, st }) => `${w.title}: ${st!.remaining}.`);
+    // A finding that only restates a waiting period already listed is left out,
+    // and the model's Title Case headings are put in sentence case for reading.
+    const sentence = (t: string) => {
+        const x = String(t ?? '').trim();
+        return x ? x.charAt(0).toUpperCase() + x.slice(1).toLowerCase() : x;
+    };
+    const failLines = fails
+        .filter((f: any) => !(activeWaits.length > 0 && /waiting/i.test(String(f.issue ?? ''))))
+        .map((f: any) => {
+            const risk = String(f.quantified_oop_risk ?? '').trim();
+            return risk && risk.length <= 80 ? `${sentence(f.issue)}: ${risk.charAt(0).toLowerCase()}${risk.slice(1)}.` : `${sentence(f.issue)}.`;
+        });
+    const answer3 = [...activeWaits, ...failLines].slice(0, 4);
+    if (answer3.length === 0) answer3.push('Nothing in this policy was found that cuts a claim.');
+
+    const answer4 = recs.slice(0, 3).map((r: any) => `${r.action}.`);
+    if (port?.recommendation && port.recommendation !== 'no') answer4.push('Consider moving to a better policy.');
+    if (answer4.length === 0) answer4.push(port?.recommendation === 'no' ? 'Stay with this policy. No changes needed.' : 'No changes needed.');
+
+    const answers = [answer1, answer2, answer3, answer4];
 
     return (
         <Document
@@ -671,13 +777,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                                 {brand ? (
                                     <BrandRunName brand={brand} style={s.micro} />
                                 ) : (
-                                    <Text style={s.micro}>INDSURE FORENSIC POLICY AUDIT</Text>
+                                    <Text style={s.micro}>IndSure policy report</Text>
                                 )}
-                                {brand ? (
-                                    <BrandRunRight text={insured.toUpperCase()} style={s.micro} />
-                                ) : (
-                                    <Text style={s.micro}>{insured.toUpperCase()}</Text>
-                                )}
+                                <BrandRunRight text={insured} style={s.micro} />
                             </>
                         ) : null
                     }
@@ -698,10 +800,10 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                                 <Text style={s.micro}>
                                     {brand
                                         ? BRAND_FOOTER
-                                        : 'Read automatically from your policy document, then checked against our scoring rules on our servers.'}
+                                        : 'Read from your policy document, then checked against our scoring rules.'}
                                 </Text>
                                 <Text style={s.micro}>
-                                    {pageNumber} / {totalPages}
+                                    Page {pageNumber} of {totalPages}
                                 </Text>
                             </>
                         );
@@ -711,24 +813,52 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                 {/* ---------------------------------------------- masthead */}
                 <View style={[s.masthead, brand ? { alignItems: 'center' } : {}]}>
                     {brand ? <BrandMasthead brand={brand} /> : <Image style={s.wordmark} src={logoSrc} />}
-                    <Text style={s.eyebrow}>{brand ? 'Policy report' : 'Forensic policy audit'} · {generatedLabel}</Text>
+                    <Text style={s.eyebrow}>
+                        {brand ? 'Policy report' : 'Policy audit'}
+                        {'\n'}
+                        {generatedLabel}
+                    </Text>
                 </View>
 
                 {/* The portal and the shared page say this too; a printed copy must not say less. */}
                 {(data as any).__corrected_on ? (
-                    <View style={{ marginBottom: 10, padding: 7, borderWidth: 0.7, borderColor: C.teal }}>
-                        <Text style={{ fontSize: 8.5, lineHeight: 1.4 }}>
+                    <View style={{ marginBottom: 12, padding: 8, borderWidth: 1, borderColor: C.teal, borderRadius: 4 }}>
+                        <Text style={{ fontSize: 10.5, lineHeight: 1.45 }}>
                             {`Some facts here were corrected by your advisor on ${String((data as any).__corrected_on).split('-').reverse().join('-')}. The score and comments are from the document as it was read.`}
                         </Text>
                     </View>
                 ) : null}
 
-                {/* ---------------------------------------------- verdict */}
+                {/* ---------------------------------------------- page 1: four answers */}
+                <Text style={s.ansTitle}>Your policy in four answers</Text>
+                <Text style={s.ansFor}>
+                    {[insured !== '—' ? `For ${insured}` : null, meta.insurer, meta.policyName].filter(Boolean).join(' · ')}
+                </Text>
+
+                {answers.map((lines, i) => (
+                    <View style={[s.ansBox, { borderColor: ANSWER_TONE[i] }]} key={i} wrap={false}>
+                        <Text style={[s.ansQ, { color: ANSWER_TONE[i] }]}>
+                            {i + 1}. {QUESTIONS[i]}
+                        </Text>
+                        {lines.map((line, j) => (
+                            <Display style={[s.ansLine, j > 0 ? { marginTop: 3 } : {}]} key={j}>
+                                {line}
+                            </Display>
+                        ))}
+                    </View>
+                ))}
+                <Text style={s.ansMore}>The details behind each answer follow, in the same order.</Text>
+
+                {/* ============================================== ANSWER 1 */}
+                <View break>
+                    <AnswerHead n="1" title={QUESTIONS[0]} first />
+                </View>
+
                 <View style={s.verdictRow}>
-                    <Svg width={7} height={7} viewBox="0 0 8 8" style={{ marginRight: 6 }}>
+                    <Svg width={8} height={8} viewBox="0 0 8 8" style={{ marginRight: 6 }}>
                         <Path d="M4 0 L8 4 L4 8 L0 4 Z" fill={C.teal} />
                     </Svg>
-                    <Text style={s.verdictLabel}>Verdict · {data.final_verdict?.label ?? 'Reviewed'}</Text>
+                    <Text style={s.verdictLabel}>Verdict: {verdictWord ?? 'Reviewed'}</Text>
                 </View>
 
                 <Display style={s.headline}>{data.final_verdict?.summary}</Display>
@@ -736,7 +866,6 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                     <Text style={s.deck}>{data.final_verdict.will_this_policy_protect_in_real_claim}</Text>
                 ) : null}
 
-                {/* ---------------------------------------------- facts */}
                 <View style={s.facts}>
                     {([
                         ['Insured', insured],
@@ -754,16 +883,15 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                         // than printed as a dash: an absent row reads as absent data.
                         .filter(([, v]) => v != null && String(v).trim() !== '' && v !== '—')
                         .map(([k, v]) => (
-                        <View style={s.fact} key={k as string}>
-                            <Text style={s.factLabel}>{k}</Text>
-                            <Text style={s.factValue}>{String(v).replace(/\s+/g, ' ').trim()}</Text>
-                        </View>
-                    ))}
+                            <View style={s.fact} key={k as string}>
+                                <Text style={s.factLabel}>{k}</Text>
+                                <Text style={s.factValue}>{String(v).replace(/\s+/g, ' ').trim()}</Text>
+                            </View>
+                        ))}
                 </View>
 
-                {/* ---------------------------------------------- score */}
-                <SectionHead title="Audit score" note="0 – 100" />
-                <View style={s.scoreRow}>
+                <SectionHead title="Audit score" note="Out of 100" />
+                <View style={s.scoreRow} wrap={false}>
                     <View style={s.scoreLeft}>
                         <Text style={s.scoreNum}>{data.audit_score?.score}</Text>
                         <Text style={s.scoreOf}>out of 100</Text>
@@ -771,7 +899,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                             <Text style={s.scoreBucket}>{data.audit_score.bucket_label}</Text>
                         ) : null}
                         <Text style={s.scoreMeta}>
-                            {typeof cover.ncar === 'number' ? `NCAR ${cover.ncar.toFixed(2)}x\n` : ''}
+                            {typeof cover.ncar === 'number'
+                                ? `Your cover is ${Math.round(cover.ncar * 100)}% of what is recommended (NCAR ${cover.ncar.toFixed(2)}x)\n`
+                                : ''}
                             {typeof data.audit_score?.rct === 'number'
                                 ? `Recommended cover ${inr(data.audit_score.rct)}`
                                 : ''}
@@ -779,12 +909,13 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                     </View>
 
                     <View style={s.scoreRight}>
+                        <Text style={[s.scoreMeta, { marginBottom: 8 }]}>Points taken off, by reason</Text>
                         {meters.map((m) => (
                             <View style={s.meterRow} key={m.key}>
                                 <View style={s.meterTop}>
                                     <Text style={s.meterLabel}>{m.label}</Text>
-                                    <Text style={[s.meterVal, { color: m.colour }]}>
-                                        {m.value} / {m.max}
+                                    <Text style={[s.meterVal, { color: m.colour === C.teal ? C.tealDeep : m.colour }]}>
+                                        {m.value} of {m.max}
                                     </Text>
                                 </View>
                                 <View style={s.meterTrack}>
@@ -804,64 +935,30 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                 </View>
 
                 {data.audit_score?.interpretation ? (
-                    <Text style={[s.deck, { marginTop: 12 }]}>{data.audit_score.interpretation}</Text>
+                    <Text style={[s.deck, { marginTop: 10 }]}>{data.audit_score.interpretation}</Text>
                 ) : null}
 
-                <View wrap={false}>
-                    <Text style={s.quote}>“The policy is fixed. Your awareness of it isn’t.”</Text>
-                    <View style={s.quoteRule} />
-                </View>
-
-                {/* ---------------------------------------------- ledger */}
-                {deductions.length > 0 && (
-                    <>
-                        <SectionHead title="Where the points went" note={`${deductions.length} deductions`} />
-                        {deductions.map((d: any, i: number) => (
+                {deductions.length > 0 &&
+                    glue(
+                        <SectionHead title="Where the points went" note={`${deductions.length} deductions`} />,
+                        deductions.map((d: any, i: number) => (
                             <View style={s.dedRow} key={i} wrap={false}>
                                 <View style={[s.dedDot, { backgroundColor: SEVERITY[d.severity] ?? C.muted }]} />
                                 <Text style={s.dedText}>{d.reason}</Text>
                                 <Text style={s.dedPts}>−{d.points}</Text>
                             </View>
-                        ))}
-                    </>
-                )}
+                        )),
+                    )}
 
-                {/* ---------------------------------------------- coverage */}
-                <SectionHead title="Coverage overview" />
-                <View style={s.cols}>
-                    <View style={s.col}>
-                        <Text style={[s.colHead, { color: C.tealDeep }]}>What actually works</Text>
-                        {works.map((w: any, i: number) => (
-                            <View style={[s.card, { borderLeftColor: C.teal }]} key={i} wrap={false}>
-                                <Text style={s.cardTitle}>{w.benefit}</Text>
-                                <Text style={s.cardBody}>{w.why_it_matters_in_claim}</Text>
-                                {w.quantified_value ? (
-                                    <Text style={[s.cardFig, { color: C.tealDeep }]}>{w.quantified_value}</Text>
-                                ) : null}
-                            </View>
-                        ))}
-                    </View>
-                    <View style={s.col}>
-                        <Text style={[s.colHead, { color: C.amber }]}>Where it may cost you</Text>
-                        {fails.map((f: any, i: number) => (
-                            <View style={[s.card, { borderLeftColor: C.amber }]} key={i} wrap={false}>
-                                <Text style={s.cardTitle}>{f.issue}</Text>
-                                <Text style={s.cardBody}>{f.real_world_claim_impact}</Text>
-                                {f.quantified_oop_risk ? (
-                                    <Text style={[s.cardFig, { color: C.red }]}>{f.quantified_oop_risk}</Text>
-                                ) : null}
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* ---------------------------------------------- simulations */}
-                {sims.length > 0 && (
-                    <>
-                        <SectionHead title="If you claimed today" note="Modelled scenarios" />
+                {/* ============================================== ANSWER 2 */}
+                {sims.length > 0 ? (
+                    glue(
+                        <>
+                        <AnswerHead n="2" title={QUESTIONS[1]} />
+                        <SectionHead title="If you claimed today" note="Worked examples" />
                         <View style={s.simHead}>
                             <View style={s.simScenario}>
-                                <Text style={s.simColLabel}>Scenario</Text>
+                                <Text style={s.simColLabel}>Example</Text>
                             </View>
                             <View style={s.simNum}>
                                 <Text style={s.simColLabel}>Total bill</Text>
@@ -873,7 +970,8 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                                 <Text style={s.simColLabel}>You pay</Text>
                             </View>
                         </View>
-                        {sims.map((sim: any, i: number) => (
+                        </>,
+                        sims.map((sim: any, i: number) => (
                             <View style={s.simRow} key={i} wrap={false}>
                                 <View style={s.simScenario}>
                                     <Text style={s.simTitle}>{sim.scenario}</Text>
@@ -893,13 +991,51 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                                     </Text>
                                 </View>
                             </View>
+                        )),
+                    )
+                ) : (
+                    <View wrap={false}>
+                        <AnswerHead n="2" title={QUESTIONS[1]} />
+                        <Text style={s.deck}>This report did not work out any claim examples.</Text>
+                    </View>
+                )}
+
+                {(data.other_cover?.length ?? 0) > 0 && (
+                    <>
+                        <SectionHead title="Other cover held" />
+                        {data.other_cover!.map((o: any, i: number) => (
+                            <View style={s.defRow} key={i} wrap={false}>
+                                <Text style={s.defKey}>{OTHER_COVER_LABEL[o.kind] ?? titleCaseKey(String(o.kind ?? ''))}</Text>
+                                <Text style={s.defVal}>{inrLoose(o.sum_insured)}</Text>
+                            </View>
                         ))}
                     </>
                 )}
 
-                {/* ---------------------------------------------- limits */}
-                <SectionHead title="Limits and deductions" />
-                {[
+                {/* ============================================== ANSWER 3 */}
+                {fails.length > 0 &&
+                    glue(
+                        <>
+                            <AnswerHead n="3" title={QUESTIONS[2]} />
+                            <SectionHead title="Where it may cost you" note={`${fails.length} found`} />
+                        </>,
+                        fails.map((f: any, i: number) => (
+                            <View style={[s.card, { borderLeftColor: C.amber }]} key={i} wrap={false}>
+                                <Text style={s.cardTitle}>{f.issue}</Text>
+                                <Text style={s.cardBody}>{f.real_world_claim_impact}</Text>
+                                {f.quantified_oop_risk ? (
+                                    <Text style={[s.cardFig, { color: C.red }]}>{f.quantified_oop_risk}</Text>
+                                ) : null}
+                            </View>
+                        )),
+                    )}
+
+                {glue(
+                    <>
+                        {fails.length === 0 ? <AnswerHead n="3" title={QUESTIONS[2]} /> : null}
+                        <SectionHead title="Limits and deductions" />
+                    </>,
+                [
                     ['Room rent', risk.room_rent?.limit_value ?? risk.room_rent?.limit_type ?? '—', risk.room_rent?.explanation, risk.room_rent?.source],
                     [
                         'Co-payment',
@@ -916,7 +1052,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                     ['Deductible', inrLoose(risk.deductibles?.base_deductible), risk.deductibles?.per_claim_impact, risk.deductibles?.source],
                     [
                         'Restoration',
-                        data.coverage_structure?.restoration?.exists ? (data.coverage_structure.restoration.restore_amount ?? 'Yes') : 'None',
+                        data.coverage_structure?.restoration?.exists
+                            ? typeof data.coverage_structure.restoration.restore_amount === 'number'
+                                ? inr(data.coverage_structure.restoration.restore_amount)
+                                : (data.coverage_structure.restoration.restore_amount ?? 'Yes')
+                            : 'None',
                         restoration ?? data.coverage_structure?.restoration?.remarks,
                         data.coverage_structure?.restoration?.source,
                     ],
@@ -936,13 +1076,75 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                             <SourceQuote source={source} />
                         </View>
                     </View>
-                ))}
+                )))}
 
-                {/* ---------------------------------------------- riders */}
-                {riders.length > 0 && (
+                {glue(
+                    <SectionHead title="Waiting periods" note={data.waiting_period_analysis?.policy_fully_active ? 'All served' : 'Some still running'} />,
+                    waits.map((w) => wpRow(w)).filter(Boolean),
+                )}
+
+                {(wpa.specific_diseases?.diseases_covered?.length ?? 0) > 0 && (
+                    <View wrap={false} style={{ marginTop: 2 }}>
+                        <Text style={[s.factLabel, { fontWeight: 700 }]}>Not covered until the specific-disease wait ends</Text>
+                        <Text style={[s.deck, { marginTop: 2 }]}>
+                            {wpa.specific_diseases.diseases_covered.join(', ')}
+                        </Text>
+                    </View>
+                )}
+
+                {/* ============================================== ANSWER 4 */}
+                {recs.length > 0 ? (
+                    glue(<AnswerHead n="4" title={QUESTIONS[3]} />, recs.map((r: any, i: number) => (
+                        <View style={s.recRow} key={i} wrap={false}>
+                            <Text style={s.recNum}>{i + 1}.</Text>
+                            <View style={{ flex: 1 }}>
+                                <Text style={s.recTitle}>{r.action}</Text>
+                                <Text style={s.recBody}>{r.reason}</Text>
+                                {r.oop_risk_if_ignored ? (
+                                    <Text style={s.recRisk}>If ignored: {r.oop_risk_if_ignored}</Text>
+                                ) : null}
+                            </View>
+                        </View>
+                    )))
+                ) : (
+                    <View wrap={false}>
+                        <AnswerHead n="4" title={QUESTIONS[3]} />
+                        <Text style={s.deck}>No changes needed.</Text>
+                    </View>
+                )}
+
+                {port?.recommendation ? (
+                    <View style={[s.card, { borderLeftColor: C.teal, marginTop: 4 }]} wrap={false}>
+                        <Text style={s.cardTitle}>
+                            {port.recommendation === 'no' ? 'Stay with this policy' : 'Consider porting'}
+                        </Text>
+                        <Text style={s.cardBody}>{port.reason}</Text>
+                    </View>
+                ) : null}
+
+                {/* ============================================== THE FULL PICTURE */}
+                {glue(
                     <>
-                        <SectionHead title="Riders on this policy" note={`${riders.length} attached`} />
-                        {riders.map((r: any, i: number) => (
+                        <AnswerHead n="+" title="The full picture" />
+                        {works.length > 0 ? (
+                            <SectionHead title="What works in this policy" note={`${works.length} found`} />
+                        ) : null}
+                    </>,
+                    works.map((w: any, i: number) => (
+                        <View style={[s.card, { borderLeftColor: C.teal }]} key={i} wrap={false}>
+                            <Text style={s.cardTitle}>{w.benefit}</Text>
+                            <Text style={s.cardBody}>{w.why_it_matters_in_claim}</Text>
+                            {w.quantified_value ? (
+                                <Text style={[s.cardFig, { color: C.tealDeep }]}>{w.quantified_value}</Text>
+                            ) : null}
+                        </View>
+                    )),
+                )}
+
+                {riders.length > 0 &&
+                    glue(
+                        <SectionHead title="Riders on this policy" note={`${riders.length} attached`} />,
+                        riders.map((r: any, i: number) => (
                             <View style={s.checkRow} key={i} wrap={false}>
                                 <View style={s.checkMark}>
                                     <Tick />
@@ -952,28 +1154,10 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                                     {r.remarks ? <Text style={s.checkNote}>{r.remarks}</Text> : null}
                                 </View>
                             </View>
-                        ))}
-                    </>
-                )}
+                        )),
+                    )}
 
-                {/* ---------------------------------------------- waiting */}
-                <SectionHead title="Waiting periods" note={data.waiting_period_analysis?.policy_fully_active ? 'All served' : 'Some still active'} />
-                {wpRow('Initial waiting period', wpa.initial_waiting_period, wpa.initial_waiting_period?.duration_days ?? 30, 'iwp')}
-                {wpRow('Pre-existing diseases', wpa.pre_existing_disease, (wpa.pre_existing_disease?.duration_months ?? 0) * 30.44, 'ped')}
-                {wpRow('Specific diseases', wpa.specific_diseases, (wpa.specific_diseases?.duration_months ?? 0) * 30.44, 'spd')}
-                {wpRow('Maternity', wpa.maternity, (wpa.maternity?.duration_months ?? 0) * 30.44, 'mat')}
-
-                {(wpa.specific_diseases?.diseases_covered?.length ?? 0) > 0 && (
-                    <View wrap={false} style={{ marginTop: 2 }}>
-                        <Text style={s.factLabel}>Excluded until the specific-disease period ends</Text>
-                        <Text style={[s.simWhy, { marginTop: 3 }]}>
-                            {wpa.specific_diseases.diseases_covered.join(' · ')}
-                        </Text>
-                    </View>
-                )}
-
-                {/* ---------------------------------------------- supplementary */}
-                <SectionHead title="Supplementary coverage" />
+                <SectionHead title="Other benefits" note="Tick = covered" />
                 <View style={s.cols}>
                     {[0, 1].map((half) => (
                         <View style={s.col} key={half}>
@@ -981,10 +1165,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                                 .filter((_, i) => i % 2 === half)
                                 .map(([k, v]: [string, any]) => (
                                     <View style={s.checkRow} key={k} wrap={false}>
-                                        <View style={s.checkMark}>{v?.covered ? <Tick /> : <Cross />}</View>
+                                        <View style={s.checkMark}>{v?.covered ? <Tick /> : <Cross colour={C.red} />}</View>
                                         <View style={{ flex: 1 }}>
-                                            <Text style={[s.checkTitle, { color: v?.covered ? C.ink : C.muted }]}>
+                                            <Text style={s.checkTitle}>
                                                 {titleCaseKey(k)}
+                                                {v?.covered ? '' : ': not covered'}
                                             </Text>
                                             {v?.remarks ? <Text style={s.checkNote}>{v.remarks}</Text> : null}
                                         </View>
@@ -994,54 +1179,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                     ))}
                 </View>
 
-                {/* ---------------------------------------------- other cover */}
-                {(data.other_cover?.length ?? 0) > 0 && (
-                    <>
-                        <SectionHead title="Other cover held" />
-                        {data.other_cover!.map((o: any, i: number) => (
-                            <View style={s.defRow} key={i} wrap={false}>
-                                <Text style={s.defKey}>{OTHER_COVER_LABEL[o.kind] ?? titleCaseKey(String(o.kind ?? ''))}</Text>
-                                <Text style={s.defVal}>{inrLoose(o.sum_insured)}</Text>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                {/* ---------------------------------------------- recommendations */}
-                {recs.length > 0 && (
-                    <>
-                        <SectionHead title="What to do next" note={`${recs.length} actions`} />
-                        {recs.map((r: any, i: number) => (
-                            <View style={s.recRow} key={i} wrap={false}>
-                                <Text style={s.recNum}>{String(i + 1).padStart(2, '0')}</Text>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={s.recTitle}>{r.action}</Text>
-                                    <Text style={s.recBody}>{r.reason}</Text>
-                                    {r.oop_risk_if_ignored ? (
-                                        <Text style={s.recRisk}>If ignored: {r.oop_risk_if_ignored}</Text>
-                                    ) : null}
-                                </View>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                {port?.recommendation ? (
-                    <View
-                        style={{ borderLeftWidth: 1.6, borderLeftColor: C.teal, paddingLeft: 11, marginTop: 4 }}
-                        wrap={false}
-                    >
-                        <Text style={s.cardTitle}>
-                            {port.recommendation === 'no' ? 'Stay with this policy' : 'Consider porting'}
-                        </Text>
-                        <Text style={s.cardBody}>{port.reason}</Text>
-                    </View>
-                ) : null}
-
-                {/* ---------------------------------------------- confidence */}
                 <SectionHead
                     title="How far to trust this"
-                    note={`Data quality · ${String(data.data_quality?.overall ?? 'unknown')}`}
+                    note={`Data quality: ${String(data.data_quality?.overall ?? 'unknown')}`}
                 />
                 <View style={s.cols}>
                     <View style={s.col}>
@@ -1062,7 +1202,7 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                     <View style={s.col}>
                         {(data.confidence_notes ?? []).map((n: any, i: number) => (
                             <View style={s.dedRow} key={i} wrap={false}>
-                                <View style={[s.dedDot, { backgroundColor: C.faint }]} />
+                                <View style={[s.dedDot, { backgroundColor: C.muted }]} />
                                 <Text style={s.dedText}>{typeof n === 'string' ? n : n?.note ?? ''}</Text>
                             </View>
                         ))}
@@ -1076,6 +1216,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                             </View>
                         ) : null}
                     </View>
+                </View>
+
+                <View wrap={false}>
+                    <Text style={s.quote}>“The policy is fixed. Your awareness of it isn’t.”</Text>
+                    <View style={s.quoteRule} />
                 </View>
 
                 {/* The colophon belongs with the confidence section, not on its own
@@ -1093,7 +1238,6 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = nu
                     silent, this report says so rather than assuming. It is an analysis, not the contract:
                     the policy wording prevails.
                 </Text>
-
             </Page>
         </Document>
     );
