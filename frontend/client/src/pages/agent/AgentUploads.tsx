@@ -17,6 +17,7 @@ import { getApiBase } from "@/lib/queryClient";
 import { TYPE_META, type InsuranceType } from "@/lib/insuranceTypes";
 import { supabase } from "@/lib/supabase";
 import { tOr } from "@/i18n";
+import { LicUploadPanel } from "@/components/agent/LicUploadPanel";
 
 type UploadStatus = {
   /** Identity of this row. Never the array position: a second upload can start
@@ -117,6 +118,9 @@ export default function AgentUploads() {
   const params = new URLSearchParams(useSearch());
   const askedType = params.get("type") ?? "";
   const [insuranceType, setInsuranceType] = useState<InsuranceType>(askedType in TYPE_META ? (askedType as InsuranceType) : "health");
+  // LIC sheets (Premium Due list / Commission sheet) are not policies to check: the chip swaps
+  // this page's dropzone for the LIC sheet upload (founder, 2026-11-28). ?type=lic opens it.
+  const [licMode, setLicMode] = useState(askedType === "lic");
   // Opened from a policy ("renew") or from a customer: the new policy joins it.
   const [link, setLink] = useState<{ kind: "renews" | "customer"; id: string; name: string | null } | null>(() => {
     const r = params.get("renews");
@@ -584,12 +588,13 @@ export default function AgentUploads() {
         <div className="flex flex-wrap items-center gap-2">
           {(Object.keys(TYPE_META) as InsuranceType[]).map((tkey) => {
             const meta = TYPE_META[tkey];
-            const active = insuranceType === tkey;
+            const active = !licMode && insuranceType === tkey;
             return (
               <button
                 key={tkey}
                 type="button"
                 onClick={() => {
+                  setLicMode(false);
                   setInsuranceType(tkey);
                   // Companion covers are a health-lane concept — don't let them
                   // linger invisibly after switching to another type.
@@ -618,7 +623,26 @@ export default function AgentUploads() {
               </button>
             );
           })}
+          <button
+            type="button"
+            aria-pressed={licMode}
+            onClick={() => setLicMode(true)}
+            disabled={isProcessing}
+            className={[
+              "inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all",
+              licMode
+                ? "border-[#0D9488] bg-[#0D9488]/5 text-[#0D9488] shadow-sm"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+              isProcessing ? "opacity-50 cursor-not-allowed" : "",
+            ].join(" ")}
+          >
+            <FileText className="h-4 w-4" />
+            {t("lic.upload_chip")}
+          </button>
         </div>
+        {licMode ? (
+          <p className="mt-2 text-sm text-slate-600">{t("lic.upload_chip_desc")}</p>
+        ) : (<>
         <p className="mt-2 text-xs text-slate-500">
           {insuranceType === "health"
             ? t("uploads.health_desc")
@@ -631,9 +655,12 @@ export default function AgentUploads() {
               : t(ocrRemaining === 1 ? "uploads.ocr_left_one" : "uploads.ocr_left_many", { count: ocrRemaining })}
           </p>
         )}
+        </>)}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">
+      {licMode && <LicUploadPanel showOpenLink />}
+
+      <div className={licMode ? "hidden" : "grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]"}>
         {/* Upload Area */}
         <Card className="border-slate-100 shadow-sm">
           <CardHeader>

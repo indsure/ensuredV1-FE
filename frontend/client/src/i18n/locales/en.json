@@ -2637,6 +2637,8 @@
     "title": "LIC policies",
     "sub": "{{count}} policies not paid yet · {{amount}} to collect",
     "upload_button": "Upload LIC sheet",
+    "upload_chip": "LIC sheet",
+    "upload_chip_desc": "LIC's Premium due list or Commission sheet. We read it and show who has not paid. It does not use a policy check.",
     "load_failed": "Could not load your LIC list.",
     "checked_against": "Status as per your LIC sheets: checked against commission sheet batch {{batch}} of {{month}} ({{date}}). Anyone who paid after that shows as not paid until the next sheet.",
     "no_commission_yet": "No commission sheet uploaded yet, so nobody is marked as paid. Upload it when LIC sends it.",
