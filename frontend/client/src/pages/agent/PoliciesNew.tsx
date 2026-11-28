@@ -9,6 +9,7 @@ import { deletePolicyRecord } from "@/lib/policyDelete"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
+import { LicOverviewStrip } from "@/components/agent/LicDueCard"
 import { canOpenShare } from "@shared/dataEntryShare"
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -539,6 +540,9 @@ export default function PoliciesNew() {
           )}
         </div>
       )}
+
+      {/* LIC policies live on their own page, fed by LIC's sheets; Overview points to them. */}
+      {typeFilter === "all" && <LicOverviewStrip />}
 
       {error && <InlineErrorState onRetry={fetchPolicies} />}
 

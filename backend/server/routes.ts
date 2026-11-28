@@ -40,6 +40,7 @@ import { confirmMany, getDocumentRules, resolveFlag, reviewFact, StoreError, typ
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
+import { registerLicRoutes } from "./licRoutes";
 import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { registerPlanRecommendRoutes } from "./services/planRecommend";
@@ -7793,6 +7794,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      that makes "you see each time your owner opens your book" true. See the
      header of teamRoutes.ts before adding any route that reads member data. */
   registerTeamRoutes(app, verifyJwt, isAdmin);
+  registerLicRoutes(app, verifyJwt); // LIC Premium Due + Commission sheets (migration 043)
   mountWhatsapp(app, verifyJwt); // WHATSAPP-PLUGIN: WhatsApp channel (beta), a no-op unless WA_BOT_KEY is set
 
   /* ── Account deletion ────────────────────────────────────────────────────

@@ -45,6 +45,11 @@ type NavParent = {
 export default function AgentLayout({ children }: AgentLayoutProps) {
   const { agent, team, teamRequestPending } = useAgent()
   const [location, setLocation] = useLocation()
+  // Account-menu navigation: go, then pin the new page to the top once it has painted.
+  const openFromMenu = (href: string) => {
+    setLocation(href)
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }))
+  }
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [queueCount, setQueueCount] = useState<number>(0)
@@ -127,6 +132,8 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
           { label: label("layout.nav_overview", "Overview"), href: "/agent/policies" },
           { label: label("layout.type_health", "Health"), href: "/agent/policies?type=health" },
           { label: label("layout.type_motor", "Motor"), href: "/agent/policies?type=motor" },
+          // LIC sits above Others (founder, 2026-11-28): its own page, fed by LIC's sheets.
+          { label: label("layout.type_lic", "LIC"), href: "/agent/lic" },
           { label: label("layout.type_others", "Others"), href: "/agent/policies?type=others" },
         ],
       },
@@ -493,16 +500,22 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
                 and not slate-400: 400 is ~2.85:1 and fails AA. Sign Out is red
                 because it is the only item here that ends the session, and it
                 sits one row below two harmless ones. */}
-            <DropdownMenuContent align="end" sideOffset={8} className="w-60">
-              <DropdownMenuItem onClick={() => setLocation("/agent/riders")}>
+            {/* onCloseAutoFocus: by default the menu hands focus back to this pill when it
+                closes, and the pill sits at the very bottom of the rail, so the browser
+                scrolled the NEW page down to keep it in view. Every page opened from here
+                landed at the bottom (founder, 2026-11-28). Skip the refocus and open the
+                page at the top, instantly, because the smooth scroll in usePageTransition
+                loses to the menu's scroll lock while it is still releasing. */}
+            <DropdownMenuContent align="end" sideOffset={8} className="w-60" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <DropdownMenuItem onClick={() => openFromMenu("/agent/riders")}>
                 <BookOpen className="text-slate-500" />
                 {t("layout.rider_directory")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLocation("/agent/lic-plans")}>
+              <DropdownMenuItem onClick={() => openFromMenu("/agent/lic-plans")}>
                 <BookMarked className="text-slate-500" />
                 {t("layout.lic_plan_directory")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLocation("/agent/profile")}>
+              <DropdownMenuItem onClick={() => openFromMenu("/agent/profile")}>
                 <User className="text-slate-500" />
                 {t("layout.my_profile")}
               </DropdownMenuItem>

@@ -51,6 +51,7 @@ import {
   AgentCatalogCompare,
   RiderDirectory,
   LicPlanDirectory,
+  LicPolicies,
   AddPolicy,
   PolicyDetail,
   CustomersNew,
@@ -335,6 +336,9 @@ function App() {
                       </Route>
                       <Route path="/agent/riders">
                         {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_riders"><RiderDirectory /></PaidOnly></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/lic">
+                        {() => <AgentProtectedRoute><LicPolicies /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/lic-plans">
                         {() => <AgentProtectedRoute><LicPlanDirectory /></AgentProtectedRoute>}

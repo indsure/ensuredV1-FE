@@ -50,6 +50,10 @@ export const AGENT_TABLES: OwnedTable[] = [
   { table: "agent_summaries",     key: "agent_id", exportable: true,  label: "Summaries" },
   { table: "analysis_jobs",       key: "agent_id", exportable: false, label: "Analysis jobs" },
   { table: "batch_uploads",       key: "agent_id", exportable: false, label: "Batch uploads" },
+  // LIC sheets (migration 043): rows before the upload they belong to.
+  { table: "lic_due_rows",        key: "agent_id", exportable: true,  label: "LIC premium due rows" },
+  { table: "lic_paid_rows",       key: "agent_id", exportable: true,  label: "LIC commission rows" },
+  { table: "lic_uploads",         key: "agent_id", exportable: true,  label: "LIC sheets uploaded" },
   { table: "clients",             key: "agent_id", exportable: true,  label: "Policies" },
   { table: "customers",           key: "agent_id", exportable: true,  label: "Customers" },
   { table: "empanelments",        key: "agent_id", exportable: true,  label: "Empanelments" },

@@ -12,6 +12,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
 import { FreePlanBanner } from "@/components/agent/PaidOnly";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { LicDueCard } from "@/components/agent/LicDueCard";
 import { typeLabel } from "@/lib/insuranceTypes";
 import { fullInr, renewalBuckets, shortInr as shortInrFor } from "@/lib/business";
 import {
@@ -289,6 +290,10 @@ export default function DashboardNew() {
           </button>
         </div>
       )}
+
+      {/* LIC premium due (founder, 2026-11-28). Renders nothing until the advisor has
+          uploaded an LIC Premium Due list, so advisors without LIC see no empty card. */}
+      <LicDueCard />
 
       {rows.length > 0 && (
         <>
