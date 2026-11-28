@@ -21,19 +21,15 @@ import {
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { dateLocale, tOr } from "@/i18n";
+import { dateLocale } from "@/i18n";
 import CustomerImport from "@/components/agent/CustomerImport";
+import { HasTypeFilter, HAS_TYPE_OFF, matchesHasType, SELECT_CLS, type HasTypeValue } from "@/components/agent/HasTypeFilter";
 import { CustomersMobileList } from "@/components/agent/CustomersMobileList";
 
 type DraftState = { name: string; phone: string; email: string; city: string; dob: string };
 const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "", dob: "" };
-// The filter's main list is fixed; every other type sits under "Other".
-const MAIN_TYPES: InsuranceType[] = ["health", "life", "term", "motor"];
-const OTHERS = "__others";
-const OTHER_TYPES = (Object.keys(TYPE_META) as InsuranceType[]).filter(ty => !MAIN_TYPES.includes(ty));
 type SortKey ="added" | "value" | "count" | "cover" | "name";
 const SORT_KEYS: SortKey[] = ["added", "value", "count", "cover", "name"];
-const SELECT_CLS = "min-h-11 sm:min-h-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 sm:py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30";
 
 export default function CustomersNew() {
   const [, setLocation] = useLocation();
@@ -48,12 +44,8 @@ export default function CustomersNew() {
   const [draft, setDraft] = useState<DraftState>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>("added");
-  // Filter: "has" / "does not have" + a policy type ("any" = any policy at all).
-  const [filterMode, setFilterMode] = useState<"has" | "lacks">("has");
-  const [filterType, setFilterType] = useState<string>("");
-  const filterOn = filterType !== "";
-  // Inside "Other": "" = any of the other types, or one of them.
-  const [otherType, setOtherType] = useState<string>("");
+  const [hasType, setHasType] = useState<HasTypeValue>(HAS_TYPE_OFF);
+  const filterOn = hasType.type !== "";
 
   const load = useCallback(async () => {
     if (!agent?.agentId) return;
@@ -110,16 +102,7 @@ export default function CustomersNew() {
     );
 
     if (filterOn) {
-      list = list.filter(c => {
-        const byType = statsByCustomer.get(c.id)?.byType ?? {};
-        const owns = (ty: string) => (byType[ty] ?? 0) > 0;
-        const has = filterType === "any"
-          ? Object.keys(byType).length > 0
-          : filterType === OTHERS
-            ? (otherType ? owns(otherType) : OTHER_TYPES.some(owns))
-            : owns(filterType);
-        return filterMode === "has" ? has : !has;
-      });
+      list = list.filter(c => matchesHasType(statsByCustomer.get(c.id)?.byType ?? {}, hasType));
     }
 
     if (sortBy === "added") return list;
@@ -138,7 +121,7 @@ export default function CustomersNew() {
       if (y == null) return -1;
       return y - x;
     });
-  }, [customers, search, statsByCustomer, filterOn, filterMode, filterType, otherType, sortBy]);
+  }, [customers, search, statsByCustomer, filterOn, hasType, sortBy]);
 
   const duplicate = useMemo(() => (createOpen ? findDuplicate(customers, draft) : null), [createOpen, customers, draft]);
 
@@ -237,34 +220,7 @@ export default function CustomersNew() {
                   {SORT_KEYS.map(k => <option key={k} value={k}>{t(`customers.sort_${k}`)}</option>)}
                 </select>
               </label>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                <span className="font-medium">{t("customers.filter_label")}</span>
-                <select aria-label={t("customers.filter_label")} value={filterMode} onChange={e => setFilterMode(e.target.value as "has" | "lacks")} className={SELECT_CLS}>
-                  <option value="has">{t("customers.filter_has")}</option>
-                  <option value="lacks">{t("customers.filter_lacks")}</option>
-                </select>
-                <select aria-label={t("customers.col_policies")} value={filterType} onChange={e => { setFilterType(e.target.value); setOtherType(""); }} className={SELECT_CLS}>
-                  <option value="">{t("customers.filter_pick_type")}</option>
-                  <option value="any">{t("customers.filter_any_type")}</option>
-                  {MAIN_TYPES.map(ty => (
-                    <option key={ty} value={ty}>{TYPE_META[ty].emoji} {ty === "motor" ? t("customers.filter_vehicle") : tOr(t, `common.type_${ty}`, TYPE_META[ty].label)}</option>
-                  ))}
-                  <option value={OTHERS}>{t("customers.filter_other")} ›</option>
-                </select>
-                {filterType === OTHERS && (
-                  <select aria-label={t("customers.filter_other")} value={otherType} onChange={e => setOtherType(e.target.value)} className={SELECT_CLS}>
-                    <option value="">{t("customers.filter_all_other")}</option>
-                    {OTHER_TYPES.map(ty => (
-                      <option key={ty} value={ty}>{TYPE_META[ty].emoji} {tOr(t, `common.type_${ty}`, TYPE_META[ty].label)}</option>
-                    ))}
-                  </select>
-                )}
-                {filterOn && (
-                  <button type="button" onClick={() => { setFilterType(""); setOtherType(""); }} className="inline-flex min-h-11 sm:min-h-0 items-center gap-1 text-sm font-semibold text-[#0D9488] hover:underline">
-                    <X size={14} /> {t("customers.filter_clear")}
-                  </button>
-                )}
-              </div>
+              <HasTypeFilter value={hasType} onChange={setHasType} label={t("customers.filter_label")} />
             </div>
           </div>
 

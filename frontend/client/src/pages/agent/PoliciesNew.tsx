@@ -14,13 +14,14 @@ import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { TYPE_META, typeLabel, isDataEntryType, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
 import { exportPoliciesToExcel } from "@/lib/exportPolicies"
-import { fetchCustomers, type Customer } from "@/lib/customers"
+import { buildPortfolioStats, fetchCustomers, parseAmount, type Customer } from "@/lib/customers"
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog"
 import type { DraftTarget } from "@/lib/draftMessage"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { toast } from "@/hooks/use-toast"
 import { useLanguage } from "@/i18n/LanguageContext"
 import { dateLocale, tOr } from "@/i18n"
+import { HasTypeFilter, HAS_TYPE_OFF, matchesHasType, type HasTypeValue } from "@/components/agent/HasTypeFilter"
 import { PoliciesMobileList } from "@/components/agent/PoliciesMobileList"
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns"
 import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore"
@@ -45,6 +46,7 @@ type ClientRow = {
   extracted_data: any | null;
   customer_id: string | null;
   client_phone: string | null;
+  sum_insured: string | number | null;
 };
 
 function getDays(expiry_date: string | null): number | null {
@@ -209,7 +211,7 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
 /** "expiring" reads the date in the Next Premium column. */
 type FilterTab = "all" | "expiring" | "switch" | "healthy";
 /** "expiry" sorts by the Next Premium column's date. */
-type SortKey = "expiry" | "score" | "name";
+type SortKey = "expiry" | "score" | "name" | "value" | "cover" | "count";
 
 /** Expiring soon = the Next Premium date within this many days. */
 const PREMIUM_DUE_DAYS = 30;
@@ -268,6 +270,8 @@ export default function PoliciesNew() {
     [setLocation]
   );
   const [sort, setSort] = useState<SortKey>("expiry");
+  /** About the policy's CUSTOMER: "Health policies whose customer has no Term". */
+  const [hasType, setHasType] = useState<HasTypeValue>(HAS_TYPE_OFF);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -284,7 +288,7 @@ export default function PoliciesNew() {
       const data = await fetchAllRows((from, to) =>
         supabase
           .from("clients")
-          .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone")
+          .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone, sum_insured")
           .eq("agent_id", agent.agentId!)
           .eq("status", "done")
           .order("created_at", { ascending: false })
@@ -402,6 +406,32 @@ export default function PoliciesNew() {
   const activeTab: FilterTab = tabKeys.includes(tab) ? tab : "all";
   const activeSort: SortKey = !showScoreFor(typeFilter) && sort === "score" ? "expiry" : sort;
 
+  /* Per policy: yearly premium and cover, by the same rules as the Customers
+     page. Per customer: what they hold across the WHOLE book (life and term
+     included), so "does not have Term" is true of the person, not this list.
+     A policy tagged to no customer stands alone. */
+  const money = useMemo(() => {
+    const perPolicy = new Map<string, { premium: number | null; cover: number | null }>();
+    const holdings = new Map<string, Record<string, number>>();
+    for (const r of rows) {
+      const s = buildPortfolioStats([{
+        ...r,
+        coverage: r.report_data?.coverage_structure ?? null,
+        h_premium: r.report_data?.premium ?? null,
+      }]);
+      perPolicy.set(r.id, { premium: s.totalPremium, cover: s.totalSumInsured });
+      if (r.customer_id) {
+        const h = holdings.get(r.customer_id) ?? {};
+        const ty = r.insurance_type || "health";
+        h[ty] = (h[ty] ?? 0) + 1;
+        holdings.set(r.customer_id, h);
+      }
+    }
+    const holdingOf = (r: ClientRow): Record<string, number> =>
+      (r.customer_id && holdings.get(r.customer_id)) || { [r.insurance_type || "health"]: 1 };
+    return { perPolicy, holdingOf };
+  }, [rows]);
+
   // Filtered + sorted
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -425,12 +455,21 @@ export default function PoliciesNew() {
     if (activeTab === "switch") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score < 70);
     if (activeTab === "healthy") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70);
 
+    if (hasType.type) list = list.filter(r => matchesHasType(money.holdingOf(r), hasType));
+
+    // High to low; a policy with no figure goes to the bottom.
+    const desc = (x: number | null | undefined, y: number | null | undefined) =>
+      x == null && y == null ? 0 : x == null ? 1 : y == null ? -1 : y - x;
+    const count = (r: ClientRow) => Object.values(money.holdingOf(r)).reduce((s, n) => s + n, 0);
     return [...list].sort((a, b) => {
       if (activeSort === "expiry") return (nextDays(a) ?? 99999) - (nextDays(b) ?? 99999);
       if (activeSort === "score") return (a.score ?? 999) - (b.score ?? 999);
+      if (activeSort === "value") return desc(money.perPolicy.get(a.id)?.premium, money.perPolicy.get(b.id)?.premium);
+      if (activeSort === "cover") return desc(money.perPolicy.get(a.id)?.cover, money.perPolicy.get(b.id)?.cover);
+      if (activeSort === "count") return count(b) - count(a);
       return (a.policyholder_name || a.name || "").localeCompare(b.policyholder_name || b.name || "");
     });
-  }, [typed, search, activeTab, activeSort, nextDays, customersById]);
+  }, [typed, search, activeTab, activeSort, nextDays, customersById, hasType, money]);
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all", label: t("policies.tab_all"), count: stats.total },
@@ -459,7 +498,7 @@ export default function PoliciesNew() {
             onClick={async () => {
               setExporting(true)
               try {
-                await exportPoliciesToExcel(filtered, typeFilter)
+                await exportPoliciesToExcel(filtered.map(r => ({ ...r, sum_insured: parseAmount(r.sum_insured) })), typeFilter)
               } catch {
                 toast({ title: t("policies.export_failed"), description: t("policies.export_failed_desc"), variant: "destructive" })
               } finally {
@@ -565,8 +604,16 @@ export default function PoliciesNew() {
                 <option value="expiry">{t("policies.sort_expiry")}</option>
                 {showScore && <option value="score">{t("policies.sort_score")}</option>}
                 <option value="name">{t("policies.sort_name")}</option>
+                <option value="value">{t("policies.sort_value")}</option>
+                <option value="cover">{t("policies.sort_cover")}</option>
+                <option value="count">{t("policies.sort_count")}</option>
               </select>
             </div>
+          </div>
+
+          {/* CUSTOMER HAS / DOES NOT HAVE */}
+          <div className="px-6 py-3 border-b border-slate-50">
+            <HasTypeFilter value={hasType} onChange={setHasType} label={t("policies.filter_customer")} />
           </div>
 
           {/* TABLE (md and up) / LIST (phones) */}
@@ -575,7 +622,7 @@ export default function PoliciesNew() {
               <PoliciesMobileList
                 rows={filtered}
                 loading={loading}
-                emptyText={search ? t("common.no_results_for", { query: search }) : t("policies.empty_category")}
+                emptyText={search ? t("common.no_results_for", { query: search }) : hasType.type ? t("policies.no_match_filter") : t("policies.empty_category")}
                 onOpen={(id) => setLocation(`/agent/policies/${id}`)}
               />
             </div>
@@ -609,7 +656,7 @@ export default function PoliciesNew() {
                 {!loading && filtered.length === 0 && (
                   <tr>
                     <td colSpan={colCount} className="px-6 py-16 text-center text-slate-400 italic">
-                      {search ? t("common.no_results_for", { query: search }) : t("policies.empty_category")}
+                      {search ? t("common.no_results_for", { query: search }) : hasType.type ? t("policies.no_match_filter") : t("policies.empty_category")}
                     </td>
                   </tr>
                 )}
