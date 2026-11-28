@@ -21,12 +21,15 @@ import {
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { dateLocale } from "@/i18n";
+import { dateLocale, tOr } from "@/i18n";
 import CustomerImport from "@/components/agent/CustomerImport";
 import { CustomersMobileList } from "@/components/agent/CustomersMobileList";
 
 type DraftState = { name: string; phone: string; email: string; city: string; dob: string };
 const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "", dob: "" };
+type SortKey = "added" | "value" | "count" | "cover" | "name";
+const SORT_KEYS: SortKey[] = ["added", "value", "count", "cover", "name"];
+const SELECT_CLS = "min-h-11 sm:min-h-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 sm:py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30";
 
 export default function CustomersNew() {
   const [, setLocation] = useLocation();
@@ -40,6 +43,11 @@ export default function CustomersNew() {
   const [createOpen, setCreateOpen] = useState(false);
   const [draft, setDraft] = useState<DraftState>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>("added");
+  // Filter: "has" / "does not have" + a policy type ("any" = any policy at all).
+  const [filterMode, setFilterMode] = useState<"has" | "lacks">("has");
+  const [filterType, setFilterType] = useState<string>("");
+  const filterOn = filterType !== "";
 
   const load = useCallback(async () => {
     if (!agent?.agentId) return;
@@ -86,16 +94,49 @@ export default function CustomersNew() {
   // Phones get a scannable list instead of the six-column table.
   const isMobile = useIsMobile();
 
+  // Policy types that exist in this book, in the usual type order, for the filter menu.
+  const typesInBook = useMemo(() => {
+    const seen = new Set<string>();
+    for (const p of policies) if (p.customer_id) seen.add(p.insurance_type || "health");
+    return (Object.keys(TYPE_META) as InsuranceType[]).filter(ty => seen.has(ty));
+  }, [policies]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return customers;
-    return customers.filter(c =>
+    let list = !q ? customers : customers.filter(c =>
       c.name.toLowerCase().includes(q) ||
       (c.phone ?? "").toLowerCase().includes(q) ||
       (c.email ?? "").toLowerCase().includes(q) ||
       (c.city ?? "").toLowerCase().includes(q)
     );
-  }, [customers, search]);
+
+    if (filterOn) {
+      list = list.filter(c => {
+        const byType = statsByCustomer.get(c.id)?.byType ?? {};
+        const has = filterType === "any"
+          ? Object.keys(byType).length > 0
+          : (byType[filterType] ?? 0) > 0;
+        return filterMode === "has" ? has : !has;
+      });
+    }
+
+    if (sortBy === "added") return list;
+    // Customers with no figure go to the bottom, then newest first among equals.
+    const num = (c: Customer): number | null => {
+      const s = statsByCustomer.get(c.id);
+      if (sortBy === "value") return s?.totalPremium ?? null;
+      if (sortBy === "count") return s?.policyCount ?? 0;
+      return s?.totalSumInsured ?? null;
+    };
+    return [...list].sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      const x = num(a), y = num(b);
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return y - x;
+    });
+  }, [customers, search, statsByCustomer, filterOn, filterMode, filterType, sortBy]);
 
   const duplicate = useMemo(() => (createOpen ? findDuplicate(customers, draft) : null), [createOpen, customers, draft]);
 
@@ -176,15 +217,44 @@ export default function CustomersNew() {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
 
           {/* TOOLBAR */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
-            <p className="text-sm text-slate-500 font-medium">{t(customers.length === 1 ? "customers.count_one" : "customers.count_many", { count: customers.length })}</p>
-            <input
-              type="search"
-              placeholder={t("customers.search_placeholder")}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="min-w-0 w-full sm:w-64 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
-            />
+          <div className="flex flex-col gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-sm text-slate-500 font-medium">{t(customers.length === 1 ? "customers.count_one" : "customers.count_many", { count: customers.length })}</p>
+              <input
+                type="search"
+                placeholder={t("customers.search_placeholder")}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="min-w-0 w-full sm:w-64 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <label className="flex items-center gap-2 text-sm text-slate-500">
+                <span className="font-medium">{t("customers.sort_label")}</span>
+                <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)} className={SELECT_CLS}>
+                  {SORT_KEYS.map(k => <option key={k} value={k}>{t(`customers.sort_${k}`)}</option>)}
+                </select>
+              </label>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <span className="font-medium">{t("customers.filter_label")}</span>
+                <select aria-label={t("customers.filter_label")} value={filterMode} onChange={e => setFilterMode(e.target.value as "has" | "lacks")} className={SELECT_CLS}>
+                  <option value="has">{t("customers.filter_has")}</option>
+                  <option value="lacks">{t("customers.filter_lacks")}</option>
+                </select>
+                <select aria-label={t("customers.col_policies")} value={filterType} onChange={e => setFilterType(e.target.value)} className={SELECT_CLS}>
+                  <option value="">{t("customers.filter_pick_type")}</option>
+                  <option value="any">{t("customers.filter_any_type")}</option>
+                  {typesInBook.map(ty => (
+                    <option key={ty} value={ty}>{TYPE_META[ty].emoji} {tOr(t, `common.type_${ty}`, TYPE_META[ty].label)}</option>
+                  ))}
+                </select>
+                {filterOn && (
+                  <button type="button" onClick={() => setFilterType("")} className="inline-flex min-h-11 sm:min-h-0 items-center gap-1 text-sm font-semibold text-[#0D9488] hover:underline">
+                    <X size={14} /> {t("customers.filter_clear")}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* TABLE (md and up) / LIST (phones) */}
@@ -195,7 +265,7 @@ export default function CustomersNew() {
                 statsFor={(id) => statsByCustomer.get(id)}
                 formatAmount={formatAmount}
                 loading={loading}
-                emptyText={search ? t("common.no_results_for", { query: search }) : t("customers.empty")}
+                emptyText={search ? t("common.no_results_for", { query: search }) : filterOn ? t("customers.no_match_filter") : t("customers.empty")}
                 onOpen={(id) => setLocation(`/agent/customers/${id}`)}
               />
             </div>
@@ -226,7 +296,7 @@ export default function CustomersNew() {
                       <Users className="mx-auto mb-3 h-8 w-8 text-slate-200" />
                       {search
                         ? <span className="italic">{t("common.no_results_for", { query: search })}</span>
-                        : <span className="italic">{t("customers.empty")}</span>}
+                        : <span className="italic">{t(filterOn ? "customers.no_match_filter" : "customers.empty")}</span>}
                     </td>
                   </tr>
                 )}
