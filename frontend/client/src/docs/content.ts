@@ -845,7 +845,7 @@ export const DOC_SECTIONS: DocSection[] = [
             items: [
               "Change your **name** and **city**, then press **Save**.",
               "Set a **new password**, type it again, and press **Update password**.",
-              "**Download my data**: one file with your policies, customers, leads, claims, comparisons and cover calculations. The documents are listed with where they are stored.",
+              "**Download my data**: one zip file with every document stored on your account (policy PDFs, extra covers, claim papers), plus your policies, customers, leads, claims, comparisons and cover calculations. A large account takes longer to prepare.",
               "**Delete my account** removes your login, customers, policies, files, leads and claims for good. Download your data first if you want a copy.",
             ],
           },

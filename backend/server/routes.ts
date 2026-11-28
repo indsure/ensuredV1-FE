@@ -25,6 +25,8 @@ import { buildComparison, compareMany, type WordingProfile } from "./types/wordi
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
 import { shareDetails } from "../../shared/dataEntryShare";
 import { AGENT_TABLES, INDIVIDUAL_TABLES, ownsStoragePath, selectForTable, type OwnedTable } from "./services/accountData";
+import { exportReadme, planExportFiles } from "./services/accountExport";
+import { createZipWriter } from "./services/zipStream";
 import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
@@ -5398,10 +5400,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
    * not the customer's data about themselves, and publishing an access log back
    * to the person it audits is not a data right.
    *
-   * Document BYTES are not bundled. The rows name every file and where it lives,
-   * but streaming a book of policy PDFs through a JSON response would time out
-   * and blow memory on a large account. The download route already exists per
-   * file and is authenticated; this says what there is to fetch.
+   * The download is a zip: data.json first, then every stored document on the
+   * account (services/accountExport.ts decides which and names them), then a
+   * short note. It is STREAMED, one file in memory at a time, because a large
+   * book of policy PDFs held whole would take the server down. Once the first
+   * byte is sent an error can no longer become a 500, so a file that fails to
+   * fetch is left out and named in the note instead of cutting the zip short.
    */
   async function buildExport(accountId: string, tables: OwnedTable[]) {
     const data: Record<string, unknown[]> = {};
@@ -5419,34 +5423,111 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     return data;
   }
 
+  /** Every object key under "<accountId>/" in the bucket. Storage lists one
+   *  folder at a time, so this walks down. Bounded, so a runaway listing cannot
+   *  hold the request open forever. */
+  async function listAccountKeys(accountId: string): Promise<string[]> {
+    const keys: string[] = [];
+    const walk = async (prefix: string, depth: number): Promise<void> => {
+      if (depth > 8 || keys.length >= 50000) return;
+      // Advance by what came back and stop only on an empty page, so a server
+      // that caps a page below the limit asked for cannot truncate the list.
+      for (let offset = 0; ; ) {
+        const { data, error } = await supabaseAdmin.storage
+          .from(PDF_BUCKET)
+          .list(prefix, { limit: 1000, offset, sortBy: { column: "name", order: "asc" } });
+        if (error) throw new Error(error.message);
+        if (!data?.length) return;
+        offset += data.length;
+        for (const item of data) {
+          if (item.name === ".emptyFolderPlaceholder") continue; // storage bookkeeping, not a document
+          const path = `${prefix}/${item.name}`;
+          // A folder comes back with no id; a file has one.
+          if (item.id == null) await walk(path, depth + 1);
+          else keys.push(path);
+        }
+      }
+    };
+    await walk(accountId, 0);
+    return keys;
+  }
+
+  /* One export per account at a time. A second click while the first is still
+     streaming would only fetch every file twice. */
+  const exportsRunning = new Set<string>();
+
+  async function sendExportZip(
+    req: any, res: any, accountId: string, kind: "agent" | "individual", tables: OwnedTable[],
+  ) {
+    if (exportsRunning.has(accountId)) {
+      return res.status(429).json({ error: "EXPORT_RUNNING", message: "Your download is already being prepared. Please wait for it to finish." });
+    }
+    exportsRunning.add(accountId);
+    let aborted = false;
+    res.on("close", () => { if (!res.writableFinished) aborted = true; });
+    try {
+      const exportedAt = new Date();
+      const data = await buildExport(accountId, tables);
+
+      let listed: string[] = [];
+      try {
+        listed = await listAccountKeys(accountId);
+      } catch (err: any) {
+        // The rows still name most files; carry on with those.
+        log.error("export_storage_list_failed", { kind, message: err?.message });
+      }
+      const plan = planExportFiles({ kind, accountId, bucket: PDF_BUCKET, data, listedKeys: listed });
+      if (plan.refused) log.warn("export_files_refused", { kind, accountId, count: plan.refused });
+
+      const stamp = exportedAt.toISOString().slice(0, 10);
+      res.status(200);
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.zip"`);
+      res.setHeader("Cache-Control", "no-store");
+      // Tell a proxy in front not to spool the whole zip to its own disk.
+      res.setHeader("X-Accel-Buffering", "no");
+      const zip = createZipWriter(res);
+
+      const json = Buffer.from(JSON.stringify({ exported_at: exportedAt.toISOString(), account: kind, data }, null, 2), "utf8");
+      await zip.addFile("data.json", json, exportedAt);
+
+      const missing: string[] = [];
+      const tooLarge: string[] = [];
+      for (const f of plan.files) {
+        if (aborted) break;
+        const { data: blob, error } = await supabaseAdmin.storage.from(PDF_BUCKET).download(f.key);
+        if (error || !blob) { missing.push(f.zipName); continue; }
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        if (!zip.canFit(f.zipName, buf.length)) { tooLarge.push(f.zipName); continue; }
+        await zip.addFile(f.zipName, buf, exportedAt);
+      }
+      if (aborted) return;
+
+      const included = zip.count - 1;
+      await zip.addFile("about-this-download.txt", Buffer.from(exportReadme({ exportedAt, included, missing, tooLarge }), "utf8"), exportedAt);
+      await zip.finish();
+      res.end();
+      log.info("account_export_sent", { kind, files: included, missing: missing.length, tooLarge: tooLarge.length });
+    } catch (err: any) {
+      if (aborted || err?.message === "STREAM_CLOSED") return; // the person left; nothing to tell them
+      log.error(`${kind === "agent" ? "agent" : "me"}_export_failed`, { message: err?.message });
+      if (!res.headersSent) return res.status(500).json({ error: "Could not build your export. Try again." });
+      res.destroy(); // a cut-short zip must not look like a finished one
+    } finally {
+      exportsRunning.delete(accountId);
+    }
+  }
+
   app.get("/api/me/export", async (req, res) => {
     const userId = await requireIndividual(req, res);
     if (!userId) return;
-    try {
-      const data = await buildExport(userId, INDIVIDUAL_TABLES);
-      const stamp = new Date().toISOString().slice(0, 10);
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
-      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "individual", data }, null, 2));
-    } catch (err: any) {
-      log.error("me_export_failed", { message: err?.message });
-      return res.status(500).json({ error: "Could not build your export. Try again." });
-    }
+    return sendExportZip(req, res, userId, "individual", INDIVIDUAL_TABLES);
   });
 
   app.get("/api/agent/export", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
-    try {
-      const data = await buildExport(agentId, AGENT_TABLES);
-      const stamp = new Date().toISOString().slice(0, 10);
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
-      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "agent", data }, null, 2));
-    } catch (err: any) {
-      log.error("agent_export_failed", { message: err?.message });
-      return res.status(500).json({ error: "Could not build your export. Try again." });
-    }
+    return sendExportZip(req, res, agentId, "agent", AGENT_TABLES);
   });
 
   app.get("/api/me/policy/:id", async (req, res) => {

@@ -104,11 +104,13 @@ export default function Account() {
     try {
       const res = await apiFetch("/api/me/export");
       if (!res.ok) throw new Error();
+      // A zip from the current server, or records-only JSON from an older one.
+      const ext = (res.headers.get("Content-Type") || "").includes("zip") ? "zip" : "json";
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();

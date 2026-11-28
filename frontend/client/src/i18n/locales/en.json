@@ -1268,7 +1268,7 @@
     "confirm_password": "Type the new password again",
     "update_password": "Update Password",
     "your_data": "Your data",
-    "your_data_desc": "Download everything we hold for your account: your policies, customers, leads, claims, comparisons and cover calculations, as one file. Documents themselves are not in the file, but every one of them is listed with where it is stored.",
+    "your_data_desc": "Download everything we hold for your account as one zip file: every document stored on your account (policy PDFs, extra covers, claim papers), and your policies, customers, leads, claims, comparisons and cover calculations. A large account takes longer to prepare.",
     "preparing": "Preparing your file...",
     "download": "Download my data"
   },
@@ -2961,7 +2961,7 @@
     "ac_signed_in": "Signed in as",
     "ac_email": "Email",
     "ac_export_h": "Download my data",
-    "ac_export_body": "Get a file with everything we hold about you: your details, your policies and their reports.",
+    "ac_export_body": "Get a zip file with everything we hold about you: your details, your policies and their reports, and every policy document stored on your account.",
     "ac_export_cta": "Download my data",
     "ac_exporting": "Preparing your file...",
     "ac_export_failed": "Could not prepare your file. Please try again in a minute.",
