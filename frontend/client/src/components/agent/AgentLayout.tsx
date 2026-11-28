@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { Link, useLocation, useSearch } from "wouter"
-import { Lock, BookOpen, ChevronRight, CreditCard, FileText, HeartHandshake, HelpCircle, LayoutDashboard, MessageCircle, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
+import { Lock, BookOpen, BookMarked, ChevronRight, CreditCard, FileText, HeartHandshake, HelpCircle, LayoutDashboard, MessageCircle, Settings, LogOut, Upload, User, Users, Menu, X, UsersRound, Wrench } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { useAgent } from "@/context/AgentContext"
@@ -497,6 +497,10 @@ export default function AgentLayout({ children }: AgentLayoutProps) {
               <DropdownMenuItem onClick={() => setLocation("/agent/riders")}>
                 <BookOpen className="text-slate-500" />
                 {t("layout.rider_directory")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/agent/lic-plans")}>
+                <BookMarked className="text-slate-500" />
+                {t("layout.lic_plan_directory")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLocation("/agent/profile")}>
                 <User className="text-slate-500" />
