@@ -141,7 +141,7 @@ export function dueOf(r: HomeRow, today: Date, ahead: number = MONTH_DAYS): Due 
 
   const renews = parseDate(r.expiry_date);
   if (!renews || !inWindow(renews)) return null;
-  const amount = type === "health" ? parseAmount(r.h_premium?.amount ?? r.x_premium) : parseAmount(r.x_premium);
+  const amount = type === "health" ? parseAmount(r.h_premium?.amount) ?? parseAmount(r.x_premium) : parseAmount(r.x_premium);
   const freq = readFrequency(type === "health" ? r.h_premium?.frequency ?? r.x_freq : r.x_freq);
   // A multi-year single premium is not what this renewal will cost; leave it unread.
   const yearly = amount == null || freq === "single" ? null : amount * (freq ?? 1);
@@ -236,13 +236,16 @@ export function upcomingBirthdays<T extends { dob: string | null }>(people: T[],
 export function summarise(rows: HomeRow[], today: Date) {
   const live = rows.filter((r) => inForce(r, today));
   const money: PolicyMoney[] = live.map((r) => toMoney(r, today));
-  const priced = money.filter((p) => p.yearly != null);
-  const totalPremium = priced.reduce((a, p) => a + (p.yearly ?? 0), 0);
+  // Every premium on file counts: yearly, one-time, single and life with no
+  // readable frequency (see PolicyMoney.book). Only a missing premium or a
+  // finished paying term is left out.
+  const priced = money.filter((p) => p.book != null);
+  const totalPremium = priced.reduce((a, p) => a + (p.book ?? 0), 0);
   const totalCover = money.reduce((a, p) => a + (p.cover ?? 0), 0);
   const families = new Set(money.map((p) => p.customerId).filter(Boolean) as string[]);
-  // "About ₹X a year each": only premium that belongs to a family, over those families.
+  // "About ₹X each": only premium that belongs to a family, over those families.
   const familyPriced = priced.filter((p) => p.customerId);
-  const familyPremium = familyPriced.reduce((a, p) => a + (p.yearly ?? 0), 0);
+  const familyPremium = familyPriced.reduce((a, p) => a + (p.book ?? 0), 0);
   const pricedFamilies = new Set(familyPriced.map((p) => p.customerId as string));
   const weekAgo = today.getTime() - 7 * DAY;
   const addedThisWeek = live.filter((r) => new Date(r.created_at).getTime() >= weekAgo).length;
@@ -252,13 +255,13 @@ export function summarise(rows: HomeRow[], today: Date) {
   for (const p of money) {
     const cur = byType.get(p.type) ?? { premium: 0, count: 0 };
     cur.count++;
-    cur.premium += p.yearly ?? 0;
+    cur.premium += p.book ?? 0;
     byType.set(p.type, cur);
   }
   const typeRows = Array.from(byType.entries()).sort((a, b) => b[1].premium - a[1].premium || b[1].count - a[1].count);
 
   const byInsurer = new Map<string, number>();
-  for (const p of priced) byInsurer.set(p.insurer, (byInsurer.get(p.insurer) ?? 0) + (p.yearly ?? 0));
+  for (const p of priced) byInsurer.set(p.insurer, (byInsurer.get(p.insurer) ?? 0) + (p.book ?? 0));
   const topInsurers = Array.from(byInsurer.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   // Families: premium, types held, policies.
@@ -270,7 +273,7 @@ export function summarise(rows: HomeRow[], today: Date) {
   const familyRows = Array.from(fam.entries()).map(([id, ps]) => ({
     id,
     policies: ps.length,
-    premium: ps.reduce((a, p) => a + (p.yearly ?? 0), 0),
+    premium: ps.reduce((a, p) => a + (p.book ?? 0), 0),
     types: Array.from(new Set(ps.map((p) => p.type))),
   }));
   const topFamilies = familyRows.filter((f) => f.premium > 0).sort((a, b) => b.premium - a.premium).slice(0, 5);
@@ -291,6 +294,7 @@ export function summarise(rows: HomeRow[], today: Date) {
     }).length,
     priced: priced.length,
     missingPremium: money.filter((p) => p.status === "missing").length,
+    paidUp: money.filter((p) => p.status === "paid_up").length,
     noFamily: money.filter((p) => !p.customerId).length,
     totalPremium,
     totalCover,

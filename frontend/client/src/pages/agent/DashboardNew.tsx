@@ -301,7 +301,11 @@ export default function DashboardNew() {
                 accent="teal"
                 label={t("ahome.t_premium")}
                 value={s.priced ? shortInr(s.totalPremium) : "–"}
-                hint={t("ahome.t_premium_hint", { priced: s.priced, total: s.inForce })}
+                hint={s.missingPremium > 0
+                  ? t("ahome.t_premium_hint_missing", { count: s.missingPremium })
+                  : s.paidUp > 0
+                    ? t("ahome.t_premium_hint_paidup", { count: s.paidUp })
+                    : t("ahome.t_premium_hint_all", { total: s.inForce })}
               />
             )}
             <Tile
@@ -611,6 +615,7 @@ export default function DashboardNew() {
           <p className="max-w-5xl text-sm leading-relaxed text-slate-500">
             <b className="text-slate-600">{t("ahome.note_title")}</b> {t("ahome.note_body", { priced: s.priced, total: s.inForce })}
             {s.missingPremium > 0 && <> {t("ahome.note_missing", { count: s.missingPremium })}</>}
+            {s.paidUp > 0 && <> {t("ahome.note_paidup", { count: s.paidUp })}</>}
             {s.noFamily > 0 && <> {t("ahome.note_nofamily", { count: s.noFamily })}</>}
             {s.noDate > 0 && <> {t("ahome.note_nodate", { count: s.noDate })}</>}
             {" "}{t("ahome.note_rules")}

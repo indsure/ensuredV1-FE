@@ -344,10 +344,11 @@ export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats
     const money = moneyRow(p);
     if (inForce(money, today)) {
       inForceCount++;
-      const yearly = toMoney(money, today).yearly;
-      if (yearly != null) {
+      // Same rule as Home: every premium on file (PolicyMoney.book).
+      const book = toMoney(money, today).book;
+      if (book != null) {
         pricedCount++;
-        totalPremium = (totalPremium ?? 0) + yearly;
+        totalPremium = (totalPremium ?? 0) + book;
       }
     }
 
