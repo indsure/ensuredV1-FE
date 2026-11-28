@@ -9,7 +9,8 @@ import { deletePolicyRecord } from "@/lib/policyDelete"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
-import { LicOverviewStrip } from "@/components/agent/LicDueCard"
+import { LicTableRow, LicMobileCards } from "@/components/agent/LicPolicyRows"
+import { fetchLicOverview, licDays, licIsDueSoon, licYearlyPremium, planLabel, todayLocalIso, type LicRow } from "@/lib/lic"
 import { canOpenShare } from "@shared/dataEntryShare"
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -222,7 +223,7 @@ const LIFE_LANE = ["life", "term"];
 
 /** "others" is the sidebar's catch-all: everything outside the four types it
  *  names. It is not an `insurance_type` value, only a filter. */
-type TypeFilter = "all" | "others" | InsuranceType;
+type TypeFilter = "all" | "others" | "lic" | InsuranceType;
 
 const NAMED_TYPES = ["health", "life", "term", "motor"];
 
@@ -231,6 +232,7 @@ const NAMED_TYPES = ["health", "life", "term", "motor"];
 function normaliseType(raw: string | null): TypeFilter {
   if (!raw || raw === "all") return "all";
   if (raw === "others") return "others";
+  if (raw === "lic") return "lic";
   return raw in TYPE_META ? (raw as InsuranceType) : "all";
 }
 
@@ -311,6 +313,19 @@ export default function PoliciesNew() {
 
   useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
 
+  /* LIC policies (founder, 2026-11-28): read from the agent's LIC sheets, shown in this list
+     beside the checked policies. A failed read leaves the list as it was (the LIC page shows
+     the error with a retry). */
+  const [licRows, setLicRows] = useState<LicRow[]>([]);
+  const [licToday, setLicToday] = useState<string>(todayLocalIso());
+  useEffect(() => {
+    let live = true;
+    fetchLicOverview()
+      .then(d => { if (live) { setLicRows(d.rows ?? []); if (d.today) setLicToday(d.today); } })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+
   async function handleDelete(id: string) {
     if (!agent?.agentId) return;
     setDeletingId(id);
@@ -385,10 +400,17 @@ export default function PoliciesNew() {
   /** The rows of the selected type, before search and tabs. Stats and tab
    *  counts read these. Life and term rows live in the Life section, not here. */
   const typed = useMemo(() => {
+    if (typeFilter === "lic") return [];
     if (typeFilter === "others") return rows.filter(r => !NAMED_TYPES.includes(r.insurance_type || "health"));
     if (typeFilter === "all") return rows.filter(r => !LIFE_LANE.includes(r.insurance_type || "health"));
     return rows.filter(r => (r.insurance_type || "health") === typeFilter);
   }, [rows, typeFilter]);
+
+  /** LIC rows of the selected type: shown under All types and under the LIC chip only. */
+  const licTyped = useMemo(
+    () => (typeFilter === "all" || typeFilter === "lic" ? licRows : []),
+    [licRows, typeFilter]
+  );
 
   const stats = useMemo(() => {
     const expiringSoon = typed.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS)).length;
@@ -398,8 +420,11 @@ export default function PoliciesNew() {
     const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
     const shouldSwitch = typed.filter(r => isHealthRow(r) && r.score !== null && r.score < 70).length;
     const healthy = typed.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70).length;
-    return { total: typed.length, expiringSoon, shouldSwitch, healthy };
-  }, [typed, nextDays]);
+    // LIC rows count in All and in Expiring Soon (premium not paid and due within the window,
+    // overdue included); they carry no health verdict, so never in Switch or Healthy.
+    const licExpiring = licTyped.filter(r => licIsDueSoon(r, licToday)).length;
+    return { total: typed.length + licTyped.length, expiringSoon: expiringSoon + licExpiring, shouldSwitch, healthy };
+  }, [typed, nextDays, licTyped, licToday]);
 
   /* A tab or sort picked in one view may not exist in the next (Should Switch
      has no meaning on Motor). Fall back instead of showing an empty list. */
@@ -472,6 +497,56 @@ export default function PoliciesNew() {
     });
   }, [typed, search, activeTab, activeSort, nextDays, customersById, hasType, money]);
 
+  /* The same search, tab, customer filter and sort, applied to the LIC rows. */
+  const licFiltered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const qs = q.replace(/[^\p{L}\p{M}\p{N}]/gu, "");
+    let list = !q ? licTyped : licTyped.filter(r =>
+      [r.holderName, planLabel(r.planNo), "lic"].some(v => v.toLowerCase().includes(q)) ||
+      r.policyNo.includes(qs.length >= 3 ? qs : q)
+    );
+    if (activeTab === "expiring") list = list.filter(r => licIsDueSoon(r, licToday));
+    if (activeTab === "switch" || activeTab === "healthy") list = [];
+    // An LIC policy is a life policy, held by a person not yet linked to a customer.
+    if (hasType.type) list = list.filter(() => matchesHasType({ life: 1 }, hasType));
+    return list;
+  }, [licTyped, search, activeTab, hasType, licToday]);
+
+  /* One list, one sort: checked policies and LIC policies interleave by the chosen key. */
+  type Item = { k: "c"; c: ClientRow } | { k: "l"; l: LicRow };
+  const items = useMemo<Item[]>(() => {
+    const all: Item[] = [...filtered.map(c => ({ k: "c" as const, c })), ...licFiltered.map(l => ({ k: "l" as const, l }))];
+    const key = (it: Item): number | string | null => {
+      if (it.k === "c") {
+        const r = it.c;
+        if (activeSort === "expiry") return nextDays(r) ?? 99999;
+        if (activeSort === "score") return r.score ?? 999;
+        if (activeSort === "value") return money.perPolicy.get(r.id)?.premium ?? null;
+        if (activeSort === "cover") return money.perPolicy.get(r.id)?.cover ?? null;
+        if (activeSort === "count") return Object.values(money.holdingOf(r)).reduce((s, n) => s + n, 0);
+        return (r.policyholder_name || r.name || "").toLowerCase();
+      }
+      const r = it.l;
+      if (activeSort === "expiry") return licDays(r, licToday);
+      if (activeSort === "score") return 999;
+      if (activeSort === "value") return licYearlyPremium(r);
+      if (activeSort === "cover") return null;
+      if (activeSort === "count") return 1;
+      return r.holderName.toLowerCase();
+    };
+    const highFirst = activeSort === "value" || activeSort === "cover" || activeSort === "count";
+    return all
+      .map((it, i) => ({ it, i, v: key(it) }))
+      .sort((a, b) => {
+        if (a.v == null && b.v == null) return a.i - b.i;
+        if (a.v == null) return 1;
+        if (b.v == null) return -1;
+        if (typeof a.v === "string" || typeof b.v === "string") return String(a.v).localeCompare(String(b.v)) || a.i - b.i;
+        return (highFirst ? (b.v as number) - (a.v as number) : (a.v as number) - (b.v as number)) || a.i - b.i;
+      })
+      .map(x => x.it);
+  }, [filtered, licFiltered, activeSort, nextDays, money, licToday]);
+
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all", label: t("policies.tab_all"), count: stats.total },
     { key: "expiring", label: t("policies.tab_expiring"), count: stats.expiringSoon },
@@ -499,7 +574,7 @@ export default function PoliciesNew() {
             onClick={async () => {
               setExporting(true)
               try {
-                await exportPoliciesToExcel(filtered.map(r => ({ ...r, sum_insured: parseAmount(r.sum_insured) })), typeFilter)
+                await exportPoliciesToExcel(filtered.map(r => ({ ...r, sum_insured: parseAmount(r.sum_insured) })), typeFilter === "lic" ? "all" : typeFilter)
               } catch {
                 toast({ title: t("policies.export_failed"), description: t("policies.export_failed_desc"), variant: "destructive" })
               } finally {
@@ -541,9 +616,6 @@ export default function PoliciesNew() {
         </div>
       )}
 
-      {/* LIC policies live on their own page, fed by LIC's sheets; Overview points to them. */}
-      {typeFilter === "all" && <LicOverviewStrip />}
-
       {error && <InlineErrorState onRetry={fetchPolicies} />}
 
       {!error && (
@@ -557,16 +629,20 @@ export default function PoliciesNew() {
                 tk === "all" ? t("common.all_types")
                 : tk === "others" ? t("common.others")
                 : tk === "life" ? `${TYPE_META.life.emoji} ${t("policies.chip_life_section")}`
-                : `${TYPE_META[tk].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk].label)}`;
+                : `${TYPE_META[tk as InsuranceType].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk as InsuranceType].label)}`;
               return (
                 <Fragment key={tk}>
-                {/* LIC sits just before Others, as in the rail (founder, 2026-11-28). Its
-                    policies come from LIC's sheets and live on their own page. */}
+                {/* LIC sits just before Others, as in the rail (founder, 2026-11-28): it
+                    filters this list to the policies read from LIC's sheets. */}
                 {tk === "others" && (
                   <button
                     type="button"
-                    onClick={() => setLocation("/agent/lic")}
-                    className="inline-flex min-h-10 sm:min-h-0 items-center rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-500 transition-all hover:border-slate-300 hover:text-slate-700"
+                    onClick={() => setTypeFilter("lic")}
+                    className={`inline-flex min-h-10 sm:min-h-0 items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+                      typeFilter === "lic"
+                        ? "border-[#0D9488] bg-[#0D9488]/10 text-[#0D9488]"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                    }`}
                   >
                     {t("layout.type_lic")}
                   </button>
@@ -635,11 +711,16 @@ export default function PoliciesNew() {
           {/* TABLE (md and up) / LIST (phones) */}
           {isMobile ? (
             <div className="p-3">
-              <PoliciesMobileList
+              {(loading || filtered.length > 0 || licFiltered.length === 0) && <PoliciesMobileList
                 rows={filtered}
                 loading={loading}
                 emptyText={search ? t("common.no_results_for", { query: search }) : hasType.type ? t("policies.no_match_filter") : t("policies.empty_category")}
                 onOpen={(id) => setLocation(`/agent/policies/${id}`)}
+              />}
+              <LicMobileCards
+                rows={items.filter(i => i.k === "l").map(i => (i as { k: "l"; l: LicRow }).l)}
+                advisor={agent?.name ?? null}
+                onOpen={(no) => setLocation(`/agent/lic/policy/${no}`)}
               />
             </div>
           ) : (
@@ -669,14 +750,27 @@ export default function PoliciesNew() {
                     ))}
                   </>
                 )}
-                {!loading && filtered.length === 0 && (
+                {!loading && items.length === 0 && (
                   <tr>
                     <td colSpan={colCount} className="px-6 py-16 text-center text-slate-400 italic">
                       {search ? t("common.no_results_for", { query: search }) : hasType.type ? t("policies.no_match_filter") : t("policies.empty_category")}
                     </td>
                   </tr>
                 )}
-                {!loading && filtered.map(p => {
+                {!loading && items.map(it => {
+                  if (it.k === "l") {
+                    return (
+                      <LicTableRow
+                        key={`lic-${it.l.policyNo}-${it.l.fup}`}
+                        r={it.l}
+                        showScore={showScore}
+                        showRecommendation={showRecommendation}
+                        advisor={agent?.name ?? null}
+                        onOpen={() => setLocation(`/agent/lic/policy/${it.l.policyNo}`)}
+                      />
+                    );
+                  }
+                  const p = it.c;
                   const npDate = getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type);
                   const shouldSwitch = p.score !== null && p.score < 70;
                   const shareUrl = p.share_token && canOpenShare(p) ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;

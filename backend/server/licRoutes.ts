@@ -85,6 +85,50 @@ export function registerLicRoutes(app: Express, verifyJwt: VerifyJwt): void {
     }
   });
 
+  /* ── Read: one policy (the details page) ────────────────────────────── */
+
+  app.get("/api/lic/policies/:policyNo", async (req, res) => {
+    const agentId = await requireAgent(req, res);
+    if (!agentId) return;
+    const policyNo = String(req.params.policyNo || "");
+    if (!/^\d{6,12}$/.test(policyNo)) {
+      res.status(400).json({ error: "BAD_POLICY_NO" });
+      return;
+    }
+    try {
+      const [due, payments] = await Promise.all([
+        latestDue(agentId),
+        pool.query(
+          `SELECT ${PAID_COLS}, holder_name AS "holderName", cbo, u.period, u.batch
+             FROM lic_paid_rows p JOIN lic_uploads u ON u.id = p.upload_id
+            WHERE p.agent_id = $1 AND p.policy_no = $2
+            ORDER BY p.due_date DESC, p.adj_date DESC`,
+          [agentId, policyNo],
+        ),
+      ]);
+      let row: any = null;
+      if (due) {
+        const d = await pool.query(
+          `SELECT ${DUE_COLS} FROM lic_due_rows WHERE upload_id = $1 AND agent_id = $2 AND policy_no = $3`,
+          [due.id, agentId, policyNo],
+        );
+        if (d.rows.length) {
+          // Matched against ALL the agent's payments, exactly as the list does.
+          const m = matchDueList(d.rows as MatchDueRow[], due.period, await allPaid(agentId), todayIST());
+          row = m.rows[0];
+        }
+      }
+      if (!row && payments.rows.length === 0) {
+        res.status(404).json({ error: "NOT_FOUND", message: "This policy is not in your LIC sheets." });
+        return;
+      }
+      res.json({ policy: row, dueList: due, payments: payments.rows, today: todayIST() });
+    } catch (e: any) {
+      console.error("[lic] policy read failed:", e?.message);
+      res.status(500).json({ error: "LIC_READ_FAILED", message: "Could not load this policy. Please try again." });
+    }
+  });
+
   /* ── Write: upload a sheet ──────────────────────────────────────────── */
 
   app.post(

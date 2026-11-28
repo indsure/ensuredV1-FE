@@ -52,6 +52,7 @@ import {
   RiderDirectory,
   LicPlanDirectory,
   LicPolicies,
+  LicPolicyDetail,
   AddPolicy,
   PolicyDetail,
   CustomersNew,
@@ -339,6 +340,9 @@ function App() {
                       </Route>
                       <Route path="/agent/lic">
                         {() => <AgentProtectedRoute><LicPolicies /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/lic/policy/:policyNo">
+                        {() => <AgentProtectedRoute><LicPolicyDetail /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/lic-plans">
                         {() => <AgentProtectedRoute><LicPlanDirectory /></AgentProtectedRoute>}

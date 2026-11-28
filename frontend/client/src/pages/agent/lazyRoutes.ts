@@ -19,6 +19,7 @@ export const AgentCatalogCompare = lazyWithPreload(() => import("@/pages/agent/C
 export const RiderDirectory = lazyWithPreload(() => import("@/pages/agent/RiderDirectory"));
 export const LicPlanDirectory = lazyWithPreload(() => import("@/pages/agent/LicPlanDirectory"));
 export const LicPolicies = lazyWithPreload(() => import("@/pages/agent/LicPolicies"));
+export const LicPolicyDetail = lazyWithPreload(() => import("@/pages/agent/LicPolicyDetail"));
 export const AddPolicy = lazyWithPreload(() => import("@/pages/agent/AddPolicy"));
 export const PolicyDetail = lazyWithPreload(() => import("@/pages/agent/PolicyDetail"));
 export const CustomersNew = lazyWithPreload(() => import("@/pages/agent/CustomersNew"));
@@ -80,6 +81,7 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
  */
 const DETAIL_ROUTES: PreloadableComponent<any>[] = [
   PolicyDetail,
+  LicPolicyDetail,
   CustomerDetail,
   LeadDetail,
   ClaimDetail,

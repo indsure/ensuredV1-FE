@@ -77,6 +77,33 @@ export async function fetchLicOverview(): Promise<LicOverview> {
   return apiJson<LicOverview>(apiFetch("/api/lic/overview"));
 }
 
+export interface LicPayment {
+  policyNo: string;
+  planNo: number;
+  term: number;
+  dueDate: string;
+  riskDate: string;
+  adjDate: string;
+  premium: number;
+  commission: number;
+  holderName: string;
+  cbo: string;
+  period: string;
+  batch: number | null;
+}
+
+export interface LicPolicyDetail {
+  policy: LicRow | null;
+  dueList: LicOverview["dueList"];
+  payments: LicPayment[];
+  today: string;
+}
+
+export async function fetchLicPolicy(policyNo: string): Promise<LicPolicyDetail> {
+  if (isPlaygroundMode()) throw new Error("LIC policies are not part of the demo.");
+  return apiJson<LicPolicyDetail>(apiFetch(`/api/lic/policies/${encodeURIComponent(policyNo)}`));
+}
+
 export async function uploadLicSheet(kind: LicSheetKind, file: File): Promise<LicUploadResult> {
   if (isPlaygroundMode()) throw new Error("Uploading LIC sheets is not part of the demo.");
   const body = new FormData();
@@ -87,6 +114,31 @@ export async function uploadLicSheet(kind: LicSheetKind, file: File): Promise<Li
 
 export async function removeLicUpload(id: number): Promise<void> {
   await apiOk(apiFetch(`/api/lic/uploads/${id}`, { method: "DELETE" }));
+}
+
+/* ── list helpers (My Policies sorts and tabs) ───────────────────────── */
+
+/** Today in India, YYYY-MM-DD, for when the server's own date is not at hand. */
+export function todayLocalIso(): string {
+  return new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+}
+
+/** Days from today to the first unpaid instalment (negative when overdue); paid = far away. */
+export function licDays(r: LicRow, today: string): number {
+  if (r.status === "paid") return 99999;
+  const ms = Date.parse(`${r.dueDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`);
+  return Math.round(ms / 86_400_000);
+}
+
+/** Not paid and due within 30 days, overdue included: the "Expiring Soon" tab. */
+export function licIsDueSoon(r: LicRow, today: string): boolean {
+  return r.status !== "paid" && licDays(r, today) <= 30;
+}
+
+const PER_YEAR: Record<LicMode, number> = { Y: 1, H: 2, Q: 4, M: 12, S: 0 };
+export function licYearlyPremium(r: LicRow): number | null {
+  const n = PER_YEAR[r.mode];
+  return n ? r.instPrem * n : null;
 }
 
 /* ── display helpers ─────────────────────────────────────────────────── */
