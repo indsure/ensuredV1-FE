@@ -16,7 +16,7 @@
  */
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Svg, Path, Image } from '@react-pdf/renderer';
-import { C, Display, getPdfLogoSrc } from './PolicyPDFDocument';
+import { C, Display, getPdfLogoSrc, BrandMasthead, BrandRunName, BRAND_FOOTER, type PdfBrand } from './PolicyPDFDocument';
 import { CALCULATOR_CONFIG, type EngineResult, type UserInputs } from '@/lib/health-engine-logic';
 
 /* ------------------------------------------------------------------ format */
@@ -207,11 +207,13 @@ interface Props {
     result: EngineResult;
     inputs: UserInputs;
     meta?: CalculatorPdfMeta;
+    /** The advisor handing this over. Absent = today's IndSure document. */
+    brand?: PdfBrand | null;
 }
 
 /* ------------------------------------------------------------------ doc */
 
-export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = {} }) => {
+export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = {}, brand = null }) => {
     const generatedLabel =
         meta.generatedAt ??
         new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -252,8 +254,10 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
 
     return (
         <Document
-            title={`IndSure cover calculation — ${lakhs(total)}`}
-            author="IndSure"
+            title={brand ? `Cover calculation: ${lakhs(total)}` : `IndSure cover calculation — ${lakhs(total)}`}
+            author={brand ? brand.name : 'IndSure'}
+            creator={brand ? brand.name : undefined}
+            producer={brand ? brand.name : undefined}
             subject="Health cover requirement"
         >
             <Page size="A4" style={s.page}>
@@ -263,7 +267,11 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                     render={({ pageNumber }) =>
                         pageNumber > 1 ? (
                             <>
-                                <Text style={s.micro}>INDSURE COVER CALCULATION</Text>
+                                {brand ? (
+                                    <BrandRunName brand={brand} style={s.micro} />
+                                ) : (
+                                    <Text style={s.micro}>INDSURE COVER CALCULATION</Text>
+                                )}
                                 <Text style={s.micro}>{lakhs(total).toUpperCase()}</Text>
                             </>
                         ) : null
@@ -282,7 +290,9 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                         return (
                             <>
                                 <Text style={s.micro}>
-                                    Arithmetic only. IndSure sells no insurance and earns no commission.
+                                    {brand
+                                        ? BRAND_FOOTER
+                                        : 'Arithmetic only. IndSure sells no insurance and earns no commission.'}
                                 </Text>
                                 <Text style={s.micro}>
                                     {pageNumber} / {totalPages}
@@ -293,8 +303,8 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                 />
 
                 {/* ---------------------------------------------- masthead */}
-                <View style={s.masthead}>
-                    <Image style={s.wordmark} src={getPdfLogoSrc()} />
+                <View style={[s.masthead, brand ? { alignItems: 'center' } : {}]}>
+                    {brand ? <BrandMasthead brand={brand} /> : <Image style={s.wordmark} src={getPdfLogoSrc()} />}
                     <Text style={s.eyebrow}>Cover calculation · {generatedLabel}</Text>
                 </View>
 
@@ -562,8 +572,9 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                     Not insurance or financial advice. This calculation is for informational purposes only
                     and does not constitute a recommendation to purchase any insurance product. Premium
                     figures are indicative estimates, not quotes, and are not based on insurer-specific
-                    data. Your actual premium depends on medical underwriting. Consult a licensed
-                    insurance advisor before making any decision.
+                    data. Your actual premium depends on medical underwriting.
+                    {/* From an advisor, "consult a licensed advisor" points the client away from them. */}
+                    {brand ? '' : ' Consult a licensed insurance advisor before making any decision.'}
                 </Text>
             </Page>
         </Document>

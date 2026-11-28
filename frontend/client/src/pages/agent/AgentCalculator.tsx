@@ -19,6 +19,7 @@ import type { UserInputs } from "@/lib/health-engine-logic";
 import { pdf } from "@react-pdf/renderer";
 import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
+import { buildPdfBrand, fileStem, myAdvisorIdentity } from "@/lib/pdfBrand";
 import { supabase } from "@/lib/supabase";
 import { clearAgentCalcDraft, readAgentCalcDraft, saveAgentCalcDraft, type AgentCalcDraft } from "@/lib/agentCalcDraft";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -224,16 +225,18 @@ export default function AgentCalculator() {
     try {
       // ~1.9MB of self-hosted faces, fetched only when an agent actually asks.
       registerPdfFonts();
+      // The advisor's own letterhead; any failure prints the IndSure document instead.
+      const brand = await buildPdfBrand(await myAdvisorIdentity(agent)).catch(() => null);
       const blob = await pdf(
-        <CalculatorPDFDocument result={done.result} inputs={done.inputs} />,
+        <CalculatorPDFDocument result={done.result} inputs={done.inputs} brand={brand} />,
       ).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const who = (attachedTo?.name ?? customer?.name ?? done.inputs.city ?? "client")
-        .replace(/\s+/g, "_")
-        .toLowerCase();
+      const whoName = attachedTo?.name ?? customer?.name ?? done.inputs.city ?? "client";
       a.href = url;
-      a.download = `indsure_cover_calculation_${who}.pdf`;
+      a.download = brand
+        ? `${fileStem(whoName, "client")}_cover_calculation.pdf`
+        : `indsure_cover_calculation_${whoName.replace(/\s+/g, "_").toLowerCase()}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();

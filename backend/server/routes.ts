@@ -190,6 +190,38 @@ async function recordPlanProvenance(
   }
 }
 
+/** Only a photo in our own public storage is handed to a browser to fetch. */
+const OWN_PUBLIC_PHOTO = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\//i;
+
+/**
+ * The advisor's letterhead for a PDF opened from a share link (founder decision
+ * 2026-11-28: advisor name and photo on top, IndSure only in the footer).
+ * Name: My Page display name, else the account name. Never the phone, email or
+ * slug. A separate query on purpose: any failure here returns null, which prints
+ * today's IndSure document, so it can never break a live share link.
+ */
+async function advisorLetterhead(agentId: unknown): Promise<{ name: string; photo_url: string | null } | null> {
+  if (typeof agentId !== "string" || !agentId) return null;
+  try {
+    const r = await pool.query(
+      `SELECT COALESCE(NULLIF(btrim(p.display_name), ''), NULLIF(btrim(a.full_name), ''), NULLIF(btrim(a.name), '')) AS name,
+              p.photo_url AS photo_url
+         FROM agents a
+         LEFT JOIN agent_pages p ON p.agent_id = a.id
+        WHERE a.id = $1
+        LIMIT 1`,
+      [agentId]
+    );
+    const row = r.rows[0];
+    if (!row?.name) return null;
+    const photo = typeof row.photo_url === "string" && OWN_PUBLIC_PHOTO.test(row.photo_url) ? row.photo_url : null;
+    return { name: String(row.name).slice(0, 60), photo_url: photo };
+  } catch (err: any) {
+    console.error("[advisor letterhead]", err?.message);
+    return null;
+  }
+}
+
 function stripInternal<T>(reportData: T): T {
   if (!reportData || typeof reportData !== "object") return reportData;
   const { __internal, ...rest } = reportData as Record<string, unknown>;
@@ -1728,7 +1760,7 @@ export async function registerRoutes(
     
     try {
       const reportRes = await pool.query(
-        "SELECT inputs, result_data, created_at FROM calculator_reports WHERE id = $1",
+        "SELECT inputs, result_data, created_at, agent_id FROM calculator_reports WHERE id = $1",
         [uuid]
       );
       
@@ -1739,7 +1771,9 @@ export async function registerRoutes(
         });
       }
       
-      return res.json(reportRes.rows[0]);
+      // agent_id stays server-side; only the advisor's letterhead goes out.
+      const { agent_id, ...report } = reportRes.rows[0];
+      return res.json({ ...report, advisor: await advisorLetterhead(agent_id) });
     } catch (err: any) {
       console.error("ERROR fetching calculator report:", err);
       res.status(500).json({ 
@@ -6973,7 +7007,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       // Fetch client record
       const clientRes = await pool.query(
         `SELECT
-          id, report_data, score, insurer, policy_name, policyholder_name,
+          id, agent_id, report_data, score, insurer, policy_name, policyholder_name,
           filename, created_at, status, share_enabled,
           insurance_type, extracted_data, sum_insured, left(expiry_date::text, 10) AS expiry_date
         FROM clients
@@ -7059,6 +7093,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       res.json({
         kind: "audit",
+        advisor: await advisorLetterhead(client.agent_id),
         report_data: stripInternal(client.report_data),
         score: client.score,
         insurer: client.insurer,

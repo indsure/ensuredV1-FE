@@ -16,6 +16,7 @@ import PolicySummary from "@/components/agent/policyValue/PolicySummary";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import ScanNotice, { isReadFromScan } from "@/components/ScanNotice";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import { myAdvisorIdentity } from "@/lib/pdfBrand";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
 import { daysUntil, toLifeRow, type LifeSourceRow } from "@/lib/lifeList";
 import { isoDay } from "@/lib/lifePremium";
@@ -713,6 +714,7 @@ export default function PolicyDetail() {
                 policyholderName: policy.client_name,
                 generatedAt: policy.last_analyzed_at ?? policy.created_at,
               }}
+              pdfAdvisor={() => myAdvisorIdentity(agent)}
             />
             </>
           ) : (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import type { AdvisorIdentity } from "@/lib/pdfBrand";
 import SharedPolicySummary from "@/components/SharedPolicySummary";
 import { validateForensicAuditReport } from "@shared/policy";
 import { getApiBase } from "@/lib/queryClient";
@@ -66,6 +67,8 @@ export default function SharedReport({ token }: SharedReportProps) {
   // Identity for the PDF. The report payload has no insurer or plan name; the
   // row wrapping it does, and this page was already throwing those fields away.
   const [meta, setMeta] = useState<{ insurer?: string; policyName?: string; policyholderName?: string; sourceFilename?: string; generatedAt?: string }>({});
+  // The advisor who sent this link: their name and photo head the PDF.
+  const [advisor, setAdvisor] = useState<AdvisorIdentity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,6 +114,7 @@ export default function SharedReport({ token }: SharedReportProps) {
             sourceFilename: reportData.filename ?? undefined,
             generatedAt: reportData.created_at ?? undefined,
           });
+          setAdvisor(reportData.advisor?.name ? { name: reportData.advisor.name, photoUrl: reportData.advisor.photo_url ?? null } : null);
         } else {
           console.error("[SharedReport] Validation failed");
           setError("invalid_format");
@@ -252,7 +256,7 @@ export default function SharedReport({ token }: SharedReportProps) {
   // customer, so no "an IndSure advisor will call you" form pitching IndSure over their head.
   return (
     <PageChrome label={t("shared.report_label")}>
-      <PolicyAuditReport data={data} hideNav={true} hideLeadCTA pdfMeta={meta} />
+      <PolicyAuditReport data={data} hideNav={true} hideLeadCTA pdfMeta={meta} pdfAdvisor={advisor ? async () => advisor : null} />
     </PageChrome>
   );
 }

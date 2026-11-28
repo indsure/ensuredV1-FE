@@ -28,6 +28,7 @@ import {
 } from '@react-pdf/renderer';
 import { ForensicAuditReport, deriveCoverView, describeRestoration, type ClauseSource } from '@shared/policy';
 import { formatPolicyDate, policyTermYears, readPremium } from '@/lib/policyFacts';
+import type { PdfBrand } from '@/lib/pdfBrand';
 
 /* ------------------------------------------------------------------ fonts */
 
@@ -426,6 +427,77 @@ const SectionHead = ({ title, note }: { title: string; note?: string }) => (
     </View>
 );
 
+/* ------------------------------------------------------------------ advisor letterhead */
+
+/**
+ * The advisor's letterhead (founder decision 2026-11-28). A document handed over
+ * by an advisor carries their name and photo at the top, and IndSure only once
+ * per page, in the footer. Shared with the calculator document so the two cannot
+ * drift. Built by `buildPdfBrand` in lib/pdfBrand.ts.
+ */
+export type { PdfBrand };
+
+export const BRAND_FOOTER = '~researched by IndSure';
+
+/** react-pdf honours `maxLines` on <Text>, but its typings in this version omit it. */
+const ONE_LINE = { maxLines: 1 } as Record<string, unknown>;
+
+const b = StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', maxWidth: 300, marginRight: 18 },
+    /** Running header halves: one line each, so a long advisor name and a long
+     *  list of insured names cannot print over each other. */
+    runLeft: { maxWidth: 240, textOverflow: 'ellipsis' } as any,
+    runRight: { maxWidth: 240, textAlign: 'right', textOverflow: 'ellipsis' } as any,
+    avatar: { width: 38, height: 38, marginRight: 10 },
+    label: {
+        fontSize: 6.4,
+        fontWeight: 700,
+        letterSpacing: 1.1,
+        color: C.faint,
+        textTransform: 'uppercase',
+        marginBottom: 2,
+    },
+    name: { fontFamily: 'Sans', fontSize: 13, fontWeight: 700, color: C.ink, lineHeight: 1.25 },
+});
+
+/** Masthead left side: photo (or initials) and the advisor's name. */
+export const BrandMasthead = ({ brand }: { brand: PdfBrand }) => (
+    <View style={b.row}>
+        {brand.avatar ? <Image style={b.avatar} src={brand.avatar} /> : null}
+        <View style={{ flexShrink: 1 }}>
+            <Text style={b.label}>Your insurance advisor</Text>
+            {brand.nameImage ? (
+                <Image
+                    src={brand.nameImage.src}
+                    style={{ width: brand.nameImage.width, height: brand.nameImage.height }}
+                />
+            ) : (
+                <Text style={b.name}>{brand.name}</Text>
+            )}
+        </View>
+    </View>
+);
+
+/** Running-header name: text when the font can draw it, else the name image, scaled down. */
+export const BrandRunName = ({ brand, style }: { brand: PdfBrand; style: any }) =>
+    brand.nameImage ? (
+        <Image
+            src={brand.nameImage.src}
+            style={{ height: 9, width: (brand.nameImage.width * 9) / brand.nameImage.height }}
+        />
+    ) : (
+        <Text style={[style, b.runLeft]} {...ONE_LINE}>
+            {brand.name.toUpperCase()}
+        </Text>
+    );
+
+/** Running-header right half in a branded document: one line, never overlapping. */
+export const BrandRunRight = ({ text, style }: { text: string; style: any }) => (
+    <Text style={[style, b.runRight]} {...ONE_LINE}>
+        {text}
+    </Text>
+);
+
 /* ------------------------------------------------------------------ props */
 
 export interface PdfMeta {
@@ -440,11 +512,13 @@ export interface PdfMeta {
 interface Props {
     data: ForensicAuditReport;
     meta?: PdfMeta;
+    /** The advisor handing this over. Absent = today's IndSure document. */
+    brand?: PdfBrand | null;
 }
 
 /* ------------------------------------------------------------------ doc */
 
-export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
+export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {}, brand = null }) => {
     const cover = deriveCoverView(data);
     const restoration = describeRestoration(data);
 
@@ -580,9 +654,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
 
     return (
         <Document
-            title={`IndSure policy audit — ${insured}`}
-            author="IndSure"
-            subject={meta.policyName ?? 'Forensic policy audit'}
+            title={brand ? `Policy report: ${insured}` : `IndSure policy audit — ${insured}`}
+            author={brand ? brand.name : 'IndSure'}
+            creator={brand ? brand.name : undefined}
+            producer={brand ? brand.name : undefined}
+            subject={meta.policyName ?? (brand ? 'Policy report' : 'Forensic policy audit')}
         >
             <Page size="A4" style={s.page}>
                 {/* running header, from page 2 on */}
@@ -592,8 +668,16 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                     render={({ pageNumber }) =>
                         pageNumber > 1 ? (
                             <>
-                                <Text style={s.micro}>INDSURE FORENSIC POLICY AUDIT</Text>
-                                <Text style={s.micro}>{insured.toUpperCase()}</Text>
+                                {brand ? (
+                                    <BrandRunName brand={brand} style={s.micro} />
+                                ) : (
+                                    <Text style={s.micro}>INDSURE FORENSIC POLICY AUDIT</Text>
+                                )}
+                                {brand ? (
+                                    <BrandRunRight text={insured.toUpperCase()} style={s.micro} />
+                                ) : (
+                                    <Text style={s.micro}>{insured.toUpperCase()}</Text>
+                                )}
                             </>
                         ) : null
                     }
@@ -612,7 +696,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                         return (
                             <>
                                 <Text style={s.micro}>
-                                    Read automatically from your policy document, then checked against our scoring rules on our servers.
+                                    {brand
+                                        ? BRAND_FOOTER
+                                        : 'Read automatically from your policy document, then checked against our scoring rules on our servers.'}
                                 </Text>
                                 <Text style={s.micro}>
                                     {pageNumber} / {totalPages}
@@ -623,9 +709,9 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                 />
 
                 {/* ---------------------------------------------- masthead */}
-                <View style={s.masthead}>
-                    <Image style={s.wordmark} src={logoSrc} />
-                    <Text style={s.eyebrow}>Forensic policy audit · {generatedLabel}</Text>
+                <View style={[s.masthead, brand ? { alignItems: 'center' } : {}]}>
+                    {brand ? <BrandMasthead brand={brand} /> : <Image style={s.wordmark} src={logoSrc} />}
+                    <Text style={s.eyebrow}>{brand ? 'Policy report' : 'Forensic policy audit'} · {generatedLabel}</Text>
                 </View>
 
                 {/* The portal and the shared page say this too; a printed copy must not say less. */}
@@ -995,7 +1081,11 @@ export const PolicyPDFDocument: React.FC<Props> = ({ data, meta = {} }) => {
                 {/* The colophon belongs with the confidence section, not on its own
                     page: keeping them apart is what left v1 with near-empty sheets. */}
                 <Text style={s.provenance} wrap={false}>
-                    Prepared by IndSure on {generatedLabel}
+                    {brand
+                        ? brand.nameImage
+                            ? `Prepared on ${generatedLabel}`
+                            : `Prepared by ${brand.name} on ${generatedLabel}`
+                        : `Prepared by IndSure on ${generatedLabel}`}
                     {meta.sourceFilename ? ` from ${meta.sourceFilename}` : ''}
                     {meta.insurer ? `, issued by ${meta.insurer}` : ''}.
                     {'\n'}

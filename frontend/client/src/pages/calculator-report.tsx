@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { pdf } from "@react-pdf/renderer";
 import { CalculatorPDFDocument } from "@/components/CalculatorPDFDocument";
 import { registerPdfFonts } from "@/components/PolicyPDFDocument";
+import { buildPdfBrand, type AdvisorIdentity } from "@/lib/pdfBrand";
 import { showError } from "@/lib/calculator-notifications";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
@@ -256,6 +257,8 @@ export default function CalculatorReportPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
+    // Set when an advisor saved this report: their name and photo head the PDF.
+    const [advisor, setAdvisor] = useState<AdvisorIdentity | null>(null);
 
     const handleDownload = async () => {
         if (downloading || !result || !inputs) return;
@@ -264,8 +267,9 @@ export default function CalculatorReportPage() {
             // The faces are ~1.9MB and self-hosted, so they are registered lazily:
             // nothing is fetched until someone actually asks for the document.
             registerPdfFonts();
+            const brand = advisor ? await buildPdfBrand(advisor).catch(() => null) : null;
             const blob = await pdf(
-                <CalculatorPDFDocument result={result} inputs={inputs} />,
+                <CalculatorPDFDocument result={result} inputs={inputs} brand={brand} />,
             ).toBlob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -275,7 +279,9 @@ export default function CalculatorReportPage() {
                 .replace(/\s+/g, "_")
                 .toLowerCase();
             a.href = url;
-            a.download = `indsure_cover_calculation${slug ? `_${slug}` : ""}.pdf`;
+            a.download = brand
+                ? `cover_calculation${slug ? `_${slug}` : ""}.pdf`
+                : `indsure_cover_calculation${slug ? `_${slug}` : ""}.pdf`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -333,6 +339,7 @@ export default function CalculatorReportPage() {
                     }
                     setInputs(loadedInputs);
                     setResult(loadedResult);
+                    setAdvisor(data.advisor?.name ? { name: data.advisor.name, photoUrl: data.advisor.photo_url ?? null } : null);
 
                     // Check if this is a fresh save (within last 5 seconds)
                     const savedTimestamp = sessionStorage.getItem("calculator_saved_timestamp");
