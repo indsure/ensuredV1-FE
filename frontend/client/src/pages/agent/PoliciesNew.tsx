@@ -574,14 +574,16 @@ export default function PoliciesNew() {
             onClick={async () => {
               setExporting(true)
               try {
-                await exportPoliciesToExcel(filtered.map(r => ({ ...r, sum_insured: parseAmount(r.sum_insured) })), typeFilter === "lic" ? "all" : typeFilter)
+                // LIC rows go in too, filtered and sorted exactly as the list shows them.
+                const licInOrder = items.filter(i => i.k === "l").map(i => (i as { k: "l"; l: LicRow }).l)
+                await exportPoliciesToExcel(filtered.map(r => ({ ...r, sum_insured: parseAmount(r.sum_insured) })), typeFilter, licInOrder)
               } catch {
                 toast({ title: t("policies.export_failed"), description: t("policies.export_failed_desc"), variant: "destructive" })
               } finally {
                 setExporting(false)
               }
             }}
-            disabled={loading || exporting || filtered.length === 0}
+            disabled={loading || exporting || items.length === 0}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-[#0D9488] hover:text-[#0D9488] disabled:opacity-50"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
