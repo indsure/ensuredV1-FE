@@ -8,16 +8,19 @@ import { lazyWithPreload, type PreloadableComponent } from "@/lib/lazyPreload";
  * App.tsx: warming them costs bandwidth for a session that is already past them.
  */
 export const DashboardNew = lazyWithPreload(() => import("@/pages/agent/DashboardNew"));
-export const Insights = lazyWithPreload(() => import("@/pages/agent/Insights"));
-export const Business = lazyWithPreload(() => import("@/pages/agent/Business"));
 export const LeadRenewals = lazyWithPreload(() => import("@/pages/agent/LeadRenewals"));
 export const AgentUploads = lazyWithPreload(() => import("@/pages/agent/AgentUploads"));
 export const PoliciesNew = lazyWithPreload(() => import("@/pages/agent/PoliciesNew"));
 export const PolicyValues = lazyWithPreload(() => import("@/pages/agent/PolicyValues"));
+export const LifePolicies = lazyWithPreload(() => import("@/pages/agent/LifePolicies"));
 export const AgentCalculator = lazyWithPreload(() => import("@/pages/agent/AgentCalculator"));
 export const AgentCompare = lazyWithPreload(() => import("@/pages/agent/Compare"));
 export const AgentCatalogCompare = lazyWithPreload(() => import("@/pages/agent/CatalogCompare"));
 export const RiderDirectory = lazyWithPreload(() => import("@/pages/agent/RiderDirectory"));
+export const LicPlanDirectory = lazyWithPreload(() => import("@/pages/agent/LicPlanDirectory"));
+export const LicPolicies = lazyWithPreload(() => import("@/pages/agent/LicPolicies"));
+export const LicPolicyDetail = lazyWithPreload(() => import("@/pages/agent/LicPolicyDetail"));
+export const AddPolicy = lazyWithPreload(() => import("@/pages/agent/AddPolicy"));
 export const PolicyDetail = lazyWithPreload(() => import("@/pages/agent/PolicyDetail"));
 export const CustomersNew = lazyWithPreload(() => import("@/pages/agent/CustomersNew"));
 export const CustomerDetail = lazyWithPreload(() => import("@/pages/agent/CustomerDetail"));
@@ -47,16 +50,18 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
   MyQueue,
   PoliciesNew,
   CustomersNew,
-  Insights,
   LeadsNew,
   LeadRenewals,
   AgentCompare,
   AgentCalculator,
   PolicyValues,
+  LifePolicies,
   Claims,
   AgentMyPage,
   AgentCatalogCompare,
   RiderDirectory,
+  LicPlanDirectory,
+  LicPolicies,
   AgentUploads,
   SettingsNew,
   AgentPlan,
@@ -76,6 +81,7 @@ const NAV_ROUTES: PreloadableComponent<any>[] = [
  */
 const DETAIL_ROUTES: PreloadableComponent<any>[] = [
   PolicyDetail,
+  LicPolicyDetail,
   CustomerDetail,
   LeadDetail,
   ClaimDetail,
@@ -96,11 +102,10 @@ export const AGENT_PRELOAD_ORDER: PreloadableComponent<any>[] = [
  */
 const ROUTE_BY_PATH: Record<string, PreloadableComponent<any>> = {
   "/agent/dashboard": DashboardNew,
-  "/agent/insights": Insights,
-  "/agent/business": Business,
   "/agent/uploads": AgentUploads,
   "/agent/policies": PoliciesNew,
   "/agent/values": PolicyValues,
+  "/agent/life": LifePolicies,
   "/agent/customers": CustomersNew,
   "/agent/team": AgentTeam,
   "/agent/claims": Claims,
@@ -112,6 +117,8 @@ const ROUTE_BY_PATH: Record<string, PreloadableComponent<any>> = {
   "/agent/compare": AgentCatalogCompare,
   "/agent/compare/quotes": AgentCompare,
   "/agent/riders": RiderDirectory,
+  "/agent/lic-plans": LicPlanDirectory,
+  "/agent/lic": LicPolicies,
   "/agent/settings": SettingsNew,
   "/agent/plan": AgentPlan,
   "/agent/profile": MyProfile,

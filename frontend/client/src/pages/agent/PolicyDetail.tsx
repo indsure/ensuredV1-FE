@@ -5,6 +5,10 @@ import { Copy, ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
 import { BackLink } from "@/components/agent/BackLink";
 import CustomerTagCard from "@/components/agent/CustomerTagCard";
+import HealthFactsForm from "@/components/agent/HealthFactsForm";
+import PolicyBookActions from "@/components/agent/PolicyBookActions";
+import { getNextPremiumDate } from "@/lib/insuranceTypes";
+import { setShare } from "@/lib/bookApi";
 import ExtractedDataForm from "@/components/agent/ExtractedDataForm";
 import PolicyValueChart from "@/components/agent/PolicyValueChart";
 import DocumentTerms from "@/components/agent/policyValue/DocumentTerms";
@@ -12,7 +16,10 @@ import PolicySummary from "@/components/agent/policyValue/PolicySummary";
 import AddOnChecklist from "@/components/agent/AddOnChecklist";
 import ScanNotice, { isReadFromScan } from "@/components/ScanNotice";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import { myAdvisorIdentity } from "@/lib/pdfBrand";
 import { isDataEntryType, typeLabel } from "@/lib/insuranceTypes";
+import { daysUntil, toLifeRow, type LifeSourceRow } from "@/lib/lifeList";
+import { isoDay } from "@/lib/lifePremium";
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns";
 import {
   scoreMotorPolicy, motorScoreCaption, motorScoreVerdict, motorScoreTone,
@@ -33,7 +40,7 @@ import { rerunPolicy } from "@/lib/rerun";
 import { supabase } from "@/lib/supabase";
 import { deletePolicyRecord } from "@/lib/policyDelete";
 import { validateForensicAuditReport, type ForensicAuditReport } from "@shared/policy";
-import { hasShareableContent } from "@shared/dataEntryShare";
+import { ADDED_BY_HAND, canOpenShare } from "@shared/dataEntryShare";
 
 type PolicyRow = {
   id: string;
@@ -114,6 +121,17 @@ function expiryMeta(value: string | null, t: T) {
   return { label: t("policy_detail.days_left", { days }), className: "bg-emerald-50 text-emerald-700" };
 }
 
+function lifePremiumMeta(type: string, data: Record<string, any> | null, t: T, locale: Parameters<typeof intlLocale>[0]) {
+  const row = toLifeRow({ id: "", insurance_type: type, extracted_data: data } as LifeSourceRow, new Date());
+  const grey = "bg-slate-100 text-slate-600";
+  if (!row?.due) return { label: t(`life.no_due_${row?.noDue ?? "not_read"}`), className: grey };
+  const date = row.due.date.toLocaleDateString(intlLocale(locale), { day: "numeric", month: "short", year: "numeric" });
+  if (row.due.kind === "passed") return { label: t("life.due_passed", { date }), className: "bg-amber-50 text-amber-700" };
+  const days = daysUntil(isoDay(row.due.date), new Date());
+  const soon = row.due.kind === "scheduled" && days !== null && days <= 30;
+  return { label: t("life.due_next", { date }), className: soon ? "bg-amber-50 text-amber-700" : grey };
+}
+
 async function copyText(text: string, title: string, t: T) {
   try {
     await navigator.clipboard.writeText(text);
@@ -152,6 +170,9 @@ export default function PolicyDetail() {
   const [readFromScan, setReadFromScan] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareEnabled, setShareEnabled] = useState(false);
+  const [hasFile, setHasFile] = useState(true);
+  const [cover, setCover] = useState<string>("");
   const [fileMeta, setFileMeta] = useState<FileRow | null>(null);
   const [notes, setNotes] = useState("");
   const [clientMeta, setClientMeta] = useState<ClientMeta>({ email: "", phone: "" });
@@ -184,13 +205,23 @@ export default function PolicyDetail() {
         : null,
     [insuranceType, extractedData],
   );
-  const expiry = expiryMeta(policy?.policy_end_date ?? null, t);
+  /* Life and term: `expiry_date` is the maturity or cover end date, so the badge
+     shows the next premium instead, the same reading as the Life list. */
+  const expiry = insuranceType === "life" || insuranceType === "term"
+    ? lifePremiumMeta(insuranceType, extractedData, t, locale)
+    : expiryMeta(policy?.policy_end_date ?? null, t);
   const isDataEntry = isDataEntryType(insuranceType);
+  /** The list this policy is in: life and term have their own section. */
+  const listPath = insuranceType === "life" || insuranceType === "term" ? "/agent/life" : "/agent/policies";
   /* A policy may be shared once there is something at the other end of the
      link. Health needs its audit; a data-entry policy needs at least one
      publishable field. This mirrors the readiness test the server applies in
      /api/shared/report/:token, so the button and the link agree with it. */
-  const canShare = Boolean(reportData) || hasShareableContent(insuranceType, extractedData);
+  const canShare = canOpenShare({
+    insurance_type: insuranceType, extracted_data: extractedData, report_data: reportData, filename: fileMeta?.file_path,
+    policyholder_name: policy?.client_name, insurer: policy?.insurer_name, policy_name: policy?.product_name,
+    sum_insured: cover, expiry_date: policy?.policy_end_date,
+  });
 
   async function loadDetail() {
     if (!id || !agent?.agentId) return;
@@ -206,7 +237,7 @@ export default function PolicyDetail() {
           share_token, share_enabled, filename, file_size,
           client_email, client_phone, policy_identifier, agent_notes,
           insurance_type, extracted_data, customer_id,
-          policy_name_suggested
+          policy_name_suggested, pdf_url
         `)
         .eq("id", id)
         .eq("agent_id", agent.agentId)
@@ -225,7 +256,8 @@ export default function PolicyDetail() {
         insurer_name: clientData.insurer,
         product_name: clientData.policy_name,
         product_name_suggested: clientData.policy_name_suggested ?? null,
-        policy_number: clientData.policy_name,
+        // The number the advisor typed. Never the plan name: this is printed on the PDF.
+        policy_number: clientData.policy_identifier,
         status: clientData.status,
         error_message: clientData.error_message ?? null,
         score: clientData.score,
@@ -258,6 +290,9 @@ export default function PolicyDetail() {
       
       // Set share token
       setShareToken(clientData.share_token);
+      setShareEnabled(clientData.share_enabled === true);
+      setHasFile(!!(clientData as any).pdf_url);
+      setCover(clientData.sum_insured == null ? "" : String(clientData.sum_insured));
       
       setNotes((clientData as any).agent_notes || "");
       setClientMeta({
@@ -378,6 +413,7 @@ export default function PolicyDetail() {
         }),
       );
       setShareToken(newToken);
+      setShareEnabled(true);
 
       // Not the server's shareUrl: that is built from the API host (api.indsure.in), which serves
       // no pages, so the customer got a 404. The report page lives on this site's origin.
@@ -394,6 +430,20 @@ export default function PolicyDetail() {
         title: t("policy_detail.share_failed"),
         description: shareError instanceof Error ? shareError.message : t("policy_detail.share_failed_desc")
       });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function stopSharing() {
+    if (!policy?.id) return;
+    setBusy("share");
+    try {
+      await setShare(policy.id, false);
+      setShareEnabled(false);
+      toast({ variant: "success", title: t("book.share_stopped") });
+    } catch (e: unknown) {
+      toast({ variant: "destructive", title: t("policy_detail.share_failed"), description: e instanceof Error ? e.message : undefined });
     } finally {
       setBusy(null);
     }
@@ -435,7 +485,7 @@ export default function PolicyDetail() {
       await deletePolicyRecord(policy.id, agent.agentId);
 
       toast({ variant: "success", title: t("policy_detail.deleted") });
-      setLocation("/agent/policies");
+      setLocation(listPath);
     } catch (deleteError) {
       toast({ variant: "destructive", title: t("policy_detail.delete_failed"), description: deleteError instanceof Error ? deleteError.message : t("policy_detail.delete_failed_desc") });
     } finally {
@@ -448,7 +498,7 @@ export default function PolicyDetail() {
   if (error) {
     return (
       <div className="space-y-4">
-        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
+        <BackLink to={listPath} label={t("policy_detail.back")} />
         <InlineErrorState
           message={error === t("policy_detail.not_found") ? error : undefined}
           onRetry={loadDetail}
@@ -460,13 +510,16 @@ export default function PolicyDetail() {
   return (
     <div className="space-y-6 pb-8">
       <div className="flex items-center justify-between">
-        <BackLink to="/agent/policies" label={t("policy_detail.back")} />
+        <BackLink to={listPath} label={t("policy_detail.back")} />
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-slate-200 bg-white" onClick={loadDetail} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
           </Button>
-          {!isDataEntry && (
+          {/* Data-entry policies (life, term, motor...) share their read details
+              through shared/dataEntryShare.ts, which withholds the policy number,
+              nominee and life assured. The list row has always offered this. */}
+          {(!isDataEntry || canShare) && (
             <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={shareReport} disabled={!canShare || busy === "share"}>
               {t("policy_detail.share_report")}
             </Button>
@@ -540,7 +593,7 @@ export default function PolicyDetail() {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3 items-center w-full">
-                {!isDataEntry && (
+                {(!isDataEntry || canShare) && (
                   <Button variant="outline" className="border-slate-200 bg-white shrink-0" onClick={shareReport} disabled={!canShare || busy === "share"}>
                     <Copy className="mr-2 h-4 w-4" />
                     {t("policy_detail.share_report")}
@@ -559,12 +612,15 @@ export default function PolicyDetail() {
                   copy an address that answers "report_not_ready" to their
                   customer. The Share button above has always been gated this
                   way; this block was not. */}
-              {shareToken && canShare && (
+              {shareToken && shareEnabled && canShare && (
                 <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-[#0D9488]/10 bg-slate-50 p-4">
                   <div className="min-w-0 flex-1 truncate text-sm text-slate-700">{shareLink}</div>
                   <Button size="sm" className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={() => void copyText(shareLink, t("policy_detail.report_link_copied"), t)}>
                     <Copy className="mr-2 h-4 w-4" />
                     {t("policy_detail.copy")}
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-slate-200 bg-white" onClick={stopSharing} disabled={busy === "share"}>
+                    {t("book.share_stop")}
                   </Button>
                 </div>
               )}
@@ -658,6 +714,7 @@ export default function PolicyDetail() {
                 policyholderName: policy.client_name,
                 generatedAt: policy.last_analyzed_at ?? policy.created_at,
               }}
+              pdfAdvisor={() => myAdvisorIdentity(agent)}
             />
             </>
           ) : (
@@ -684,6 +741,8 @@ export default function PolicyDetail() {
                       {t("policy_detail.check_failed_hint")}
                     </div>
                   </div>
+                ) : policy.status === "done" && (fileMeta?.file_path === ADDED_BY_HAND || extractedData?.__by_hand === true) ? (
+                  t(hasFile ? "book.not_checked" : "book.by_hand_health")
                 ) : policy.status === "done" ? (
                   t("policy_detail.bad_format")
                 ) : (
@@ -691,6 +750,23 @@ export default function PolicyDetail() {
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Every other type has its own form above. */}
+          {!isDataEntry && policy.status === "done" && (
+            <HealthFactsForm
+              key={`${policy.id}-${policy.policy_end_date}-${cover}`}
+              clientId={policy.id}
+              hasReport={!!reportData}
+              onSaved={() => void loadDetail()}
+              initial={{
+                insurer: policy.insurer_name ?? "",
+                expiry_date: (policy.policy_end_date ?? "").slice(0, 10),
+                sum_insured: cover,
+                premium: String((reportData as any)?.premium?.amount ?? extractedData?.premium ?? ""),
+                premium_frequency: String((reportData as any)?.premium?.frequency ?? extractedData?.premium_frequency ?? "").toLowerCase(),
+              }}
+            />
           )}
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -757,15 +833,35 @@ export default function PolicyDetail() {
               <Card className="border-slate-100 shadow-sm">
                 <CardHeader><CardTitle>{t("policy_detail.actions")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
+                  <PolicyBookActions
+                    id={policy.id}
+                    type={insuranceType}
+                    hasFile={hasFile}
+                    filename={fileMeta?.file_path ?? null}
+                    reading={policy.status === "processing" || policy.status === "pending"}
+                    onChanged={() => void loadDetail()}
+                    draft={{
+                      type: "client",
+                      id: policy.id,
+                      name: policy.client_name,
+                      phone: clientMeta.phone,
+                      insurer: policy.insurer_name,
+                      lifeLane: insuranceType === "life" || insuranceType === "term",
+                      renewalDate: getNextPremiumDate(policy.policy_end_date, extractedData, insuranceType),
+                      weakPoint: (reportData as any)?.final_verdict?.key_failure_points?.[0] ?? null,
+                    }}
+                  />
+                  {hasFile && <>
                   <Button className="w-full bg-[#0D9488] hover:bg-[#0f766e]" onClick={rerunAnalysis} disabled={busy === "rerun" || policy.status === "processing"}>
                     <RefreshCw className={`mr-2 h-4 w-4 ${busy === "rerun" || policy.status === "processing" ? "animate-spin" : ""}`} />
-                    {isDataEntry ? t("policy_detail.reread") : t("policy_detail.rerun")}
+                    {isDataEntry ? t("policy_detail.reread") : reportData ? t("policy_detail.rerun") : t("book.check_now")}
                   </Button>
                   <p className="text-xs text-slate-500">
-                    {isDataEntry ? t("policy_detail.reread_cost") : t("policy_detail.rerun_cost")}
+                    {isDataEntry ? t("policy_detail.reread_cost") : t("policy_detail.rerun_cost")} {t("book.reread_replaces")}
                   </p>
+                  </>}
                   <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={openClientEditor}>{t("policy_detail.edit_client")}</Button>
-                  {!isDataEntry && (
+                  {(!isDataEntry || canShare) && (
                     <Button variant="outline" className="w-full border-slate-200 bg-white" onClick={shareReport} disabled={!canShare || busy === "share"}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       {t("policy_detail.share_link")}

@@ -16,7 +16,7 @@
  */
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Svg, Path, Image } from '@react-pdf/renderer';
-import { C, Display, getPdfLogoSrc } from './PolicyPDFDocument';
+import { C, Display, getPdfLogoSrc, BrandMasthead, BrandRunName, BRAND_FOOTER, type PdfBrand } from './PolicyPDFDocument';
 import { CALCULATOR_CONFIG, type EngineResult, type UserInputs } from '@/lib/health-engine-logic';
 
 /* ------------------------------------------------------------------ format */
@@ -41,136 +41,130 @@ const range = (min: number, max: number) => `${inr(min)} – ${inr(max)}`;
 /* ------------------------------------------------------------------ styles */
 
 const s = StyleSheet.create({
+    // Large-print scale, matching PolicyPDFDocument (2026-11-28): body 11pt,
+    // nothing under 9pt, sentence-case labels, sans headings.
     page: {
-        paddingTop: 58,
-        paddingBottom: 58,
-        paddingHorizontal: 52,
+        paddingTop: 54,
+        paddingBottom: 62,
+        paddingHorizontal: 46,
         backgroundColor: C.paper,
         fontFamily: 'Sans',
-        fontSize: 9,
+        fontSize: 11,
         color: C.inkSoft,
         lineHeight: 1.5,
     },
 
     runHead: {
         position: 'absolute',
-        top: 26,
-        left: 52,
-        right: 52,
+        top: 22,
+        left: 46,
+        right: 46,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
     runFoot: {
         position: 'absolute',
-        top: 786,
-        left: 52,
-        right: 52,
+        top: 792,
+        left: 46,
+        right: 46,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderTopWidth: 0.6,
+        borderTopWidth: 0.8,
         borderTopColor: C.rule,
-        paddingTop: 7,
+        paddingTop: 6,
     },
-    micro: { fontSize: 6.8, color: C.faint, letterSpacing: 0.2 },
+    micro: { fontSize: 9, color: C.muted },
 
     masthead: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 1,
         borderBottomColor: C.rule,
-        paddingBottom: 9,
-        marginBottom: 26,
+        paddingBottom: 10,
+        marginBottom: 20,
     },
     wordmark: { width: 54, height: 41.3 },
-    eyebrow: {
-        fontSize: 6.8,
-        fontWeight: 700,
-        letterSpacing: 1.15,
-        color: C.muted,
-        textTransform: 'uppercase',
-    },
+    eyebrow: { fontSize: 10, color: C.muted, textAlign: 'right' },
 
     /* hero */
-    kickerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 9 },
-    kicker: { fontSize: 7, fontWeight: 700, letterSpacing: 1.15, color: C.tealDeep, textTransform: 'uppercase' },
-    headline: { fontFamily: 'Serif', fontSize: 30, color: C.ink, lineHeight: 1.25 },
-    deck: { fontSize: 10, color: C.inkSoft, marginTop: 7, lineHeight: 1.55 },
+    kickerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+    kicker: { fontSize: 11.5, fontWeight: 700, color: C.tealDeep },
+    headline: { fontFamily: 'Sans', fontSize: 26, fontWeight: 700, color: C.ink, lineHeight: 1.25 },
+    deck: { fontSize: 11.5, color: C.inkSoft, marginTop: 6, lineHeight: 1.55 },
 
     /* facts */
-    facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 22, marginBottom: 4 },
-    fact: { width: '33.33%', paddingRight: 14, marginBottom: 13 },
-    factLabel: { fontSize: 6.6, fontWeight: 700, letterSpacing: 0.9, color: C.faint, textTransform: 'uppercase', marginBottom: 2 },
-    factValue: { fontSize: 9.2, color: C.ink, fontWeight: 600 },
+    facts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 18, marginBottom: 2 },
+    fact: { width: '33.33%', paddingRight: 12, marginBottom: 11 },
+    factLabel: { fontSize: 9.5, color: C.muted, marginBottom: 1 },
+    factValue: { fontSize: 12, color: C.ink, fontWeight: 600 },
 
     sectionHead: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'baseline',
-        borderBottomWidth: 0.6,
+        borderBottomWidth: 0.8,
         borderBottomColor: C.rule,
         paddingBottom: 5,
-        marginTop: 26,
-        marginBottom: 13,
+        marginTop: 20,
+        marginBottom: 11,
     },
-    sectionTitle: { fontFamily: 'Serif', fontSize: 14, color: C.ink },
-    sectionNote: { fontSize: 6.8, color: C.faint, letterSpacing: 0.6, textTransform: 'uppercase' },
+    sectionTitle: { fontFamily: 'Sans', fontSize: 14, fontWeight: 700, color: C.ink },
+    sectionNote: { fontSize: 9.5, color: C.muted },
 
     /* the two options */
     optRow: { flexDirection: 'row' },
     // Values are right-aligned, so without this they sit on the divider rule.
-    optCell: { flex: 1, paddingRight: 18 },
-    optCellSplit: { flex: 1, borderLeftWidth: 0.6, borderLeftColor: C.rule, paddingLeft: 18 },
-    optName: { fontSize: 7, fontWeight: 700, letterSpacing: 1, color: C.muted, textTransform: 'uppercase' },
-    // Without an explicit lineHeight the Playfair box measures shorter than the
-    // glyphs it draws, and the sub-line lands on top of the figure.
-    optHeadline: { fontFamily: 'Serif', fontSize: 17, lineHeight: 1.35, color: C.ink, marginTop: 5, marginBottom: 7 },
-    optSub: { fontSize: 8.4, color: C.muted, marginBottom: 9 },
-    optLine: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3.5, borderBottomWidth: 0.5, borderBottomColor: C.ruleSoft },
-    optKey: { fontSize: 8.4, color: C.muted },
-    optVal: { fontSize: 8.4, color: C.ink, fontWeight: 600 },
-    optPremium: { marginTop: 9 },
-    optPremiumVal: { fontSize: 11.5, color: C.ink, fontWeight: 700 },
-    saveTag: { marginTop: 9, fontSize: 8.4, color: C.tealDeep, fontWeight: 700 },
+    optCell: { flex: 1, paddingRight: 16 },
+    optCellSplit: { flex: 1, borderLeftWidth: 0.8, borderLeftColor: C.rule, paddingLeft: 16 },
+    optName: { fontSize: 11.5, fontWeight: 700, color: C.muted },
+    optHeadline: { fontFamily: 'Sans', fontSize: 18, fontWeight: 700, lineHeight: 1.3, color: C.ink, marginTop: 3, marginBottom: 5 },
+    optSub: { fontSize: 10.5, color: C.muted, marginBottom: 7, lineHeight: 1.45 },
+    optLine: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 0.6, borderBottomColor: C.ruleSoft },
+    optKey: { fontSize: 10.5, color: C.muted },
+    optVal: { fontSize: 11, color: C.ink, fontWeight: 600 },
+    optPremium: { marginTop: 8 },
+    optPremiumVal: { fontSize: 13, color: C.ink, fontWeight: 700 },
+    saveTag: { marginTop: 8, fontSize: 11, color: C.tealDeep, fontWeight: 700 },
 
     /* build-up ledger */
-    buildRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: C.ruleSoft },
-    buildKey: { fontSize: 9, color: C.inkSoft, flex: 1, paddingRight: 16 },
-    buildVal: { fontSize: 9, color: C.ink, fontWeight: 600 },
-    buildTotal: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 8, marginTop: 2, borderTopWidth: 1, borderTopColor: C.ink },
-    buildTotalKey: { fontSize: 9.5, color: C.ink, fontWeight: 700 },
-    buildTotalVal: { fontSize: 12, color: C.ink, fontWeight: 700 },
-    capNote: { fontSize: 8.2, color: C.amber, marginTop: 8, lineHeight: 1.5 },
+    buildRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.6, borderBottomColor: C.ruleSoft },
+    buildKey: { fontSize: 11, color: C.inkSoft, flex: 1, paddingRight: 14 },
+    buildVal: { fontSize: 11, color: C.ink, fontWeight: 600 },
+    buildTotal: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 7, marginTop: 2, borderTopWidth: 1.2, borderTopColor: C.ink },
+    buildTotalKey: { fontSize: 12, color: C.ink, fontWeight: 700 },
+    buildTotalVal: { fontSize: 14, color: C.ink, fontWeight: 700 },
+    capNote: { fontSize: 10.5, color: C.amber, marginTop: 7, lineHeight: 1.5 },
 
     /* lists */
-    liRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 7 },
-    liDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: C.faint, marginTop: 5, marginRight: 9 },
-    liText: { flex: 1, fontSize: 8.8, color: C.inkSoft, lineHeight: 1.55 },
+    liRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+    liDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: C.muted, marginTop: 6, marginRight: 9 },
+    liText: { flex: 1, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 },
 
     /* riders */
-    rider: { marginBottom: 10 },
+    rider: { marginBottom: 9 },
     riderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-    riderName: { fontSize: 9.4, color: C.ink, fontWeight: 600, flex: 1, paddingRight: 12 },
-    riderPriority: { fontSize: 6.6, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase' },
-    riderReason: { fontSize: 8.6, color: C.muted, marginTop: 2, lineHeight: 1.5 },
+    riderName: { fontSize: 12, color: C.ink, fontWeight: 600, flex: 1, paddingRight: 12 },
+    riderPriority: { fontSize: 10.5, fontWeight: 700 },
+    riderReason: { fontSize: 10.5, color: C.muted, marginTop: 1, lineHeight: 1.45 },
 
     /* projection */
-    projHead: { flexDirection: 'row', borderBottomWidth: 0.6, borderBottomColor: C.rule, paddingBottom: 4, marginBottom: 3 },
-    projRow: { flexDirection: 'row', paddingVertical: 3.5, borderBottomWidth: 0.5, borderBottomColor: C.ruleSoft },
-    projCellHead: { fontSize: 6.6, fontWeight: 700, letterSpacing: 0.9, color: C.faint, textTransform: 'uppercase' },
-    projCell: { fontSize: 8.6, color: C.inkSoft },
+    projHead: { flexDirection: 'row', borderBottomWidth: 0.8, borderBottomColor: C.rule, paddingBottom: 4, marginBottom: 2 },
+    projRow: { flexDirection: 'row', paddingVertical: 4, borderBottomWidth: 0.6, borderBottomColor: C.ruleSoft },
+    projCellHead: { fontSize: 9.5, fontWeight: 700, color: C.muted },
+    projCell: { fontSize: 11, color: C.inkSoft },
 
     /* close */
     disclaimer: {
-        marginTop: 26,
-        borderTopWidth: 0.6,
+        marginTop: 22,
+        borderTopWidth: 0.8,
         borderTopColor: C.rule,
-        paddingTop: 10,
-        fontSize: 7.4,
+        paddingTop: 9,
+        fontSize: 9.5,
         color: C.muted,
-        lineHeight: 1.6,
+        lineHeight: 1.55,
     },
 });
 
@@ -181,7 +175,7 @@ const PRIORITY_COLOUR: Record<string, string> = {
 };
 
 const SectionHead = ({ title, note }: { title: string; note?: string }) => (
-    <View style={s.sectionHead} minPresenceAhead={95}>
+    <View style={s.sectionHead} minPresenceAhead={120}>
         <Display style={s.sectionTitle}>{title}</Display>
         {note ? <Text style={s.sectionNote}>{note}</Text> : null}
     </View>
@@ -207,11 +201,13 @@ interface Props {
     result: EngineResult;
     inputs: UserInputs;
     meta?: CalculatorPdfMeta;
+    /** The advisor handing this over. Absent = today's IndSure document. */
+    brand?: PdfBrand | null;
 }
 
 /* ------------------------------------------------------------------ doc */
 
-export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = {} }) => {
+export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = {}, brand = null }) => {
     const generatedLabel =
         meta.generatedAt ??
         new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -252,8 +248,10 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
 
     return (
         <Document
-            title={`IndSure cover calculation — ${lakhs(total)}`}
-            author="IndSure"
+            title={brand ? `Cover calculation: ${lakhs(total)}` : `IndSure cover calculation — ${lakhs(total)}`}
+            author={brand ? brand.name : 'IndSure'}
+            creator={brand ? brand.name : undefined}
+            producer={brand ? brand.name : undefined}
             subject="Health cover requirement"
         >
             <Page size="A4" style={s.page}>
@@ -263,8 +261,12 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                     render={({ pageNumber }) =>
                         pageNumber > 1 ? (
                             <>
-                                <Text style={s.micro}>INDSURE COVER CALCULATION</Text>
-                                <Text style={s.micro}>{lakhs(total).toUpperCase()}</Text>
+                                {brand ? (
+                                    <BrandRunName brand={brand} style={s.micro} />
+                                ) : (
+                                    <Text style={s.micro}>IndSure cover calculation</Text>
+                                )}
+                                <Text style={s.micro}>{lakhs(total)}</Text>
                             </>
                         ) : null
                     }
@@ -282,10 +284,12 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                         return (
                             <>
                                 <Text style={s.micro}>
-                                    Arithmetic only. IndSure sells no insurance and earns no commission.
+                                    {brand
+                                        ? BRAND_FOOTER
+                                        : 'Arithmetic only. IndSure sells no insurance and earns no commission.'}
                                 </Text>
                                 <Text style={s.micro}>
-                                    {pageNumber} / {totalPages}
+                                    Page {pageNumber} of {totalPages}
                                 </Text>
                             </>
                         );
@@ -293,9 +297,13 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                 />
 
                 {/* ---------------------------------------------- masthead */}
-                <View style={s.masthead}>
-                    <Image style={s.wordmark} src={getPdfLogoSrc()} />
-                    <Text style={s.eyebrow}>Cover calculation · {generatedLabel}</Text>
+                <View style={[s.masthead, brand ? { alignItems: 'center' } : {}]}>
+                    {brand ? <BrandMasthead brand={brand} /> : <Image style={s.wordmark} src={getPdfLogoSrc()} />}
+                    <Text style={s.eyebrow}>
+                        Cover calculation
+                        {'\n'}
+                        {generatedLabel}
+                    </Text>
                 </View>
 
                 {/* ---------------------------------------------- hero */}
@@ -562,8 +570,9 @@ export const CalculatorPDFDocument: React.FC<Props> = ({ result, inputs, meta = 
                     Not insurance or financial advice. This calculation is for informational purposes only
                     and does not constitute a recommendation to purchase any insurance product. Premium
                     figures are indicative estimates, not quotes, and are not based on insurer-specific
-                    data. Your actual premium depends on medical underwriting. Consult a licensed
-                    insurance advisor before making any decision.
+                    data. Your actual premium depends on medical underwriting.
+                    {/* From an advisor, "consult a licensed advisor" points the client away from them. */}
+                    {brand ? '' : ' Consult a licensed insurance advisor before making any decision.'}
                 </Text>
             </Page>
         </Document>

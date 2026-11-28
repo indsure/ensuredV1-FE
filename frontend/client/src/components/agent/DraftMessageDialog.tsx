@@ -21,6 +21,8 @@ import { tOr } from "@/i18n";
 import { waHref } from "@/lib/leads";
 import {
   buildMessage,
+  defaultDraftKind,
+  draftKindsFor,
   DRAFT_KIND_META,
   DRAFT_LANGUAGES,
   type DraftKind,
@@ -47,17 +49,12 @@ export function DraftMessageDialog({
   const [edited, setEdited] = useState(false);
   const [phone, setPhone] = useState("");
 
-  const intents = useMemo(() => {
-    const isClient = target?.type === "client";
-    return (Object.keys(DRAFT_KIND_META) as DraftKind[]).filter(
-      (k) => isClient || !DRAFT_KIND_META[k].clientOnly
-    );
-  }, [target?.type]);
+  const intents = useMemo(() => draftKindsFor(target), [target?.type, target?.lifeLane, target?.renewalDate]);
 
   // Reset to a sensible starting intent when the dialog opens for a target.
   useEffect(() => {
     if (open) {
-      setKind(target?.type === "client" ? "upgrade_weak" : "follow_up");
+      setKind(defaultDraftKind(target));
       setLanguage("english");
       setEdited(false);
       setPhone(target?.phone ?? "");

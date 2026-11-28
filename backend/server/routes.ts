@@ -8,8 +8,6 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MASTER_AUDIT_PROMPT, PROMPT_VERSION } from "./promptTemplate";
-import { LIFE_INSURANCE_PROMPT } from "./lifeInsurancePrompt";
-import { VEHICLE_INSURANCE_PROMPT } from "./vehicleInsurancePrompt";
 import { POLICY_EXTRACTION_PROMPT } from "./policyExtractionPrompt";
 import { AIService } from "./services/aiService";
 import { runAnalysisPipeline, type CompanionDoc, type CompanionKind } from "./services/analysisPipeline";
@@ -20,13 +18,16 @@ import {
   isSupportedInsuranceType,
   SUPPORTED_INSURANCE_TYPES,
 } from "./services/extractionFields";
-import { loadPolicyValueRows, saveExtractedData } from "./services/policyValueStore";
+import { changeInsuranceType, loadPolicyValueRows, saveExtractedData } from "./services/policyValueStore";
 import { extractWordingProfile, hashText } from "./services/wordingCompare";
 import { logGeminiUsage, extractUsage, hashActor } from "./services/geminiUsage";
 import { buildComparison, compareMany, type WordingProfile } from "./types/wordingProfile";
 import { filterHospitalNetwork, getHospitalSamples } from "./data/insurance_networks/filter_engine";
-import { pickShareableFields, hasShareableContent } from "../../shared/dataEntryShare";
+import { shareDetails } from "../../shared/dataEntryShare";
 import { AGENT_TABLES, INDIVIDUAL_TABLES, ownsStoragePath, selectForTable, type OwnedTable } from "./services/accountData";
+import { estimateZipBytes, exportReadme, planExportFiles } from "./services/accountExport";
+import { createZipWriter } from "./services/zipStream";
+import { companionUrls, listFolder } from "./services/storageWalk";
 import { scoreFromExtractedData } from "../../shared/motorScore";
 import { ADD_ON_FINDINGS_KEY } from "../../shared/motorAddOns";
 import { createClient } from "@supabase/supabase-js";
@@ -40,12 +41,14 @@ import { confirmMany, getDocumentRules, resolveFlag, reviewFact, StoreError, typ
 import { isPersonalEmail } from "./lib/personalEmail";
 import { sendMail } from "./lib/mailer";
 import { registerTeamRoutes } from "./teamRoutes";
+import { registerLicRoutes } from "./licRoutes";
 import { mountWhatsapp, whatsappBotAuth } from "./whatsapp"; // WHATSAPP-PLUGIN
 import { registerAccountDeletionRoutes } from "./services/accountDeletion";
 import { registerPlanRecommendRoutes } from "./services/planRecommend";
 import { registerPaymentRoutes } from "./services/payments";
 import { log } from "./lib/logger";
 import { isLimitedFree, NEEDS_UPGRADE } from "./lib/entitlement";
+import { registerBookRoutes } from "./services/bookRoutes";
 
 /* ---------- SUPABASE ADMIN CLIENT ---------- */
 
@@ -108,6 +111,24 @@ function ownedStorageObject(pdfUrl: unknown, accountId: string): { bucket: strin
     return null;
   }
   return { bucket, path };
+}
+
+/* Every stored file one policy row points at: its PDF and each extra cover,
+   ownership-checked like every other read. Used by the policy deletes so a
+   file whose name does not follow "<clientId>.<ext>" still goes with the row. */
+async function policyFileKeys(agentId: string, clientId: string): Promise<string[]> {
+  const r = await pool.query(
+    "SELECT pdf_url, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
+    [clientId, agentId]
+  );
+  const row = r.rows[0];
+  if (!row) return [];
+  const keys = new Set<string>();
+  for (const url of [row.pdf_url, ...companionUrls({ __companions: row.companions })]) {
+    const owned = ownedStorageObject(url, agentId);
+    if (owned) keys.add(owned.path);
+  }
+  return [...keys];
 }
 
 /* The document-rules store needs real transactions (a per-policy lock, then
@@ -186,6 +207,38 @@ async function recordPlanProvenance(
   } catch (err: any) {
     // Provenance is a nicety; never fail a completed analysis over it.
     console.error(`[plan provenance ${clientId}]`, err?.message);
+  }
+}
+
+/** Only a photo in our own public storage is handed to a browser to fetch. */
+const OWN_PUBLIC_PHOTO = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\//i;
+
+/**
+ * The advisor's letterhead for a PDF opened from a share link (founder decision
+ * 2026-11-28: advisor name and photo on top, IndSure only in the footer).
+ * Name: My Page display name, else the account name. Never the phone, email or
+ * slug. A separate query on purpose: any failure here returns null, which prints
+ * today's IndSure document, so it can never break a live share link.
+ */
+async function advisorLetterhead(agentId: unknown): Promise<{ name: string; photo_url: string | null } | null> {
+  if (typeof agentId !== "string" || !agentId) return null;
+  try {
+    const r = await pool.query(
+      `SELECT COALESCE(NULLIF(btrim(p.display_name), ''), NULLIF(btrim(a.full_name), ''), NULLIF(btrim(a.name), '')) AS name,
+              p.photo_url AS photo_url
+         FROM agents a
+         LEFT JOIN agent_pages p ON p.agent_id = a.id
+        WHERE a.id = $1
+        LIMIT 1`,
+      [agentId]
+    );
+    const row = r.rows[0];
+    if (!row?.name) return null;
+    const photo = typeof row.photo_url === "string" && OWN_PUBLIC_PHOTO.test(row.photo_url) ? row.photo_url : null;
+    return { name: String(row.name).slice(0, 60), photo_url: photo };
+  } catch (err: any) {
+    console.error("[advisor letterhead]", err?.message);
+    return null;
   }
 }
 
@@ -1727,7 +1780,7 @@ export async function registerRoutes(
     
     try {
       const reportRes = await pool.query(
-        "SELECT inputs, result_data, created_at FROM calculator_reports WHERE id = $1",
+        "SELECT inputs, result_data, created_at, agent_id FROM calculator_reports WHERE id = $1",
         [uuid]
       );
       
@@ -1738,7 +1791,9 @@ export async function registerRoutes(
         });
       }
       
-      return res.json(reportRes.rows[0]);
+      // agent_id stays server-side; only the advisor's letterhead goes out.
+      const { agent_id, ...report } = reportRes.rows[0];
+      return res.json({ ...report, advisor: await advisorLetterhead(agent_id) });
     } catch (err: any) {
       console.error("ERROR fetching calculator report:", err);
       res.status(500).json({ 
@@ -2877,7 +2932,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     const {
       customer_id, new_customer_name, new_customer_phone,
       claim_type, insurer, tpa, policy_number, hospital, ailment,
-      claimed_amount, admitted_on, discharged_on,
+      claimed_amount, admitted_on, discharged_on, client_id,
     } = req.body ?? {};
 
     const type = String(claim_type || "reimbursement").toLowerCase();
@@ -2924,6 +2979,19 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         ]
       );
       const claim = ins.rows[0];
+      // Which policy it is on. Best effort: the column arrives with migration 040.
+      if (typeof client_id === "string" && /^[0-9a-f-]{36}$/i.test(client_id)) {
+        try {
+          const linked = await pool.query(
+            `UPDATE claims SET client_id = $1 WHERE id = $2 AND agent_id = $3
+                AND EXISTS (SELECT 1 FROM clients WHERE id = $1 AND agent_id = $3) RETURNING client_id`,
+            [client_id, claim.id, agentId]
+          );
+          if (linked.rows[0]) claim.client_id = linked.rows[0].client_id;
+        } catch (e: any) {
+          if (e?.code !== "42703") console.error("claim policy link failed:", e?.message);
+        }
+      }
       await logClaimEvent(claim.id, agentId, "opened", "Claim opened");
       void recordAccess(req, agentId, claim.id, "claim_open");
       return res.json(claim);
@@ -3005,6 +3073,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       claim_type: "Type of claim",
     };
     const MONEY = new Set(["claimed_amount", "settled_amount"]);
+    const UUID_LIKE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     const sets: string[] = [];
     const vals: any[] = [];
@@ -3025,7 +3094,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       vals.push(value);
       sets.push(`${key} = $${vals.length}`);
     }
-    if (sets.length === 0) return res.status(400).json({ error: "Nothing to update" });
+    const policyId = req.body?.client_id;
+    const linkPolicy = policyId === null || policyId === "" || (typeof policyId === "string" && UUID_LIKE.test(policyId));
+    if (sets.length === 0 && !linkPolicy) return res.status(400).json({ error: "Nothing to update" });
+    if (sets.length === 0) sets.push("updated_at = now()");
 
     try {
       const before = await claimForAgent(req.params.id, agentId);
@@ -3049,12 +3121,20 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       vals.push(req.params.id, agentId);
       const upd = await pool.query(
-        `UPDATE claims SET ${sets.join(", ")}, updated_at = now()
+        `UPDATE claims SET ${sets.filter((x) => !x.startsWith("updated_at")).map((x) => x + ", ").join("")}updated_at = now()
           WHERE id = $${vals.length - 1} AND agent_id = $${vals.length}
           RETURNING *`,
         vals
       );
       if (upd.rows.length === 0) return res.status(404).json({ error: "Claim not found" });
+      if (linkPolicy) {
+        const l = await pool.query(
+          `UPDATE claims SET client_id = $1::uuid WHERE id = $2 AND agent_id = $3
+              AND ($1::uuid IS NULL OR EXISTS (SELECT 1 FROM clients WHERE id = $1::uuid AND agent_id = $3)) RETURNING client_id`,
+          [policyId || null, req.params.id, agentId]
+        );
+        if (l.rows[0]) upd.rows[0].client_id = l.rows[0].client_id;
+      }
 
       // Compare loosely: numerics come back from pg as strings, and an
       // unchanged field resubmitted by the form must not fake a change.
@@ -3628,6 +3708,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       if (!agentId) return;
 
       const { id } = req.params;
+      // No page calls this any more, but while it exists it must not leave the
+      // policy's files behind. See DELETE /api/agent/policies/:id.
+      const keys = await policyFileKeys(agentId, id);
+      if (keys.length > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(keys);
+        if (error) return res.status(502).json({ error: "FILE_DELETE_FAILED" });
+      }
       const result = await pool.query(
         "DELETE FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
@@ -4316,18 +4403,31 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         .from(PDF_BUCKET)
         .list(agentId, { search: clientId, limit: 100 });
       if (listErr) log.error("policy_delete_list_failed", { agentId, clientId, message: listErr.message });
-      const paths = (objs ?? [])
-        .map((o) => o.name)
-        .filter((n) => n.startsWith(`${clientId}.`) || n.startsWith(`${clientId}-`))
-        .map((n) => `${agentId}/${n}`);
-      if (paths.length > 0) {
-        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove(paths);
-        if (error) log.error("policy_delete_remove_failed", { agentId, clientId, message: error.message });
+      const paths = new Set(
+        (objs ?? [])
+          .map((o) => o.name)
+          .filter((n) => n.startsWith(`${clientId}.`) || n.startsWith(`${clientId}-`))
+          .map((n) => `${agentId}/${n}`),
+      );
+      // Plus whatever the row itself points at, which need not follow the
+      // <clientId> naming (a batch upload, a carried lead file).
+      for (const p of await policyFileKeys(agentId, clientId)) paths.add(p);
+      if (listErr && paths.size === 0) {
+        return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not check the stored document. Nothing was removed. Please try again." });
+      }
+      if (paths.size > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove([...paths]);
+        if (error) {
+          // Stop rather than delete the row: a file with nothing pointing at it
+          // is the one thing a deletion must not leave behind.
+          log.error("policy_delete_remove_failed", { agentId, clientId, message: error.message });
+          return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not delete the stored document. Nothing was removed. Please try again." });
+        }
       }
 
       await pool.query("DELETE FROM clients WHERE id = $1 AND agent_id = $2", [clientId, agentId]);
       void recordAccess(req, agentId, clientId, "policy_delete");
-      return res.json({ ok: true, filesRemoved: paths.length });
+      return res.json({ ok: true, filesRemoved: paths.size });
     } catch (err: any) {
       console.error("policy delete error:", err);
       return res.status(500).json({ error: "Could not delete the policy" });
@@ -4351,7 +4451,10 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const owned = ownedStorageObject(row.rows[0].file_url, agentId);
       if (owned) {
         const { error } = await supabaseAdmin.storage.from(owned.bucket).remove([owned.path]);
-        if (error) log.error("lead_policy_delete_remove_failed", { agentId, message: error.message });
+        if (error) {
+          log.error("lead_policy_delete_remove_failed", { agentId, message: error.message });
+          return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not delete the stored document. Nothing was removed. Please try again." });
+        }
       }
 
       await pool.query("DELETE FROM lead_policies WHERE id = $1 AND agent_id = $2", [row.rows[0].id, agentId]);
@@ -4360,6 +4463,45 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     } catch (err: any) {
       console.error("lead policy delete error:", err);
       return res.status(500).json({ error: "Could not delete the policy" });
+    }
+  });
+
+  /* ── Agent: delete a lead, with every file saved against it ─────────────
+     Deleting the agent_leads row cascades to its lead_policies, and the
+     browser used to do exactly that, leaving every file the lead's policies
+     pointed at in storage. Files first, rows second, refusing on a failed
+     removal, as for a single policy. */
+  app.delete("/api/agent/leads/:id", async (req, res) => {
+    const agentId = await verifyJwt(req, res);
+    if (!agentId) return;
+    try {
+      if (!UUID_RE.test(req.params.id)) return res.status(404).json({ error: "Lead not found" });
+      const lead = await pool.query("SELECT id FROM agent_leads WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      if (lead.rows.length === 0) return res.status(404).json({ error: "Lead not found" });
+
+      const files = await pool.query(
+        "SELECT file_url FROM lead_policies WHERE lead_id = $1 AND agent_id = $2 AND file_url IS NOT NULL",
+        [req.params.id, agentId]
+      );
+      const paths = new Set<string>();
+      for (const r of files.rows) {
+        const owned = ownedStorageObject(r.file_url, agentId);
+        if (owned) paths.add(owned.path);
+      }
+      if (paths.size > 0) {
+        const { error } = await supabaseAdmin.storage.from(PDF_BUCKET).remove([...paths]);
+        if (error) {
+          log.error("lead_delete_remove_failed", { agentId, message: error.message });
+          return res.status(502).json({ error: "FILE_DELETE_FAILED", message: "Could not delete the lead's documents. Nothing was removed. Please try again." });
+        }
+      }
+
+      await pool.query("DELETE FROM agent_leads WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      void recordAccess(req, agentId, null, "lead_delete");
+      return res.json({ ok: true, filesRemoved: paths.size });
+    } catch (err: any) {
+      console.error("lead delete error:", err);
+      return res.status(500).json({ error: "Could not delete the lead" });
     }
   });
 
@@ -5276,7 +5418,11 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         out.fullName = fullName;
       }
       if (typeof req.body?.phone === "string") {
-        const phone = req.body.phone.replace(/[^\d+\-() ]/g, "").trim().slice(0, 20) || null;
+        // Login looks the account up by these ten digits, so nothing else is stored.
+        const phone = req.body.phone.replace(/\D/g, "").slice(-10);
+        if (!/^[6-9][0-9]{9}$/.test(phone)) {
+          return res.status(400).json({ error: "BAD_PHONE", message: "Enter a 10 digit mobile number." });
+        }
         sets.push(`phone = $${sets.length + 1}`);
         vals.push(phone);
         out.phone = phone;
@@ -5296,6 +5442,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       );
       return res.json(out);
     } catch (err: any) {
+      if (err?.code === "23505") {
+        return res.status(409).json({ error: "PHONE_TAKEN", message: "Another account already uses this mobile number." });
+      }
       console.error("Consumer profile update error:", err);
       return res.status(500).json({ error: "Internal server error" });
     }
@@ -5367,10 +5516,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
    * not the customer's data about themselves, and publishing an access log back
    * to the person it audits is not a data right.
    *
-   * Document BYTES are not bundled. The rows name every file and where it lives,
-   * but streaming a book of policy PDFs through a JSON response would time out
-   * and blow memory on a large account. The download route already exists per
-   * file and is authenticated; this says what there is to fetch.
+   * The download is a zip: data.json first, then every stored document on the
+   * account (services/accountExport.ts decides which and names them), then a
+   * short note. It is STREAMED, one file in memory at a time, because a large
+   * book of policy PDFs held whole would take the server down. Once the first
+   * byte is sent an error can no longer become a 500, so a file that fails to
+   * fetch is left out and named in the note instead of cutting the zip short.
    */
   async function buildExport(accountId: string, tables: OwnedTable[]) {
     const data: Record<string, unknown[]> = {};
@@ -5388,34 +5539,123 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     return data;
   }
 
-  app.get("/api/me/export", async (req, res) => {
-    const userId = await requireIndividual(req, res);
-    if (!userId) return;
+  /** Every object key under "<accountId>/" in the bucket. Storage lists one
+   *  folder at a time, so this walks down. Bounded, so a runaway listing cannot
+   *  hold the request open forever. */
+  async function listAccountKeys(accountId: string): Promise<Map<string, number | null>> {
+    // key -> size in bytes, as storage reports it (null when it does not say).
+    const listed = await listFolder(supabaseAdmin.storage as any, PDF_BUCKET, accountId);
+    return new Map(listed.map((o) => [o.key, o.size]));
+  }
+
+  /* One export per account at a time. A second click while the first is still
+     streaming would only fetch every file twice. */
+  const exportsRunning = new Set<string>();
+
+  async function sendExportZip(
+    req: any, res: any, accountId: string, kind: "agent" | "individual", tables: OwnedTable[],
+  ) {
+    if (exportsRunning.has(accountId)) {
+      return res.status(429).json({ error: "EXPORT_RUNNING", message: "Your download is already being prepared. Please wait for it to finish." });
+    }
+    exportsRunning.add(accountId);
+    let aborted = false;
+    res.on("close", () => { if (!res.writableFinished) aborted = true; });
     try {
-      const data = await buildExport(userId, INDIVIDUAL_TABLES);
+      const exportedAt = new Date();
+      const data = await buildExport(accountId, tables);
+
+      let listed = new Map<string, number | null>();
+      try {
+        listed = await listAccountKeys(accountId);
+      } catch (err: any) {
+        // The rows still name most files; carry on with those.
+        log.error("export_storage_list_failed", { kind, message: err?.message });
+      }
+      const plan = planExportFiles({ kind, accountId, bucket: PDF_BUCKET, data, listedKeys: [...listed.keys()] });
+      const json = Buffer.from(JSON.stringify({ exported_at: exportedAt.toISOString(), account: kind, data }, null, 2), "utf8");
+      const expectedBytes = estimateZipBytes([
+        { name: "data.json", size: json.length },
+        ...plan.files.map((f) => ({ name: f.zipName, size: listed.get(f.key) })),
+      ]);
+      if (plan.refused) log.warn("export_files_refused", { kind, accountId, count: plan.refused });
+
+      const stamp = exportedAt.toISOString().slice(0, 10);
+      res.status(200);
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.zip"`);
+      res.setHeader("Cache-Control", "no-store");
+      // Tell a proxy in front not to spool the whole zip to its own disk.
+      res.setHeader("X-Accel-Buffering", "no");
+      // For the page's progress bar. Not Content-Length: it is an estimate, and a
+      // wrong Content-Length would make the browser throw the whole download away.
+      res.setHeader("X-Export-Bytes", String(expectedBytes));
+      res.setHeader("X-Export-Files", String(plan.files.length));
+      // The page is on another origin (beta.indsure.in -> api.indsure.in), and a
+      // browser hides custom response headers from it unless they are named here.
+      res.setHeader("Access-Control-Expose-Headers", "X-Export-Bytes, X-Export-Files, Content-Disposition");
+      const zip = createZipWriter(res);
+
+      await zip.addFile("data.json", json, exportedAt);
+
+      const missing: string[] = [];
+      const tooLarge: string[] = [];
+      for (const f of plan.files) {
+        if (aborted) break;
+        const { data: blob, error } = await supabaseAdmin.storage.from(PDF_BUCKET).download(f.key);
+        if (error || !blob) { missing.push(f.zipName); continue; }
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        if (!zip.canFit(f.zipName, buf.length)) { tooLarge.push(f.zipName); continue; }
+        await zip.addFile(f.zipName, buf, exportedAt);
+      }
+      if (aborted) return;
+
+      const included = zip.count - 1;
+      await zip.addFile("about-this-download.txt", Buffer.from(exportReadme({ exportedAt, included, missing, tooLarge }), "utf8"), exportedAt);
+      await zip.finish();
+      res.end();
+      log.info("account_export_sent", { kind, files: included, missing: missing.length, tooLarge: tooLarge.length });
+    } catch (err: any) {
+      if (aborted || err?.message === "STREAM_CLOSED") return; // the person left; nothing to tell them
+      log.error(`${kind === "agent" ? "agent" : "me"}_export_failed`, { message: err?.message });
+      if (!res.headersSent) return res.status(500).json({ error: "Could not build your export. Try again." });
+      res.destroy(); // a cut-short zip must not look like a finished one
+    } finally {
+      exportsRunning.delete(accountId);
+    }
+  }
+
+  /* The zip is opt-in (?format=zip). This server also answers indsure.in, whose
+     pages save whatever comes back under a .json name; sending them a zip made a
+     file nobody could open. Anything that does not ask gets the records-only
+     JSON it was built for. */
+  async function sendExportJson(res: any, accountId: string, kind: "agent" | "individual", tables: OwnedTable[]) {
+    try {
+      const data = await buildExport(accountId, tables);
       const stamp = new Date().toISOString().slice(0, 10);
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
-      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "individual", data }, null, 2));
+      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: kind, data }, null, 2));
     } catch (err: any) {
-      log.error("me_export_failed", { message: err?.message });
+      log.error(`${kind === "agent" ? "agent" : "me"}_export_failed`, { message: err?.message });
       return res.status(500).json({ error: "Could not build your export. Try again." });
     }
+  }
+
+  const wantsZip = (req: any) => req.query?.format === "zip";
+
+  app.get("/api/me/export", async (req, res) => {
+    const userId = await requireIndividual(req, res);
+    if (!userId) return;
+    if (!wantsZip(req)) return sendExportJson(res, userId, "individual", INDIVIDUAL_TABLES);
+    return sendExportZip(req, res, userId, "individual", INDIVIDUAL_TABLES);
   });
 
   app.get("/api/agent/export", async (req, res) => {
     const agentId = await verifyJwt(req, res);
     if (!agentId) return;
-    try {
-      const data = await buildExport(agentId, AGENT_TABLES);
-      const stamp = new Date().toISOString().slice(0, 10);
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="indsure-export-${stamp}.json"`);
-      return res.send(JSON.stringify({ exported_at: new Date().toISOString(), account: "agent", data }, null, 2));
-    } catch (err: any) {
-      log.error("agent_export_failed", { message: err?.message });
-      return res.status(500).json({ error: "Could not build your export. Try again." });
-    }
+    if (!wantsZip(req)) return sendExportJson(res, agentId, "agent", AGENT_TABLES);
+    return sendExportZip(req, res, agentId, "agent", AGENT_TABLES);
   });
 
   app.get("/api/me/policy/:id", async (req, res) => {
@@ -6412,6 +6652,24 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
     }
   });
 
+  /* ── Agent: Change a policy between life and term ───────────────────
+     Same read lane, same document: no re-read, no check used, no model call.
+     Rules and the expiry_date re-derivation live in services/policyValueStore.ts. */
+
+  app.patch("/api/agent/clients/:id/insurance-type", async (req, res) => {
+    try {
+      const agentId = await verifyJwt(req, res);
+      if (!agentId) return;
+      const { id } = req.params;
+      const result = await changeInsuranceType(pool, agentId, id, req.body, { deriveSharedColumns });
+      if (result.status === 200 && (result.body as any).changed) recordAccess(req, agentId, id, "change_insurance_type");
+      res.status(result.status).json(result.body);
+    } catch (err: any) {
+      console.error("Change insurance type error:", err?.message);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   /* ── Agent: Re-run analysis from the stored document ────────────────── */
   // Re-processes an existing client row using the PDF persisted in storage at
   // upload time. Health re-runs go through the full pipeline, with the covers
@@ -6426,7 +6684,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       const { id } = req.params;
 
       const clientRes = await pool.query(
-        "SELECT id, status, pdf_url, filename, insurance_type, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
+        "SELECT id, status, error_message, pdf_url, filename, insurance_type, report_data->'__companions' AS companions FROM clients WHERE id = $1 AND agent_id = $2",
         [id, agentId]
       );
       if (clientRes.rows.length === 0) {
@@ -6436,6 +6694,28 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       recordAccess(req, agentId, id, "rerun_client");
       const client = clientRes.rows[0];
 
+      /* `insurance_type` in the body reads the document again as a different type.
+         The new type is stored only when that read succeeds; otherwise the row goes
+         back to exactly what it was. Absent, nothing below behaves differently. */
+      const storedType = (client.insurance_type || "health").toLowerCase();
+      const wanted = req.body?.insurance_type === undefined ? storedType : String(req.body.insurance_type).toLowerCase();
+      const retype = wanted !== storedType;
+      if (retype && !isSupportedInsuranceType(wanted)) {
+        return res.status(400).json({ error: "UNSUPPORTED_INSURANCE_TYPE", message: "Pick one of the listed policy types." });
+      }
+      if (retype && (client.status === "processing" || client.status === "pending")) {
+        return res.status(409).json({ error: "BUSY", message: "This policy is still being read. Try again when it is done." });
+      }
+      if (retype && !client.pdf_url) {
+        // Added by hand: there is no document to read, so only the type changes.
+        const changed = await pool.query(
+          "UPDATE clients SET insurance_type = $1, share_enabled = false, score = NULL WHERE id = $2 AND agent_id = $3 AND report_data IS NULL",
+          [wanted, id, agentId]
+        );
+        if (!changed.rowCount) return res.status(409).json({ error: "NO_PDF", message: "The original document isn't stored, so it cannot be read as another type. Upload it again." });
+        return res.json({ ok: true, clientId: id, status: "done", read: false });
+      }
+
       if (!client.pdf_url) {
         return res.status(409).json({
           error: "NO_PDF",
@@ -6444,8 +6724,21 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         });
       }
 
-      const insuranceType = (client.insurance_type || "health").toLowerCase();
+      const insuranceType = wanted;
       const isDataEntry = isDataEntryType(insuranceType);
+
+      // Health is the only line with an audit. A legacy row can still carry a
+      // type nothing reads any more ("vehicle" was stored before the type
+      // allowlist). Refuse it here, before the check is reserved and before the
+      // paid OCR read, rather than let runAnalysisPipeline refuse it after both.
+      if (!isDataEntry && insuranceType !== "health") {
+        return res.status(409).json({
+          error: "UNSUPPORTED_INSURANCE_TYPE",
+          message:
+            `This policy is stored as "${insuranceType}", which we no longer recognise. ` +
+            "Delete it and upload the document again, picking the policy type.",
+        });
+      }
 
       // Resolve the storage object behind pdf_url (signed or public URL).
       const owned = ownedStorageObject(client.pdf_url, agentId);
@@ -6484,6 +6777,12 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
         [id]
       );
       res.json({ ok: true, clientId: id, status: "processing" });
+
+      // What a failed read writes. A failed change of type puts the row back instead.
+      const failRow = (message: string | undefined) =>
+        retype
+          ? pool.query("UPDATE clients SET status = $1, error_message = $2 WHERE id = $3", [client.status, client.error_message ?? null, id])
+          : pool.query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [message ?? null, id]);
 
       // Background processing — mirrors the analyze flow with the stored file.
       (async () => {
@@ -6564,12 +6863,17 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                   motorScore,
                 ]
               );
+              // The old type's report must not sit behind the new type's fields, and a
+              // link the customer already holds must not start showing something else.
+              if (retype) {
+                await pool.query(
+                  "UPDATE clients SET insurance_type = $1, report_data = NULL, flaws = NULL, share_enabled = false WHERE id = $2",
+                  [insuranceType, id]
+                );
+              }
             } else {
               await giveBack();
-              await pool.query(
-                "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
-                [extraction.error, id]
-              );
+              await failRow(extraction.error);
             }
             return;
           }
@@ -6696,24 +7000,22 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
                 id,
               ]
             );
+            if (retype) {
+              await pool.query(
+                "UPDATE clients SET insurance_type = $1, extracted_data = NULL, share_enabled = false WHERE id = $2",
+                [insuranceType, id]
+              );
+            }
 
             await recordPlanProvenance(id, result.metadata);
           } else {
             await giveBack();
-            await pool.query(
-              "UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2",
-              [result.error, id]
-            );
+            await failRow(result.error);
           }
         } catch (err: any) {
           console.error(`[Rerun ${id}] error:`, err);
           await giveBack();
-          await pool
-            .query("UPDATE clients SET status = 'error', error_message = $1 WHERE id = $2", [
-              err.message || "Re-run failed",
-              id,
-            ])
-            .catch(() => {});
+          await failRow(err.message || "Re-run failed").catch(() => {});
         } finally {
           for (const p of [tempPath, ...companionTemps]) {
             try {
@@ -6799,9 +7101,9 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
       // Fetch client record
       const clientRes = await pool.query(
         `SELECT
-          id, report_data, score, insurer, policy_name, policyholder_name,
+          id, agent_id, report_data, score, insurer, policy_name, policyholder_name,
           filename, created_at, status, share_enabled,
-          insurance_type, extracted_data
+          insurance_type, extracted_data, sum_insured, left(expiry_date::text, 10) AS expiry_date
         FROM clients
         WHERE share_token = $1`,
         [shareToken]
@@ -6826,9 +7128,8 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
          when it has finished AND has at least one publishable field. A row that
          finished with nothing readable still answers report_not_ready rather
          than rendering an empty page with the customer's name on it. */
-      const isDataEntryShare =
-        client.status === "done" &&
-        hasShareableContent(client.insurance_type, client.extracted_data);
+      const details = client.status === "done" ? shareDetails(client) : null;
+      const isDataEntryShare = details !== null;
 
       if (!isDataEntryShare && (!client.report_data || client.status !== "done")) {
         return res.status(404).json({ error: "report_not_ready" });
@@ -6869,12 +7170,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
          leave this function. The motor add-on scan rides along because it is the
          substance of a motor policy, and it holds no personal data — it is a
          list of cover names with the document line each was read from. */
-      if (isDataEntryShare) {
+      if (details) {
         const addOns = (client.extracted_data as any)?.[ADD_ON_FINDINGS_KEY] ?? null;
         return res.json({
           kind: "data_entry",
-          insurance_type: client.insurance_type,
-          fields: pickShareableFields(client.insurance_type, client.extracted_data),
+          insurance_type: details.type,
+          fields: details.fields,
+          by_hand: details.byHand,
           add_ons: addOns,
           insurer: client.insurer,
           policy_name: client.policy_name,
@@ -6885,6 +7187,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
 
       res.json({
         kind: "audit",
+        advisor: await advisorLetterhead(client.agent_id),
         report_data: stripInternal(client.report_data),
         score: client.score,
         insurer: client.insurer,
@@ -7569,6 +7872,7 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      that makes "you see each time your owner opens your book" true. See the
      header of teamRoutes.ts before adding any route that reads member data. */
   registerTeamRoutes(app, verifyJwt, isAdmin);
+  registerLicRoutes(app, verifyJwt); // LIC Premium Due + Commission sheets (migration 043)
   mountWhatsapp(app, verifyJwt); // WHATSAPP-PLUGIN: WhatsApp channel (beta), a no-op unless WA_BOT_KEY is set
 
   /* ── Account deletion ────────────────────────────────────────────────────
@@ -7601,6 +7905,13 @@ Current Flaws: ${JSON.stringify(flaws.slice(0, 5))}`;
      Kept in services/payments.ts with its webhook, which index.ts has to mount
      before express.json(). Read that file's header before changing anything. */
   registerPaymentRoutes(app, { getUserIdFromToken });
+
+  // Edits to the advisor's own book: health corrections, adding by hand, renewals, merges.
+  registerBookRoutes(app, { verifyJwt, recordAccess, supabaseAdmin, pdfBucket: PDF_BUCKET, ownedStorageObject,
+    oneFile: [signedInBeforeUpload, (req: any, res: any, next: () => void) => upload.single("file")(req, res, (err: any) => {
+      if (err) return res.status(400).json({ error: "UPLOAD", message: "The file could not be uploaded. It must be under 25MB." });
+      next();
+    })] });
 
   log.info("routes registered");
   return _httpServer;

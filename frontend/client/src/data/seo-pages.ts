@@ -58,19 +58,19 @@ export const PAGE_SEO: Record<string, PageSeo> = {
       "Start free on IndSure: one health policy check, one of each other type stored, no card needed. Personal is ₹99 a month or ₹999 a year.",
   },
   "/life": {
-    title: "Life Insurance Checker: Sum Assured & Riders | IndSure",
+    title: "Life Insurance Checker: Sum Assured & Due Dates | IndSure",
     description:
-      "Upload your life insurance PDF and IndSure checks if your sum assured is enough, plus claim conditions, exclusions and riders. Free and private.",
+      "Upload your life insurance PDF and IndSure reads your sum assured, premium, due dates, maturity and nominee into one clear table. Free and private.",
   },
   "/term": {
-    title: "Term Insurance Checker: Is Your Cover Enough? | IndSure",
+    title: "Term Insurance Checker: Cover, Premium & Nominee | IndSure",
     description:
-      "Upload your term plan PDF and IndSure checks your sum assured against your family's needs, plus claim conditions and exclusions. Free and private.",
+      "Upload your term plan PDF and IndSure reads your sum assured, premium, due dates, cover end date and nominee into one clear table. Free and private.",
   },
   "/vehicle": {
     title: "Car and Bike Insurance Checker: IDV, NCB | IndSure",
     description:
-      "Upload your car or bike policy and IndSure shows your IDV, deductibles, NCB and add-ons, and what an accident would really cost you. Free and private.",
+      "Upload your car or bike policy and IndSure shows your IDV, no-claim bonus, cover type and add-ons, with a cover score out of 100. Free and private.",
   },
   "/find-provider": {
     title: "Cashless Network Hospital Finder | IndSure",

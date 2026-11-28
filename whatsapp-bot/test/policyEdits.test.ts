@@ -109,11 +109,15 @@ test("guided: field list, then a bad value is asked again, then a date in words"
   assert.equal(engine.policyExtra.get(CAR)!.data.policy_expiry_date, "2027-04-01");
 });
 
-test("health: only client details; a saved detail is refused before any confirm", async () => {
+test("health: client details, and premium, cover and end date; the rest is the check's", async () => {
   const { bot, transport, engine } = setup();
+  await bot.handle(text("change Sunita's policy nominee to Asha"));
+  assert.match(transport.last(), /On a health policy, the rest comes from the policy check/);
+  assert.match(transport.last(), /Policyholder name, Phone, Email, Policy number, Premium, Cover \(sum insured\), Policy end date/);
   await bot.handle(text("change Sunita's policy premium to 9000"));
-  assert.match(transport.last(), /On a health policy, the details come from the policy check/);
-  assert.match(transport.last(), /Policyholder name, Phone, Email, Policy number/);
+  assert.match(transport.last(), /Premium .* → .*9,000/);
+  await bot.handle(text("yes"));
+  assert.equal(engine.policyExtra.get(HEALTH)!.data.premium, 9000);
   await bot.handle(text("change Sunita's policy phone to 98111 22233"));
   assert.match(transport.last(), /Phone 98123 45678 → 98111 22233/);
   await bot.handle(text("yes"));
@@ -121,7 +125,6 @@ test("health: only client details; a saved detail is refused before any confirm"
   await bot.handle(text("undo"));
   await bot.handle(text("yes"));
   assert.equal(engine.clients.get(HEALTH)!.customerPhone, "9812345678");
-  assert.equal(engine.writes.filter((w) => w.kind === "policyFieldSave").length, 0, "nothing in a health check is changed");
 });
 
 test("clearing a saved detail is for the portal", async () => {

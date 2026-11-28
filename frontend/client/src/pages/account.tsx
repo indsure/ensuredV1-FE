@@ -4,10 +4,71 @@ import { ArrowLeft, Download, Loader2, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { downloadAccountExport, type ExportProgress } from "@/lib/exportDownload";
+import { ExportProgressBar } from "@/components/ExportProgressBar";
 import { clearSessionKeys } from "@/lib/clearSessionKeys";
 
 // The server only deletes when it receives this exact phrase (accountData.ts).
 const CONFIRM_PHRASE = "DELETE MY ACCOUNT";
+
+/** The mobile number is also how they sign in, so it is read from the profile, not the login. */
+function PhoneRow({ initial }: { initial: string }) {
+  const { t } = useLanguage();
+  const [phone, setPhone] = useState(initial);
+  const [draft, setDraft] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPhone((p) => p || initial);
+    let on = true;
+    apiFetch("/api/me/portfolio").then((r) => (r.ok ? r.json() : null)).then((d) => { if (on && d && "phone" in d) setPhone(d.phone ?? ""); }).catch(() => {});
+    return () => { on = false; };
+  }, [initial]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const digits = (draft ?? "").replace(/\D/g, "").slice(-10);
+    if (!/^[6-9]\d{9}$/.test(digits)) return setErr(t("book.phone_bad"));
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await apiFetch("/api/me/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ phone: digits }) });
+      const body = await res.json().catch(() => ({} as any));
+      if (!res.ok) return setErr(body.error === "PHONE_TAKEN" ? t("book.phone_taken") : t("book.phone_failed"));
+      setPhone(body.phone ?? digits);
+      setDraft(null);
+    } catch {
+      setErr(t("book.phone_failed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <dt className="text-sm text-[var(--color-text-muted)]">{t("cauth.su_mobile")}</dt>
+      <dd className="font-semibold">
+        {draft === null ? (
+          <span className="flex flex-wrap items-center gap-3">
+            {phone || t("book.phone_none")}
+            <button type="button" className="min-h-11 text-base font-semibold text-[var(--color-teal-600)] underline" onClick={() => { setErr(null); setDraft(phone); }}>{t("book.phone_change")}</button>
+          </span>
+        ) : (
+          <form onSubmit={save} className="mt-1 space-y-2">
+            <input type="tel" inputMode="numeric" autoComplete="tel-national" aria-label={t("cauth.su_mobile")} value={draft} onChange={(e) => setDraft(e.target.value)} className="h-12 w-full rounded-xl border border-[var(--color-border-light)] px-4 text-base" />
+            <p className="text-sm font-normal text-[var(--color-text-secondary)]">{t("book.phone_note")}</p>
+            {err && <p role="alert" className="text-sm font-medium text-red-700">{err}</p>}
+            <div className="flex gap-3">
+              <button type="submit" disabled={busy} className="inline-flex h-12 items-center rounded-xl bg-[var(--color-cta)] px-6 text-base font-bold text-white disabled:opacity-50">{t("xform.save")}</button>
+              <button type="button" disabled={busy} className="h-12 px-3 text-base font-semibold" onClick={() => setDraft(null)}>{t("common.cancel")}</button>
+            </div>
+          </form>
+        )}
+      </dd>
+    </div>
+  );
+}
 
 /**
  * The consumer's own account page: who they are signed in as, a copy of
@@ -21,6 +82,7 @@ export default function Account() {
   const [who, setWho] = useState<{ email: string; name: string; phone: string } | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportErr, setExportErr] = useState<string | null>(null);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState<string | null>(null);
@@ -37,27 +99,18 @@ export default function Account() {
     });
   }, []);
 
-  /* Fetched rather than linked, because the route needs the auth header and a
-     plain anchor cannot carry one. */
+  /* Live progress while the zip streams in; see lib/exportDownload.ts. */
   async function downloadData() {
     setExporting(true);
     setExportErr(null);
     try {
-      const res = await apiFetch("/api/me/export");
-      if (!res.ok) throw new Error();
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `indsure-export-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setExportErr(t("cflow.ac_export_failed"));
+      await downloadAccountExport("/api/me/export?format=zip", setExportProgress);
+    } catch (err) {
+      const busy = err instanceof Error && err.message === "EXPORT_429";
+      setExportErr(busy ? t("export_progress.busy") : t("cflow.ac_export_failed"));
     } finally {
       setExporting(false);
+      setExportProgress(null);
     }
   }
 
@@ -125,9 +178,7 @@ export default function Account() {
               <div><dt className="text-sm text-[var(--color-text-muted)]">{t("cauth.su_name")}</dt><dd className="font-semibold">{who.name}</dd></div>
             )}
             <div><dt className="text-sm text-[var(--color-text-muted)]">{t("cflow.ac_email")}</dt><dd className="font-semibold break-all">{who?.email || "..."}</dd></div>
-            {who?.phone && (
-              <div><dt className="text-sm text-[var(--color-text-muted)]">{t("cauth.su_mobile")}</dt><dd className="font-semibold">{who.phone}</dd></div>
-            )}
+            <PhoneRow initial={who?.phone ?? ""} />
           </dl>
         </section>
 
@@ -145,6 +196,7 @@ export default function Account() {
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Download className="w-4 h-4" aria-hidden="true" />}
             {exporting ? t("cflow.ac_exporting") : t("cflow.ac_export_cta")}
           </button>
+          <ExportProgressBar progress={exportProgress} />
           {exportErr && <p role="alert" className="text-sm font-medium text-red-700">{exportErr}</p>}
         </section>
 

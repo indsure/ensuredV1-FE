@@ -46,6 +46,7 @@ function tokenOk(given: unknown, want: string): boolean {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { LEAD_STATUSES, INTERESTS, LEAD_SOURCES, cleanInterests, money, cleanLeadSet, cleanCustomerSet, norm, guardedUpdate, restoreSet, missingExpect, POLICY_FIX_FIELDS, fixFieldsFor, cleanFixValue, CLIENT_DETAIL_COLS, cleanClientSet, CLAIM_FIELDS, CLAIM_LABELS, CLAIM_OPEN_STAGES, CLAIM_TERMINAL, cleanClaimSet, PAGE_COLS, cleanPageSet, PROFILE_COLS, cleanProfileSet, pageNotReady } from "./editRules";
 import { saveExtractedData, EVIDENCE_KEY } from "../services/policyValueStore";
+import { saveHealthFacts } from "../services/bookStore";
 import { ownsStoragePath } from "../services/accountData";
 import { readEvidence, activeRecords } from "../../../shared/policyEvidence";
 import { addMonthsIso, parseIsoDate, parseWholeNumber, parseRupees } from "../../../shared/policyNumbers";
@@ -287,7 +288,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
   });
   /* ── Stage 2b: policies (plan 3, 2b) ── */
 
-  const CLIENT_OUT = "id, insurance_type, status, policyholder_name, policy_identifier, client_email, client_phone, share_enabled, insurer, policy_name, expiry_date::text AS expiry_date, sum_insured, extracted_data";
+  const CLIENT_OUT = "id, insurance_type, status, policyholder_name, policy_identifier, client_email, client_phone, share_enabled, insurer, policy_name, expiry_date::text AS expiry_date, sum_insured, extracted_data, report_data->'premium'->'amount' AS report_premium";
 
   /** One policy's editable details: client details on any type; for a data-entry type also the
    *  everyday saved fields (POLICY_FIX_FIELDS) with the record's revision. */
@@ -310,6 +311,7 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
         fields: fixable.map((f) => {
           const col = sharedColumnOf(type, f.key);
           const v = data[f.key] ?? null;
+          if (type === "health") return { key: f.key, label: f.label, kind: f.kind, value: healthFactNow(c, f.key) };
           return { key: f.key, label: f.label, kind: f.kind, value: empty(v) && col ? c[col] ?? null : v };
         }),
       });
@@ -348,21 +350,21 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
     } catch (err) { fail(res, "policy client details", err); }
   });
 
-  /** Fix saved details on a NON-health policy, through the portal's own save
+  /** Fix saved details on a policy, through the portal's own save
    *  (policyValueStore.saveExtractedData): same validation, revision check and shared columns.
-   *  Body: { set: { key: value }, expectRev, restore?, token? }. Health is refused: there,
-   *  deriveSharedColumns returns nothing and the save would blank the insurer, plan, expiry
-   *  and sum insured. */
+   *  Body: { set: { key: value }, expectRev, restore?, token? }. Health goes through
+   *  saveHealthFacts instead: here deriveSharedColumns returns nothing for it and the save
+   *  would blank the insurer, plan, expiry and sum insured. */
   app.post("/api/internal/wa/clients/:id/fields", async (req, res) => {
     try {
       const agentId = await scopedAgent(req, res);
       if (!agentId) return;
       if (!UUID.test(req.params.id)) return res.status(404).json({ error: "Not found" });
-      const r0 = await pool.query("SELECT insurance_type, status, extracted_data, insurer, policy_name, policyholder_name, expiry_date::text AS expiry_date, sum_insured FROM clients WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
+      const r0 = await pool.query("SELECT insurance_type, status, extracted_data, insurer, policy_name, policyholder_name, expiry_date::text AS expiry_date, sum_insured, report_data->'premium'->'amount' AS report_premium FROM clients WHERE id = $1 AND agent_id = $2", [req.params.id, agentId]);
       if (!r0.rows.length) return res.status(404).json({ error: "Not found" });
       const row = r0.rows[0];
       const type = row.insurance_type || "health";
-      if (!POLICY_FIX_FIELDS[type]) return res.status(400).json({ error: "NOT_EDITABLE", message: "Only motor, life, term, travel, property, fire and marine details can be changed here." });
+      if (!POLICY_FIX_FIELDS[type]) return res.status(400).json({ error: "NOT_EDITABLE", message: "These details can only be changed in the portal." });
       // A policy still being read would have this save overwritten by the reader.
       if (row.status !== "done") return res.status(400).json({ error: "NOT_EDITABLE", message: "This policy is still being read. Try again when it is done." });
       const fixable = fixFieldsFor(type, row.extracted_data && typeof row.extracted_data === "object" ? row.extracted_data : {});
@@ -388,7 +390,19 @@ export function registerWaEdits(app: App, { pool, log, scopedAgent }: Deps) {
       if (restore) {
         const expectAfter = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
         if (!tokenOk(req.body?.token, undoToken("clients.extracted_data", req.params.id, set, expectAfter))) return bad(res, { token: "undo is only for a change saved here" });
-        if (Object.keys(set).some((k) => norm(stored[k]) !== norm(expectAfter[k]))) return changed(res);
+        if (type !== "health" && Object.keys(set).some((k) => norm(stored[k]) !== norm(expectAfter[k]))) return changed(res);
+      }
+      if (type === "health") {
+        const was = Object.fromEntries(Object.keys(set).map((k) => [k, healthFactNow(row, k)]));
+        if (restore) {
+          const expectAfter = req.body?.expect && typeof req.body.expect === "object" ? req.body.expect : {};
+          if (Object.keys(set).some((k) => norm(was[k]) !== norm(expectAfter[k]))) return changed(res);
+        }
+        const out = await saveHealthFacts(pool as any, agentId, req.params.id, set, new Date(), expectRev);
+        if (out.status === 409) return changed(res);
+        if (out.status !== 200) return res.status(out.status === 404 ? 404 : 400).json({ error: "INVALID", fields: Object.fromEntries(((out.body as any)?.fields || []).map((e: any) => [e.field, e.reason])), message: (out.body as any)?.message });
+        void audit(agentId, req.params.id, "wa_policy_fields", "/api/internal/wa/clients/:id/fields");
+        return res.json({ ok: true, before: was, after: set, rev: (out.body as any).rev, undoToken: undoToken("clients.extracted_data", req.params.id, was, set) });
       }
       // The portal's save rewrites insurer, plan, expiry, cover and name from the saved details.
       // A column that does not match them (an older record, or fixed elsewhere) would be silently
@@ -1203,6 +1217,13 @@ function pick(row: any, cols: string): Record<string, unknown> {
 const empty = (v: unknown) => v === null || v === undefined || v === "";
 
 /** The clients column a saved detail feeds (extractionFields `shared`; motor's OD date feeds expiry). */
+/** What a health policy says now for one of the facts WhatsApp may correct. */
+export function healthFactNow(row: Record<string, any>, key: string): unknown {
+  if (key === "premium") return row.report_premium ?? row.extracted_data?.premium ?? null;
+  if (key === "expiry_date") return row.expiry_date ? String(row.expiry_date).slice(0, 10) : null;
+  return row[key] ?? null;
+}
+
 export function sharedColumnOf(type: string, key: string): string | null {
   if (type === "motor" && key === "od_expiry_date") return "expiry_date";
   const f = ((EXTRACTION_FIELDS as Record<string, { key: string; shared?: string }[]>)[type] || []).find((x) => x.key === key);

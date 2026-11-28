@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { Upload, FileText, AlertCircle, AlertTriangle, CheckCircle2, Loader2, ShieldAlert, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import UnlockPdfDialog from "@/components/UnlockPdfDialog";
+import { linkRenewal } from "@/lib/bookApi";
+import { tagPolicyToCustomer } from "@/lib/customers";
+import { needsPassword } from "@/lib/unlockPdf";
 import { useAgent } from "@/context/AgentContext";
 import { toast } from "@/hooks/use-toast";
 import { getValidSession } from "@/lib/auth-helper";
@@ -13,10 +17,15 @@ import { getApiBase } from "@/lib/queryClient";
 import { TYPE_META, type InsuranceType } from "@/lib/insuranceTypes";
 import { supabase } from "@/lib/supabase";
 import { tOr } from "@/i18n";
+import { LicUploadPanel } from "@/components/agent/LicUploadPanel";
 
 type UploadStatus = {
+  /** Identity of this row. Never the array position: a second upload can start
+   *  while the first is still being read. */
+  key: string;
+  insuranceType: InsuranceType;
   filename: string;
-  status: "pending" | "uploading" | "analyzing" | "completed" | "error";
+  status: "pending" | "uploading" | "analyzing" | "completed" | "error" | "slow";
   clientId?: string;
   jobId?: string;
   error?: string;
@@ -106,14 +115,45 @@ export default function AgentUploads() {
   const { agent, ocrRemaining } = useAgent();
   const { t } = useLanguage();
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
-  const [insuranceType, setInsuranceType] = useState<InsuranceType>("health");
+  const params = new URLSearchParams(useSearch());
+  const askedType = params.get("type") ?? "";
+  const [insuranceType, setInsuranceType] = useState<InsuranceType>(askedType in TYPE_META ? (askedType as InsuranceType) : "health");
+  // LIC sheets (Premium Due list / Commission sheet) are not policies to check: the chip swaps
+  // this page's dropzone for the LIC sheet upload (founder, 2026-11-28). ?type=lic opens it.
+  const [licMode, setLicMode] = useState(askedType === "lic");
+  // Opened from a policy ("renew") or from a customer: the new policy joins it.
+  const [link, setLink] = useState<{ kind: "renews" | "customer"; id: string; name: string | null } | null>(() => {
+    const r = params.get("renews");
+    const c = params.get("customer");
+    return r ? { kind: "renews", id: r, name: null } : c ? { kind: "customer", id: c, name: null } : null;
+  });
+  useEffect(() => {
+    if (!agent?.agentId || !link || link.name !== null) return;
+    let on = true;
+    const q = link.kind === "renews"
+      ? supabase.from("clients").select("policyholder_name, name").eq("id", link.id).eq("agent_id", agent.agentId).maybeSingle()
+      : supabase.from("customers").select("name").eq("id", link.id).eq("agent_id", agent.agentId).maybeSingle();
+    void Promise.resolve(q).then(({ data }: any) => {
+      if (!on) return;
+      // Not theirs, or gone: an ordinary upload.
+      setLink(data ? { ...link, name: data.policyholder_name || data.name || "" } : null);
+    });
+    return () => { on = false; };
+  }, [agent?.agentId, link]);
+
+  // Locked PDFs wait here for their password, one at a time.
+  const [locked, setLocked] = useState<{ file: File; use: (f: File) => void }[]>([]);
+  async function whenOpen(file: File, use: (f: File) => void) {
+    if (await needsPassword(file)) setLocked((q) => [...q, { file, use }]);
+    else use(file);
+  }
+  const pickCover = (set: (f: File | null) => void) => (f: File | null) => { if (f) void whenOpen(f, set); else set(null); };
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [policyIdentifier, setPolicyIdentifier] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
-  const [consentChecked, setConsentChecked] = useState(false);
   // Files chosen but NOT yet sent. Nothing is analysed until the agent presses
   // "Analyze" — they need time to attach the other cover first.
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
@@ -172,6 +212,52 @@ export default function AgentUploads() {
     [stagedFiles, existingNames]
   );
 
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  /**
+   * Waits for one document to be read. A check that could not be asked about is
+   * not a check that failed: a dropped connection or a server restart used to
+   * mark the row as failed while the reading carried on, and the advisor
+   * uploaded it again on a second check. Only the server, or the policy row
+   * itself, can say it failed.
+   */
+  async function followJob(key: string, clientId: string, jobId: string) {
+    const set = (patch: Partial<UploadStatus>) =>
+      setUploads(prev => prev.map((u) => (u.key === key ? { ...u, ...patch } : u)));
+    const maxAttempts = 120; // 10 minutes at 5 second intervals
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      if (!mounted.current) return;
+      let status: string | null = null;
+      let reason: string | undefined;
+      try {
+        const session = await getValidSession(); // refreshed, so a long read outlives the first token
+        const res = await fetch(`${getApiBase()}/api/agent/analyze/status/${jobId}`, {
+          headers: { "Authorization": `Bearer ${session.access_token}` },
+        });
+        if (res.ok) ({ status, error: reason } = await res.json());
+      } catch { /* asked again below and on the next turn */ }
+      if (status === null) {
+        try {
+          const { data } = await supabase
+            .from("clients").select("status, error_message").eq("id", clientId).maybeSingle();
+          if (data?.status === "done") status = "completed";
+          else if (data?.status === "error") { status = "error"; reason = data.error_message ?? undefined; }
+        } catch { /* still offline: keep waiting */ }
+      }
+      if (!mounted.current) return;
+      if (status === "completed") return set({ status: "completed", progress: 100 });
+      if (status === "error") return set({ status: "error", error: reason, progress: 0 });
+      set({ progress: Math.min(30 + attempt * 2, 90) });
+    }
+    // Not a failure: it is still being read, or we cannot reach the server.
+    set({ status: "slow" });
+  }
+
   const processFiles = async (acceptedFiles: File[]) => {
     if (!agent?.agentId) {
       toast({ variant: "destructive", title: t("uploads.error"), description: t("uploads.not_signed_in") });
@@ -196,21 +282,26 @@ export default function AgentUploads() {
     setIsProcessing(true);
 
     // Initialize upload statuses
-    const initialStatuses: UploadStatus[] = acceptedFiles.map(file => ({
+    const batch = `${Date.now()}`;
+    const initialStatuses: UploadStatus[] = acceptedFiles.map((file, i) => ({
+      key: `${batch}-${i}`,
+      insuranceType,
       filename: file.name,
       status: "pending",
       progress: 0
     }));
-    setUploads(initialStatuses);
+    // Anything still being read stays on screen beside the new files.
+    setUploads(prev => [...prev.filter(u => u.status === "analyzing"), ...initialStatuses]);
 
     // Process files sequentially
     for (let i = 0; i < acceptedFiles.length; i++) {
       const file = acceptedFiles[i];
+      const key = initialStatuses[i].key;
       
       try {
         // Update status to uploading
-        setUploads(prev => prev.map((u, idx) =>
-          idx === i ? { ...u, status: "uploading", progress: 10 } : u
+        setUploads(prev => prev.map((u) =>
+          u.key === key ? { ...u, status: "uploading", progress: 10 } : u
         ));
 
         // Get auth token with automatic refresh
@@ -298,65 +389,24 @@ export default function AgentUploads() {
         const { clientId, jobId } = await uploadRes.json();
 
         // Update status to analyzing
-        setUploads(prev => prev.map((u, idx) =>
-          idx === i ? { ...u, status: "analyzing", clientId, jobId, progress: 30 } : u
+        setUploads(prev => prev.map((u) =>
+          u.key === key ? { ...u, status: "analyzing", clientId, jobId, progress: 30 } : u
         ));
 
-        // Poll for completion
-        let attempts = 0;
-        const maxAttempts = 120; // 10 minutes max (5s intervals)
-        
-        const pollInterval = setInterval(async () => {
-          attempts++;
-          
+        void followJob(key, clientId, jobId);
+        if (link && acceptedFiles.length === 1) {
           try {
-            const statusRes = await fetch(`${getApiBase()}/api/agent/analyze/status/${jobId}`, {
-              headers: {
-                "Authorization": `Bearer ${session.access_token}`
-              }
-            });
-
-            if (!statusRes.ok) {
-              throw new Error(t("uploads.status_failed"));
-            }
-
-            const statusData = await statusRes.json();
-
-            if (statusData.status === "completed") {
-              clearInterval(pollInterval);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "completed", progress: 100 } : u
-              ));
-            } else if (statusData.status === "error") {
-              clearInterval(pollInterval);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "error", error: statusData.error, progress: 0 } : u
-              ));
-            } else {
-              // Still processing - update progress
-              const progress = Math.min(30 + (attempts * 2), 90);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, progress } : u
-              ));
-            }
-
-            if (attempts >= maxAttempts) {
-              clearInterval(pollInterval);
-              setUploads(prev => prev.map((u, idx) =>
-                idx === i ? { ...u, status: "error", error: t("uploads.timeout"), progress: 0 } : u
-              ));
-            }
-          } catch (pollError: any) {
-            clearInterval(pollInterval);
-            setUploads(prev => prev.map((u, idx) =>
-              idx === i ? { ...u, status: "error", error: pollError.message, progress: 0 } : u
-            ));
+            if (link.kind === "renews") await linkRenewal(clientId, link.id);
+            else await tagPolicyToCustomer(clientId, link.id);
+            setLink(null);
+          } catch (e: any) {
+            toast({ variant: "destructive", title: t("book.link_failed"), description: e?.message });
           }
-        }, 5000); // Poll every 5 seconds
+        }
 
       } catch (error: any) {
-        setUploads(prev => prev.map((u, idx) =>
-          idx === i ? { ...u, status: "error", error: error.message, progress: 0 } : u
+        setUploads(prev => prev.map((u) =>
+          u.key === key ? { ...u, status: "error", error: error.message, progress: 0 } : u
         ));
       }
     }
@@ -383,6 +433,11 @@ export default function AgentUploads() {
       return;
     }
 
+    for (const f of acceptedFiles) void whenOpen(f, stage);
+  };
+
+  const stage = (file: File) => {
+    const acceptedFiles = [file];
     setStagedFiles((current) => {
       // Skip files already staged, so dropping the same PDF twice is harmless.
       const seen = new Set(current.map((f) => `${f.name}:${f.size}`));
@@ -408,7 +463,6 @@ export default function AgentUploads() {
   // Opens the consent step. Nothing has been sent at this point.
   function startAnalysis() {
     if (stagedFiles.length === 0) return;
-    setConsentChecked(false);
     setShowConsentModal(true);
   }
 
@@ -423,7 +477,6 @@ export default function AgentUploads() {
   // Backing out of consent must not throw away what they queued up.
   function handleConsentCancel() {
     setShowConsentModal(false);
-    setConsentChecked(false);
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -445,7 +498,7 @@ export default function AgentUploads() {
 
   const completedCount = uploads.filter(u => u.status === "completed").length;
   const errorCount = uploads.filter(u => u.status === "error").length;
-  const allDone = uploads.length > 0 && uploads.every(u => u.status === "completed" || u.status === "error");
+  const allDone = uploads.length > 0 && uploads.every(u => u.status === "completed" || u.status === "error" || u.status === "slow");
 
   const handleViewResults = () => {
     if (completedCount === 1) {
@@ -454,12 +507,18 @@ export default function AgentUploads() {
         setLocation(`/agent/policies/${completed.clientId}`);
       }
     } else {
-      setLocation("/agent/policies");
+      // Life and term policies are listed in their own section.
+      setLocation(uploads.length > 0 && uploads.every(u => u.insuranceType === "life" || u.insuranceType === "term") ? "/agent/life" : "/agent/policies");
     }
   };
 
   return (
     <>
+      <UnlockPdfDialog
+        file={locked[0]?.file ?? null}
+        onUnlocked={(_, open) => { locked[0]?.use(open); setLocked((q) => q.slice(1)); }}
+        onCancel={() => setLocked((q) => q.slice(1))}
+      />
       {showConsentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 flex flex-col gap-5">
@@ -469,17 +528,6 @@ export default function AgentUploads() {
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900">{t("uploads.consent_title")}</h2>
-                <p className="mt-1 text-sm text-slate-600 leading-relaxed">{t("uploads.consent_body")}</p>
-                <p className="mt-3 text-sm text-slate-600 leading-relaxed">{t("uploads.consent_ilovepdf")}</p>
-                <a
-                  href="https://www.ilovepdf.com/unlock_pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0D9488] hover:underline"
-                >
-                  {t("uploads.consent_link")}
-                </a>
-                <p className="mt-3 text-sm text-slate-600">{t("uploads.consent_after")}</p>
               </div>
             </div>
 
@@ -492,9 +540,6 @@ export default function AgentUploads() {
                   {ayushmanFile && <li className="break-all">{t("uploads.sent_ayushman", { name: ayushmanFile.name })}</li>}
                   {hasAyushman && !ayushmanFile && <li>{t("uploads.sent_ayushman_declared")}</li>}
                 </ul>
-                <p className="mt-1.5 text-xs text-slate-500">
-                  {t("uploads.consent_covers")}
-                </p>
               </div>
             )}
 
@@ -513,19 +558,10 @@ export default function AgentUploads() {
               </div>
             )}
 
-            <label className="flex items-start gap-3 cursor-pointer select-none rounded-xl border border-slate-200 p-3 hover:bg-slate-50 transition-colors">
-              <input
-                type="checkbox"
-                checked={consentChecked}
-                onChange={(e) => setConsentChecked(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded accent-[#0D9488] cursor-pointer flex-shrink-0"
-              />
-              <span className="text-sm font-medium text-slate-700">{t("uploads.consent_checkbox")}</span>
-            </label>
 
             <div className="flex gap-3 justify-end">
               <Button variant="outline" className="border-slate-200" onClick={handleConsentCancel}>{t("uploads.consent_cancel")}</Button>
-              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" disabled={!consentChecked} onClick={handleConsentConfirm}>
+              <Button className="bg-[#0D9488] hover:bg-[#0f766e]" onClick={handleConsentConfirm}>
                 {t("uploads.consent_confirm")}
               </Button>
             </div>
@@ -535,19 +571,30 @@ export default function AgentUploads() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("uploads.title")}</h1>
+        {!agent?.limitedFree && <Button variant="outline" className="border-slate-200 bg-white" onClick={() => setLocation("/agent/policies/add")}>{t("book.add_by_hand")}</Button>}
       </div>
+      {link?.name && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 px-5 py-4 text-sm text-slate-800">
+          <span>
+            {t(link.kind === "renews" ? "book.link_renews" : "book.link_customer", { name: link.name })}
+            {stagedFiles.length > 1 && <strong className="mt-1 block text-amber-800">{t("book.link_one")}</strong>}
+          </span>
+          <button type="button" className="min-h-11 font-semibold text-slate-600 underline" onClick={() => setLink(null)}>{t("book.link_drop")}</button>
+        </div>
+      )}
 
       {/* Insurance-type selector */}
       <div>
         <div className="flex flex-wrap items-center gap-2">
           {(Object.keys(TYPE_META) as InsuranceType[]).map((tkey) => {
             const meta = TYPE_META[tkey];
-            const active = insuranceType === tkey;
+            const active = !licMode && insuranceType === tkey;
             return (
               <button
                 key={tkey}
                 type="button"
                 onClick={() => {
+                  setLicMode(false);
                   setInsuranceType(tkey);
                   // Companion covers are a health-lane concept — don't let them
                   // linger invisibly after switching to another type.
@@ -576,7 +623,26 @@ export default function AgentUploads() {
               </button>
             );
           })}
+          <button
+            type="button"
+            aria-pressed={licMode}
+            onClick={() => setLicMode(true)}
+            disabled={isProcessing}
+            className={[
+              "inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all",
+              licMode
+                ? "border-[#0D9488] bg-[#0D9488]/5 text-[#0D9488] shadow-sm"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+              isProcessing ? "opacity-50 cursor-not-allowed" : "",
+            ].join(" ")}
+          >
+            <FileText className="h-4 w-4" />
+            {t("lic.upload_chip")}
+          </button>
         </div>
+        {licMode ? (
+          <p className="mt-2 text-sm text-slate-600">{t("lic.upload_chip_desc")}</p>
+        ) : (<>
         <p className="mt-2 text-xs text-slate-500">
           {insuranceType === "health"
             ? t("uploads.health_desc")
@@ -589,9 +655,12 @@ export default function AgentUploads() {
               : t(ocrRemaining === 1 ? "uploads.ocr_left_one" : "uploads.ocr_left_many", { count: ocrRemaining })}
           </p>
         )}
+        </>)}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">
+      {licMode && <LicUploadPanel showOpenLink />}
+
+      <div className={licMode ? "hidden" : "grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]"}>
         {/* Upload Area */}
         <Card className="border-slate-100 shadow-sm">
           <CardHeader>
@@ -693,14 +762,14 @@ export default function AgentUploads() {
                     label={COMPANION_SLOTS[0].label}
                     hint={COMPANION_SLOTS[0].hint}
                     file={superTopupFile}
-                    onPick={setSuperTopupFile}
+                    onPick={pickCover(setSuperTopupFile)}
                     disabled={isProcessing}
                   />
                   <CompanionSlot
                     label={COMPANION_SLOTS[1].label}
                     hint={COMPANION_SLOTS[1].hint}
                     file={corporateFile}
-                    onPick={setCorporateFile}
+                    onPick={pickCover(setCorporateFile)}
                     disabled={isProcessing}
                   />
 
@@ -740,7 +809,7 @@ export default function AgentUploads() {
                             accept="application/pdf,image/*"
                             className="hidden"
                             disabled={isProcessing}
-                            onChange={(e) => setAyushmanFile(e.target.files?.[0] ?? null)}
+                            onChange={(e) => pickCover(setAyushmanFile)(e.target.files?.[0] ?? null)}
                           />
                         </label>
                       )}
@@ -802,8 +871,8 @@ export default function AgentUploads() {
             {uploads.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold text-slate-700">{t("uploads.upload_progress")}</h4>
-                {uploads.map((upload, idx) => (
-                  <div key={idx} className="border border-slate-100 rounded-lg p-4">
+                {uploads.map((upload) => (
+                  <div key={upload.key} className="border border-slate-100 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-slate-400" />
@@ -817,7 +886,7 @@ export default function AgentUploads() {
                     </div>
                     
                     {/* Progress Bar */}
-                    {upload.status !== "error" && upload.status !== "completed" && (
+                    {upload.status !== "error" && upload.status !== "completed" && upload.status !== "slow" && (
                       <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
                         <div
                           className="bg-[#0D9488] h-2 rounded-full transition-all duration-300"
@@ -831,6 +900,7 @@ export default function AgentUploads() {
                       {upload.status === "uploading" && t("uploads.status_uploading")}
                       {upload.status === "analyzing" && t("uploads.status_analyzing")}
                       {upload.status === "completed" && t("uploads.status_done")}
+                      {upload.status === "slow" && t("uploads.status_slow")}
                       {upload.status === "error" && (
                         <span className="text-red-600">{t("uploads.error_prefix", { message: upload.error ?? "" })}</span>
                       )}

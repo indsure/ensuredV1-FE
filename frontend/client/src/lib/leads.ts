@@ -12,8 +12,11 @@
  */
 
 import { supabase } from "@/lib/supabase";
+import { apiFetch, apiOk } from "@/lib/api";
+import { isPlaygroundMode } from "@/lib/playground/mode";
 import { assertCrmWritable } from "@/lib/entitlement";
 import { createCustomer } from "@/lib/customers";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 /**
  * Table name is `agent_leads`, NOT `leads`. `leads` is the pre-existing PUBLIC
@@ -109,13 +112,15 @@ export type LeadDraft = {
 /* ── CRUD ──────────────────────────────────────────────────────────────── */
 
 export async function fetchLeads(agentId: string): Promise<Lead[]> {
-  const { data, error } = await supabase
-    .from(LEADS_TABLE)
-    .select("*")
-    .eq("agent_id", agentId)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Lead[];
+  return fetchAllRows<Lead>((from, to) =>
+    supabase
+      .from(LEADS_TABLE)
+      .select("*")
+      .eq("agent_id", agentId)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, to)
+  );
 }
 
 export async function fetchLead(agentId: string, id: string): Promise<Lead | null> {
@@ -159,10 +164,17 @@ export async function setLeadStatus(id: string, status: LeadStatus): Promise<voi
   if (error) throw new Error(error.message);
 }
 
+/** Through the backend, so the files saved against the lead go too (the
+ *  browser delete cascaded to its lead policies and left their files in
+ *  storage). The playground has no backend and keeps the mock delete. */
 export async function deleteLead(id: string): Promise<void> {
   assertCrmWritable();
-  const { error } = await supabase.from("agent_leads").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (isPlaygroundMode()) {
+    const { error } = await supabase.from("agent_leads").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+  await apiOk(apiFetch(`/api/agent/leads/${encodeURIComponent(id)}`, { method: "DELETE" }));
 }
 
 /**
@@ -171,11 +183,12 @@ export async function deleteLead(id: string): Promise<void> {
  * customer id so the caller can jump to the portfolio. Idempotent-ish: if the
  * lead is already linked, returns the existing customer id.
  */
-export async function convertLeadToCustomer(agentId: string, lead: Lead): Promise<string> {
+export async function convertLeadToCustomer(agentId: string, lead: Lead, existingId?: string): Promise<string> {
   assertCrmWritable();
   if (lead.customer_id) return lead.customer_id;
 
-  const customer = await createCustomer(agentId, {
+  // The person may already be a customer: then the lead joins that record.
+  const customer = existingId ? { id: existingId } : await createCustomer(agentId, {
     name: lead.name,
     phone: lead.phone,
     email: lead.email,

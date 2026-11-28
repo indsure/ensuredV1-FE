@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react"
+import { Fragment, useEffect, useState, useMemo, useRef, useCallback } from "react"
 import { useLocation, useSearch } from "wouter"
 import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet, Sparkles } from "lucide-react"
 import React from "react"
@@ -9,17 +9,21 @@ import { deletePolicyRecord } from "@/lib/policyDelete"
 import { getApiBase } from "@/lib/queryClient"
 import { useAgent } from "@/context/AgentContext"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
+import { LicTableRow, LicMobileCards } from "@/components/agent/LicPolicyRows"
+import { fetchLicOverview, licDays, licIsDueSoon, licYearlyPremium, planLabel, todayLocalIso, type LicRow } from "@/lib/lic"
+import { canOpenShare } from "@shared/dataEntryShare"
 import { ShareLinkPopover } from "@/components/agent/ShareLinkPopover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { TYPE_META, typeLabel, isDataEntryType, getNextPremiumDate, type InsuranceType } from "@/lib/insuranceTypes"
 import { exportPoliciesToExcel } from "@/lib/exportPolicies"
-import { fetchCustomers, type Customer } from "@/lib/customers"
+import { buildPortfolioStats, fetchCustomers, parseAmount, type Customer } from "@/lib/customers"
 import { DraftMessageDialog } from "@/components/agent/DraftMessageDialog"
 import type { DraftTarget } from "@/lib/draftMessage"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { toast } from "@/hooks/use-toast"
 import { useLanguage } from "@/i18n/LanguageContext"
 import { dateLocale, tOr } from "@/i18n"
+import { HasTypeFilter, HAS_TYPE_OFF, matchesHasType, type HasTypeValue } from "@/components/agent/HasTypeFilter"
 import { PoliciesMobileList } from "@/components/agent/PoliciesMobileList"
 import { ADD_ON_FINDINGS_KEY } from "@shared/motorAddOns"
 import { scoreMotorPolicy, motorScoreTone, motorScoreVerdict } from "@shared/motorScore"
@@ -44,6 +48,7 @@ type ClientRow = {
   extracted_data: any | null;
   customer_id: string | null;
   client_phone: string | null;
+  sum_insured: string | number | null;
 };
 
 function getDays(expiry_date: string | null): number | null {
@@ -205,12 +210,20 @@ function SwitchCell({ shouldSwitch, reportData: rawData }: { shouldSwitch: boole
   );
 }
 
+/** "expiring" reads the date in the Next Premium column. */
 type FilterTab = "all" | "expiring" | "switch" | "healthy";
-type SortKey = "expiry" | "score" | "name";
+/** "expiry" sorts by the Next Premium column's date. */
+type SortKey = "expiry" | "score" | "name" | "value" | "cover" | "count";
+
+/** Expiring soon = the Next Premium date within this many days. */
+const PREMIUM_DUE_DAYS = 30;
+
+/** Life and term have their own section, /agent/life (life rebuild D1, 2026-11-24). */
+const LIFE_LANE = ["life", "term"];
 
 /** "others" is the sidebar's catch-all: everything outside the four types it
  *  names. It is not an `insurance_type` value, only a filter. */
-type TypeFilter = "all" | "others" | InsuranceType;
+type TypeFilter = "all" | "others" | "lic" | InsuranceType;
 
 const NAMED_TYPES = ["health", "life", "term", "motor"];
 
@@ -219,7 +232,15 @@ const NAMED_TYPES = ["health", "life", "term", "motor"];
 function normaliseType(raw: string | null): TypeFilter {
   if (!raw || raw === "all") return "all";
   if (raw === "others") return "others";
+  if (raw === "lic") return "lic";
   return raw in TYPE_META ? (raw as InsuranceType) : "all";
+}
+
+/** Desktop table columns. Score is shown where a score exists (health, and the
+ *  motor cover score); Recommendation is a health verdict only. On Others both
+ *  columns were a row of dashes, so they are left out. */
+function showScoreFor(typeFilter: TypeFilter): boolean {
+  return typeFilter === "all" || typeFilter === "health" || typeFilter === "motor";
 }
 
 export default function PoliciesNew() {
@@ -236,13 +257,24 @@ export default function PoliciesNew() {
   const search_ = useSearch();
   const urlType = new URLSearchParams(search_).get("type");
   const typeFilter = normaliseType(urlType);
+  /** Old links to Policies > Life or Term (sidebar, bookmarks, help pages) land on the Life section. */
+  const toLife = urlType === "life" || urlType === "term" ? urlType : null;
+  useEffect(() => {
+    if (toLife) setLocation(`/agent/life?type=${toLife}`, { replace: true });
+  }, [toLife, setLocation]);
+  /** Score, Recommendation and the Switch/Healthy tabs are a health verdict. */
+  const healthVerdicts = typeFilter === "all" || typeFilter === "health";
   /** Writing the filter to the URL rather than to state keeps the sidebar, the
    *  chips and the address bar from disagreeing with each other. */
   const setTypeFilter = useCallback(
-    (tk: TypeFilter) => setLocation(tk === "all" ? "/agent/policies" : `/agent/policies?type=${tk}`),
+    (tk: TypeFilter) => setLocation(
+      LIFE_LANE.includes(tk) ? "/agent/life" : tk === "all" ? "/agent/policies" : `/agent/policies?type=${tk}`
+    ),
     [setLocation]
   );
   const [sort, setSort] = useState<SortKey>("expiry");
+  /** About the policy's CUSTOMER: "Health policies whose customer has no Term". */
+  const [hasType, setHasType] = useState<HasTypeValue>(HAS_TYPE_OFF);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -259,7 +291,7 @@ export default function PoliciesNew() {
       const data = await fetchAllRows((from, to) =>
         supabase
           .from("clients")
-          .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone")
+          .select("id, name, policyholder_name, insurer, score, expiry_date, share_token, share_enabled, report_data, created_at, views, policy_identifier, policy_name, filename, pdf_url, insurance_type, extracted_data, customer_id, client_phone, sum_insured")
           .eq("agent_id", agent.agentId!)
           .eq("status", "done")
           .order("created_at", { ascending: false })
@@ -280,6 +312,19 @@ export default function PoliciesNew() {
   }, [agent?.agentId]);
 
   useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
+
+  /* LIC policies (founder, 2026-11-28): read from the agent's LIC sheets, shown in this list
+     beside the checked policies. A failed read leaves the list as it was (the LIC page shows
+     the error with a retry). */
+  const [licRows, setLicRows] = useState<LicRow[]>([]);
+  const [licToday, setLicToday] = useState<string>(todayLocalIso());
+  useEffect(() => {
+    let live = true;
+    fetchLicOverview()
+      .then(d => { if (live) { setLicRows(d.rows ?? []); if (d.today) setLicToday(d.today); } })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   async function handleDelete(id: string) {
     if (!agent?.agentId) return;
@@ -343,53 +388,180 @@ export default function PoliciesNew() {
   // Both views read the same rows, filters and sort.
   const isMobile = useIsMobile()
 
+  /* One date per row, the one the Next Premium column shows. "Expiring soon",
+     "Premium due soon" and the default sort all read it, so a tab can never
+     disagree with the column beside it. */
+  const nextDays = useCallback(
+    (r: ClientRow) => getDays(getNextPremiumDate(r.expiry_date, r.extracted_data, r.insurance_type)),
+    []
+  );
+  const within = (d: number | null, max: number) => d !== null && d >= 0 && d <= max;
+
+  /** The rows of the selected type, before search and tabs. Stats and tab
+   *  counts read these. Life and term rows live in the Life section, not here. */
+  const typed = useMemo(() => {
+    if (typeFilter === "lic") return [];
+    if (typeFilter === "others") return rows.filter(r => !NAMED_TYPES.includes(r.insurance_type || "health"));
+    if (typeFilter === "all") return rows.filter(r => !LIFE_LANE.includes(r.insurance_type || "health"));
+    return rows.filter(r => (r.insurance_type || "health") === typeFilter);
+  }, [rows, typeFilter]);
+
+  /** LIC rows of the selected type: shown under All types and under the LIC chip only. */
+  const licTyped = useMemo(
+    () => (typeFilter === "all" || typeFilter === "lic" ? licRows : []),
+    [licRows, typeFilter]
+  );
+
   const stats = useMemo(() => {
-    const expiringSoon = rows.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; }).length;
+    const expiringSoon = typed.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS)).length;
     /* Scored on WORDING, so health only. A motor score measures how completely
        a vehicle is covered: sweeping a motor 55 into "should switch" would put
        a health judgement on a number that cannot carry one. */
     const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
-    const shouldSwitch = rows.filter(r => isHealthRow(r) && r.score !== null && r.score < 70).length;
-    const healthy = rows.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70).length;
-    return { total: rows.length, expiringSoon, shouldSwitch, healthy };
+    const shouldSwitch = typed.filter(r => isHealthRow(r) && r.score !== null && r.score < 70).length;
+    const healthy = typed.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70).length;
+    // LIC rows count in All and in Expiring Soon (premium not paid and due within the window,
+    // overdue included); they carry no health verdict, so never in Switch or Healthy.
+    const licExpiring = licTyped.filter(r => licIsDueSoon(r, licToday)).length;
+    return { total: typed.length + licTyped.length, expiringSoon: expiringSoon + licExpiring, shouldSwitch, healthy };
+  }, [typed, nextDays, licTyped, licToday]);
+
+  /* A tab or sort picked in one view may not exist in the next (Should Switch
+     has no meaning on Motor). Fall back instead of showing an empty list. */
+  const tabKeys: FilterTab[] = healthVerdicts ? ["all", "expiring", "switch", "healthy"] : ["all", "expiring"];
+  const activeTab: FilterTab = tabKeys.includes(tab) ? tab : "all";
+  const activeSort: SortKey = !showScoreFor(typeFilter) && sort === "score" ? "expiry" : sort;
+
+  /* Per policy: yearly premium and cover, by the same rules as the Customers
+     page. Per customer: what they hold across the WHOLE book (life and term
+     included), so "does not have Term" is true of the person, not this list.
+     A policy tagged to no customer stands alone. */
+  const money = useMemo(() => {
+    const perPolicy = new Map<string, { premium: number | null; cover: number | null }>();
+    const holdings = new Map<string, Record<string, number>>();
+    for (const r of rows) {
+      const s = buildPortfolioStats([{
+        ...r,
+        coverage: r.report_data?.coverage_structure ?? null,
+        h_premium: r.report_data?.premium ?? null,
+      }]);
+      perPolicy.set(r.id, { premium: s.totalPremium, cover: s.totalSumInsured });
+      if (r.customer_id) {
+        const h = holdings.get(r.customer_id) ?? {};
+        const ty = r.insurance_type || "health";
+        h[ty] = (h[ty] ?? 0) + 1;
+        holdings.set(r.customer_id, h);
+      }
+    }
+    const holdingOf = (r: ClientRow): Record<string, number> =>
+      (r.customer_id && holdings.get(r.customer_id)) || { [r.insurance_type || "health"]: 1 };
+    return { perPolicy, holdingOf };
   }, [rows]);
 
   // Filtered + sorted
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    let list = rows.filter(r =>
-      (r.policyholder_name || r.name || "").toLowerCase().includes(q) ||
-      (r.insurer || "").toLowerCase().includes(q) ||
-      (r.policy_identifier || "").toLowerCase().includes(q)
-    );
-    if (typeFilter === "others") {
-      list = list.filter(r => !NAMED_TYPES.includes(r.insurance_type || "health"));
-    } else if (typeFilter !== "all") {
-      list = list.filter(r => (r.insurance_type || "health") === typeFilter);
-    }
-    if (tab === "expiring") list = list.filter(r => { const d = getDays(r.expiry_date); return d !== null && d >= 0 && d <= 30; });
+    const q = search.toLowerCase().trim();
+    // Numbers are printed with spaces, dashes and slashes ("MH 02 AB 1234"), so
+    // they also match with every separator taken out on both sides.
+    const squash = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^\p{L}\p{M}\p{N}]/gu, "");
+    const qs = squash(q);
+    let list = !q ? typed : typed.filter(r => {
+      const customer = r.customer_id ? customersById.get(r.customer_id) : undefined;
+      const words = [r.policyholder_name, r.name, r.insurer, r.policy_name, customer?.name];
+      const numbers = [
+        r.policy_identifier, r.extracted_data?.policy_number,
+        r.extracted_data?.vehicle_registration_no, r.client_phone, customer?.phone,
+      ];
+      return words.some(v => (v ?? "").toLowerCase().includes(q)) ||
+        numbers.some(v => String(v ?? "").toLowerCase().includes(q) || (qs.length >= 3 && squash(v).includes(qs)));
+    });
+    if (activeTab === "expiring") list = list.filter(r => within(nextDays(r), PREMIUM_DUE_DAYS));
     // Same rule as the stats above: these two tabs are a health verdict.
     const isHealthRow = (r: ClientRow) => (r.insurance_type || "health") === "health";
-    if (tab === "switch") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score < 70);
-    if (tab === "healthy") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70);
+    if (activeTab === "switch") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score < 70);
+    if (activeTab === "healthy") list = list.filter(r => isHealthRow(r) && r.score !== null && r.score >= 70);
 
+    if (hasType.type) list = list.filter(r => matchesHasType(money.holdingOf(r), hasType));
+
+    // High to low; a policy with no figure goes to the bottom.
+    const desc = (x: number | null | undefined, y: number | null | undefined) =>
+      x == null && y == null ? 0 : x == null ? 1 : y == null ? -1 : y - x;
+    const count = (r: ClientRow) => Object.values(money.holdingOf(r)).reduce((s, n) => s + n, 0);
     return [...list].sort((a, b) => {
-      if (sort === "expiry") {
-        const da = getDays(a.expiry_date) ?? 99999;
-        const db = getDays(b.expiry_date) ?? 99999;
-        return da - db;
-      }
-      if (sort === "score") return (a.score ?? 999) - (b.score ?? 999);
+      if (activeSort === "expiry") return (nextDays(a) ?? 99999) - (nextDays(b) ?? 99999);
+      if (activeSort === "score") return (a.score ?? 999) - (b.score ?? 999);
+      if (activeSort === "value") return desc(money.perPolicy.get(a.id)?.premium, money.perPolicy.get(b.id)?.premium);
+      if (activeSort === "cover") return desc(money.perPolicy.get(a.id)?.cover, money.perPolicy.get(b.id)?.cover);
+      if (activeSort === "count") return count(b) - count(a);
       return (a.policyholder_name || a.name || "").localeCompare(b.policyholder_name || b.name || "");
     });
-  }, [rows, search, tab, sort, typeFilter]);
+  }, [typed, search, activeTab, activeSort, nextDays, customersById, hasType, money]);
+
+  /* The same search, tab, customer filter and sort, applied to the LIC rows. */
+  const licFiltered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const qs = q.replace(/[^\p{L}\p{M}\p{N}]/gu, "");
+    let list = !q ? licTyped : licTyped.filter(r =>
+      [r.holderName, planLabel(r.planNo), "lic"].some(v => v.toLowerCase().includes(q)) ||
+      r.policyNo.includes(qs.length >= 3 ? qs : q)
+    );
+    if (activeTab === "expiring") list = list.filter(r => licIsDueSoon(r, licToday));
+    if (activeTab === "switch" || activeTab === "healthy") list = [];
+    // An LIC policy is a life policy, held by a person not yet linked to a customer.
+    if (hasType.type) list = list.filter(() => matchesHasType({ life: 1 }, hasType));
+    return list;
+  }, [licTyped, search, activeTab, hasType, licToday]);
+
+  /* One list, one sort: checked policies and LIC policies interleave by the chosen key. */
+  type Item = { k: "c"; c: ClientRow } | { k: "l"; l: LicRow };
+  const items = useMemo<Item[]>(() => {
+    const all: Item[] = [...filtered.map(c => ({ k: "c" as const, c })), ...licFiltered.map(l => ({ k: "l" as const, l }))];
+    const key = (it: Item): number | string | null => {
+      if (it.k === "c") {
+        const r = it.c;
+        if (activeSort === "expiry") return nextDays(r) ?? 99999;
+        if (activeSort === "score") return r.score ?? 999;
+        if (activeSort === "value") return money.perPolicy.get(r.id)?.premium ?? null;
+        if (activeSort === "cover") return money.perPolicy.get(r.id)?.cover ?? null;
+        if (activeSort === "count") return Object.values(money.holdingOf(r)).reduce((s, n) => s + n, 0);
+        return (r.policyholder_name || r.name || "").toLowerCase();
+      }
+      const r = it.l;
+      if (activeSort === "expiry") return licDays(r, licToday);
+      if (activeSort === "score") return 999;
+      if (activeSort === "value") return licYearlyPremium(r);
+      if (activeSort === "cover") return null;
+      if (activeSort === "count") return 1;
+      return r.holderName.toLowerCase();
+    };
+    const highFirst = activeSort === "value" || activeSort === "cover" || activeSort === "count";
+    return all
+      .map((it, i) => ({ it, i, v: key(it) }))
+      .sort((a, b) => {
+        if (a.v == null && b.v == null) return a.i - b.i;
+        if (a.v == null) return 1;
+        if (b.v == null) return -1;
+        if (typeof a.v === "string" || typeof b.v === "string") return String(a.v).localeCompare(String(b.v)) || a.i - b.i;
+        return (highFirst ? (b.v as number) - (a.v as number) : (a.v as number) - (b.v as number)) || a.i - b.i;
+      })
+      .map(x => x.it);
+  }, [filtered, licFiltered, activeSort, nextDays, money, licToday]);
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
-    { key: "all", label: t("policies.tab_all"), count: rows.length },
+    { key: "all", label: t("policies.tab_all"), count: stats.total },
     { key: "expiring", label: t("policies.tab_expiring"), count: stats.expiringSoon },
-    { key: "switch", label: t("policies.tab_switch"), count: stats.shouldSwitch },
-    { key: "healthy", label: t("policies.tab_healthy"), count: stats.healthy },
+    ...(healthVerdicts
+      ? [
+          { key: "switch" as FilterTab, label: t("policies.tab_switch"), count: stats.shouldSwitch },
+          { key: "healthy" as FilterTab, label: t("policies.tab_healthy"), count: stats.healthy },
+        ]
+      : []),
   ];
+  const showScore = showScoreFor(typeFilter);
+  const showRecommendation = healthVerdicts;
+  const colCount = 6 + (showScore ? 1 : 0) + (showRecommendation ? 1 : 0);
+
+  if (toLife) return null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -402,14 +574,16 @@ export default function PoliciesNew() {
             onClick={async () => {
               setExporting(true)
               try {
-                await exportPoliciesToExcel(filtered, typeFilter)
+                // LIC rows go in too, filtered and sorted exactly as the list shows them.
+                const licInOrder = items.filter(i => i.k === "l").map(i => (i as { k: "l"; l: LicRow }).l)
+                await exportPoliciesToExcel(filtered.map(r => ({ ...r, sum_insured: parseAmount(r.sum_insured) })), typeFilter, licInOrder)
               } catch {
                 toast({ title: t("policies.export_failed"), description: t("policies.export_failed_desc"), variant: "destructive" })
               } finally {
                 setExporting(false)
               }
             }}
-            disabled={loading || exporting || filtered.length === 0}
+            disabled={loading || exporting || items.length === 0}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:border-[#0D9488] hover:text-[#0D9488] disabled:opacity-50"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
@@ -423,7 +597,7 @@ export default function PoliciesNew() {
 
       {/* STAT STRIP */}
       {!loading && (
-        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className={`grid ${healthVerdicts ? "grid-cols-3" : "grid-cols-2"} gap-2 sm:gap-4`}>
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 sm:p-5 min-w-0">
             <p className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_total")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-slate-800 tabular-nums">{stats.total}</p>
@@ -432,10 +606,15 @@ export default function PoliciesNew() {
             <p className="text-[11px] sm:text-xs font-bold text-amber-500 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_expiring")}</p>
             <p className="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums">{stats.expiringSoon}</p>
           </div>
-          <div className="bg-white rounded-xl border border-red-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-red-400 min-w-0">
-            <p className="text-[11px] sm:text-xs font-bold text-red-400 uppercase tracking-wide sm:tracking-widest mb-1">{t("policies.stat_switch")}</p>
-            <p className="text-2xl sm:text-3xl font-extrabold text-red-500 tabular-nums">{stats.shouldSwitch}</p>
-          </div>
+          {/* Third card: Should Switch, only where a health verdict applies. */}
+          {healthVerdicts && (
+            <div className="bg-white rounded-xl border border-red-100 shadow-sm p-3 sm:p-5 border-l-4 border-l-red-400 min-w-0">
+              <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wide sm:tracking-widest mb-1 text-red-400">
+                {t("policies.stat_switch")}
+              </p>
+              <p className="text-2xl sm:text-3xl font-extrabold tabular-nums text-red-500">{stats.shouldSwitch}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -446,15 +625,31 @@ export default function PoliciesNew() {
 
           {/* TYPE FILTER */}
           <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
-            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]), "others"] as TypeFilter[]).map(tk => {
+            {(["all", ...(Object.keys(TYPE_META) as InsuranceType[]).filter(k => k !== "term"), "others"] as TypeFilter[]).map(tk => {
               const active = typeFilter === tk;
               const label =
                 tk === "all" ? t("common.all_types")
                 : tk === "others" ? t("common.others")
-                : `${TYPE_META[tk].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk].label)}`;
+                : tk === "life" ? `${TYPE_META.life.emoji} ${t("policies.chip_life_section")}`
+                : `${TYPE_META[tk as InsuranceType].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk as InsuranceType].label)}`;
               return (
+                <Fragment key={tk}>
+                {/* LIC sits just before Others, as in the rail (founder, 2026-11-28): it
+                    filters this list to the policies read from LIC's sheets. */}
+                {tk === "others" && (
+                  <button
+                    type="button"
+                    onClick={() => setTypeFilter("lic")}
+                    className={`inline-flex min-h-10 sm:min-h-0 items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
+                      typeFilter === "lic"
+                        ? "border-[#0D9488] bg-[#0D9488]/10 text-[#0D9488]"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                    }`}
+                  >
+                    {t("layout.type_lic")}
+                  </button>
+                )}
                 <button
-                  key={tk}
                   onClick={() => setTypeFilter(tk)}
                   className={`inline-flex min-h-10 sm:min-h-0 items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
                     active
@@ -464,6 +659,7 @@ export default function PoliciesNew() {
                 >
                   {label}
                 </button>
+                </Fragment>
               );
             })}
           </div>
@@ -476,11 +672,11 @@ export default function PoliciesNew() {
                   key={tb.key}
                   onClick={() => setTab(tb.key)}
                   className={`flex flex-none min-h-10 sm:min-h-0 items-center gap-1.5 whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    tab === tb.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    activeTab === tb.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
                   {tb.label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-xs font-black ${tab === tb.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
+                  <span className={`rounded-full px-1.5 py-0.5 text-xs font-black ${activeTab === tb.key ? "bg-slate-100 text-slate-600" : "text-slate-400"}`}>
                     {tb.count}
                   </span>
                 </button>
@@ -495,25 +691,38 @@ export default function PoliciesNew() {
                 className="min-w-0 flex-1 sm:w-56 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
               />
               <select
-                value={sort}
+                value={activeSort}
                 onChange={e => setSort(e.target.value as SortKey)}
                 className="min-w-0 shrink-0 rounded-lg border border-slate-200 px-2 sm:px-3 py-2 sm:py-1.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
               >
                 <option value="expiry">{t("policies.sort_expiry")}</option>
-                <option value="score">{t("policies.sort_score")}</option>
+                {showScore && <option value="score">{t("policies.sort_score")}</option>}
                 <option value="name">{t("policies.sort_name")}</option>
+                <option value="value">{t("policies.sort_value")}</option>
+                <option value="cover">{t("policies.sort_cover")}</option>
+                <option value="count">{t("policies.sort_count")}</option>
               </select>
             </div>
+          </div>
+
+          {/* CUSTOMER HAS / DOES NOT HAVE */}
+          <div className="px-6 py-3 border-b border-slate-50">
+            <HasTypeFilter value={hasType} onChange={setHasType} label={t("policies.filter_customer")} />
           </div>
 
           {/* TABLE (md and up) / LIST (phones) */}
           {isMobile ? (
             <div className="p-3">
-              <PoliciesMobileList
+              {(loading || filtered.length > 0 || licFiltered.length === 0) && <PoliciesMobileList
                 rows={filtered}
                 loading={loading}
-                emptyText={search ? t("common.no_results_for", { query: search }) : t("policies.empty_category")}
+                emptyText={search ? t("common.no_results_for", { query: search }) : hasType.type ? t("policies.no_match_filter") : t("policies.empty_category")}
                 onOpen={(id) => setLocation(`/agent/policies/${id}`)}
+              />}
+              <LicMobileCards
+                rows={items.filter(i => i.k === "l").map(i => (i as { k: "l"; l: LicRow }).l)}
+                advisor={agent?.name ?? null}
+                onOpen={(no) => setLocation(`/agent/lic/policy/${no}`)}
               />
             </div>
           ) : (
@@ -525,8 +734,8 @@ export default function PoliciesNew() {
                   <th className="px-6 py-3.5 text-left">{t("policies.col_type")}</th>
                   <th className="px-6 py-3.5 text-left">{t("policies.col_insurer")}</th>
                   <th className="px-6 py-3.5 text-left">{t("policies.col_next_premium")}</th>
-                  <th className="px-6 py-3.5 text-left">{t("policies.col_score")}</th>
-                  <th className="px-6 py-3.5 text-left">{t("policies.col_recommendation")}</th>
+                  {showScore && <th className="px-6 py-3.5 text-left">{t("policies.col_score")}</th>}
+                  {showRecommendation && <th className="px-6 py-3.5 text-left">{t("policies.col_recommendation")}</th>}
                   <th className="px-6 py-3.5 text-left">{t("policies.col_views")}</th>
                   <th className="px-6 py-3.5 text-right">{t("policies.col_actions")}</th>
                 </tr>
@@ -536,24 +745,37 @@ export default function PoliciesNew() {
                   <>
                     {[1,2,3,4,5].map(i => (
                       <tr key={i}>
-                        {[1,2,3,4,5,6,7,8].map(j => (
+                        {Array.from({ length: colCount }, (_, j) => j).map(j => (
                           <td key={j} className="px-6 py-4"><div className="h-5 bg-slate-100 animate-pulse rounded-md w-3/4" /></td>
                         ))}
                       </tr>
                     ))}
                   </>
                 )}
-                {!loading && filtered.length === 0 && (
+                {!loading && items.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-16 text-center text-slate-400 italic">
-                      {search ? t("common.no_results_for", { query: search }) : t("policies.empty_category")}
+                    <td colSpan={colCount} className="px-6 py-16 text-center text-slate-400 italic">
+                      {search ? t("common.no_results_for", { query: search }) : hasType.type ? t("policies.no_match_filter") : t("policies.empty_category")}
                     </td>
                   </tr>
                 )}
-                {!loading && filtered.map(p => {
-                  const npDate = getNextPremiumDate(p.expiry_date, p.extracted_data);
+                {!loading && items.map(it => {
+                  if (it.k === "l") {
+                    return (
+                      <LicTableRow
+                        key={`lic-${it.l.policyNo}-${it.l.fup}`}
+                        r={it.l}
+                        showScore={showScore}
+                        showRecommendation={showRecommendation}
+                        advisor={agent?.name ?? null}
+                        onOpen={() => setLocation(`/agent/lic/policy/${it.l.policyNo}`)}
+                      />
+                    );
+                  }
+                  const p = it.c;
+                  const npDate = getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type);
                   const shouldSwitch = p.score !== null && p.score < 70;
-                  const shareUrl = p.share_token ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;
+                  const shareUrl = p.share_token && canOpenShare(p) ? `${shareBaseUrl}/shared/report/${p.share_token}` : null;
                   const views = p.views ?? 0;
                   const isHealth = (p.insurance_type || "health") === "health";
                   const isMotor = p.insurance_type === "motor";
@@ -587,10 +809,12 @@ export default function PoliciesNew() {
                       </td>
                       <td className="px-6 py-4 text-slate-500" data-label={t("policies.col_insurer")}>{p.insurer || "—"}</td>
                       <td className="px-6 py-4" data-label={t("policies.col_next_premium")}><NextPremiumBadge dateStr={npDate} type={p.insurance_type} /></td>
-                      <td className="px-6 py-4" data-label={t("policies.col_score")}>{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>
-                      <td className="px-6 py-4" data-label={t("policies.col_recommendation")} onClick={e => e.stopPropagation()}>
-                        {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}
-                      </td>
+                      {showScore && <td className="px-6 py-4" data-label={t("policies.col_score")}>{isHealth ? <ScoreBadge score={p.score} /> : isMotor ? <MotorScoreBadge extracted={p.extracted_data} /> : <span className="text-slate-300 text-sm">—</span>}</td>}
+                      {showRecommendation && (
+                        <td className="px-6 py-4" data-label={t("policies.col_recommendation")} onClick={e => e.stopPropagation()}>
+                          {isHealth ? <SwitchCell shouldSwitch={shouldSwitch} reportData={p.report_data} /> : <span className="text-slate-300 text-sm">—</span>}
+                        </td>
+                      )}
                       <td className="px-6 py-4" data-label={t("policies.col_views")}>
                         {views === 0 ? (
                           <span className="text-xs text-slate-400">{t("policies.not_viewed")}</span>
@@ -678,21 +902,21 @@ export default function PoliciesNew() {
                           {/* Share */}
                           <ShareLinkPopover
                             shareUrl={shareUrl}
-                            shareEnabled={p.share_enabled ?? true}
+                            shareEnabled={p.share_enabled === true}
                             disabled={!shareUrl}
-                            onDisable={async () => {
+                            onToggle={async (enabled) => {
                               const { data: { session } } = await supabase.auth.getSession();
-                              if (!session) return;
+                              if (!session) throw new Error(t("common.not_signed_in"));
                               const res = await fetch(`${getApiBase()}/api/agent/clients/${p.id}/share/toggle`, {
                                 method: "POST",
                                 headers: {
                                   Authorization: `Bearer ${session.access_token}`,
                                   "Content-Type": "application/json",
                                 },
-                                body: JSON.stringify({ enabled: false }),
+                                body: JSON.stringify({ enabled }),
                               });
                               if (!res.ok) throw new Error(t("common.request_failed"));
-                              setRows(prev => prev.map(x => x.id === p.id ? { ...x, share_enabled: false } : x));
+                              setRows(prev => prev.map(x => x.id === p.id ? { ...x, share_enabled: enabled } : x));
                             }}
                           />
 

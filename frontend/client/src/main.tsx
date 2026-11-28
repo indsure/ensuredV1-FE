@@ -10,7 +10,7 @@ import "./fonts.css";
 import "./index.css";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { getSavedLocale, loadLocale } from "./i18n";
-import { playgroundFlagSet } from "./lib/playground/mode";
+import { exitPlayground, isRealAuthPage, playgroundFlagSet } from "./lib/playground/mode";
 import { loadPlayground } from "./lib/playground/registry";
 import { enableStaticFirstPaint } from "./lib/staticFirstPaint";
 
@@ -95,7 +95,10 @@ if (getSavedLocale() === "hi") {
   // on a change, but a returning Hindi visitor arrives with "en" from the HTML.
   document.documentElement.lang = "hi";
 }
-// The raw flag: a demo tab reloaded on /signup still needs the mock when it goes Forward.
+// A real login or signup page ends the demo before anything renders, so the
+// account it opens is always the real one. Elsewhere the raw flag still loads the
+// mock (a demo tab reloaded on a public page goes back into the demo).
+if (playgroundFlagSet() && isRealAuthPage(window.location.pathname)) exitPlayground();
 if (playgroundFlagSet()) ready.push(loadPlayground());
 
 // The main public pages ship as real HTML (scripts/prerender.mjs marks them

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useDropzone } from "react-dropzone";
+import UnlockPdfDialog from "@/components/UnlockPdfDialog";
+import { needsPassword } from "@/lib/unlockPdf";
 import { supabase } from "@/lib/supabase";
 import { apiFetch, apiOk } from "@/lib/api";
 import { claimPendingUpload } from "@/lib/pendingUpload";
@@ -310,12 +312,19 @@ export default function PortfolioPage() {
     pollStatus(jobId);
   }, [pollStatus]);
 
+  const [locked, setLocked] = useState<{ file: File; done: (f: File | null) => void } | null>(null);
   const onDrop = useCallback(async (files: File[]) => {
     if (!files.length) return;
-    const file = files[0];
+    let file = files[0];
     if (file.size > 25 * 1024 * 1024) {
       toast({ title: t("pf.too_large"), description: t("pf.too_large_d"), variant: "destructive" });
       return;
+    }
+    if (await needsPassword(file)) {
+      const open = await new Promise<File | null>((done) => setLocked({ file, done }));
+      setLocked(null);
+      if (!open) return;
+      file = open;
     }
     setUploading(true);
     setUploadStage(t("pf.stage_uploading"));
@@ -365,7 +374,8 @@ export default function PortfolioPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "application/pdf": [".pdf"] },
+    // The same types the server has always read for advisors.
+    accept: { "application/pdf": [".pdf"], "image/*": [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"] },
     multiple: false,
     disabled: uploading,
   });
@@ -443,6 +453,7 @@ export default function PortfolioPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-cream-main)] text-[var(--color-text-main)] overflow-x-clip">
+      <UnlockPdfDialog file={locked?.file ?? null} onUnlocked={(_, f) => locked?.done(f)} onCancel={() => locked?.done(null)} />
       {/* App bar */}
       <header className="sticky top-0 z-30 border-b border-[var(--color-border-light)] bg-[var(--color-cream-main)]/85 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between gap-3">

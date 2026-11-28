@@ -3,7 +3,21 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
-export default defineConfig(({ isSsrBuild }) => ({
+// The corporate portal (pages/corporate) is a demo for testing, with fictional data kept in the
+// browser. It is built only for the local dev server and Vercel preview deployments (beta), and is
+// never built for production. Code reads it as import.meta.env.VITE_CORPORATE_PORTAL === "on"; Vite
+// replaces that with a constant, so a production build drops the import and emits no chunk for it.
+const corporatePortal = (command: string) =>
+  process.env.VERCEL_ENV === "production" ? "off"
+    : command === "serve" || process.env.VERCEL_ENV === "preview" || process.env.CORPORATE_PORTAL === "on" ? "on" : "off";
+
+export default defineConfig(({ isSsrBuild, command }) => ({
+  define: {
+    "import.meta.env.VITE_CORPORATE_PORTAL": JSON.stringify(corporatePortal(command)),
+    // Built portals (beta) are always live. The dev server opens live records and shows the fictional
+    // demo at ?demo (data.js); CORPORATE_DATA=demo makes the demo its default.
+    "import.meta.env.VITE_CORPORATE_DATA": JSON.stringify(command === "serve" ? process.env.CORPORATE_DATA || "" : "live"),
+  },
   plugins: [
     react(),
     tailwindcss(),

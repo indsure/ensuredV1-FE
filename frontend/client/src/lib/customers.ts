@@ -11,7 +11,8 @@
 import { supabase } from "@/lib/supabase";
 import { assertCrmWritable } from "@/lib/entitlement";
 import { fetchAllRows } from "@/lib/fetchAllRows";
-import { getNextPremiumDate, isDataEntryType } from "@/lib/insuranceTypes";
+import { getNextPremiumDate } from "@/lib/insuranceTypes";
+import { inForce, toMoney, type BusinessRow } from "@/lib/business";
 import { deriveCoverView } from "@shared/policy";
 import type { ForensicAuditReport } from "@shared/policy";
 
@@ -54,11 +55,13 @@ export type PortfolioPolicy = {
    *  top-ups. Selecting the whole report for every policy an agent owns would
    *  make the customer list pull megabytes to show one number per row. */
   coverage: any | null;
+  /** report_data.premium only: { amount, frequency } on a health check. */
+  h_premium: any | null;
   created_at: string;
 };
 
 export const PORTFOLIO_POLICY_COLUMNS =
-  "id, customer_id, insurance_type, policyholder_name, name, insurer, policy_name, policy_identifier, sum_insured, expiry_date, score, extracted_data, coverage:report_data->coverage_structure, created_at";
+  "id, customer_id, insurance_type, policyholder_name, name, insurer, policy_name, policy_identifier, sum_insured, expiry_date, score, extracted_data, coverage:report_data->coverage_structure, h_premium:report_data->premium, created_at";
 
 /* ── CRUD ──────────────────────────────────────────────────────────────── */
 
@@ -100,6 +103,19 @@ export async function updateCustomer(id: string, draft: CustomerDraft): Promise<
   assertCrmWritable();
   const { error } = await supabase.from("customers").update(cleanDraft(draft)).eq("id", id);
   if (error) throw new Error(error.message);
+}
+
+/** Adds many at once, 200 a request. Returns how many went in; throws if one batch fails. */
+export async function createCustomers(agentId: string, drafts: CustomerDraft[]): Promise<number> {
+  assertCrmWritable();
+  let done = 0;
+  for (let i = 0; i < drafts.length; i += 200) {
+    const batch = drafts.slice(i, i + 200).map((d) => ({ agent_id: agentId, ...cleanDraft(d) }));
+    const { error } = await supabase.from("customers").insert(batch);
+    if (error) throw new Error(error.message);
+    done += batch.length;
+  }
+  return done;
 }
 
 /** Deleting a customer never deletes policies — the FK sets customer_id NULL. */
@@ -199,6 +215,21 @@ export function suggestCustomers(
   return ranked.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
+/**
+ * An existing customer who is probably the same person: the same phone, or the
+ * same email. A family often shares both, so this only ever asks; it never blocks.
+ */
+export function findDuplicate(
+  customers: Customer[],
+  who: { name?: string | null; phone?: string | null; email?: string | null },
+): CustomerSuggestion | null {
+  const best = suggestCustomers(customers, { phone: who.phone, email: who.email }, 5);
+  if (!best.length) return null;
+  // With several on one number, the one whose name also matches comes first.
+  const named = suggestCustomers(best.map((b) => b.customer), { name: who.name }, 1)[0];
+  return best.find((b) => b.customer === named?.customer) ?? best[0];
+}
+
 /* ── Portfolio aggregates ──────────────────────────────────────────────── */
 
 /**
@@ -257,16 +288,43 @@ export type PortfolioStats = {
   totalSumInsured: number | null;
   /** The printed sums insured alone, so the page can say where the rest came from. */
   totalBaseCover: number | null;
+  /** Yearly premium of the policies in force, by the same rules as Home. */
   totalPremium: number | null;
+  /** How many policies that figure is from, and how many are in force. */
+  pricedCount: number;
+  inForceCount: number;
   nextPremium: { date: string; policyId: string } | null;
   worstHealthScore: number | null;
 };
+
+/** The row in the shape Home's money rules read, so the two pages agree. */
+function moneyRow(p: PortfolioPolicy & { report_data?: any }): BusinessRow {
+  const x = p.extracted_data ?? {};
+  return {
+    id: p.id,
+    insurance_type: p.insurance_type,
+    insurer: p.insurer,
+    sum_insured: p.sum_insured,
+    expiry_date: p.expiry_date,
+    customer_id: p.customer_id,
+    x_premium: x.premium,
+    x_annual: x.annualised_premium,
+    x_freq: x.premium_frequency ?? null,
+    x_next: x.next_premium_date ?? null,
+    x_start: x.start_date ?? null,
+    x_ppt: x.premium_paying_term_years,
+    // The playground mock ignores select aliases and hands back the whole row.
+    h_premium: p.h_premium ?? p.report_data?.premium ?? null,
+  };
+}
 
 export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats {
   const byType: Record<string, number> = {};
   let totalSumInsured: number | null = null;
   let totalBaseCover: number | null = null;
   let totalPremium: number | null = null;
+  let pricedCount = 0;
+  let inForceCount = 0;
   let nextPremium: { date: string; policyId: string } | null = null;
   let worstHealthScore: number | null = null;
 
@@ -283,12 +341,18 @@ export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats
     const si = parseAmount(p.sum_insured);
     if (cover != null) totalBaseCover = (totalBaseCover ?? 0) + (si ?? cover);
 
-    if (isDataEntryType(type)) {
-      const prem = parseAmount(p.extracted_data?.premium);
-      if (prem != null) totalPremium = (totalPremium ?? 0) + prem;
+    const money = moneyRow(p);
+    if (inForce(money, today)) {
+      inForceCount++;
+      // Same rule as Home: every premium on file (PolicyMoney.book).
+      const book = toMoney(money, today).book;
+      if (book != null) {
+        pricedCount++;
+        totalPremium = (totalPremium ?? 0) + book;
+      }
     }
 
-    const np = getNextPremiumDate(p.expiry_date, p.extracted_data);
+    const np = getNextPremiumDate(p.expiry_date, p.extracted_data, p.insurance_type);
     if (np) {
       const d = new Date(np);
       if (!isNaN(d.getTime()) && d >= today) {
@@ -303,5 +367,5 @@ export function buildPortfolioStats(policies: PortfolioPolicy[]): PortfolioStats
     }
   }
 
-  return { policyCount: policies.length, byType, totalSumInsured, totalBaseCover, totalPremium, nextPremium, worstHealthScore };
+  return { policyCount: policies.length, byType, totalSumInsured, totalBaseCover, totalPremium, pricedCount, inForceCount, nextPremium, worstHealthScore };
 }

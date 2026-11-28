@@ -247,3 +247,59 @@ export function hasShareableContent(
 ): boolean {
   return Object.keys(pickShareableFields(type, extracted)).length > 0;
 }
+
+/** `clients.filename` on a policy the advisor typed in. There is no document behind it. */
+export const ADDED_BY_HAND = "Added by hand";
+
+export interface ShareSource {
+  insurance_type: string | null | undefined;
+  extracted_data?: Record<string, any> | null;
+  report_data?: unknown;
+  filename?: string | null;
+  policyholder_name?: string | null;
+  insurer?: string | null;
+  policy_name?: string | null;
+  sum_insured?: number | string | null;
+  expiry_date?: string | null;
+}
+
+/**
+ * The details page behind a share link, or null when there is none to show.
+ *
+ * Health normally shares its report. A health policy typed in by the advisor has
+ * no report, so it shares the few details typed, laid out as an "other" policy.
+ * A premium paid in instalments is left out: the page has no room to say it is
+ * one instalment, and a monthly figure would read as the yearly price.
+ */
+export function shareDetails(p: ShareSource): { type: ShareableType; fields: Record<string, unknown>; byHand: boolean } | null {
+  // Set when it was typed in. Reading the document replaces extracted_data, and the mark with it.
+  const byHand = p.filename === ADDED_BY_HAND || p.extracted_data?.__by_hand === true;
+  const type = p.insurance_type || "health";
+  if (type !== "health") {
+    const fields = pickShareableFields(type, p.extracted_data);
+    // A typed-in policy always has a name; a page with only that says nothing.
+    const worth = Object.keys(fields).some((k) => !byHand || k !== "policyholder_name");
+    return isShareableType(type) && worth ? { type, fields, byHand } : null;
+  }
+  if (p.report_data || !byHand) return null;
+  const x = p.extracted_data ?? {};
+  const freq = String(x.premium_frequency ?? "");
+  const typed = pickShareableFields("other", {
+    insurer: p.insurer,
+    plan_name: p.policy_name,
+    sum_insured: p.sum_insured,
+    premium: freq === "" || freq === "yearly" ? x.premium : null,
+    policy_expiry_date: p.expiry_date,
+  });
+  if (Object.keys(typed).length === 0) return null;
+  return {
+    type: "other",
+    byHand,
+    fields: { ...pickShareableFields("other", { policyholder_name: p.policyholder_name, policy_type_stated: "Health" }), ...typed },
+  };
+}
+
+/** Will the share link open something? The report when there is one, else the details. */
+export function canOpenShare(p: ShareSource): boolean {
+  return Boolean(p.report_data) || shareDetails(p) !== null;
+}

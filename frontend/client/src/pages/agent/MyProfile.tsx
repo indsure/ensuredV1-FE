@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { supabase } from "@/lib/supabase"
+import { fetchAllRows } from "@/lib/fetchAllRows"
 import { useAgent } from "@/context/AgentContext"
 import { toast } from "@/hooks/use-toast"
 import { InlineErrorState } from "@/components/agent/InlineErrorState"
@@ -146,10 +147,13 @@ export default function MyProfile() {
           .select("*")
           .eq("id", agent.agentId)
           .single(),
-        supabase
-          .from("clients")
-          .select("id, status, score")
-          .eq("agent_id", agent.agentId),
+        fetchAllRows<{ id: string; status: string | null; score: number | null; insurance_type: string | null }>((from, to) =>
+          supabase
+            .from("clients")
+            .select("id, status, score, insurance_type")
+            .eq("agent_id", agent.agentId!)
+            .order("id")
+            .range(from, to)),
       ])
 
       if (profileRes.error) throw new Error(profileRes.error.message)
@@ -162,13 +166,15 @@ export default function MyProfile() {
       setFirm(p.firm_name || "")
       setPartnered(new Set(p.partnered_companies ?? []))
 
-      const rows = statsRes.data ?? []
+      const rows = statsRes
       const completed = rows.filter(r => r.status === "done")
-      const scores = completed.map(r => r.score).filter((s): s is number => s != null)
+      // Health only: a motor score measures add-ons, so a normal motor policy can be 18.
+      const health = completed.filter(r => (r.insurance_type || "health") === "health");
+      const scores = health.map(r => r.score).filter((s): s is number => s != null)
       setStats({
         total: rows.length,
         completed: completed.length,
-        highRisk: completed.filter(r => (r.score ?? 101) < 70).length,
+        highRisk: health.filter(r => (r.score ?? 101) < 70).length,
         avgScore: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
       })
 

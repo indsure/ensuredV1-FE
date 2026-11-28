@@ -37,6 +37,12 @@ function ago(days: number): string {
 function dateAgo(days: number): string {
   return new Date(now.getTime() - days * day).toISOString().slice(0, 10);
 }
+/** A date of birth in `year` whose birthday falls `inDays` from today, so Home's
+ *  "Birthdays this week" card is never empty in the demo. */
+function birthdayIn(inDays: number, year: number): string {
+  const d = new Date(now.getTime() + inDays * day);
+  return `${year}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 /**
  * An add-on scan shaped exactly like the one the detector emits, for the two
@@ -1016,7 +1022,7 @@ export function buildSeed(): Store {
   // ---- Customers (the people behind the portfolio) -------------------------
   const customers = [
     { id: "cust-1", agent_id: DEMO_AGENT_ID, name: "Suresh Agarwal", phone: "+91 98200 11111", email: "suresh@example.com", dob: "1972-04-18", city: "Indore", notes: "Prefers WhatsApp. Family floater renewal due soon.", created_at: ago(300) },
-    { id: "cust-2", agent_id: DEMO_AGENT_ID, name: "Meena Joshi", phone: "+91 98200 22222", email: "meena@example.com", dob: "1980-11-02", city: "Bhopal", notes: "Diabetic — needs disease-specific cover.", created_at: ago(220) },
+    { id: "cust-2", agent_id: DEMO_AGENT_ID, name: "Meena Joshi", phone: "+91 98200 22222", email: "meena@example.com", dob: birthdayIn(2, 1980), city: "Bhopal", notes: "Diabetic — needs disease-specific cover.", created_at: ago(220) },
     { id: "cust-3", agent_id: DEMO_AGENT_ID, name: "Vikram Singh", phone: "+91 98200 33333", email: null, dob: "1968-01-25", city: "Ujjain", notes: "Senior citizen plan. Call, don't text.", created_at: ago(180) },
     { id: "cust-4", agent_id: DEMO_AGENT_ID, name: "Anita Desai", phone: "+91 98200 44444", email: "anita@example.com", dob: "1985-07-09", city: "Indore", notes: "Young family, first policy.", created_at: ago(95) },
     { id: "cust-5", agent_id: DEMO_AGENT_ID, name: "Prakash Mehta", phone: "+91 98200 55555", email: "prakash@example.com", dob: "1976-03-30", city: "Dewas", notes: "Has car + health. Cross-sell life.", created_at: ago(60) },
@@ -1814,6 +1820,8 @@ export function buildSeed(): Store {
     agent_pages,
     agent_page_views,
     // Tables some pages query but the demo leaves empty — return [] gracefully.
+    // Renewal outcomes on Home (migration 039). Empty: the demo starts with nothing marked.
+    policy_renewals: [],
     report_shares: [],
     invite_codes: [],
     reports: [],

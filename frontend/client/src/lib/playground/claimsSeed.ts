@@ -403,14 +403,15 @@ export const playgroundClaims = {
       admitted_on: null,
       discharged_on: null,
       id: uid("claim"),
-      customer_id: uid("cust"),
-      customer_name: draft.new_customer_name || "New customer",
-      customer_phone: draft.new_customer_phone || null,
+      customer_id: draft.customer_id || uid("cust"),
+      customer_name: draft.new_customer_name || draft._customer_name || "New customer",
+      customer_phone: draft.new_customer_phone || draft._customer_phone || null,
       claim_type: draft.claim_type || "reimbursement",
       status: "opened" as const,
       insurer: draft.insurer || null,
       tpa: null,
-      policy_number: null,
+      policy_number: draft.policy_number || null,
+      client_id: draft.client_id || null,
       hospital: draft.hospital || null,
       ailment: draft.ailment || null,
       claimed_amount: draft.claimed_amount ? Number(String(draft.claimed_amount).replace(/[₹,\s]/g, "")) : null,
@@ -429,6 +430,12 @@ export const playgroundClaims = {
     c.events[0].claim_id = c.id;
     all().unshift(c);
     return toListRow(c);
+  },
+
+  remove(id: string): void {
+    const list = all();
+    const i = list.findIndex((c) => c.id === id);
+    if (i >= 0) list.splice(i, 1);
   },
 
   update(id: string, patch: Record<string, any>): Claim {

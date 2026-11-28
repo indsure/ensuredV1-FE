@@ -53,7 +53,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     id: "business",
     features: [
       { id: "queue", icon: Inbox, route: "/agent/my-queue" },
-      { id: "insights", icon: BarChart3, route: "/agent/insights" },
+      { id: "insights", icon: BarChart3, route: "/agent/dashboard" },
       { id: "claims", icon: ClipboardList, route: "/agent/claims" },
       { id: "website", icon: Globe, route: "/agent/my-page" },
       { id: "export", icon: Sheet, route: "/agent/policies" },

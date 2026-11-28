@@ -342,7 +342,8 @@ export default function SachAIChat() {
   // sits on, and a reader there wants the page, not a chat.
   // An advisor's own page (/a/...) and /start are single-purpose pages with the menu
   // hidden on purpose; the bubble was a way off them.
-  if (location.startsWith("/admin") || location.startsWith("/docs") || location.startsWith("/a/") || location === "/start" || (limitedAdvisor && location.startsWith("/agent"))) {
+  // The corporate portal holds broker records Sach knows nothing about.
+  if (location.startsWith("/admin") || location.startsWith("/docs") || location.startsWith("/a/") || location === "/start" || (limitedAdvisor && location.startsWith("/agent")) || location.startsWith("/corporate")) {
     return null;
   }
 

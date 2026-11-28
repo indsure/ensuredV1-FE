@@ -11,6 +11,8 @@
  *   backend/server/services/extractionFields.ts
  */
 
+import { isoDay, nextLifePremium } from "./lifePremium";
+
 export type FieldType = "text" | "number" | "date" | "json";
 
 export type SharedColumn =
@@ -264,14 +266,35 @@ export function typeLabel(type: string | null | undefined): string {
 }
 
 /**
- * The date an advisor should follow up on: the extracted "next premium due date"
- * if we captured one, otherwise the policy's renewal/expiry date. Returns an
- * ISO date string (or null).
+ * The date an advisor should follow up on. Returns an ISO date string (or null).
+ *
+ * Life and term: the next premium date worked out today (lib/lifePremium), from
+ * the stated next date or the start date, rolled forward by the frequency. Never
+ * `expiry_date`, which on these rows is the MATURITY or cover end date: falling
+ * back to it showed the maturity date under "Next premium". Null when nothing
+ * can be worked out (no dates, single premium, or the paying term is over).
+ *
+ * Every other type: the extracted "next premium due date" if there is one,
+ * otherwise the renewal/expiry date.
  */
 export function getNextPremiumDate(
   expiryDate: string | null | undefined,
-  extractedData: any
+  extractedData: any,
+  insuranceType?: string | null,
+  today: Date = new Date()
 ): string | null {
+  if (insuranceType === "life" || insuranceType === "term") {
+    const due = nextLifePremium(
+      {
+        next: extractedData?.next_premium_date,
+        start: extractedData?.start_date,
+        freq: extractedData?.premium_frequency,
+        ppt: extractedData?.premium_paying_term_years,
+      },
+      today
+    );
+    return due ? isoDay(due.date) : null;
+  }
   const np = extractedData?.next_premium_date;
   if (np) return String(np);
   return expiryDate ?? null;

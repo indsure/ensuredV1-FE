@@ -1,8 +1,6 @@
 import fs from "fs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { MASTER_AUDIT_PROMPT, PROMPT_VERSION } from "../promptTemplate";
-import { LIFE_INSURANCE_PROMPT } from "../lifeInsurancePrompt";
-import { VEHICLE_INSURANCE_PROMPT } from "../vehicleInsurancePrompt";
 import { AIService } from "./aiService";
 import {
   extractPolicyMetadata,
@@ -720,6 +718,19 @@ export async function runAnalysisPipeline(
   let fetchTime = 0;
   let aiTime = 0;
 
+  // Health is the only line of business with an audit. Motor, life and term
+  // are read into fields by the data-entry lane (services/extractionFields.ts)
+  // and never come here. This used to pick a life or vehicle prompt instead,
+  // and both of those told the model to invent "believable but fake" scores
+  // for a UI demo. They were deleted on 2026-10-16. Refuse anything else
+  // before any Gemini spend, so a stray type can never buy a made-up report.
+  if (insuranceType !== "health") {
+    return {
+      status: "failed",
+      error: `There is no policy audit for "${insuranceType}" policies. Only health policies are audited.`,
+    };
+  }
+
   try {
     if (!policyText.trim()) {
       return { status: "failed", error: "No text extracted from file" };
@@ -787,16 +798,14 @@ export async function runAnalysisPipeline(
     // Capture whether wording was matched
     const wordingMatched = budget.wordings !== null && budget.wordings.trim().length > 0;
 
-    // Step 4: Select prompt
+    // Step 4: The prompt. Health is the only line with an audit (see the guard
+    // at the top of this function).
     let promptToUse = MASTER_AUDIT_PROMPT;
-    if (insuranceType === "life") promptToUse = LIFE_INSURANCE_PROMPT;
-    else if (insuranceType === "vehicle") promptToUse = VEHICLE_INSURANCE_PROMPT;
 
     // Interpolate wording matched variable
     promptToUse = promptToUse.replace("{{WORDING_MATCHED}}", wordingMatched ? "true" : "false");
 
     // Companion-cover rules go INSIDE the prompt, not after the policy text.
-    // The life/vehicle prompts carry no placeholder, so this is a no-op there.
     promptToUse = promptToUse.replace("{{COMPANION_RULES}}", buildCompanionRules(companions));
 
     // Interpolate today's date. Without this the model has no anchor for "today"
@@ -836,12 +845,9 @@ export async function runAnalysisPipeline(
 
     // Cover first: enforceRequiredCover divides audit_score.nec by the RCT, so the
     // nec it reads has to be the reconciled single-event figure, not the model's.
-    // HEALTH ONLY. "Single-event cover" is a health concept and the other lines of
-    // business mean different things by the same field: the motor prompt maps
-    // total_effective_coverage to the IDV (vehicleInsurancePrompt.ts) and states NCB
-    // as a percentage, and the life prompt lets riders carry their own sums that
-    // legitimately belong in the total. Running the health definition over either
-    // would rewrite a correct number into a wrong one.
+    // HEALTH ONLY. "Single-event cover" is a health concept. The guard at the top
+    // already admits only health; the check stays so this cannot silently start
+    // applying to another line if that guard is ever widened.
     if (insuranceType === "health") reconcileEffectiveCover(parsed);
     // Continuous-cover start from the schedule's previous-policy list. Base text
     // only: a companion's own renewal history is not this policy's.

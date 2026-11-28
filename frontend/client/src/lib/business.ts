@@ -1,7 +1,7 @@
 /**
  * Business: the book in rupees.
  *
- * Pure helpers behind pages/agent/Business.tsx, kept out of the component so the
+ * Pure helpers behind the Home page (pages/agent/DashboardNew.tsx), kept out of the component so the
  * money rules sit in one readable place. The page's foot note states them too.
  *
  *  - The premium is the one PRINTED on the policy. We store no receipts and no
@@ -83,6 +83,15 @@ export type PolicyMoney = {
   oneTime: number | null;
   /** Health premium with no stated frequency, counted as yearly. */
   assumedYearly: boolean;
+  /**
+   * What this policy adds to the premium total on Home and Customers.
+   * Yearly policies add their yearly figure. One-time and single premiums add
+   * the printed amount. A life policy with no readable frequency adds its
+   * stated annual total, else the printed amount. Null only when no premium is
+   * on record or the premium paying term is over. `yearly` and `dues` are left
+   * as they were: the renewal chart and due lists need true yearly money.
+   */
+  book: number | null;
   /** Money falling due in the 12 months from `today`, instalment by instalment. */
   dues: { date: Date; amount: number }[];
 };
@@ -105,6 +114,7 @@ export function toMoney(r: BusinessRow, today: Date): PolicyMoney {
     yearly: null,
     oneTime: null,
     assumedYearly: false,
+    book: null,
     dues: [],
   };
   const horizon = addMonths(today, 12);
@@ -112,7 +122,7 @@ export function toMoney(r: BusinessRow, today: Date): PolicyMoney {
 
   if (ONE_TIME_TYPES.has(type)) {
     const amount = parseAmount(r.x_premium);
-    return amount == null ? base : { ...base, status: "one_time", oneTime: amount };
+    return amount == null ? base : { ...base, status: "one_time", oneTime: amount, book: amount };
   }
 
   if (LIFE_TYPES.has(type)) {
@@ -120,13 +130,15 @@ export function toMoney(r: BusinessRow, today: Date): PolicyMoney {
     const annual = parseAmount(r.x_annual);
     if (amount == null && annual == null) return base;
     const freq = readFrequency(r.x_freq);
-    if (freq === "single") return { ...base, status: "single" };
-    if (freq == null) return { ...base, status: "unclear" };
+    if (freq === "single") return { ...base, status: "single", book: amount ?? annual };
 
     const commenced = parseDate(r.x_start);
     const ppt = parseAmount(r.x_ppt);
     const payingEnds = commenced && ppt ? addMonths(commenced, Math.round(ppt * 12)) : null;
     if (payingEnds && payingEnds.getTime() <= start.getTime()) return { ...base, status: "paid_up" };
+    // No readable frequency: no instalment dates can be worked out, but the
+    // premium on file still belongs in the total.
+    if (freq == null) return { ...base, status: "unclear", book: annual ?? amount };
 
     const yearly = annual ?? (amount as number) * freq;
     const instalment = yearly / freq;
@@ -142,20 +154,22 @@ export function toMoney(r: BusinessRow, today: Date): PolicyMoney {
         dues.push({ date: d, amount: instalment });
       }
     }
-    return { ...base, status: "yearly", yearly, dues };
+    return { ...base, status: "yearly", yearly, book: yearly, dues };
   }
 
   // Health, motor, property, fire: yearly products that renew on their expiry date.
-  const amount = type === "health" ? parseAmount(r.h_premium?.amount) : parseAmount(r.x_premium);
+  // Health reads the report's premium first, then the extracted one, so a
+  // blank or unreadable report figure does not hide a premium on file.
+  const amount = type === "health" ? parseAmount(r.h_premium?.amount) ?? parseAmount(r.x_premium) : parseAmount(r.x_premium);
   if (amount == null) return base;
-  const freq = readFrequency(type === "health" ? r.h_premium?.frequency : r.x_freq);
-  if (freq === "single") return { ...base, status: "single" };
+  const freq = readFrequency(type === "health" ? r.h_premium?.frequency ?? r.x_freq : r.x_freq);
+  if (freq === "single") return { ...base, status: "single", book: amount };
   const yearly = amount * (freq ?? 1);
   const renews = parseDate(r.expiry_date);
   const dues = renews && renews.getTime() >= start.getTime() && renews.getTime() < horizon.getTime()
     ? [{ date: renews, amount: yearly }]
     : [];
-  return { ...base, status: "yearly", yearly, assumedYearly: type === "health" && freq == null, dues };
+  return { ...base, status: "yearly", yearly, book: yearly, assumedYearly: type === "health" && freq == null, dues };
 }
 
 /** Premium falling due in each of the next 12 calendar months, this one first. */

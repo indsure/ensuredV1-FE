@@ -33,6 +33,7 @@ import { getZoneForCity } from "@/lib/data/zones";
 import { CALCULATOR_CONFIG } from "@/lib/health-engine-logic";
 import { pdf } from '@react-pdf/renderer';
 import { PolicyPDFDocument, registerPdfFonts, type PdfMeta } from './PolicyPDFDocument';
+import { buildPdfBrand, fileStem, type AdvisorIdentity, type PdfBrand } from "@/lib/pdfBrand";
 import { apiFetch } from "@/lib/api";
 import { LeadCollectionCTA } from "./LeadCollectionCTA";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -66,6 +67,9 @@ interface PolicyAuditReportProps {
      *  Every field is optional and an absent one is omitted from the document,
      *  never printed as a placeholder. */
     pdfMeta?: PdfMeta;
+    /** The advisor handing this report over (advisor portal and advisor share
+     *  links). Asked for only at download time. Absent = the IndSure document. */
+    pdfAdvisor?: (() => Promise<AdvisorIdentity | null>) | null;
     /** Open "The full picture" sections on load. The advisor portal opens them;
      *  share links and the consumer view show them as tap-to-open headings, so
      *  the four answers come first without anything being removed. */
@@ -265,7 +269,7 @@ function AnswerHead({ n, id, title }: { n: string; id: string; title: string }) 
     );
 }
 
-export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta, detailsOpen = false }: PolicyAuditReportProps) {
+export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, pdfMeta, pdfAdvisor, detailsOpen = false }: PolicyAuditReportProps) {
     // Headings and labels are translated. The findings themselves (the model's text,
     // getRiskItems below and the @shared/policy helpers) are read from an English
     // policy and stay English, which the page says in Hindi mode.
@@ -287,11 +291,24 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
             // Fonts are self-hosted and registered lazily: the ~1.9MB of faces is
             // only fetched when someone actually downloads.
             registerPdfFonts();
-            const blob = await pdf(<PolicyPDFDocument data={data} meta={pdfMeta} />).toBlob();
+            // The advisor's letterhead, when an advisor is handing this over. Any
+            // failure here prints today's document rather than failing the download.
+            let brand: PdfBrand | null = null;
+            if (pdfAdvisor) {
+                try {
+                    brand = await buildPdfBrand(await pdfAdvisor());
+                } catch {
+                    brand = null;
+                }
+            }
+            const blob = await pdf(<PolicyPDFDocument data={data} meta={pdfMeta} brand={brand} />).toBlob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `indsure_audit_${data.identity.insured_names.join('_').replace(/\s+/g, '_').toLowerCase()}.pdf`;
+            const insuredNames = data.identity?.insured_names ?? [];
+            a.download = brand
+                ? `${fileStem(insuredNames.join(' ') || pdfMeta?.policyholderName, 'policy')}_policy_report.pdf`
+                : `indsure_audit_${insuredNames.join('_').replace(/\s+/g, '_').toLowerCase()}.pdf`;
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -760,6 +777,11 @@ export function PolicyAuditReport({ data, hideNav = false, hideLeadCTA = false, 
                     </Button>
                 </div>
 
+                {(data as any).__corrected_on && (
+                    <p className="mb-8 rounded-lg border border-[var(--color-border-light)] bg-white px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                        {t("book.corrected_note", { date: String((data as any).__corrected_on).split("-").reverse().join("-") })}
+                    </p>
+                )}
                 {locale === "hi" && (
                     <p className="mb-8 rounded-lg border border-[var(--color-border-light)] bg-white px-4 py-3 text-sm text-[var(--color-text-secondary)] print:hidden">
                         {t("rpt.english_note")}

@@ -357,7 +357,7 @@ function playgroundApiResponse(url: string, init?: any): Response {
     if (job) {
       pendingJobs.delete(jobId);
       const row = getStore().clients.find((c) => c.id === job.clientId);
-      if (row) Object.assign(row, buildUploadedPolicy(job.clientId, row));
+      if (row) Object.assign(row, buildUploadedPolicy(job.clientId, row), { customer_id: row.customer_id ?? null, renewed_from: row.renewed_from ?? null });
     }
     return json({ status: "completed", clientId: job?.clientId ?? null });
   }
@@ -406,6 +406,34 @@ function playgroundApiResponse(url: string, init?: any): Response {
       row.extracted_data = { ...(row.extracted_data ?? {}), ...rest, _rev: rev + 1 };
     }
     return json({ ok: true, extracted_data: row?.extracted_data ?? patch, rev: row?.extracted_data?._rev ?? null });
+  }
+
+  /* The advisor's own edits to the book (services/bookRoutes.ts on the server). */
+  const book = playgroundBookApi(url, init);
+  if (book) return book;
+
+  /* Life <-> term on the Life section. Same rules as the server
+     (changeInsuranceType): only between life and term, the read kept as it is,
+     expiry_date taken from the new type's own date, else the other one. */
+  const typeChange = url.match(/\/api\/agent\/clients\/([^/]+)\/insurance-type/);
+  if (typeChange) {
+    let to: unknown = null;
+    try { to = JSON.parse(init?.body ?? "{}").to; } catch { /* ignore */ }
+    const row = getStore().clients.find((c) => c.id === decodeURIComponent(typeChange[1]));
+    if (!row) return json({ error: "Client not found" }, 404);
+    if (to !== "life" && to !== "term") return json({ error: "INVALID_TYPE", message: "A policy can only be changed to life or term." }, 400);
+    if (row.insurance_type !== "life" && row.insurance_type !== "term") {
+      return json({ error: "NOT_LIFE_LANE", message: "Only a life or term policy can be changed between life and term." }, 409);
+    }
+    if (row.insurance_type === to) return json({ ok: true, insurance_type: to, changed: false });
+    const d = row.extracted_data ?? {};
+    const own = to === "life" ? d.maturity_date : d.cover_end_date;
+    const other = to === "life" ? d.cover_end_date : d.maturity_date;
+    row.insurance_type = to;
+    row.expiry_date = own || other || row.expiry_date || null;
+    const rev = Number.isInteger(d._rev) ? d._rev : 0;
+    row.extracted_data = { ...d, _rev: rev + 1 };
+    return json({ ok: true, insurance_type: to, changed: true, rev: rev + 1 });
   }
 
   /* Policy terms read from a document. The demo has no reader, so the savings
@@ -550,6 +578,130 @@ function playgroundApiResponse(url: string, init?: any): Response {
   if (url.includes("/api/compare/save-report")) return json({ uuid: demoUuid("demo-compare"), success: true });
   if (url.includes("/api/calculator/save-report")) return json({ uuid: demoUuid("demo-calc"), success: true });
   return json({ ok: true, simulated: true, message: "Demo mode — this action is simulated and nothing was saved." });
+}
+
+let demoComparisons: any[] = [];
+
+function playgroundBookApi(url: string, init?: any): Response | null {
+  const st: any = getStore();
+  const method = (init?.method ?? "GET").toUpperCase();
+  let body: any = {};
+  try { body = JSON.parse(init?.body ?? "{}"); } catch { /* ignore */ }
+  const at = (re: RegExp) => { const m = url.match(re); return m ? decodeURIComponent(m[1]) : null; };
+  const find = (list: any[], id: unknown) => list.find((x) => x.id === id);
+  const missing = json({ error: "NOT_FOUND", message: "Not found" }, 404);
+
+  const facts = at(/\/api\/agent\/policies\/([^/]+)\/facts/);
+  if (facts) {
+    const row = find(st.clients, facts);
+    if (!row) return missing;
+    for (const k of ["insurer", "expiry_date", "sum_insured"]) if (k in body) row[k] = body[k];
+    row.extracted_data = { ...(row.extracted_data ?? {}) };
+    for (const k of ["premium", "premium_frequency"]) if (k in body) row.extracted_data[k] = body[k];
+    if (row.report_data && typeof row.report_data === "object") {
+      const r = { ...row.report_data, __corrected_on: new Date().toISOString().slice(0, 10) };
+      if ("premium" in body) r.premium = { ...(r.premium ?? {}), amount: body.premium };
+      if ("premium_frequency" in body) r.premium = { ...(r.premium ?? {}), frequency: body.premium_frequency };
+      if ("expiry_date" in body) r.policy_timeline = { ...(r.policy_timeline ?? {}), policy_expiry_date: body.expiry_date };
+      if ("insurer" in body) r.identity = { ...(r.identity ?? {}), insurer_name: body.insurer };
+      if ("sum_insured" in body) r.coverage_structure = { ...(r.coverage_structure ?? {}), base_sum_insured: body.sum_insured };
+      row.report_data = r;
+    }
+    return json({ ok: true });
+  }
+  if (url.includes("/api/agent/policies/manual")) {
+    const id = demoUuid("demo-policy");
+    const f = body.fields ?? {};
+    st.clients.unshift({
+      id, agent_id: DEMO_AGENT_ID, status: "done", insurance_type: body.type, policyholder_name: body.policyholder_name, name: null,
+      client_phone: body.client_phone || null, client_email: body.client_email || null, policy_identifier: body.policy_number || null,
+      customer_id: body.customer_id || null, insurer: f.insurer ?? null, policy_name: f.policy_name ?? f.plan_name ?? null,
+      expiry_date: f.expiry_date ?? f.policy_expiry_date ?? f.maturity_date ?? f.cover_end_date ?? f.trip_end_date ?? f.project_completion_date ?? null,
+      sum_insured: f.sum_insured ?? f.sum_assured ?? f.idv ?? f.contract_value ?? null, score: null, report_data: null,
+      extracted_data: { ...f, policyholder_name: body.policyholder_name, policy_number: body.policy_number || null, __by_hand: true },
+      filename: "Added by hand", file_size: 0, pdf_url: null, share_token: null, share_enabled: false, views: 0, created_at: new Date().toISOString(),
+    });
+    return json({ ok: true, id });
+  }
+  const doc = at(/\/api\/agent\/policies\/([^/]+)\/document/);
+  if (doc) {
+    const row = find(st.clients, doc);
+    if (!row) return missing;
+    row.pdf_url = "demo";
+    row.filename = field(init, "file") ?? "policy.pdf";
+    return json({ ok: true });
+  }
+  const renews = at(/\/api\/agent\/policies\/([^/]+)\/renews/);
+  if (renews) {
+    const row = find(st.clients, renews);
+    const old = find(st.clients, body.old_id);
+    if (!row || !old) return missing;
+    row.renewed_from = old.id;
+    row.customer_id = row.customer_id ?? old.customer_id;
+    row.client_phone = row.client_phone ?? old.client_phone;
+    return json({ ok: true, linked: true });
+  }
+  const merge = at(/\/api\/agent\/customers\/([^/]+)\/merge/);
+  if (merge) {
+    const keep = find(st.customers, merge);
+    const drop = find(st.customers, body.from_id);
+    if (!keep || !drop) return missing;
+    for (const list of Object.values(st)) if (Array.isArray(list)) for (const r of list as any[]) if (r?.customer_id === drop.id) r.customer_id = keep.id;
+    for (const k of ["phone", "email", "dob", "city", "notes"]) keep[k] = keep[k] ?? drop[k];
+    st.customers = st.customers.filter((c: any) => c !== drop);
+    return json({ ok: true });
+  }
+  const carry = at(/\/api\/agent\/leads\/([^/]+)\/carry-policies/);
+  if (carry) {
+    const lead = find(st.agent_leads, carry);
+    if (!lead?.customer_id) return json({ error: "NOT_CONVERTED", message: "Make this lead a customer first." }, 409);
+    const mine = st.lead_policies.filter((p: any) => p.lead_id === carry);
+    for (const p of mine) {
+      st.clients.unshift({
+        id: demoUuid("demo-policy"), agent_id: DEMO_AGENT_ID, status: "done", insurance_type: p.insurance_type || "other",
+        policyholder_name: p.policyholder_name || lead.name, name: null, client_phone: lead.phone, customer_id: lead.customer_id,
+        insurer: p.insurer, policy_name: p.policy_name, expiry_date: p.insurance_type === "life" ? null : p.due_date,
+        extracted_data: { ...(p.extracted_data ?? {}), premium: p.premium, ...(p.insurance_type === "life" ? { next_premium_date: p.due_date } : {}) },
+        report_data: null, score: null, filename: p.file_name || "Added by hand", pdf_url: null, share_enabled: false, views: 0, created_at: new Date().toISOString(),
+      });
+    }
+    st.lead_policies = st.lead_policies.filter((p: any) => p.lead_id !== carry);
+    return json({ ok: true, moved: mine.length });
+  }
+  const rerun = at(/\/api\/agent\/clients\/([^/]+)\/rerun/);
+  if (rerun && body.insurance_type) {
+    const row = find(st.clients, rerun);
+    if (!row) return missing;
+    row.insurance_type = body.insurance_type;
+    row.report_data = null;
+    row.score = null;
+    row.share_enabled = false;
+    return json({ ok: true, status: "done" });
+  }
+  const share = at(/\/api\/agent\/clients\/([^/]+)\/share\/toggle/);
+  if (share) {
+    const row = find(st.clients, share);
+    if (!row) return missing;
+    row.share_enabled = body.enabled === true;
+    row.share_token = row.share_token || demoUuid("demo-share");
+    return json({ shareToken: row.share_token, shareEnabled: row.share_enabled });
+  }
+  if (/\/download-pdf/.test(url)) return json({ error: "Documents are not stored in the demo." }, 404);
+  if (url.includes("/api/compare/save-report") && method === "POST") {
+    const id = demoUuid("demo-compare");
+    const sides = body.result?.sides ?? [];
+    demoComparisons.unshift({ id, name_a: sides[0]?.plan_name ?? null, name_b: sides[1]?.plan_name ?? null, created_at: new Date().toISOString(), customer_id: null, customer_name: null, plans: sides.length });
+    demoComparisons[0].customer_id = body.customer_id ?? null;
+    return json({ uuid: id, success: true });
+  }
+  if (url.includes("/api/agent/comparisons")) {
+    const id = at(/\/api\/agent\/comparisons\/([^/?]+)/);
+    if (!id) return json({ rows: demoComparisons });
+    if (method === "DELETE") demoComparisons = demoComparisons.filter((c) => c.id !== id);
+    else demoComparisons = demoComparisons.map((c) => (c.id === id ? { ...c, customer_id: body.customer_id } : c));
+    return json({ ok: true });
+  }
+  return null;
 }
 
 let demoPreferred: string[] = [];

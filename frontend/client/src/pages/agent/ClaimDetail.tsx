@@ -6,13 +6,16 @@ import {
 } from "lucide-react";
 
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { supabase } from "@/lib/supabase";
+import { useAgent } from "@/context/AgentContext";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { BackLink } from "@/components/agent/BackLink";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { tOr } from "@/i18n";
 import { formatAmount } from "@/lib/customers";
 import {
-  addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaimDocument, deleteQuery,
+  addQuery, CASE_DOCS, CLAIM_SPINE, CLAIM_STATUS_META, deleteClaim, deleteClaimDocument, deleteQuery,
   extendRetention, fetchClaim, formatDate, formatDay, openClaimDocument, PERSONAL_DOCS,
   renameClaimDocument, setClaimStatus, spineIndex, telLink, updateClaim, updateQuery,
   uploadClaimDocument, waLink,
@@ -39,6 +42,8 @@ export default function ClaimDetail() {
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<"settled" | "rejected" | null>(null);
   const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [, go] = useLocation();
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -82,6 +87,18 @@ export default function ClaimDetail() {
     <div className="space-y-5 animate-in fade-in duration-500 max-w-5xl">
 
       <BackLink to="/agent/claims" label={t("claim_detail.back")} />
+      <ConfirmationDialog
+        open={removing} onOpenChange={setRemoving} variant="destructive"
+        title={t("book.claim_delete_title")} description={t("book.claim_delete_desc")}
+        confirmText={t("book.claim_delete")} cancelText={t("common.cancel")}
+        onConfirm={() => {
+          setRemoving(false);
+          deleteClaim(claim.id).then(
+            () => { toast({ variant: "success", title: t("book.claim_deleted") }); go("/agent/claims"); },
+            (e: unknown) => toast({ variant: "destructive", title: t("book.claim_delete_failed"), description: e instanceof Error ? e.message : undefined }),
+          );
+        }}
+      />
 
       {/* HEADER */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-4">
@@ -97,7 +114,11 @@ export default function ClaimDetail() {
               {claim.claim_type === "cashless" ? t("claims.cashless") : t("claims.reimbursement")}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            {claim.client_id && (
+              <button type="button" onClick={() => go(`/agent/policies/${claim.client_id}`)} className="h-10 px-3.5 inline-flex items-center rounded-lg border border-slate-200 text-sm font-bold text-[#0f766e] hover:bg-slate-50">{t("book.claim_open_policy")}</button>
+            )}
+            <button type="button" onClick={() => setRemoving(true)} className="h-10 px-3.5 inline-flex items-center rounded-lg border border-red-200 text-sm font-bold text-red-700 hover:bg-red-50">{t("common.delete")}</button>
             {/* Copy the claim's own address. The route already opens the right
                 claim, so nothing new is being published here: the link is
                 useless to anyone who cannot log in as this advisor, which is
@@ -1275,6 +1296,7 @@ function EditDialog({
     insurer: claim.insurer ?? "",
     tpa: claim.tpa ?? "",
     policy_number: claim.policy_number ?? "",
+    client_id: claim.client_id ?? "",
     claim_type: claim.claim_type,
     claimed_amount: claim.claimed_amount != null ? String(claim.claimed_amount) : "",
     settled_amount: claim.settled_amount != null ? String(claim.settled_amount) : "",
@@ -1282,6 +1304,19 @@ function EditDialog({
     discharged_on: claim.discharged_on ?? "",
   });
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const { agent } = useAgent();
+  const [policies, setPolicies] = useState<{ id: string; insurer: string | null; policy_name: string | null; policy_identifier: string | null; policyholder_name: string | null }[]>([]);
+  useEffect(() => {
+    if (!agent?.agentId || !claim.customer_id) return;
+    let on = true;
+    void supabase.from("clients").select("id, insurer, policy_name, policy_identifier, policyholder_name")
+      .eq("agent_id", agent.agentId).eq("customer_id", claim.customer_id).eq("insurance_type", "health").eq("status", "done")
+      .order("created_at", { ascending: false }).then(({ data }) => { if (on) setPolicies((data ?? []) as any); });
+    return () => { on = false; };
+  }, [agent?.agentId, claim.customer_id]);
+  // A policy since moved to another customer stays in the list, or saving would drop it.
+  const linkedElsewhere = !!form.client_id && !policies.some((p) => p.id === form.client_id);
 
   // Checked as a pair: lowering the claimed amount below an existing settled
   // figure breaks the relationship just as surely as raising the settled one.
@@ -1323,6 +1358,21 @@ function EditDialog({
           <button onClick={onClose} aria-label={t("claim_detail.close")} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
         </div>
 
+        {(policies.length > 0 || linkedElsewhere) && (
+          <Field label={t("book.claim_policy")}>
+            <select
+              value={form.client_id} className={field}
+              onChange={(e) => {
+                const p = policies.find((x) => x.id === e.target.value);
+                setForm((f) => ({ ...f, client_id: e.target.value, insurer: p?.insurer || f.insurer, policy_number: p?.policy_identifier || f.policy_number }));
+              }}
+            >
+              <option value="">{t("book.claim_no_policy")}</option>
+              {linkedElsewhere && <option value={form.client_id}>{[claim.insurer, claim.policy_number].filter(Boolean).join(", ") || t("book.claim_open_policy")}</option>}
+              {policies.map((p) => <option key={p.id} value={p.id}>{[p.policyholder_name, p.insurer, p.policy_name, p.policy_identifier].filter(Boolean).join(", ")}</option>)}
+            </select>
+          </Field>
+        )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t("claim_detail.f_what")}><input value={form.ailment} onChange={(e) => set("ailment", e.target.value)} className={field} /></Field>
           <Field label={t("claim_detail.f_hospital")}><input value={form.hospital} onChange={(e) => set("hospital", e.target.value)} className={field} /></Field>

@@ -7,12 +7,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import {
-  mockReportHealth,
-  mockReportLife,
-  mockReportVehicle
-} from "@/lib/mock-data";
+import { mockReportHealth } from "@/lib/mock-data";
 import { PolicyAuditReport } from "@/components/PolicyAuditReport";
+import { SampleFactsheetReport } from "@/components/SampleFactsheetReport";
+import { sampleTypeFromParam, type SampleType } from "@/lib/sampleFactsheets";
 import { validateForensicAuditReport } from "@shared/policy";
 import { apiFetch } from "@/lib/api";
 import { MpEvent, track } from "@/lib/mixpanel";
@@ -23,6 +21,9 @@ export default function Report({ params }: { params?: { id?: string } }) {
   const { t } = useLanguage();
   const [data, setData] = useState(null as any | null);
   const [loading, setLoading] = useState(true);
+  // Life, term and vehicle have no audit, so their samples are a summary table
+  // (plus the cover score for motor), not a PolicyAuditReport.
+  const [factsheetSample, setFactsheetSample] = useState<SampleType | null>(null);
 
   // Where the report on screen came from, for the Analysis Viewed event below.
   // A sample report is a very different signal from a user's own analysis.
@@ -30,24 +31,22 @@ export default function Report({ params }: { params?: { id?: string } }) {
   const viewTracked = useRef(false);
 
   useEffect(() => {
-    if (!data || viewTracked.current) return;
+    if ((!data && !factsheetSample) || viewTracked.current) return;
     viewTracked.current = true;
     track(MpEvent.AnalysisViewed, { source: sourceRef.current ?? "unknown" });
-  }, [data]);
+  }, [data, factsheetSample]);
 
   useEffect(() => {
-    // 1. Check for sample query-param (?sample=health|life|vehicle) set by analyze.tsx
+    // 1. Check for sample query-param (?sample=health|life|term|vehicle)
     const searchParams = new URLSearchParams(window.location.search);
     const sampleType = searchParams.get("sample");
     if (sampleType === "health") { sourceRef.current = "sample"; setData(mockReportHealth); setLoading(false); return; }
-    if (sampleType === "life")   { sourceRef.current = "sample"; setData(mockReportLife);   setLoading(false); return; }
-    if (sampleType === "vehicle"){ sourceRef.current = "sample"; setData(mockReportVehicle);setLoading(false); return; }
+    const factsheet = sampleTypeFromParam(sampleType) ?? sampleTypeFromParam(params?.id);
+    if (factsheet) { sourceRef.current = "sample"; setFactsheetSample(factsheet); setLoading(false); return; }
 
     // 2. Check for Direct Sample path ID (legacy demo mode)
     const sampleId = params?.id;
     if (sampleId === "sample-health")  { sourceRef.current = "sample"; setData(mockReportHealth);  setLoading(false); return; }
-    if (sampleId === "sample-life")    { sourceRef.current = "sample"; setData(mockReportLife);    setLoading(false); return; }
-    if (sampleId === "sample-vehicle") { sourceRef.current = "sample"; setData(mockReportVehicle); setLoading(false); return; }
 
     // 2. Try to load from session (Real User Data - D2C Flow)
     const raw = sessionStorage.getItem("IndSure_report");
@@ -66,7 +65,7 @@ export default function Report({ params }: { params?: { id?: string } }) {
     }
 
     // 3. Try to fetch from database using ID (Agent Flow)
-    if (params?.id && params.id !== "sample-health" && params.id !== "sample-life" && params.id !== "sample-vehicle") {
+    if (params?.id && params.id !== "sample-health") {
       apiFetch(`/api/client-report/${params.id}`)
         .then(res => res.json())
         .then(dbData => {
@@ -114,6 +113,10 @@ export default function Report({ params }: { params?: { id?: string } }) {
         </div>
       </div>
     );
+  }
+
+  if (factsheetSample) {
+    return <SampleFactsheetReport type={factsheetSample} />;
   }
 
   // Final Validation Check

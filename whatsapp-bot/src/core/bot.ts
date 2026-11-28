@@ -2629,9 +2629,9 @@ ${link}` : refused(op.policy, r) });
     const pf = policyFieldFor(f, list, word);
     if (!pf) {
       const labels = list.map((x) => x.label).join(", ");
-      return this.say(to, agentId, f.fields.length
+      return this.say(to, agentId, f.fields.length && f.type !== "health"
         ? `${capital(word)} can only be changed in the portal. On ${t.policy} I can change: ${labels}.`
-        : `On a health policy, the details come from the policy check and can't be changed here. You can change: ${labels}.`, "policyfix");
+        : `On a health policy, the rest comes from the policy check and can't be changed here. You can change: ${labels}.`, "policyfix");
     }
     return this.policyFieldChosen(agentId, conv, to, t, f, pf, value);
   }
@@ -3543,7 +3543,7 @@ const CLIENT_LABEL: Record<string, string> = { policyholder_name: "Policyholder 
  *  first (any type), then the saved details of a non-health policy. On health the policy
  *  number is the row's own column; elsewhere it is a saved detail. */
 function policyFieldList(f: PolicyFields): PField[] {
-  const keys = ["policyholder_name", "client_phone", "client_email", ...(f.fields.length ? [] : ["policy_identifier"])];
+  const keys = ["policyholder_name", "client_phone", "client_email", ...(f.fields.length && f.type !== "health" ? [] : ["policy_identifier"])];
   return [
     ...keys.map((k): PField => ({ group: "client", key: k, label: CLIENT_LABEL[k], kind: "client" })),
     ...f.fields.map((x): PField => ({ group: "fix", key: x.key, label: x.label, kind: x.kind })),
@@ -3553,7 +3553,7 @@ function policyFieldList(f: PolicyFields): PField[] {
 function policyFieldFor(f: PolicyFields, list: PField[], word: string): PField | null {
   const ck = clientKeyOf(word);
   if (ck) return list.find((x) => x.key === ck) ?? null;
-  if (!f.fields.length && /^policy (?:number|no\.?|num)$/.test(word)) return list.find((x) => x.key === "policy_identifier") ?? null;
+  if ((!f.fields.length || f.type === "health") && /^policy (?:number|no\.?|num)$/.test(word)) return list.find((x) => x.key === "policy_identifier") ?? null;
   const fx = policyFieldOf(f.type, word);
   if (!fx) return null;
   // A motor policy with an own-damage date offers that date in place of the plain expiry.

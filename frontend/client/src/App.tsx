@@ -1,5 +1,5 @@
-import { lazy, Suspense } from "react";
-import { Switch, Route, Redirect } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,7 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Mixpanel } from "@/components/Mixpanel";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ReportDispatcher from "@/components/ReportDispatcher";
-import { isPlaygroundMode } from "@/lib/playground/mode";
+import { exitPlayground, isPlaygroundMode, isRealAuthPage, playgroundFlagSet } from "@/lib/playground/mode";
 
 // ARCHIVED: import { AuthProvider } from "@/hooks/use-auth";
 const AuthProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
@@ -25,6 +25,12 @@ const SachAIChat = lazy(() => import("@/components/SachAIChat"));
 // --- Agent Auth ---
 const AgentLanding = lazy(() => import("@/pages/agent/Landing"));
 const PlaygroundEntry = lazy(() => import("@/pages/agent/PlaygroundEntry"));
+/* Corporate portal (IndSure Commercial demo: fictional data, kept in the browser). Built for the dev
+ * server and beta only, see vite.config.ts. The check sits around the import itself: hiding only the
+ * <Route> would still emit the chunk, because Rollup keeps an import() it cannot prove unused. */
+const CorporatePortal = import.meta.env.VITE_CORPORATE_PORTAL === "on"
+  ? lazy(() => import("@/pages/corporate/Portal"))
+  : null;
 const AgentLoginNew = lazy(() => import("@/pages/agent/LoginNew"));
 const AgentForgotPassword = lazy(() => import("@/pages/agent/ForgotPassword"));
 const AgentResetPassword = lazy(() => import("@/pages/agent/ResetPassword"));
@@ -35,16 +41,19 @@ const AgentSignupFlow = lazy(() => import("@/pages/agent/SignupFlow"));
 // chunks this Switch renders. See pages/agent/lazyRoutes.ts.
 import {
   DashboardNew,
-  Insights,
-  Business,
   LeadRenewals,
   AgentUploads,
   PoliciesNew,
   PolicyValues,
+  LifePolicies,
   AgentCalculator,
   AgentCompare,
   AgentCatalogCompare,
   RiderDirectory,
+  LicPlanDirectory,
+  LicPolicies,
+  LicPolicyDetail,
+  AddPolicy,
   PolicyDetail,
   CustomersNew,
   CustomerDetail,
@@ -145,6 +154,23 @@ function PageLoader() {
   );
 }
 
+/**
+ * Walking from the demo to a real login or signup page (a link inside the demo)
+ * ends the demo. A full reload, like the banner's Exit, so no demo data stays in
+ * memory (query cache, fetch patch) for the real account that signs in next.
+ * A direct load is handled in main.tsx before the first render.
+ */
+function EndDemoOnRealAuthPage() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (playgroundFlagSet() && isRealAuthPage(location)) {
+      exitPlayground();
+      window.location.replace(window.location.href);
+    }
+  }, [location]);
+  return null;
+}
+
 // ------------------------------------------------------------
 // MAIN APP (WOUTER ONLY)
 // ------------------------------------------------------------
@@ -160,6 +186,7 @@ function App() {
                 <TooltipProvider>
                   <Toaster />
                   <Mixpanel />
+                  <EndDemoOnRealAuthPage />
 
                   <Suspense fallback={<PageLoader />}>
                     <Switch>
@@ -211,6 +238,7 @@ function App() {
                       <Route path="/compare" component={PublicCatalogCompare} />
 
                       {/* --- Agent Auth --- */}
+                      {CorporatePortal && <Route path="/corporate" component={CorporatePortal} />}
                       <Route path="/agent" component={AgentLanding} />
                       {/* The demo is unlisted: the old public URL goes to the advisor landing. The path is a
                           literal (the prerender refresh-404 check reads it) and must equal PLAYGROUND_PATH. */}
@@ -231,16 +259,9 @@ function App() {
                       <Route path="/agent/dashboard">
                         {() => <AgentProtectedRoute><DashboardNew /></AgentProtectedRoute>}
                       </Route>
-                      <Route path="/agent/insights">
-                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_insights"><Insights /></PaidOnly></AgentProtectedRoute>}
-                      </Route>
-                      {/* Business: playground only until the founder signs it off.
-                          A real agent who types the URL lands on Insights. */}
-                      <Route path="/agent/business">
-                        {() => isPlaygroundMode()
-                          ? <AgentProtectedRoute><Business /></AgentProtectedRoute>
-                          : <Redirect to="/agent/insights" />}
-                      </Route>
+                      {/* Insights and Business now live on Home (2026-11-19). Old links land there. */}
+                      <Route path="/agent/insights">{() => <Redirect to="/agent/dashboard" />}</Route>
+                      <Route path="/agent/business">{() => <Redirect to="/agent/dashboard" />}</Route>
                       {/* WhatsApp demo phone: the real bot on the demo data. Playground only. */}
                       <Route path="/agent/whatsapp-demo">
                         {() => isPlaygroundMode()
@@ -253,8 +274,14 @@ function App() {
                       <Route path="/agent/policies">
                         {() => <AgentProtectedRoute><PoliciesNew /></AgentProtectedRoute>}
                       </Route>
+                      <Route path="/agent/life">
+                        {() => <AgentProtectedRoute><LifePolicies /></AgentProtectedRoute>}
+                      </Route>
                       <Route path="/agent/values">
                         {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_values"><PolicyValues /></PaidOnly></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/policies/add">
+                        {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_add"><AddPolicy /></PaidOnly></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/policies/:id">
                         {() => <AgentProtectedRoute><PolicyDetail /></AgentProtectedRoute>}
@@ -310,6 +337,15 @@ function App() {
                       </Route>
                       <Route path="/agent/riders">
                         {() => <AgentProtectedRoute><PaidOnly featureKey="paywall.f_riders"><RiderDirectory /></PaidOnly></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/lic">
+                        {() => <AgentProtectedRoute><LicPolicies /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/lic/policy/:policyNo">
+                        {() => <AgentProtectedRoute><LicPolicyDetail /></AgentProtectedRoute>}
+                      </Route>
+                      <Route path="/agent/lic-plans">
+                        {() => <AgentProtectedRoute><LicPlanDirectory /></AgentProtectedRoute>}
                       </Route>
                       <Route path="/agent/settings">
                         {() => <AgentProtectedRoute><SettingsNew /></AgentProtectedRoute>}

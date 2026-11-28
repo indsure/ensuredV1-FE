@@ -12,6 +12,7 @@ import {
   buildPortfolioStats,
   createCustomer,
   fetchCustomers,
+  findDuplicate,
   formatAmount,
   PORTFOLIO_POLICY_COLUMNS,
   type Customer,
@@ -21,10 +22,14 @@ import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { dateLocale } from "@/i18n";
+import CustomerImport from "@/components/agent/CustomerImport";
+import { HasTypeFilter, HAS_TYPE_OFF, matchesHasType, SELECT_CLS, type HasTypeValue } from "@/components/agent/HasTypeFilter";
 import { CustomersMobileList } from "@/components/agent/CustomersMobileList";
 
-type DraftState = { name: string; phone: string; email: string; city: string };
-const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "" };
+type DraftState = { name: string; phone: string; email: string; city: string; dob: string };
+const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "", dob: "" };
+type SortKey ="added" | "value" | "count" | "cover" | "name";
+const SORT_KEYS: SortKey[] = ["added", "value", "count", "cover", "name"];
 
 export default function CustomersNew() {
   const [, setLocation] = useLocation();
@@ -38,6 +43,9 @@ export default function CustomersNew() {
   const [createOpen, setCreateOpen] = useState(false);
   const [draft, setDraft] = useState<DraftState>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>("added");
+  const [hasType, setHasType] = useState<HasTypeValue>(HAS_TYPE_OFF);
+  const filterOn = hasType.type !== "";
 
   const load = useCallback(async () => {
     if (!agent?.agentId) return;
@@ -86,14 +94,36 @@ export default function CustomersNew() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return customers;
-    return customers.filter(c =>
+    let list = !q ? customers : customers.filter(c =>
       c.name.toLowerCase().includes(q) ||
       (c.phone ?? "").toLowerCase().includes(q) ||
       (c.email ?? "").toLowerCase().includes(q) ||
       (c.city ?? "").toLowerCase().includes(q)
     );
-  }, [customers, search]);
+
+    if (filterOn) {
+      list = list.filter(c => matchesHasType(statsByCustomer.get(c.id)?.byType ?? {}, hasType));
+    }
+
+    if (sortBy === "added") return list;
+    // Customers with no figure go to the bottom, then newest first among equals.
+    const num = (c: Customer): number | null => {
+      const s = statsByCustomer.get(c.id);
+      if (sortBy === "value") return s?.totalPremium ?? null;
+      if (sortBy === "count") return s?.policyCount ?? 0;
+      return s?.totalSumInsured ?? null;
+    };
+    return [...list].sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      const x = num(a), y = num(b);
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return y - x;
+    });
+  }, [customers, search, statsByCustomer, filterOn, hasType, sortBy]);
+
+  const duplicate = useMemo(() => (createOpen ? findDuplicate(customers, draft) : null), [createOpen, customers, draft]);
 
   async function handleCreate() {
     if (!agent?.agentId) {
@@ -122,9 +152,10 @@ export default function CustomersNew() {
     <div className="space-y-6 animate-in fade-in duration-500">
 
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-slate-900 font-['Playfair_Display']">{t("customers.title")}</h1>
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          {agent?.agentId && <CustomerImport agentId={agent.agentId} customers={customers} canAdd={!agent.limitedFree} onDone={load} />}
           {/* Adding is paid on the limited Free plan (2026-11-02); the list stays readable. */}
           {!agent?.limitedFree && <button
             onClick={() => setCreateOpen(v => !v)}
@@ -147,13 +178,20 @@ export default function CustomersNew() {
             <input value={draft.phone} onChange={e => setDraft(d => ({ ...d, phone: e.target.value }))} placeholder={t("customers.ph_phone")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
             <input value={draft.email} onChange={e => setDraft(d => ({ ...d, email: e.target.value }))} placeholder={t("customers.ph_email")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
             <input value={draft.city} onChange={e => setDraft(d => ({ ...d, city: e.target.value }))} placeholder={t("customers.ph_city")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" />
+            <label className="flex items-center gap-2 text-sm text-slate-600"><span className="shrink-0">{t("book.dob")}</span><input type="date" max={new Date().toISOString().slice(0, 10)} value={draft.dob} onChange={e => setDraft(d => ({ ...d, dob: e.target.value }))} className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30" /></label>
           </div>
+          {duplicate && (
+            <div role="status" className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <span>{t("book.dupe_found", { name: duplicate.customer.name })}</span>
+              <button type="button" className="min-h-11 font-bold underline" onClick={() => setLocation(`/agent/customers/${duplicate.customer.id}`)}>{t("book.dupe_open")}</button>
+            </div>
+          )}
           <button
             onClick={handleCreate}
             disabled={saving || !draft.name.trim()}
             className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#0D9488] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0f766e] disabled:opacity-50"
           >
-            {saving && <Loader2 size={14} className="animate-spin" />} {t("customers.save")}
+            {saving && <Loader2 size={14} className="animate-spin" />} {t(duplicate ? "book.dupe_add" : "customers.save")}
           </button>
         </div>
       )}
@@ -164,15 +202,26 @@ export default function CustomersNew() {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
 
           {/* TOOLBAR */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
-            <p className="text-sm text-slate-500 font-medium">{t(customers.length === 1 ? "customers.count_one" : "customers.count_many", { count: customers.length })}</p>
-            <input
-              type="search"
-              placeholder={t("customers.search_placeholder")}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="min-w-0 w-full sm:w-64 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
-            />
+          <div className="flex flex-col gap-3 px-6 pt-5 pb-4 border-b border-slate-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-sm text-slate-500 font-medium">{t(customers.length === 1 ? "customers.count_one" : "customers.count_many", { count: customers.length })}</p>
+              <input
+                type="search"
+                placeholder={t("customers.search_placeholder")}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="min-w-0 w-full sm:w-64 rounded-lg border border-slate-200 px-3 py-2 sm:py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <label className="flex items-center gap-2 text-sm text-slate-500">
+                <span className="font-medium">{t("customers.sort_label")}</span>
+                <select value={sortBy} onChange={e => setSortBy(e.target.value as SortKey)} className={SELECT_CLS}>
+                  {SORT_KEYS.map(k => <option key={k} value={k}>{t(`customers.sort_${k}`)}</option>)}
+                </select>
+              </label>
+              <HasTypeFilter value={hasType} onChange={setHasType} label={t("customers.filter_label")} />
+            </div>
           </div>
 
           {/* TABLE (md and up) / LIST (phones) */}
@@ -183,7 +232,7 @@ export default function CustomersNew() {
                 statsFor={(id) => statsByCustomer.get(id)}
                 formatAmount={formatAmount}
                 loading={loading}
-                emptyText={search ? t("common.no_results_for", { query: search }) : t("customers.empty")}
+                emptyText={search ? t("common.no_results_for", { query: search }) : filterOn ? t("customers.no_match_filter") : t("customers.empty")}
                 onOpen={(id) => setLocation(`/agent/customers/${id}`)}
               />
             </div>
@@ -214,7 +263,7 @@ export default function CustomersNew() {
                       <Users className="mx-auto mb-3 h-8 w-8 text-slate-200" />
                       {search
                         ? <span className="italic">{t("common.no_results_for", { query: search })}</span>
-                        : <span className="italic">{t("customers.empty")}</span>}
+                        : <span className="italic">{t(filterOn ? "customers.no_match_filter" : "customers.empty")}</span>}
                     </td>
                   </tr>
                 )}

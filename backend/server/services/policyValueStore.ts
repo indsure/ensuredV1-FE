@@ -209,3 +209,77 @@ export async function saveExtractedData(
   }
   return { status: 200, body: { ok: true, extracted_data: merged, rev: merged._rev } };
 }
+
+/* ── Changing a policy between life and term ─────────────────────────────
+   Body of PATCH /api/agent/clients/:id/insurance-type, { to: "life" | "term" }.
+   Only between life and term: the same read lane and the same document, so
+   nothing is re-read, no check is used and no model is called. Health or motor
+   to life would need a different read, and is refused.
+
+   The stored read is kept exactly as it is. The two field lists differ (the
+   term read never asks for maturity amount, payouts, bonus or fund value), so
+   life to term keeps those keys and the term form simply does not show them;
+   term to life shows them as not read. expiry_date is re-derived from the new
+   type's own date (maturity date for life, cover end date for term), falling
+   back to the other one, so the list's date column never goes blank. */
+
+export const LIFE_LANE_TYPES = ["life", "term"] as const;
+export type LifeLaneType = (typeof LIFE_LANE_TYPES)[number];
+
+const filled = (v: unknown) => v !== null && v !== undefined && v !== "";
+
+/** The date `clients.expiry_date` should hold for this type. */
+export function lifeLaneExpiry(to: LifeLaneType, data: Record<string, any>, current: unknown): unknown {
+  const own = to === "life" ? data.maturity_date : data.cover_end_date;
+  const other = to === "life" ? data.cover_end_date : data.maturity_date;
+  if (filled(own)) return own;
+  if (filled(other)) return other;
+  return current ?? null;
+}
+
+export async function changeInsuranceType(
+  db: Db, agentId: string, clientId: string, reqBody: unknown,
+  deps: Pick<SaveDeps, "deriveSharedColumns">
+): Promise<SaveResult> {
+  const body = (reqBody && typeof reqBody === "object" ? reqBody : {}) as Record<string, any>;
+  const to = body.to;
+  if (to !== "life" && to !== "term") {
+    return { status: 400, body: { error: "INVALID_TYPE", message: "A policy can only be changed to life or term." } };
+  }
+  const owner = await db.query(
+    "SELECT insurance_type, extracted_data, expiry_date FROM clients WHERE id = $1 AND agent_id = $2",
+    [clientId, agentId]
+  );
+  if (owner.rows.length === 0) return { status: 404, body: { error: "Client not found" } };
+  const from = String(owner.rows[0].insurance_type ?? "");
+  if (from !== "life" && from !== "term") {
+    return {
+      status: 409,
+      body: { error: "NOT_LIFE_LANE", message: "Only a life or term policy can be changed between life and term. Upload the document again with the right type." },
+    };
+  }
+  const stored = (owner.rows[0].extracted_data ?? {}) as Record<string, any>;
+  if (from === to) return { status: 200, body: { ok: true, insurance_type: to, changed: false } };
+
+  const storedRev = Number.isInteger(stored._rev) ? stored._rev : 0;
+  const next: Record<string, any> = { ...stored, _rev: storedRev + 1 };
+  const shared = deps.deriveSharedColumns(to, next);
+  const expiry = lifeLaneExpiry(to, next, owner.rows[0].expiry_date);
+  const upd = await db.query(
+    `UPDATE clients SET
+      insurance_type = $1,
+      extracted_data = $2,
+      expiry_date = $3,
+      insurer = COALESCE($4, insurer),
+      policy_name = COALESCE($5, policy_name),
+      sum_insured = COALESCE($6, sum_insured)
+    WHERE id = $7 AND agent_id = $8 AND insurance_type = $9
+      AND COALESCE((extracted_data->>'_rev')::int, 0) = $10`,
+    [to, JSON.stringify(next), expiry ?? null, shared.insurer ?? null, shared.policy_name ?? null,
+     shared.sum_insured ?? null, clientId, agentId, from, storedRev]
+  );
+  if ((upd.rowCount ?? 0) === 0) {
+    return { status: 409, body: { error: "STALE", message: "This policy was changed somewhere else. Reload it and try again." } };
+  }
+  return { status: 200, body: { ok: true, insurance_type: to, changed: true, rev: next._rev } };
+}

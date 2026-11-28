@@ -1,0 +1,108 @@
+// The different words insurers print for the same thing. Each field lists labels seen on Indian and
+// London-market schedules. To teach the reader a new wording, add one phrase here; no rule needs changing.
+// Spaces in a phrase match any spacing (so "policy holder" also finds "Policyholder"), and an apostrophe is
+// optional ("insured's name" also finds "Insureds Name").
+export const VOCAB = {
+  insured: [
+    "name of the insured", "name of insured", "insured name", "insured's name", "insured",
+    "name & address of the assured", "name and address of the assured", "name & address of the insured", "name and address of the insured", "name of the assured", "name of assured", "assured name", "assured's name", "assured",
+    "name of the proposer", "name of proposer", "proposer name", "proposer's name", "proposer",
+    "name of the policyholder", "name of policyholder", "policyholder name", "policyholder's name", "policyholder", "master policyholder",
+    "customer name", "name of the customer", "client name", "name of the client", "original insured", "named insured",
+    "name of the employer", "employer name", "name of the principal", "name of principal", "name of the member", "member name",
+    "name of the company", "company name", "name of the firm", "legal name of business", "legal name", "trade name",
+  ],
+  policyNo: [
+    "policy no", "policy number", "policy num", "policy reference", "master policy no", "master policy number",
+    "certificate no", "certificate number", "certificate reference", "certificate ref", "certificate of entry no",
+    "cover note no", "cover note number", "reference no", "reference number", "entry no", "contract no", "contract number",
+    "UMR", "unique market reference",
+    "pol no", "pol. no", "pol. no.", "policy #", "schedule no", "schedule number", "policy cum certificate no", "policy cum certificate number", "cert no", "cert. no", "cert. no.",
+    "policy / issue", "policy / issue no", "policy / endorsement no",
+  ],
+  // Labels for an earlier, base or other related policy's number. Never the policy number, but shown in the pick list
+  // so a person can see it was found and passed over.
+  priorPolicyNo: [
+    "prior reference", "prior policy no", "prior policy number", "previous policy no", "previous policy number", "previous policy",
+    "expiring policy no", "expiring policy number", "expiring policy", "old policy no", "old policy number", "renewal of policy no",
+    "renewal of", "prev policy no", "prev. policy no", "existing policy no", "earlier policy no",
+    "base policy reference", "base policy no", "base policy number", "underlying policy no", "underlying policy number",
+  ],
+  uin: ["UIN", "UIN no", "UIN number", "product UIN", "IRDAI UIN", "unique identification number (UIN)", "unique identification number"],
+  planName: [
+    "product name", "plan name", "name of the product", "name of product", "policy name", "name of the policy",
+    "scheme name", "type of insurance", "class of insurance",
+    "issued policy product", "base policy product / title", "base policy product", "policy product",
+  ],
+  proposalDate: ["proposal date", "date of proposal", "proposal signed on", "proposal received on", "proposal form dated"],
+  issueDate: [
+    "date of issue", "date of issuance", "issue date", "issuance date", "issued on", "date issued", "policy issued on",
+    "policy issue date", "date of policy",
+  ],
+  riskStart: [
+    "start date", "policy start date", "risk start date", "risk start", "risk inception", "inception date", "date of inception",
+    "commencement date", "date of commencement", "risk commencement", "effective from", "effective date", "valid from",
+    "cover from", "period from", "attachment date", "w.e.f", "with effect from",
+  ],
+  riskEnd: [
+    "end date", "policy end date", "risk end date", "risk end", "expiry date", "date of expiry", "expiry", "expires on",
+    "valid till", "valid upto", "valid up to", "valid to", "cover till", "cover to", "period to", "termination date", "date of termination",
+  ],
+  sumInsured: [
+    "sum insured", "total sum insured", "TSI", "SI", "sum assured", "insured value", "value insured", "amount insured",
+    "total amount insured", "insured declared value", "IDV", "agreed value", "capital sum insured", "CSI", "total CSI",
+    "limit of liability", "limits of liability", "limit of indemnity", "indemnity limit", "aggregate limit", "total limit",
+    "any one accident", "AOA", "any one year", "AOY", "cover amount", "coverage amount",
+    "maximum annual liability", "annual aggregate limit", "aggregate limit of liability", "aggregate limit of indemnity",
+    "max. limit of liability", "max limit of liability", "maximum limit of liability", "combined single limit",
+  ],
+  netPremium: [
+    "net premium", "basic premium", "base premium", "own premium", "taxable value", "taxable premium", "taxable amount",
+    "premium before tax", "premium before gst", "premium excluding tax", "premium excluding gst", "premium excl tax",
+    "total package premium", "package premium",
+  ],
+  grossPremium: [
+    "gross premium", "total premium", "total premium payable", "premium payable", "total amount payable", "total payable",
+    "amount payable", "final premium", "total amount", "total premium including gst", "premium including taxes",
+    "premium inclusive of taxes", "total invoice value", "grand total",
+  ],
+  gst: ["GST", "IGST", "GST amount", "IGST amount", "UTGST", "UTGST amount", "goods and services tax", "service tax", "total tax", "tax amount"],
+  stampDuty: ["stamp duty", "stamp fee", "stamp fees", "stamp charges"],
+  excess: [
+    "excess", "deductible", "deductibles", "compulsory deductible", "compulsory excess", "policy excess", "standard excess",
+    "retention", "self retention", "franchise",
+  ],
+  location: [
+    "risk location", "location of risk", "insured location", "risk address", "address of risk", "situation of risk", "risk situation",
+    "situation", "premises", "insured premises", "address of the premises", "premises address", "location address", "place of risk", "situated at",
+  ],
+  // A kind of location: where the cover applies rather than an address.
+  jurisdiction: ["jurisdiction", "territorial limits", "territorial limit", "territory", "geographical limits", "geographical limit", "geographical area", "geographical scope", "area of operation", "area of cover", "applicable zones", "trading limits", "trading limit"],
+  premiumRate: ["rate", "premium rate", "rate per mille", "rate per cent"],
+  // The insurer's office that issued or services the policy.
+  branchName: ["office name", "branch name", "issuing office name", "branch office", "servicing branch", "issued at", "area code", "branch"],
+  branchCode: ["office code", "branch code", "issuing office code"],
+  branchAddress: ["office address", "issuing office address", "issuing office details", "issuing office", "policy servicing office", "servicing office", "policy issuing office"],
+};
+
+// Cities insurers' offices print, and Mumbai localities that mean Mumbai ("Vile Parle D.O - I").
+export const CITIES = [
+  "Navi Mumbai", "Mumbai", "Thane", "Pune", "Nashik", "Nagpur", "Aurangabad", "Kolhapur", "New Delhi", "Delhi", "Gurugram", "Gurgaon",
+  "Noida", "Ghaziabad", "Faridabad", "Chennai", "Coimbatore", "Madurai", "Bengaluru", "Bangalore", "Mysuru", "Mangaluru", "Hyderabad",
+  "Secunderabad", "Visakhapatnam", "Vijayawada", "Kolkata", "Howrah", "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhidham", "Vapi",
+  "Jaipur", "Udaipur", "Lucknow", "Kanpur", "Indore", "Bhopal", "Chandigarh", "Ludhiana", "Amritsar", "Kochi", "Cochin",
+  "Thiruvananthapuram", "Kozhikode", "Panaji", "Goa", "Bhubaneswar", "Patna", "Ranchi", "Raipur", "Guwahati", "Dehradun", "Jamshedpur",
+];
+export const MUMBAI_AREAS = [
+  "vile parle", "santacruz", "andheri", "goregaon", "bandra", "bkc", "fort", "nariman point", "prabhadevi", "lower parel", "parel",
+  "worli", "malad", "borivali", "kandivali", "dadar", "tardeo", "sakinaka", "powai", "chembur", "ghatkopar", "mulund", "vikhroli",
+  "kurla", "colaba", "churchgate", "byculla", "jogeshwari", "juhu", "khar", "mahim", "matunga", "sion", "wadala", "bhandup",
+];
+
+// One case-insensitive pattern that matches any phrase of a field, as whole words.
+export function phraseRe(phrases) {
+  const parts = phrases
+    .slice().sort((a, b) => b.length - a.length) // longest first, so "total sum insured" wins over "sum insured"
+    .map((p) => p.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/'/g, "['’]?").replace(/\s+/g, "\\s*"));
+  return new RegExp("\\b(?:" + parts.join("|") + ")(?![A-Za-z])", "i");
+}

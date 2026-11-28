@@ -6,6 +6,8 @@ import {
 
 import { useAgent } from "@/context/AgentContext";
 import { InlineErrorState } from "@/components/agent/InlineErrorState";
+import { supabase } from "@/lib/supabase";
+import { isPlaygroundMode } from "@/lib/playground/mode";
 import { InsurerSelect } from "@/components/agent/InsurerSelect";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -56,7 +58,10 @@ export default function Claims() {
     (next: Tab) => setLocation(next === "open" ? "/agent/claims" : `/agent/claims?tab=${next}`),
     [setLocation]
   );
-  const [createOpen, setCreateOpen] = useState(false);
+  const asked = new URLSearchParams(claimsSearch);
+  const askedCustomer = asked.get("new") === "1" ? asked.get("customer") ?? "" : "";
+  const [createOpen, setCreateOpen] = useState(asked.get("new") === "1");
+  const [find, setFind] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -106,10 +111,19 @@ export default function Claims() {
   }, [claims]);
 
   const visible = useMemo(() => {
+    // A search looks through every claim, whichever tab is open.
+    const q = find.trim().toLowerCase();
+    const squash = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^\p{L}\p{M}\p{N}]/gu, "");
+    const qs = squash(q);
+    if (q) {
+      return claims.filter((c) =>
+        [c.customer_name, c.insurer, c.hospital, c.ailment, c.tpa].some((v) => (v ?? "").toLowerCase().includes(q)) ||
+        (qs.length >= 3 && [c.policy_number, c.customer_phone].some((v) => squash(v).includes(qs))));
+    }
     if (tab === "attention") return claims.filter(needsAttention);
     if (tab === "closed") return claims.filter((c) => CLOSED.includes(c.status));
     return claims.filter((c) => !CLOSED.includes(c.status));
-  }, [claims, tab]);
+  }, [claims, tab, find]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -196,8 +210,14 @@ export default function Claims() {
         })}
       </div>
 
+      <input
+        type="search" value={find} onChange={(e) => setFind(e.target.value)}
+        placeholder={t("book.claim_search")} aria-label={t("book.claim_search")} className={`${inputCls} max-w-md bg-white`}
+      />
+
       {createOpen && (
         <NewClaimForm
+          initialCustomer={askedCustomer}
           customers={customers}
           onCancel={() => setCreateOpen(false)}
           onCreated={(claim) => {
@@ -236,7 +256,9 @@ export default function Claims() {
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm py-16 text-center text-slate-400">
           <Shield className="mx-auto mb-3 h-9 w-9 text-slate-200" />
           <span className="italic">
-            {tab === "attention"
+            {find.trim()
+              ? t("common.no_results_for", { query: find.trim() })
+              : tab === "attention"
               ? t("claims.empty_attention")
               : tab === "closed"
                 ? t("claims.empty_closed")
@@ -368,11 +390,15 @@ function ClaimCard({ claim, onOpen }: { claim: Claim; onOpen: () => void }) {
 
 /* ── create ───────────────────────────────────────────────────────────────── */
 
+type HealthPolicy = { id: string; insurer: string | null; policy_name: string | null; policy_identifier: string | null; policyholder_name: string | null; customer_id: string | null };
+
 function NewClaimForm({
+  initialCustomer,
   customers,
   onCancel,
   onCreated,
 }: {
+  initialCustomer: string;
   customers: Customer[];
   onCancel: () => void;
   onCreated: (claim: Claim) => void;
@@ -381,7 +407,9 @@ function NewClaimForm({
   const [saving, setSaving] = useState(false);
   const [useNew, setUseNew] = useState(false);
   const [draft, setDraft] = useState({
-    customer_id: "",
+    customer_id: initialCustomer,
+    client_id: "",
+    policy_number: "",
     new_customer_name: "",
     new_customer_phone: "",
     claim_type: "cashless" as ClaimType,
@@ -392,6 +420,24 @@ function NewClaimForm({
   });
 
   const set = (k: keyof typeof draft, v: string) => setDraft((d) => ({ ...d, [k]: v }));
+
+  // Health policies to pick from: filling the insurer and number beats retyping them.
+  const { agent } = useAgent();
+  const [policies, setPolicies] = useState<HealthPolicy[]>([]);
+  useEffect(() => {
+    if (!agent?.agentId || !draft.customer_id || useNew) { setPolicies([]); return; }
+    let on = true;
+    void supabase.from("clients")
+      .select("id, insurer, policy_name, policy_identifier, policyholder_name, customer_id")
+      .eq("agent_id", agent.agentId).eq("customer_id", draft.customer_id).eq("insurance_type", "health").eq("status", "done").order("created_at", { ascending: false })
+      .then(({ data }) => { if (on) setPolicies((data ?? []) as HealthPolicy[]); });
+    return () => { on = false; };
+  }, [agent?.agentId, draft.customer_id, useNew]);
+
+  function pickPolicy(id: string) {
+    const p = policies.find((x) => x.id === id);
+    setDraft((d) => ({ ...d, client_id: id, insurer: p?.insurer || d.insurer, policy_number: p?.policy_identifier || d.policy_number }));
+  }
 
   async function save() {
     if (!useNew && !draft.customer_id) {
@@ -409,6 +455,12 @@ function NewClaimForm({
         new_customer_name: useNew ? draft.new_customer_name.trim() : undefined,
         new_customer_phone: useNew ? draft.new_customer_phone.trim() : undefined,
         claim_type: draft.claim_type,
+        client_id: useNew ? null : draft.client_id || null,
+        policy_number: draft.policy_number,
+        // The demo has no server to look the name up.
+        ...(isPlaygroundMode() && !useNew
+          ? { _customer_name: customers.find((c) => c.id === draft.customer_id)?.name, _customer_phone: customers.find((c) => c.id === draft.customer_id)?.phone }
+          : {}),
         insurer: draft.insurer,
         hospital: draft.hospital,
         ailment: draft.ailment,
@@ -435,7 +487,7 @@ function NewClaimForm({
         <span className="text-xs font-bold text-slate-500">{t("claims.who_for")}</span>
         {!useNew ? (
           <>
-            <select value={draft.customer_id} onChange={(e) => set("customer_id", e.target.value)} className={inputCls}>
+            <select value={draft.customer_id} onChange={(e) => setDraft((d) => ({ ...d, customer_id: e.target.value, client_id: "" }))} className={inputCls}>
               <option value="">{t("claims.choose_customer")}</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ""}</option>
@@ -502,6 +554,17 @@ function NewClaimForm({
         <p className="text-xs text-slate-400">{t("claims.type_note")}</p>
       </div>
 
+      {!useNew && policies.length > 0 && (
+        <div className="mb-5">
+          <Labeled label={t("book.claim_policy")}>
+            <select value={draft.client_id} onChange={(e) => pickPolicy(e.target.value)} className={inputCls}>
+              <option value="">{t("book.claim_no_policy")}</option>
+              {policies.map((p) => <option key={p.id} value={p.id}>{[p.policyholder_name, p.insurer, p.policy_name, p.policy_identifier].filter(Boolean).join(", ")}</option>)}
+            </select>
+          </Labeled>
+        </div>
+      )}
+
       {/* the claim */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Labeled label={t("claims.f_insurer")}>
@@ -513,6 +576,9 @@ function NewClaimForm({
             value={draft.insurer}
             onChange={(next) => set("insurer", next)}
           />
+        </Labeled>
+        <Labeled label={t("claim_detail.f_policy_number")}>
+          <input value={draft.policy_number} onChange={(e) => set("policy_number", e.target.value)} className={inputCls} />
         </Labeled>
         <Labeled label={t("claims.f_hospital")}>
           <input value={draft.hospital} onChange={(e) => set("hospital", e.target.value)} placeholder={t("claims.ph_hospital")} className={inputCls} />

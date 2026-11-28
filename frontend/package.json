@@ -12,6 +12,7 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@cantoo/pdf-lib": "2.11.1",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/playfair-display": "^5.2.8",
     "@radix-ui/react-checkbox": "^1.3.3",

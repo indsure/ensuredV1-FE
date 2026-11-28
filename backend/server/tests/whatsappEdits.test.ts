@@ -243,11 +243,15 @@ const motorRow = {
   extracted_data: { _rev: 3, insurer: "Some General", plan_name: "Car Plan", policy_expiry_date: "2027-03-01", idv: 500000, premium: 15400 },
 };
 
-test("policy fields: health is refused, and only allowlisted fields of that type", async () => {
-  const h = harness(() => ({ rows: [{ ...motorRow, insurance_type: "health" }] }));
+test("policy fields: only allowlisted fields of that type, and nothing for an unlisted type", async () => {
+  const h = harness(() => ({ rows: [{ ...motorRow, insurance_type: "other" }] }));
   const r = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 1 }, expectRev: 0 });
   assert.equal(r.status, 400);
   assert.equal(r.json.error, "NOT_EDITABLE");
+  const hh = harness(() => ({ rows: [{ ...motorRow, insurance_type: "health" }] }));
+  const rh = await hh.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { insurer: "X" }, expectRev: 3 });
+  assert.match(rh.json.fields.insurer, /cannot be changed/);
+  assert.ok(!hh.calls.some((c) => c.sql.startsWith("UPDATE")));
   const m = harness(() => ({ rows: [motorRow] }));
   const r2 = await m.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { insurer_name: "Other" }, expectRev: 3 });
   assert.equal(r2.status, 400);
@@ -699,4 +703,20 @@ test("page: the portal's name guard; publishing only when ready; nothing changes
   assert.match(notReady.calls.find((c) => c.sql.startsWith("UPDATE"))!.sql, /AND enabled\s+AND cardinality\(lines_of_business\) > 0/);
   const off = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 0 } : { rows: [{ enabled: false }], rowCount: 1 }));
   assert.equal((await off.call("POST /api/internal/wa/page/edit", {}, { set: { city: "Pune" }, expect: { city: null } })).json.error, "NOT_ENABLED");
+});
+
+test("policy fields: a health fact goes through the portal's health save, never the data-entry one", async () => {
+  process.env.WA_BOT_KEY = "k".repeat(40);
+  const row = { ...motorRow, insurance_type: "health", status: "done", expiry_date: "2026-12-01", sum_insured: 500000, report_premium: 20000,
+    extracted_data: { _rev: 3 }, report_data: { premium: { amount: 20000 }, policy_timeline: { policy_expiry_date: "2026-12-01" }, audit_score: { score: 60 } } };
+  const h = harness((sql) => (sql.startsWith("UPDATE") ? { rows: [], rowCount: 1 } : { rows: [row] }));
+  const r = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: "21,500", expiry_date: "2027-12-01" }, expectRev: 3 });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.json.before, { premium: 20000, expiry_date: "2026-12-01" });
+  assert.equal(r.json.rev, 4);
+  const u = h.calls.filter((c) => c.sql.replace(/\s+/g, " ").startsWith("UPDATE clients"));
+  assert.equal(u.length, 1);
+  assert.match(u[0].sql.replace(/\s+/g, " "), /UPDATE clients SET insurer = CASE WHEN \$3::boolean/);
+  const stale = await h.call("POST /api/internal/wa/clients/:id/fields", { id: POL }, { set: { premium: 1 }, expectRev: 2 });
+  assert.equal(stale.status, 409);
 });

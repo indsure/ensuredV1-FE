@@ -103,7 +103,8 @@ export function Header() {
   }, [mobileMenuOpen]);
 
   // Agent / Admin pages manage their own nav — render nothing here
-  if (location.startsWith("/agent") || location.startsWith("/admin")) {
+  // /corporate (the beta-only corporate portal) carries its own navigation too.
+  if (location.startsWith("/agent") || location.startsWith("/admin") || location.startsWith("/corporate")) {
     return null;
   }
 

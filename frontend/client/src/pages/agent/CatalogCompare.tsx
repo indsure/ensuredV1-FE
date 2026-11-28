@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Loader2, Scale, Zap, Upload, Search, Plus, X, ArrowRight, ChevronRight, ChevronLeft, Star } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import SavedComparisons from "@/components/agent/SavedComparisons";
 import ComparisonShareBar from "@/components/agent/ComparisonShareBar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import ComparisonView, { SIDE_PALETTE } from "@/components/ComparisonView";
@@ -482,6 +483,7 @@ export default function CatalogCompare() {
           )}
         </>
       )}
+      <div className="mt-10"><SavedComparisons /></div>
     </div>
   );
 }

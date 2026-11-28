@@ -286,21 +286,21 @@ const STATIC_ROUTES = [
     src: ["pages/life.tsx"],
     h1: "Life and term insurance policy checker",
     intro:
-      "Upload a life or term insurance policy and IndSure explains your sum assured, riders, claim conditions, and exclusions, so you know whether your family is actually protected.",
+      "Upload a life or term insurance policy and IndSure reads your sum assured, premium, due dates, maturity and nominee into one clear table.",
   },
   {
     path: "/term",
     src: ["pages/term.tsx"],
     h1: "Term life insurance policy checker",
     intro:
-      "Upload a term life policy and IndSure explains your sum assured, claim conditions, and exclusions, so you can see whether your pure-protection cover is enough for your family.",
+      "Upload a term life policy and IndSure reads your sum assured, premium, due dates, cover end date and nominee into one clear table.",
   },
   {
     path: "/vehicle",
     src: ["pages/vehicle.tsx"],
     h1: "Vehicle insurance policy checker",
     intro:
-      "Upload a car or bike policy and IndSure shows whether you are third-party or comprehensive, your IDV, deductibles, and No Claim Bonus, plus what a claim will really cost you.",
+      "Upload a car or bike policy and IndSure shows whether you are third-party or comprehensive, your IDV, No Claim Bonus and add-ons, with a cover score out of 100.",
   },
   {
     path: "/compare",
