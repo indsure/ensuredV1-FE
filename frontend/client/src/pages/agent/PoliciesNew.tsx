@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from "react"
+import { Fragment, useEffect, useState, useMemo, useRef, useCallback } from "react"
 import { useLocation, useSearch } from "wouter"
 import { Info, RefreshCw, ExternalLink, Download, Loader2, Trash2, FileSpreadsheet, Sparkles } from "lucide-react"
 import React from "react"
@@ -559,8 +559,19 @@ export default function PoliciesNew() {
                 : tk === "life" ? `${TYPE_META.life.emoji} ${t("policies.chip_life_section")}`
                 : `${TYPE_META[tk].emoji} ${tOr(t, `common.type_${tk}`, TYPE_META[tk].label)}`;
               return (
+                <Fragment key={tk}>
+                {/* LIC sits just before Others, as in the rail (founder, 2026-11-28). Its
+                    policies come from LIC's sheets and live on their own page. */}
+                {tk === "others" && (
+                  <button
+                    type="button"
+                    onClick={() => setLocation("/agent/lic")}
+                    className="inline-flex min-h-10 sm:min-h-0 items-center rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-500 transition-all hover:border-slate-300 hover:text-slate-700"
+                  >
+                    {t("layout.type_lic")}
+                  </button>
+                )}
                 <button
-                  key={tk}
                   onClick={() => setTypeFilter(tk)}
                   className={`inline-flex min-h-10 sm:min-h-0 items-center rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all ${
                     active
@@ -570,6 +581,7 @@ export default function PoliciesNew() {
                 >
                   {label}
                 </button>
+                </Fragment>
               );
             })}
           </div>
