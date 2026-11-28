@@ -27,7 +27,11 @@ import { CustomersMobileList } from "@/components/agent/CustomersMobileList";
 
 type DraftState = { name: string; phone: string; email: string; city: string; dob: string };
 const EMPTY_DRAFT: DraftState = { name: "", phone: "", email: "", city: "", dob: "" };
-type SortKey = "added" | "value" | "count" | "cover" | "name";
+// The filter's main list is fixed; every other type sits under "Other".
+const MAIN_TYPES: InsuranceType[] = ["health", "life", "term", "motor"];
+const OTHERS = "__others";
+const OTHER_TYPES = (Object.keys(TYPE_META) as InsuranceType[]).filter(ty => !MAIN_TYPES.includes(ty));
+type SortKey ="added" | "value" | "count" | "cover" | "name";
 const SORT_KEYS: SortKey[] = ["added", "value", "count", "cover", "name"];
 const SELECT_CLS = "min-h-11 sm:min-h-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 sm:py-1.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0D9488]/30";
 
@@ -48,6 +52,8 @@ export default function CustomersNew() {
   const [filterMode, setFilterMode] = useState<"has" | "lacks">("has");
   const [filterType, setFilterType] = useState<string>("");
   const filterOn = filterType !== "";
+  // Inside "Other": "" = any of the other types, or one of them.
+  const [otherType, setOtherType] = useState<string>("");
 
   const load = useCallback(async () => {
     if (!agent?.agentId) return;
@@ -94,13 +100,6 @@ export default function CustomersNew() {
   // Phones get a scannable list instead of the six-column table.
   const isMobile = useIsMobile();
 
-  // Policy types that exist in this book, in the usual type order, for the filter menu.
-  const typesInBook = useMemo(() => {
-    const seen = new Set<string>();
-    for (const p of policies) if (p.customer_id) seen.add(p.insurance_type || "health");
-    return (Object.keys(TYPE_META) as InsuranceType[]).filter(ty => seen.has(ty));
-  }, [policies]);
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     let list = !q ? customers : customers.filter(c =>
@@ -113,9 +112,12 @@ export default function CustomersNew() {
     if (filterOn) {
       list = list.filter(c => {
         const byType = statsByCustomer.get(c.id)?.byType ?? {};
+        const owns = (ty: string) => (byType[ty] ?? 0) > 0;
         const has = filterType === "any"
           ? Object.keys(byType).length > 0
-          : (byType[filterType] ?? 0) > 0;
+          : filterType === OTHERS
+            ? (otherType ? owns(otherType) : OTHER_TYPES.some(owns))
+            : owns(filterType);
         return filterMode === "has" ? has : !has;
       });
     }
@@ -136,7 +138,7 @@ export default function CustomersNew() {
       if (y == null) return -1;
       return y - x;
     });
-  }, [customers, search, statsByCustomer, filterOn, filterMode, filterType, sortBy]);
+  }, [customers, search, statsByCustomer, filterOn, filterMode, filterType, otherType, sortBy]);
 
   const duplicate = useMemo(() => (createOpen ? findDuplicate(customers, draft) : null), [createOpen, customers, draft]);
 
@@ -241,15 +243,24 @@ export default function CustomersNew() {
                   <option value="has">{t("customers.filter_has")}</option>
                   <option value="lacks">{t("customers.filter_lacks")}</option>
                 </select>
-                <select aria-label={t("customers.col_policies")} value={filterType} onChange={e => setFilterType(e.target.value)} className={SELECT_CLS}>
+                <select aria-label={t("customers.col_policies")} value={filterType} onChange={e => { setFilterType(e.target.value); setOtherType(""); }} className={SELECT_CLS}>
                   <option value="">{t("customers.filter_pick_type")}</option>
                   <option value="any">{t("customers.filter_any_type")}</option>
-                  {typesInBook.map(ty => (
-                    <option key={ty} value={ty}>{TYPE_META[ty].emoji} {tOr(t, `common.type_${ty}`, TYPE_META[ty].label)}</option>
+                  {MAIN_TYPES.map(ty => (
+                    <option key={ty} value={ty}>{TYPE_META[ty].emoji} {ty === "motor" ? t("customers.filter_vehicle") : tOr(t, `common.type_${ty}`, TYPE_META[ty].label)}</option>
                   ))}
+                  <option value={OTHERS}>{t("customers.filter_other")} ›</option>
                 </select>
+                {filterType === OTHERS && (
+                  <select aria-label={t("customers.filter_other")} value={otherType} onChange={e => setOtherType(e.target.value)} className={SELECT_CLS}>
+                    <option value="">{t("customers.filter_all_other")}</option>
+                    {OTHER_TYPES.map(ty => (
+                      <option key={ty} value={ty}>{TYPE_META[ty].emoji} {tOr(t, `common.type_${ty}`, TYPE_META[ty].label)}</option>
+                    ))}
+                  </select>
+                )}
                 {filterOn && (
-                  <button type="button" onClick={() => setFilterType("")} className="inline-flex min-h-11 sm:min-h-0 items-center gap-1 text-sm font-semibold text-[#0D9488] hover:underline">
+                  <button type="button" onClick={() => { setFilterType(""); setOtherType(""); }} className="inline-flex min-h-11 sm:min-h-0 items-center gap-1 text-sm font-semibold text-[#0D9488] hover:underline">
                     <X size={14} /> {t("customers.filter_clear")}
                   </button>
                 )}
